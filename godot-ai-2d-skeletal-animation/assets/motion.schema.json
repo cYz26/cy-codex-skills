@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Godot AI 2D Motion",
+  "type": "object",
+  "required": ["schema_version", "case_id", "animation", "category", "length", "loop", "tracks"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "case_id": { "type": "string", "minLength": 1 },
+    "animation": { "type": "string", "minLength": 1 },
+    "category": { "type": "string", "enum": ["idle", "move", "action"] },
+    "length": { "type": "number", "exclusiveMinimum": 0 },
+    "loop": { "type": "boolean" },
+    "tracks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["target", "name", "property", "keys"],
+        "properties": {
+          "target": { "type": "string", "enum": ["bone", "socket"] },
+          "name": { "type": "string", "minLength": 1 },
+          "property": {
+            "type": "string",
+            "enum": ["rotation_degrees", "position", "scale"]
+          },
+          "keys": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["time", "value"],
+              "properties": {
+                "time": { "type": "number", "minimum": 0 },
+                "value": {}
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["time", "name"],
+        "properties": {
+          "time": { "type": "number", "minimum": 0 },
+          "name": { "type": "string", "minLength": 1 },
+          "target": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Godot AI 2D Skeletal Animation"
+  short_description: "Split AI/reference art into Godot 2D skeletal animation rigs"
+  brand_color: "#2F80ED"
+  default_prompt: "Use $godot-ai-2d-skeletal-animation to constrain reference art, split it into transparent parts, and generate or validate a Godot 2D skeletal animation fixture."

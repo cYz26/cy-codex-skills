@@ -1,0 +1,87 @@
+{
+  "schema_version": "1.0",
+  "case_id": "case_03_quadruped_beast",
+  "animation": "walk",
+  "category": "move",
+  "length": 1.0,
+  "loop": true,
+  "tracks": [
+    {
+      "target": "bone",
+      "name": "front_upper_leg_L",
+      "property": "rotation_degrees",
+      "keys": [
+        {
+          "time": 0,
+          "value": -15
+        },
+        {
+          "time": 0.5,
+          "value": 16
+        },
+        {
+          "time": 1,
+          "value": -15
+        }
+      ]
+    },
+    {
+      "target": "bone",
+      "name": "front_upper_leg_R",
+      "property": "rotation_degrees",
+      "keys": [
+        {
+          "time": 0,
+          "value": 16
+        },
+        {
+          "time": 0.5,
+          "value": -15
+        },
+        {
+          "time": 1,
+          "value": 16
+        }
+      ]
+    },
+    {
+      "target": "bone",
+      "name": "rear_upper_leg_L",
+      "property": "rotation_degrees",
+      "keys": [
+        {
+          "time": 0,
+          "value": 16
+        },
+        {
+          "time": 0.5,
+          "value": -15
+        },
+        {
+          "time": 1,
+          "value": 16
+        }
+      ]
+    },
+    {
+      "target": "bone",
+      "name": "rear_upper_leg_R",
+      "property": "rotation_degrees",
+      "keys": [
+        {
+          "time": 0,
+          "value": -15
+        },
+        {
+          "time": 0.5,
+          "value": 16
+        },
+        {
+          "time": 1,
+          "value": -15
+        }
+      ]
+    }
+  ],
+  "events": []
+}

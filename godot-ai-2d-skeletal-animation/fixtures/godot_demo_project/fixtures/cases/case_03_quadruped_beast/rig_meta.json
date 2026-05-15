@@ -1,0 +1,523 @@
+{
+  "schema_version": "1.0",
+  "case_id": "case_03_quadruped_beast",
+  "object_type": "quadruped",
+  "skeleton": {
+    "bones": [
+      {
+        "name": "root",
+        "parent": null,
+        "position": [
+          205,
+          210
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "pelvis",
+        "parent": "root",
+        "position": [
+          -50,
+          0
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "spine_01",
+        "parent": "pelvis",
+        "position": [
+          45,
+          -8
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "spine_02",
+        "parent": "spine_01",
+        "position": [
+          50,
+          2
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "chest",
+        "parent": "spine_02",
+        "position": [
+          45,
+          -8
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "neck",
+        "parent": "chest",
+        "position": [
+          34,
+          -20
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "head",
+        "parent": "neck",
+        "position": [
+          38,
+          -10
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "jaw",
+        "parent": "head",
+        "position": [
+          18,
+          18
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "tail_01",
+        "parent": "pelvis",
+        "position": [
+          -42,
+          -4
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "tail_02",
+        "parent": "tail_01",
+        "position": [
+          -36,
+          -2
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "tail_03",
+        "parent": "tail_02",
+        "position": [
+          -30,
+          0
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "front_upper_leg_L",
+        "parent": "chest",
+        "position": [
+          10,
+          34
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "front_lower_leg_L",
+        "parent": "front_upper_leg_L",
+        "position": [
+          6,
+          36
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "front_paw_L",
+        "parent": "front_lower_leg_L",
+        "position": [
+          10,
+          32
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "front_upper_leg_R",
+        "parent": "chest",
+        "position": [
+          34,
+          34
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "front_lower_leg_R",
+        "parent": "front_upper_leg_R",
+        "position": [
+          6,
+          36
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "front_paw_R",
+        "parent": "front_lower_leg_R",
+        "position": [
+          10,
+          32
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "rear_upper_leg_L",
+        "parent": "pelvis",
+        "position": [
+          -14,
+          34
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "rear_lower_leg_L",
+        "parent": "rear_upper_leg_L",
+        "position": [
+          6,
+          38
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "rear_paw_L",
+        "parent": "rear_lower_leg_L",
+        "position": [
+          10,
+          32
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "rear_upper_leg_R",
+        "parent": "pelvis",
+        "position": [
+          12,
+          34
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "rear_lower_leg_R",
+        "parent": "rear_upper_leg_R",
+        "position": [
+          6,
+          38
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "rear_paw_R",
+        "parent": "rear_lower_leg_R",
+        "position": [
+          10,
+          32
+        ],
+        "rotation_degrees": 0
+      }
+    ]
+  },
+  "parts": [
+    {
+      "id": "body",
+      "file": "parts/body.png",
+      "bone": "spine_01",
+      "pivot": [
+        60.0,
+        29.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 20
+    },
+    {
+      "id": "chest",
+      "file": "parts/chest.png",
+      "bone": "chest",
+      "pivot": [
+        29.0,
+        27.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 21
+    },
+    {
+      "id": "neck",
+      "file": "parts/neck.png",
+      "bone": "neck",
+      "pivot": [
+        26.0,
+        14.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 22
+    },
+    {
+      "id": "head",
+      "file": "parts/head.png",
+      "bone": "head",
+      "pivot": [
+        29.0,
+        21.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 30
+    },
+    {
+      "id": "jaw",
+      "file": "parts/jaw.png",
+      "bone": "jaw",
+      "pivot": [
+        17.0,
+        9.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 31
+    },
+    {
+      "id": "tail_base",
+      "file": "parts/tail_base.png",
+      "bone": "tail_01",
+      "pivot": [
+        25.0,
+        10.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 10
+    },
+    {
+      "id": "tail_mid",
+      "file": "parts/tail_mid.png",
+      "bone": "tail_02",
+      "pivot": [
+        22.0,
+        9.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 10
+    },
+    {
+      "id": "tail_tip",
+      "file": "parts/tail_tip.png",
+      "bone": "tail_03",
+      "pivot": [
+        17.0,
+        8.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 10
+    },
+    {
+      "id": "front_upper_leg_L",
+      "file": "parts/front_upper_leg_L.png",
+      "bone": "front_upper_leg_L",
+      "pivot": [
+        11.0,
+        23.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 12
+    },
+    {
+      "id": "front_lower_leg_L",
+      "file": "parts/front_lower_leg_L.png",
+      "bone": "front_lower_leg_L",
+      "pivot": [
+        10.0,
+        20.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 13
+    },
+    {
+      "id": "front_paw_L",
+      "file": "parts/front_paw_L.png",
+      "bone": "front_paw_L",
+      "pivot": [
+        17.0,
+        8.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 14
+    },
+    {
+      "id": "front_upper_leg_R",
+      "file": "parts/front_upper_leg_R.png",
+      "bone": "front_upper_leg_R",
+      "pivot": [
+        11.0,
+        23.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 12
+    },
+    {
+      "id": "front_lower_leg_R",
+      "file": "parts/front_lower_leg_R.png",
+      "bone": "front_lower_leg_R",
+      "pivot": [
+        10.0,
+        20.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 13
+    },
+    {
+      "id": "front_paw_R",
+      "file": "parts/front_paw_R.png",
+      "bone": "front_paw_R",
+      "pivot": [
+        17.0,
+        8.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 14
+    },
+    {
+      "id": "rear_upper_leg_L",
+      "file": "parts/rear_upper_leg_L.png",
+      "bone": "rear_upper_leg_L",
+      "pivot": [
+        12.0,
+        25.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 12
+    },
+    {
+      "id": "rear_lower_leg_L",
+      "file": "parts/rear_lower_leg_L.png",
+      "bone": "rear_lower_leg_L",
+      "pivot": [
+        10.0,
+        21.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 13
+    },
+    {
+      "id": "rear_paw_L",
+      "file": "parts/rear_paw_L.png",
+      "bone": "rear_paw_L",
+      "pivot": [
+        17.0,
+        8.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 14
+    },
+    {
+      "id": "rear_upper_leg_R",
+      "file": "parts/rear_upper_leg_R.png",
+      "bone": "rear_upper_leg_R",
+      "pivot": [
+        12.0,
+        25.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 12
+    },
+    {
+      "id": "rear_lower_leg_R",
+      "file": "parts/rear_lower_leg_R.png",
+      "bone": "rear_lower_leg_R",
+      "pivot": [
+        10.0,
+        21.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 13
+    },
+    {
+      "id": "rear_paw_R",
+      "file": "parts/rear_paw_R.png",
+      "bone": "rear_paw_R",
+      "pivot": [
+        17.0,
+        8.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 14
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bite_hitbox_anchor",
+      "bone": "jaw",
+      "local_position": [
+        18,
+        0
+      ],
+      "local_rotation_degrees": 0
+    }
+  ],
+  "hitboxes": [
+    {
+      "name": "bite_hitbox",
+      "anchor": "bite_hitbox_anchor",
+      "size": [
+        44,
+        30
+      ],
+      "offset": [
+        10,
+        0
+      ]
+    }
+  ]
+}

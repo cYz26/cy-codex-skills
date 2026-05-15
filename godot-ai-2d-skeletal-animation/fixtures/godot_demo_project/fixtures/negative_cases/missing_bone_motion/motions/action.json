@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "case_id": "missing_bone_motion",
+  "animation": "bad_action",
+  "category": "action",
+  "length": 0.4,
+  "loop": false,
+  "tracks": [
+    {
+      "target": "bone",
+      "name": "not_a_bone",
+      "property": "rotation_degrees",
+      "keys": [
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 0.2,
+          "value": 10
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "time": 0.1,
+      "name": "hitbox_on"
+    },
+    {
+      "time": 0.2,
+      "name": "hitbox_off"
+    }
+  ]
+}

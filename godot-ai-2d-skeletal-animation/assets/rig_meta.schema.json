@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Godot AI 2D Rig Metadata",
+  "type": "object",
+  "required": ["schema_version", "case_id", "object_type", "skeleton", "parts"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "case_id": { "type": "string", "minLength": 1 },
+    "object_type": {
+      "type": "string",
+      "enum": ["humanoid", "weapon_humanoid", "quadruped", "mechanical", "custom"]
+    },
+    "skeleton": {
+      "type": "object",
+      "required": ["bones"],
+      "properties": {
+        "bones": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["name", "parent", "position"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "parent": { "type": ["string", "null"] },
+              "position": { "$ref": "#/$defs/vector2" },
+              "rotation_degrees": { "type": "number" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "parts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "file", "bone", "pivot", "offset", "z_index"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "file": { "type": "string", "minLength": 1 },
+          "bone": { "type": "string", "minLength": 1 },
+          "pivot": { "$ref": "#/$defs/vector2" },
+          "offset": { "$ref": "#/$defs/vector2" },
+          "z_index": { "type": "integer" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "sockets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "bone", "local_position"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "bone": { "type": "string", "minLength": 1 },
+          "local_position": { "$ref": "#/$defs/vector2" },
+          "local_rotation_degrees": { "type": "number" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "hitboxes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "anchor", "size"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "anchor": { "type": "string", "minLength": 1 },
+          "size": { "$ref": "#/$defs/vector2" },
+          "offset": { "$ref": "#/$defs/vector2" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "vector2": {
+      "type": "array",
+      "prefixItems": [{ "type": "number" }, { "type": "number" }],
+      "minItems": 2,
+      "maxItems": 2
+    }
+  }
+}

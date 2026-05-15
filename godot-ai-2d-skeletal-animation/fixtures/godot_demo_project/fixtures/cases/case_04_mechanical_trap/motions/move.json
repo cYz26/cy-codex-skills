@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0",
+  "case_id": "case_04_mechanical_trap",
+  "animation": "armed",
+  "category": "move",
+  "length": 0.8,
+  "loop": true,
+  "tracks": [
+    {
+      "target": "bone",
+      "name": "gear_main",
+      "property": "rotation_degrees",
+      "keys": [
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 0.4,
+          "value": 90
+        },
+        {
+          "time": 0.8,
+          "value": 0
+        }
+      ]
+    },
+    {
+      "target": "bone",
+      "name": "pressure_plate",
+      "property": "position",
+      "keys": [
+        {
+          "time": 0,
+          "value": [
+            82,
+            12
+          ]
+        },
+        {
+          "time": 0.4,
+          "value": [
+            82,
+            16
+          ]
+        },
+        {
+          "time": 0.8,
+          "value": [
+            82,
+            12
+          ]
+        }
+      ]
+    }
+  ],
+  "events": []
+}

@@ -1,0 +1,3 @@
+[gd_scene format=3 uid="uid://godot_ai_2d_main"]
+
+[node name="Main" type="Node2D"]

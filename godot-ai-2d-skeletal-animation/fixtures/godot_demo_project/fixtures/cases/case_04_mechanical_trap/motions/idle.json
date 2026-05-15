@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "case_id": "case_04_mechanical_trap",
+  "animation": "idle",
+  "category": "idle",
+  "length": 1.0,
+  "loop": true,
+  "tracks": [
+    {
+      "target": "bone",
+      "name": "swing_arm",
+      "property": "rotation_degrees",
+      "keys": [
+        {
+          "time": 0,
+          "value": -20
+        },
+        {
+          "time": 0.5,
+          "value": -18
+        },
+        {
+          "time": 1,
+          "value": -20
+        }
+      ]
+    }
+  ],
+  "events": []
+}

@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0",
+  "case_id": "case_01_humanoid_adventurer",
+  "animation": "idle",
+  "category": "idle",
+  "length": 1.0,
+  "loop": true,
+  "tracks": [
+    {
+      "target": "bone",
+      "name": "pelvis",
+      "property": "position",
+      "keys": [
+        {
+          "time": 0,
+          "value": [
+            0,
+            0
+          ]
+        },
+        {
+          "time": 0.5,
+          "value": [
+            0,
+            -3
+          ]
+        },
+        {
+          "time": 1.0,
+          "value": [
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "target": "bone",
+      "name": "chest",
+      "property": "rotation_degrees",
+      "keys": [
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 0.5,
+          "value": 2
+        },
+        {
+          "time": 1.0,
+          "value": 0
+        }
+      ]
+    }
+  ],
+  "events": []
+}

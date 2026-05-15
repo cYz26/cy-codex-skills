@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0",
+  "case_id": "case_01_humanoid_adventurer",
+  "animation": "basic_attack",
+  "category": "action",
+  "length": 0.55,
+  "loop": false,
+  "tracks": [
+    {
+      "target": "bone",
+      "name": "chest",
+      "property": "rotation_degrees",
+      "keys": [
+        {
+          "time": 0,
+          "value": -4
+        },
+        {
+          "time": 0.15,
+          "value": -9
+        },
+        {
+          "time": 0.24,
+          "value": 8
+        },
+        {
+          "time": 0.55,
+          "value": 0
+        }
+      ]
+    },
+    {
+      "target": "bone",
+      "name": "upper_arm_R",
+      "property": "rotation_degrees",
+      "keys": [
+        {
+          "time": 0,
+          "value": -20
+        },
+        {
+          "time": 0.15,
+          "value": -55
+        },
+        {
+          "time": 0.24,
+          "value": 60
+        },
+        {
+          "time": 0.55,
+          "value": 5
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "time": 0.16,
+      "name": "hitbox_on",
+      "target": "body_hitbox"
+    },
+    {
+      "time": 0.28,
+      "name": "hitbox_off",
+      "target": "body_hitbox"
+    }
+  ]
+}

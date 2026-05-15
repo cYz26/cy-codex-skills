@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0",
+  "case_id": "case_03_quadruped_beast",
+  "animation": "idle",
+  "category": "idle",
+  "length": 1.0,
+  "loop": true,
+  "tracks": [
+    {
+      "target": "bone",
+      "name": "root",
+      "property": "position",
+      "keys": [
+        {
+          "time": 0,
+          "value": [
+            205,
+            210
+          ]
+        },
+        {
+          "time": 0.5,
+          "value": [
+            205,
+            207
+          ]
+        },
+        {
+          "time": 1.0,
+          "value": [
+            205,
+            210
+          ]
+        }
+      ]
+    },
+    {
+      "target": "bone",
+      "name": "tail_02",
+      "property": "rotation_degrees",
+      "keys": [
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 0.5,
+          "value": 8
+        },
+        {
+          "time": 1,
+          "value": 0
+        }
+      ]
+    }
+  ],
+  "events": []
+}

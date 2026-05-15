@@ -1,0 +1,174 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tools/demo_event_receiver.gd" id="1_nmcnb"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_04_mechanical_trap/parts/axe_blade.png" id="2_i17yb"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_04_mechanical_trap/parts/swing_arm.png" id="3_nybup"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_04_mechanical_trap/parts/hinge_cap.png" id="4_kvid2"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_04_mechanical_trap/parts/gear_main.png" id="5_1b4k5"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_04_mechanical_trap/parts/pressure_plate.png" id="6_1nadn"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_04_mechanical_trap/parts/stone_base.png" id="7_a3l6r"]
+
+[sub_resource type="Animation" id="Animation_ttrms"]
+length = 0.8
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Skeleton2D/root/base/gear_main:rotation_degrees")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.4, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 90.0, 0.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Skeleton2D/root/base/pressure_plate:position")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.4, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(82, 12), Vector2(82, 16), Vector2(82, 12)]
+}
+
+[sub_resource type="Animation" id="Animation_ofu46"]
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Skeleton2D/root/base/hinge/swing_arm:rotation_degrees")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.5, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [-20.0, -18.0, -20.0]
+}
+
+[sub_resource type="Animation" id="Animation_5ng43"]
+length = 0.75
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Skeleton2D/root/base/hinge/swing_arm:rotation_degrees")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.16, 0.32, 0.75),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [-35.0, -55.0, 58.0, -20.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Skeleton2D/root/base/gear_main:rotation_degrees")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.32, 0.75),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 180.0, 360.0]
+}
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.26, 0.46),
+"transitions": PackedFloat32Array(1, 1),
+"values": [{
+"args": ["hazard_on", "axe_hazard"],
+"method": &"animation_event"
+}, {
+"args": ["hazard_off", "axe_hazard"],
+"method": &"animation_event"
+}]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_mrnmw"]
+_data = {
+&"armed": SubResource("Animation_ttrms"),
+&"idle": SubResource("Animation_ofu46"),
+&"trigger": SubResource("Animation_5ng43")
+}
+
+[node name="case_04_mechanical_trap" type="Node2D" unique_id=2146543170]
+script = ExtResource("1_nmcnb")
+
+[node name="Skeleton2D" type="Skeleton2D" parent="." unique_id=1289724592]
+
+[node name="root" type="Bone2D" parent="Skeleton2D" unique_id=1209567386]
+position = Vector2(210, 230)
+
+[node name="base" type="Bone2D" parent="Skeleton2D/root" unique_id=118420713]
+
+[node name="hinge" type="Bone2D" parent="Skeleton2D/root/base" unique_id=159598246]
+position = Vector2(0, -72)
+
+[node name="swing_arm" type="Bone2D" parent="Skeleton2D/root/base/hinge" unique_id=531458608]
+
+[node name="blade" type="Bone2D" parent="Skeleton2D/root/base/hinge/swing_arm" unique_id=770486962]
+position = Vector2(0, 78)
+
+[node name="axe_blade" type="Sprite2D" parent="Skeleton2D/root/base/hinge/swing_arm/blade" unique_id=1298441016]
+z_index = 35
+position = Vector2(-38, -25)
+texture = ExtResource("2_i17yb")
+centered = false
+
+[node name="hazard_hitbox_anchor" type="Marker2D" parent="Skeleton2D/root/base/hinge/swing_arm/blade" unique_id=304516540]
+
+[node name="swing_arm" type="Sprite2D" parent="Skeleton2D/root/base/hinge/swing_arm" unique_id=1852181388]
+z_index = 20
+position = Vector2(-9, -5)
+texture = ExtResource("3_nybup")
+centered = false
+
+[node name="hinge_cap" type="Sprite2D" parent="Skeleton2D/root/base/hinge" unique_id=220071792]
+z_index = 30
+position = Vector2(-19, -19)
+texture = ExtResource("4_kvid2")
+centered = false
+
+[node name="gear_main" type="Bone2D" parent="Skeleton2D/root/base" unique_id=127529394]
+position = Vector2(-46, -38)
+
+[node name="gear_main" type="Sprite2D" parent="Skeleton2D/root/base/gear_main" unique_id=679861893]
+z_index = 10
+position = Vector2(-24, -24)
+texture = ExtResource("5_1b4k5")
+centered = false
+
+[node name="pressure_plate" type="Bone2D" parent="Skeleton2D/root/base" unique_id=1059526246]
+position = Vector2(82, 12)
+
+[node name="pressure_plate" type="Sprite2D" parent="Skeleton2D/root/base/pressure_plate" unique_id=190486539]
+z_index = 5
+position = Vector2(-36, -9)
+texture = ExtResource("6_1nadn")
+centered = false
+
+[node name="trigger_area_anchor" type="Marker2D" parent="Skeleton2D/root/base/pressure_plate" unique_id=513962868]
+
+[node name="stone_base" type="Sprite2D" parent="Skeleton2D/root/base" unique_id=1059436013]
+z_index = 1
+position = Vector2(-60, -19)
+texture = ExtResource("7_a3l6r")
+centered = false
+
+[node name="Hitboxes" type="Node2D" parent="." unique_id=509442801]
+
+[node name="axe_hazard" type="Marker2D" parent="Hitboxes" unique_id=1926039045]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=770453176]
+libraries/ = SubResource("AnimationLibrary_mrnmw")

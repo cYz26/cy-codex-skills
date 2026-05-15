@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0",
+  "case_id": "case_02_weapon_swordsman",
+  "animation": "combat_run",
+  "category": "move",
+  "length": 0.8,
+  "loop": true,
+  "tracks": [
+    {
+      "target": "bone",
+      "name": "upper_leg_L",
+      "property": "rotation_degrees",
+      "keys": [
+        {
+          "time": 0,
+          "value": -16
+        },
+        {
+          "time": 0.4,
+          "value": 18
+        },
+        {
+          "time": 0.8,
+          "value": -16
+        }
+      ]
+    },
+    {
+      "target": "bone",
+      "name": "upper_leg_R",
+      "property": "rotation_degrees",
+      "keys": [
+        {
+          "time": 0,
+          "value": 18
+        },
+        {
+          "time": 0.4,
+          "value": -16
+        },
+        {
+          "time": 0.8,
+          "value": 18
+        }
+      ]
+    },
+    {
+      "target": "bone",
+      "name": "weapon",
+      "property": "rotation_degrees",
+      "keys": [
+        {
+          "time": 0,
+          "value": -8
+        },
+        {
+          "time": 0.4,
+          "value": 8
+        },
+        {
+          "time": 0.8,
+          "value": -8
+        }
+      ]
+    }
+  ],
+  "events": []
+}

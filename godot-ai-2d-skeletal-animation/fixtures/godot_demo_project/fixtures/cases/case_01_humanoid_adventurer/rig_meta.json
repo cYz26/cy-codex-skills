@@ -1,0 +1,398 @@
+{
+  "schema_version": "1.0",
+  "case_id": "case_01_humanoid_adventurer",
+  "object_type": "humanoid",
+  "skeleton": {
+    "bones": [
+      {
+        "name": "root",
+        "parent": null,
+        "position": [
+          210,
+          230
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "pelvis",
+        "parent": "root",
+        "position": [
+          0,
+          0
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "spine",
+        "parent": "pelvis",
+        "position": [
+          0,
+          -44
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "chest",
+        "parent": "spine",
+        "position": [
+          0,
+          -34
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "neck",
+        "parent": "chest",
+        "position": [
+          0,
+          -20
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "head",
+        "parent": "neck",
+        "position": [
+          0,
+          -24
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "upper_arm_L",
+        "parent": "chest",
+        "position": [
+          -28,
+          -4
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "lower_arm_L",
+        "parent": "upper_arm_L",
+        "position": [
+          -34,
+          28
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "hand_L",
+        "parent": "lower_arm_L",
+        "position": [
+          -16,
+          25
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "upper_arm_R",
+        "parent": "chest",
+        "position": [
+          28,
+          -4
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "lower_arm_R",
+        "parent": "upper_arm_R",
+        "position": [
+          34,
+          28
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "hand_R",
+        "parent": "lower_arm_R",
+        "position": [
+          16,
+          25
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "upper_leg_L",
+        "parent": "pelvis",
+        "position": [
+          -14,
+          16
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "lower_leg_L",
+        "parent": "upper_leg_L",
+        "position": [
+          -8,
+          48
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "foot_L",
+        "parent": "lower_leg_L",
+        "position": [
+          -4,
+          44
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "upper_leg_R",
+        "parent": "pelvis",
+        "position": [
+          14,
+          16
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "lower_leg_R",
+        "parent": "upper_leg_R",
+        "position": [
+          8,
+          48
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "foot_R",
+        "parent": "lower_leg_R",
+        "position": [
+          4,
+          44
+        ],
+        "rotation_degrees": 0
+      }
+    ]
+  },
+  "parts": [
+    {
+      "id": "head",
+      "file": "parts/head.png",
+      "bone": "head",
+      "pivot": [
+        21.0,
+        23.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 50
+    },
+    {
+      "id": "torso",
+      "file": "parts/torso.png",
+      "bone": "chest",
+      "pivot": [
+        26.0,
+        36.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 20
+    },
+    {
+      "id": "pelvis",
+      "file": "parts/pelvis.png",
+      "bone": "pelvis",
+      "pivot": [
+        23.0,
+        17.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 18
+    },
+    {
+      "id": "upper_arm_L",
+      "file": "parts/upper_arm_L.png",
+      "bone": "upper_arm_L",
+      "pivot": [
+        12.0,
+        27.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 22
+    },
+    {
+      "id": "lower_arm_L",
+      "file": "parts/lower_arm_L.png",
+      "bone": "lower_arm_L",
+      "pivot": [
+        11.0,
+        24.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 23
+    },
+    {
+      "id": "hand_L",
+      "file": "parts/hand_L.png",
+      "bone": "hand_L",
+      "pivot": [
+        10.0,
+        10.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 24
+    },
+    {
+      "id": "upper_arm_R",
+      "file": "parts/upper_arm_R.png",
+      "bone": "upper_arm_R",
+      "pivot": [
+        12.0,
+        27.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 22
+    },
+    {
+      "id": "lower_arm_R",
+      "file": "parts/lower_arm_R.png",
+      "bone": "lower_arm_R",
+      "pivot": [
+        11.0,
+        24.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 23
+    },
+    {
+      "id": "hand_R",
+      "file": "parts/hand_R.png",
+      "bone": "hand_R",
+      "pivot": [
+        10.0,
+        10.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 24
+    },
+    {
+      "id": "upper_leg_L",
+      "file": "parts/upper_leg_L.png",
+      "bone": "upper_leg_L",
+      "pivot": [
+        13.0,
+        29.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 10
+    },
+    {
+      "id": "lower_leg_L",
+      "file": "parts/lower_leg_L.png",
+      "bone": "lower_leg_L",
+      "pivot": [
+        12.0,
+        27.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 11
+    },
+    {
+      "id": "foot_L",
+      "file": "parts/foot_L.png",
+      "bone": "foot_L",
+      "pivot": [
+        17.0,
+        9.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 12
+    },
+    {
+      "id": "upper_leg_R",
+      "file": "parts/upper_leg_R.png",
+      "bone": "upper_leg_R",
+      "pivot": [
+        13.0,
+        29.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 10
+    },
+    {
+      "id": "lower_leg_R",
+      "file": "parts/lower_leg_R.png",
+      "bone": "lower_leg_R",
+      "pivot": [
+        12.0,
+        27.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 11
+    },
+    {
+      "id": "foot_R",
+      "file": "parts/foot_R.png",
+      "bone": "foot_R",
+      "pivot": [
+        17.0,
+        9.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 12
+    }
+  ],
+  "sockets": [],
+  "hitboxes": [
+    {
+      "name": "body_hitbox",
+      "anchor": "chest",
+      "size": [
+        52,
+        80
+      ],
+      "offset": [
+        0,
+        10
+      ]
+    }
+  ]
+}

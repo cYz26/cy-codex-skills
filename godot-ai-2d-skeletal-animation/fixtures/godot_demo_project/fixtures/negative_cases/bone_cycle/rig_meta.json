@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "case_id": "bone_cycle",
+  "object_type": "custom",
+  "skeleton": {
+    "bones": [
+      {
+        "name": "a",
+        "parent": "b",
+        "position": [
+          0,
+          0
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "b",
+        "parent": "a",
+        "position": [
+          0,
+          0
+        ],
+        "rotation_degrees": 0
+      }
+    ]
+  },
+  "parts": [
+    {
+      "id": "part",
+      "file": "../_shared/parts/part.png",
+      "bone": "a",
+      "pivot": [
+        16,
+        16
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 1
+    }
+  ]
+}

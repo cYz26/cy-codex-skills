@@ -1,0 +1,310 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tools/demo_event_receiver.gd" id="1_265xp"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_02_weapon_swordsman/parts/head.png" id="2_p5f2s"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_02_weapon_swordsman/parts/hand_L.png" id="3_430cm"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_02_weapon_swordsman/parts/lower_arm_L.png" id="4_0wofn"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_02_weapon_swordsman/parts/upper_arm_L.png" id="5_ftdak"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_02_weapon_swordsman/parts/sword.png" id="6_lrxkh"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_02_weapon_swordsman/parts/hand_R.png" id="7_utv24"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_02_weapon_swordsman/parts/lower_arm_R.png" id="8_523bh"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_02_weapon_swordsman/parts/upper_arm_R.png" id="9_xcjvy"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_02_weapon_swordsman/parts/torso_armor.png" id="10_xick2"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_02_weapon_swordsman/parts/foot_L.png" id="11_ful23"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_02_weapon_swordsman/parts/lower_leg_L.png" id="12_ht6sd"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_02_weapon_swordsman/parts/upper_leg_L.png" id="13_88sb4"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_02_weapon_swordsman/parts/foot_R.png" id="14_m4roo"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_02_weapon_swordsman/parts/lower_leg_R.png" id="15_r78vf"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_02_weapon_swordsman/parts/upper_leg_R.png" id="16_q5vxn"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_02_weapon_swordsman/parts/pelvis_armor.png" id="17_kemac"]
+
+[sub_resource type="Animation" id="Animation_02e4o"]
+length = 0.8
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Skeleton2D/root/pelvis/upper_leg_L:rotation_degrees")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.4, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [-16.0, 18.0, -16.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Skeleton2D/root/pelvis/upper_leg_R:rotation_degrees")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.4, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [18.0, -16.0, 18.0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Skeleton2D/root/pelvis/spine/chest/upper_arm_R/lower_arm_R/hand_R/weapon:rotation_degrees")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.4, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [-8.0, 8.0, -8.0]
+}
+
+[sub_resource type="Animation" id="Animation_xxff3"]
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Skeleton2D/root/pelvis:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.5, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(0, 0), Vector2(0, -2), Vector2(0, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Skeleton2D/root/pelvis/spine/chest/upper_arm_R/lower_arm_R/hand_R/weapon:rotation_degrees")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.5, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [-5.0, -2.0, -5.0]
+}
+
+[sub_resource type="Animation" id="Animation_v1e05"]
+length = 0.6
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Skeleton2D/root/pelvis/spine/chest/upper_arm_R:rotation_degrees")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.16, 0.24, 0.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [-50.0, -80.0, 68.0, 8.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Skeleton2D/root/pelvis/spine/chest/upper_arm_R/lower_arm_R/hand_R/weapon:rotation_degrees")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.16, 0.24, 0.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [-70.0, -110.0, 70.0, 5.0]
+}
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.17, 0.18, 0.29),
+"transitions": PackedFloat32Array(1, 1, 1),
+"values": [{
+"args": ["slash_fx", "slash_fx_socket_R"],
+"method": &"animation_event"
+}, {
+"args": ["hitbox_on", "sword_hitbox"],
+"method": &"animation_event"
+}, {
+"args": ["hitbox_off", "sword_hitbox"],
+"method": &"animation_event"
+}]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_1qajp"]
+_data = {
+&"combat_run": SubResource("Animation_02e4o"),
+&"idle": SubResource("Animation_xxff3"),
+&"slash_attack": SubResource("Animation_v1e05")
+}
+
+[node name="case_02_weapon_swordsman" type="Node2D" unique_id=1063877811]
+script = ExtResource("1_265xp")
+
+[node name="Skeleton2D" type="Skeleton2D" parent="." unique_id=1849445265]
+
+[node name="root" type="Bone2D" parent="Skeleton2D" unique_id=1189688030]
+position = Vector2(210, 230)
+
+[node name="pelvis" type="Bone2D" parent="Skeleton2D/root" unique_id=1261571243]
+
+[node name="spine" type="Bone2D" parent="Skeleton2D/root/pelvis" unique_id=2081749628]
+position = Vector2(0, -44)
+
+[node name="chest" type="Bone2D" parent="Skeleton2D/root/pelvis/spine" unique_id=680976063]
+position = Vector2(0, -34)
+
+[node name="neck" type="Bone2D" parent="Skeleton2D/root/pelvis/spine/chest" unique_id=1115667435]
+position = Vector2(0, -20)
+
+[node name="head" type="Bone2D" parent="Skeleton2D/root/pelvis/spine/chest/neck" unique_id=2113043440]
+position = Vector2(0, -24)
+
+[node name="head" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine/chest/neck/head" unique_id=1719096818]
+z_index = 50
+position = Vector2(-21, -23)
+texture = ExtResource("2_p5f2s")
+centered = false
+
+[node name="upper_arm_L" type="Bone2D" parent="Skeleton2D/root/pelvis/spine/chest" unique_id=20175072]
+position = Vector2(-28, 0)
+
+[node name="lower_arm_L" type="Bone2D" parent="Skeleton2D/root/pelvis/spine/chest/upper_arm_L" unique_id=1012709272]
+position = Vector2(-34, 28)
+
+[node name="hand_L" type="Bone2D" parent="Skeleton2D/root/pelvis/spine/chest/upper_arm_L/lower_arm_L" unique_id=368978932]
+position = Vector2(-16, 25)
+
+[node name="hand_L" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine/chest/upper_arm_L/lower_arm_L/hand_L" unique_id=1226097789]
+z_index = 24
+position = Vector2(-10, -10)
+texture = ExtResource("3_430cm")
+centered = false
+
+[node name="lower_arm_L" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine/chest/upper_arm_L/lower_arm_L" unique_id=756843977]
+z_index = 23
+position = Vector2(-11, -23)
+texture = ExtResource("4_0wofn")
+centered = false
+
+[node name="upper_arm_L" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine/chest/upper_arm_L" unique_id=559956174]
+z_index = 22
+position = Vector2(-12, -26)
+texture = ExtResource("5_ftdak")
+centered = false
+
+[node name="upper_arm_R" type="Bone2D" parent="Skeleton2D/root/pelvis/spine/chest" unique_id=1173467547]
+position = Vector2(30, 0)
+
+[node name="lower_arm_R" type="Bone2D" parent="Skeleton2D/root/pelvis/spine/chest/upper_arm_R" unique_id=198469028]
+position = Vector2(38, 24)
+
+[node name="hand_R" type="Bone2D" parent="Skeleton2D/root/pelvis/spine/chest/upper_arm_R/lower_arm_R" unique_id=1752840964]
+position = Vector2(22, 22)
+
+[node name="weapon" type="Bone2D" parent="Skeleton2D/root/pelvis/spine/chest/upper_arm_R/lower_arm_R/hand_R" unique_id=1044620500]
+position = Vector2(45, 0)
+
+[node name="sword" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine/chest/upper_arm_R/lower_arm_R/hand_R/weapon" unique_id=1430397645]
+z_index = 60
+position = Vector2(-46, -7)
+texture = ExtResource("6_lrxkh")
+centered = false
+
+[node name="slash_fx_socket_R" type="Marker2D" parent="Skeleton2D/root/pelvis/spine/chest/upper_arm_R/lower_arm_R/hand_R/weapon" unique_id=673707426]
+position = Vector2(80, 0)
+
+[node name="hand_R" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine/chest/upper_arm_R/lower_arm_R/hand_R" unique_id=42388449]
+z_index = 24
+position = Vector2(-10, -10)
+texture = ExtResource("7_utv24")
+centered = false
+
+[node name="weapon_socket_R" type="Marker2D" parent="Skeleton2D/root/pelvis/spine/chest/upper_arm_R/lower_arm_R/hand_R" unique_id=1191404725]
+position = Vector2(18, 0)
+
+[node name="lower_arm_R" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine/chest/upper_arm_R/lower_arm_R" unique_id=984196349]
+z_index = 23
+position = Vector2(-11, -23)
+texture = ExtResource("8_523bh")
+centered = false
+
+[node name="upper_arm_R" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine/chest/upper_arm_R" unique_id=1015422562]
+z_index = 22
+position = Vector2(-12, -26)
+texture = ExtResource("9_xcjvy")
+centered = false
+
+[node name="torso_armor" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine/chest" unique_id=410380940]
+z_index = 20
+position = Vector2(-29, -38)
+texture = ExtResource("10_xick2")
+centered = false
+
+[node name="upper_leg_L" type="Bone2D" parent="Skeleton2D/root/pelvis" unique_id=1326819946]
+position = Vector2(-14, 16)
+
+[node name="lower_leg_L" type="Bone2D" parent="Skeleton2D/root/pelvis/upper_leg_L" unique_id=1030103510]
+position = Vector2(-8, 48)
+
+[node name="foot_L" type="Bone2D" parent="Skeleton2D/root/pelvis/upper_leg_L/lower_leg_L" unique_id=1306745029]
+position = Vector2(-4, 44)
+
+[node name="foot_L" type="Sprite2D" parent="Skeleton2D/root/pelvis/upper_leg_L/lower_leg_L/foot_L" unique_id=689324087]
+z_index = 12
+position = Vector2(-17, -9)
+texture = ExtResource("11_ful23")
+centered = false
+
+[node name="lower_leg_L" type="Sprite2D" parent="Skeleton2D/root/pelvis/upper_leg_L/lower_leg_L" unique_id=2082231931]
+z_index = 11
+position = Vector2(-12, -27)
+texture = ExtResource("12_ht6sd")
+centered = false
+
+[node name="upper_leg_L" type="Sprite2D" parent="Skeleton2D/root/pelvis/upper_leg_L" unique_id=1737413443]
+z_index = 10
+position = Vector2(-13, -29)
+texture = ExtResource("13_88sb4")
+centered = false
+
+[node name="upper_leg_R" type="Bone2D" parent="Skeleton2D/root/pelvis" unique_id=308371697]
+position = Vector2(14, 16)
+
+[node name="lower_leg_R" type="Bone2D" parent="Skeleton2D/root/pelvis/upper_leg_R" unique_id=1833426124]
+position = Vector2(8, 48)
+
+[node name="foot_R" type="Bone2D" parent="Skeleton2D/root/pelvis/upper_leg_R/lower_leg_R" unique_id=565216852]
+position = Vector2(4, 44)
+
+[node name="foot_R" type="Sprite2D" parent="Skeleton2D/root/pelvis/upper_leg_R/lower_leg_R/foot_R" unique_id=611678223]
+z_index = 12
+position = Vector2(-17, -9)
+texture = ExtResource("14_m4roo")
+centered = false
+
+[node name="lower_leg_R" type="Sprite2D" parent="Skeleton2D/root/pelvis/upper_leg_R/lower_leg_R" unique_id=1925959672]
+z_index = 11
+position = Vector2(-12, -27)
+texture = ExtResource("15_r78vf")
+centered = false
+
+[node name="upper_leg_R" type="Sprite2D" parent="Skeleton2D/root/pelvis/upper_leg_R" unique_id=1213490838]
+z_index = 10
+position = Vector2(-13, -29)
+texture = ExtResource("16_q5vxn")
+centered = false
+
+[node name="pelvis_armor" type="Sprite2D" parent="Skeleton2D/root/pelvis" unique_id=668235172]
+z_index = 18
+position = Vector2(-24, -18)
+texture = ExtResource("17_kemac")
+centered = false
+
+[node name="Hitboxes" type="Node2D" parent="." unique_id=869156205]
+
+[node name="sword_hitbox" type="Marker2D" parent="Hitboxes" unique_id=228275751]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=966968146]
+libraries/ = SubResource("AnimationLibrary_1qajp")

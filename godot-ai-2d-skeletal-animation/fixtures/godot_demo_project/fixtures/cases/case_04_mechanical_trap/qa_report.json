@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "case_id": "case_04_mechanical_trap",
+  "summary": {
+    "critical": 0,
+    "warning": 0,
+    "info": 6
+  },
+  "checks": [
+    {
+      "severity": "info",
+      "message": "rig metadata validation passed",
+      "path": "fixtures/godot_demo_project/fixtures/cases/case_04_mechanical_trap/rig_meta.json"
+    },
+    {
+      "severity": "info",
+      "message": "motion validation passed",
+      "path": "fixtures/godot_demo_project/fixtures/cases/case_04_mechanical_trap/motions/action.json"
+    },
+    {
+      "severity": "info",
+      "message": "motion validation passed",
+      "path": "fixtures/godot_demo_project/fixtures/cases/case_04_mechanical_trap/motions/idle.json"
+    },
+    {
+      "severity": "info",
+      "message": "motion validation passed",
+      "path": "fixtures/godot_demo_project/fixtures/cases/case_04_mechanical_trap/motions/move.json"
+    },
+    {
+      "severity": "info",
+      "message": "generated Godot scene exists",
+      "path": "fixtures/godot_demo_project/fixtures/cases/case_04_mechanical_trap/generated/case_04_mechanical_trap.tscn"
+    },
+    {
+      "severity": "info",
+      "message": "preview artifact exists",
+      "path": "fixtures/godot_demo_project/fixtures/cases/case_04_mechanical_trap/generated/preview.png"
+    }
+  ],
+  "artifacts": {
+    "scene": "generated/case_04_mechanical_trap.tscn",
+    "preview": "generated/preview.png"
+  }
+}

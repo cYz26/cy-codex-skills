@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0",
+  "case_id": "case_02_weapon_swordsman",
+  "animation": "slash_attack",
+  "category": "action",
+  "length": 0.6,
+  "loop": false,
+  "tracks": [
+    {
+      "target": "bone",
+      "name": "upper_arm_R",
+      "property": "rotation_degrees",
+      "keys": [
+        {
+          "time": 0,
+          "value": -50
+        },
+        {
+          "time": 0.16,
+          "value": -80
+        },
+        {
+          "time": 0.24,
+          "value": 68
+        },
+        {
+          "time": 0.6,
+          "value": 8
+        }
+      ]
+    },
+    {
+      "target": "bone",
+      "name": "weapon",
+      "property": "rotation_degrees",
+      "keys": [
+        {
+          "time": 0,
+          "value": -70
+        },
+        {
+          "time": 0.16,
+          "value": -110
+        },
+        {
+          "time": 0.24,
+          "value": 70
+        },
+        {
+          "time": 0.6,
+          "value": 5
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "time": 0.17,
+      "name": "slash_fx",
+      "target": "slash_fx_socket_R"
+    },
+    {
+      "time": 0.18,
+      "name": "hitbox_on",
+      "target": "sword_hitbox"
+    },
+    {
+      "time": 0.29,
+      "name": "hitbox_off",
+      "target": "sword_hitbox"
+    }
+  ]
+}

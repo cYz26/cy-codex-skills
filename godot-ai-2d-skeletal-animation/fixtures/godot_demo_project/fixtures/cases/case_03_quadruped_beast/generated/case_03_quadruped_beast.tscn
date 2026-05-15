@@ -1,0 +1,357 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tools/demo_event_receiver.gd" id="1_oqn27"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/jaw.png" id="2_vtve3"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/head.png" id="3_3wkc0"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/neck.png" id="4_gthbl"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/front_paw_L.png" id="5_l35vo"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/front_lower_leg_L.png" id="6_xkh3f"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/front_upper_leg_L.png" id="7_r6hwc"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/front_paw_R.png" id="8_ski5i"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/front_lower_leg_R.png" id="9_1em5b"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/front_upper_leg_R.png" id="10_8ow20"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/chest.png" id="11_3w1d6"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/body.png" id="12_hyxut"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/tail_tip.png" id="13_2t30b"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/tail_mid.png" id="14_uwnam"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/tail_base.png" id="15_ucpda"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/rear_paw_L.png" id="16_jpaf7"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/rear_lower_leg_L.png" id="17_ccg2r"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/rear_upper_leg_L.png" id="18_v1thh"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/rear_paw_R.png" id="19_638o5"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/rear_lower_leg_R.png" id="20_wlssf"]
+[ext_resource type="Texture2D" path="res://fixtures/cases/case_03_quadruped_beast/parts/rear_upper_leg_R.png" id="21_71gcu"]
+
+[sub_resource type="Animation" id="Animation_o8kut"]
+length = 0.65
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Skeleton2D/root/pelvis/spine_01/spine_02/chest/neck:rotation_degrees")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.18, 0.28, 0.65),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [-4.0, -16.0, 14.0, 0.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Skeleton2D/root/pelvis/spine_01/spine_02/chest/neck/head/jaw:rotation_degrees")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.18, 0.28, 0.65),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [0.0, 22.0, -8.0, 0.0]
+}
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.24, 0.36),
+"transitions": PackedFloat32Array(1, 1),
+"values": [{
+"args": ["hitbox_on", "bite_hitbox"],
+"method": &"animation_event"
+}, {
+"args": ["hitbox_off", "bite_hitbox"],
+"method": &"animation_event"
+}]
+}
+
+[sub_resource type="Animation" id="Animation_e51bv"]
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Skeleton2D/root:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.5, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(205, 210), Vector2(205, 207), Vector2(205, 210)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Skeleton2D/root/pelvis/tail_01/tail_02:rotation_degrees")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.5, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 8.0, 0.0]
+}
+
+[sub_resource type="Animation" id="Animation_vyteo"]
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Skeleton2D/root/pelvis/spine_01/spine_02/chest/front_upper_leg_L:rotation_degrees")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.5, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [-15.0, 16.0, -15.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Skeleton2D/root/pelvis/spine_01/spine_02/chest/front_upper_leg_R:rotation_degrees")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.5, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [16.0, -15.0, 16.0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Skeleton2D/root/pelvis/rear_upper_leg_L:rotation_degrees")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.5, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [16.0, -15.0, 16.0]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Skeleton2D/root/pelvis/rear_upper_leg_R:rotation_degrees")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.5, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [-15.0, 16.0, -15.0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_xlxv7"]
+_data = {
+&"bite_attack": SubResource("Animation_o8kut"),
+&"idle": SubResource("Animation_e51bv"),
+&"walk": SubResource("Animation_vyteo")
+}
+
+[node name="case_03_quadruped_beast" type="Node2D" unique_id=572388519]
+script = ExtResource("1_oqn27")
+
+[node name="Skeleton2D" type="Skeleton2D" parent="." unique_id=2083865348]
+
+[node name="root" type="Bone2D" parent="Skeleton2D" unique_id=1346727785]
+position = Vector2(205, 210)
+
+[node name="pelvis" type="Bone2D" parent="Skeleton2D/root" unique_id=1994874721]
+position = Vector2(-50, 0)
+
+[node name="spine_01" type="Bone2D" parent="Skeleton2D/root/pelvis" unique_id=186883213]
+position = Vector2(45, -8)
+
+[node name="spine_02" type="Bone2D" parent="Skeleton2D/root/pelvis/spine_01" unique_id=1127160755]
+position = Vector2(50, 2)
+
+[node name="chest" type="Bone2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02" unique_id=236378238]
+position = Vector2(45, -8)
+
+[node name="neck" type="Bone2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest" unique_id=1298633471]
+position = Vector2(34, -20)
+
+[node name="head" type="Bone2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest/neck" unique_id=1476417687]
+position = Vector2(38, -10)
+
+[node name="jaw" type="Bone2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest/neck/head" unique_id=657331080]
+position = Vector2(18, 18)
+
+[node name="jaw" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest/neck/head/jaw" unique_id=1103652075]
+z_index = 31
+position = Vector2(-17, -9)
+texture = ExtResource("2_vtve3")
+centered = false
+
+[node name="bite_hitbox_anchor" type="Marker2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest/neck/head/jaw" unique_id=1611660501]
+position = Vector2(18, 0)
+
+[node name="head" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest/neck/head" unique_id=1111089753]
+z_index = 30
+position = Vector2(-29, -21)
+texture = ExtResource("3_3wkc0")
+centered = false
+
+[node name="neck" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest/neck" unique_id=471374346]
+z_index = 22
+position = Vector2(-26, -14)
+texture = ExtResource("4_gthbl")
+centered = false
+
+[node name="front_upper_leg_L" type="Bone2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest" unique_id=1058223803]
+position = Vector2(10, 34)
+
+[node name="front_lower_leg_L" type="Bone2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest/front_upper_leg_L" unique_id=84903176]
+position = Vector2(6, 36)
+
+[node name="front_paw_L" type="Bone2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest/front_upper_leg_L/front_lower_leg_L" unique_id=970609788]
+position = Vector2(10, 32)
+
+[node name="front_paw_L" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest/front_upper_leg_L/front_lower_leg_L/front_paw_L" unique_id=2084916311]
+z_index = 14
+position = Vector2(-17, -8)
+texture = ExtResource("5_l35vo")
+centered = false
+
+[node name="front_lower_leg_L" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest/front_upper_leg_L/front_lower_leg_L" unique_id=1678034998]
+z_index = 13
+position = Vector2(-10, -20)
+texture = ExtResource("6_xkh3f")
+centered = false
+
+[node name="front_upper_leg_L" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest/front_upper_leg_L" unique_id=708442535]
+z_index = 12
+position = Vector2(-11, -23)
+texture = ExtResource("7_r6hwc")
+centered = false
+
+[node name="front_upper_leg_R" type="Bone2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest" unique_id=1814009645]
+position = Vector2(34, 34)
+
+[node name="front_lower_leg_R" type="Bone2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest/front_upper_leg_R" unique_id=1853262926]
+position = Vector2(6, 36)
+
+[node name="front_paw_R" type="Bone2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest/front_upper_leg_R/front_lower_leg_R" unique_id=13885841]
+position = Vector2(10, 32)
+
+[node name="front_paw_R" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest/front_upper_leg_R/front_lower_leg_R/front_paw_R" unique_id=2137369530]
+z_index = 14
+position = Vector2(-17, -8)
+texture = ExtResource("8_ski5i")
+centered = false
+
+[node name="front_lower_leg_R" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest/front_upper_leg_R/front_lower_leg_R" unique_id=2061516629]
+z_index = 13
+position = Vector2(-10, -20)
+texture = ExtResource("9_1em5b")
+centered = false
+
+[node name="front_upper_leg_R" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest/front_upper_leg_R" unique_id=1657812243]
+z_index = 12
+position = Vector2(-11, -23)
+texture = ExtResource("10_8ow20")
+centered = false
+
+[node name="chest" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine_01/spine_02/chest" unique_id=986596303]
+z_index = 21
+position = Vector2(-29, -27)
+texture = ExtResource("11_3w1d6")
+centered = false
+
+[node name="body" type="Sprite2D" parent="Skeleton2D/root/pelvis/spine_01" unique_id=1390000779]
+z_index = 20
+position = Vector2(-60, -29)
+texture = ExtResource("12_hyxut")
+centered = false
+
+[node name="tail_01" type="Bone2D" parent="Skeleton2D/root/pelvis" unique_id=2044739262]
+position = Vector2(-42, -4)
+
+[node name="tail_02" type="Bone2D" parent="Skeleton2D/root/pelvis/tail_01" unique_id=887986231]
+position = Vector2(-36, -2)
+
+[node name="tail_03" type="Bone2D" parent="Skeleton2D/root/pelvis/tail_01/tail_02" unique_id=656181200]
+position = Vector2(-30, 0)
+
+[node name="tail_tip" type="Sprite2D" parent="Skeleton2D/root/pelvis/tail_01/tail_02/tail_03" unique_id=1550714983]
+z_index = 10
+position = Vector2(-17, -8)
+texture = ExtResource("13_2t30b")
+centered = false
+
+[node name="tail_mid" type="Sprite2D" parent="Skeleton2D/root/pelvis/tail_01/tail_02" unique_id=611992382]
+z_index = 10
+position = Vector2(-22, -9)
+texture = ExtResource("14_uwnam")
+centered = false
+
+[node name="tail_base" type="Sprite2D" parent="Skeleton2D/root/pelvis/tail_01" unique_id=70049106]
+z_index = 10
+position = Vector2(-25, -10)
+texture = ExtResource("15_ucpda")
+centered = false
+
+[node name="rear_upper_leg_L" type="Bone2D" parent="Skeleton2D/root/pelvis" unique_id=312734364]
+position = Vector2(-14, 34)
+
+[node name="rear_lower_leg_L" type="Bone2D" parent="Skeleton2D/root/pelvis/rear_upper_leg_L" unique_id=540916069]
+position = Vector2(6, 38)
+
+[node name="rear_paw_L" type="Bone2D" parent="Skeleton2D/root/pelvis/rear_upper_leg_L/rear_lower_leg_L" unique_id=1378674308]
+position = Vector2(10, 32)
+
+[node name="rear_paw_L" type="Sprite2D" parent="Skeleton2D/root/pelvis/rear_upper_leg_L/rear_lower_leg_L/rear_paw_L" unique_id=178301646]
+z_index = 14
+position = Vector2(-17, -8)
+texture = ExtResource("16_jpaf7")
+centered = false
+
+[node name="rear_lower_leg_L" type="Sprite2D" parent="Skeleton2D/root/pelvis/rear_upper_leg_L/rear_lower_leg_L" unique_id=651512418]
+z_index = 13
+position = Vector2(-10, -21)
+texture = ExtResource("17_ccg2r")
+centered = false
+
+[node name="rear_upper_leg_L" type="Sprite2D" parent="Skeleton2D/root/pelvis/rear_upper_leg_L" unique_id=1887223855]
+z_index = 12
+position = Vector2(-12, -25)
+texture = ExtResource("18_v1thh")
+centered = false
+
+[node name="rear_upper_leg_R" type="Bone2D" parent="Skeleton2D/root/pelvis" unique_id=1438466746]
+position = Vector2(12, 34)
+
+[node name="rear_lower_leg_R" type="Bone2D" parent="Skeleton2D/root/pelvis/rear_upper_leg_R" unique_id=1283467852]
+position = Vector2(6, 38)
+
+[node name="rear_paw_R" type="Bone2D" parent="Skeleton2D/root/pelvis/rear_upper_leg_R/rear_lower_leg_R" unique_id=990226913]
+position = Vector2(10, 32)
+
+[node name="rear_paw_R" type="Sprite2D" parent="Skeleton2D/root/pelvis/rear_upper_leg_R/rear_lower_leg_R/rear_paw_R" unique_id=650790775]
+z_index = 14
+position = Vector2(-17, -8)
+texture = ExtResource("19_638o5")
+centered = false
+
+[node name="rear_lower_leg_R" type="Sprite2D" parent="Skeleton2D/root/pelvis/rear_upper_leg_R/rear_lower_leg_R" unique_id=763778323]
+z_index = 13
+position = Vector2(-10, -21)
+texture = ExtResource("20_wlssf")
+centered = false
+
+[node name="rear_upper_leg_R" type="Sprite2D" parent="Skeleton2D/root/pelvis/rear_upper_leg_R" unique_id=1642854923]
+z_index = 12
+position = Vector2(-12, -25)
+texture = ExtResource("21_71gcu")
+centered = false
+
+[node name="Hitboxes" type="Node2D" parent="." unique_id=266958722]
+
+[node name="bite_hitbox" type="Marker2D" parent="Hitboxes" unique_id=1910115512]
+position = Vector2(10, 0)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1760182695]
+libraries/ = SubResource("AnimationLibrary_xlxv7")

@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "case_id": "case_01_humanoid_adventurer",
+  "summary": {
+    "critical": 0,
+    "warning": 0,
+    "info": 6
+  },
+  "checks": [
+    {
+      "severity": "info",
+      "message": "rig metadata validation passed",
+      "path": "fixtures/godot_demo_project/fixtures/cases/case_01_humanoid_adventurer/rig_meta.json"
+    },
+    {
+      "severity": "info",
+      "message": "motion validation passed",
+      "path": "fixtures/godot_demo_project/fixtures/cases/case_01_humanoid_adventurer/motions/action.json"
+    },
+    {
+      "severity": "info",
+      "message": "motion validation passed",
+      "path": "fixtures/godot_demo_project/fixtures/cases/case_01_humanoid_adventurer/motions/idle.json"
+    },
+    {
+      "severity": "info",
+      "message": "motion validation passed",
+      "path": "fixtures/godot_demo_project/fixtures/cases/case_01_humanoid_adventurer/motions/move.json"
+    },
+    {
+      "severity": "info",
+      "message": "generated Godot scene exists",
+      "path": "fixtures/godot_demo_project/fixtures/cases/case_01_humanoid_adventurer/generated/case_01_humanoid_adventurer.tscn"
+    },
+    {
+      "severity": "info",
+      "message": "preview artifact exists",
+      "path": "fixtures/godot_demo_project/fixtures/cases/case_01_humanoid_adventurer/generated/preview.png"
+    }
+  ],
+  "artifacts": {
+    "scene": "generated/case_01_humanoid_adventurer.tscn",
+    "preview": "generated/preview.png"
+  }
+}

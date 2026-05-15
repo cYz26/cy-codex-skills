@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.0",
+  "case_id": "case_04_mechanical_trap",
+  "animation": "trigger",
+  "category": "action",
+  "length": 0.75,
+  "loop": false,
+  "tracks": [
+    {
+      "target": "bone",
+      "name": "swing_arm",
+      "property": "rotation_degrees",
+      "keys": [
+        {
+          "time": 0,
+          "value": -35
+        },
+        {
+          "time": 0.16,
+          "value": -55
+        },
+        {
+          "time": 0.32,
+          "value": 58
+        },
+        {
+          "time": 0.75,
+          "value": -20
+        }
+      ]
+    },
+    {
+      "target": "bone",
+      "name": "gear_main",
+      "property": "rotation_degrees",
+      "keys": [
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 0.32,
+          "value": 180
+        },
+        {
+          "time": 0.75,
+          "value": 360
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "time": 0.26,
+      "name": "hazard_on",
+      "target": "axe_hazard"
+    },
+    {
+      "time": 0.46,
+      "name": "hazard_off",
+      "target": "axe_hazard"
+    }
+  ]
+}

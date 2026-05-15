@@ -1,0 +1,192 @@
+{
+  "schema_version": "1.0",
+  "case_id": "case_04_mechanical_trap",
+  "object_type": "mechanical",
+  "skeleton": {
+    "bones": [
+      {
+        "name": "root",
+        "parent": null,
+        "position": [
+          210,
+          230
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "base",
+        "parent": "root",
+        "position": [
+          0,
+          0
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "hinge",
+        "parent": "base",
+        "position": [
+          0,
+          -72
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "swing_arm",
+        "parent": "hinge",
+        "position": [
+          0,
+          0
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "blade",
+        "parent": "swing_arm",
+        "position": [
+          0,
+          78
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "gear_main",
+        "parent": "base",
+        "position": [
+          -46,
+          -38
+        ],
+        "rotation_degrees": 0
+      },
+      {
+        "name": "pressure_plate",
+        "parent": "base",
+        "position": [
+          82,
+          12
+        ],
+        "rotation_degrees": 0
+      }
+    ]
+  },
+  "parts": [
+    {
+      "id": "stone_base",
+      "file": "parts/stone_base.png",
+      "bone": "base",
+      "pivot": [
+        60.0,
+        19.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 1
+    },
+    {
+      "id": "hinge_cap",
+      "file": "parts/hinge_cap.png",
+      "bone": "hinge",
+      "pivot": [
+        19.0,
+        19.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 30
+    },
+    {
+      "id": "swing_arm",
+      "file": "parts/swing_arm.png",
+      "bone": "swing_arm",
+      "pivot": [
+        9.0,
+        55.0
+      ],
+      "offset": [
+        0,
+        50
+      ],
+      "z_index": 20
+    },
+    {
+      "id": "axe_blade",
+      "file": "parts/axe_blade.png",
+      "bone": "blade",
+      "pivot": [
+        38.0,
+        25.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 35
+    },
+    {
+      "id": "gear_main",
+      "file": "parts/gear_main.png",
+      "bone": "gear_main",
+      "pivot": [
+        24.0,
+        24.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 10
+    },
+    {
+      "id": "pressure_plate",
+      "file": "parts/pressure_plate.png",
+      "bone": "pressure_plate",
+      "pivot": [
+        36.0,
+        9.0
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "z_index": 5
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hazard_hitbox_anchor",
+      "bone": "blade",
+      "local_position": [
+        0,
+        0
+      ],
+      "local_rotation_degrees": 0
+    },
+    {
+      "name": "trigger_area_anchor",
+      "bone": "pressure_plate",
+      "local_position": [
+        0,
+        0
+      ],
+      "local_rotation_degrees": 0
+    }
+  ],
+  "hitboxes": [
+    {
+      "name": "axe_hazard",
+      "anchor": "hazard_hitbox_anchor",
+      "size": [
+        84,
+        56
+      ],
+      "offset": [
+        0,
+        0
+      ]
+    }
+  ]
+}
