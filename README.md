@@ -26,6 +26,12 @@ Mirror of the non-system Codex skills currently loaded from `~/.codex/skills`, p
 - `spec-workflow`
 - `uninstall-claude-code`
 
+## Development plugins
+
+Development-stage Codex plugins live under `dev/plugins/`.
+
+- `dev/plugins/codex-project-orchestrator`
+
 ## Restore on another machine
 
 Clone this repo, then copy or symlink each skill directory into `~/.codex/skills/`, and restart Codex.

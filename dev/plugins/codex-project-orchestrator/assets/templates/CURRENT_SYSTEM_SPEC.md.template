@@ -1,0 +1,13 @@
+# Current System Specification
+
+## Current Behavior
+
+This brownfield specification is a starting draft generated from repository inspection. Confirm it before using it as the source of truth.
+
+## Detected Commands
+
+{{commands}}
+
+## Detected Source Areas
+
+{{source_areas}}

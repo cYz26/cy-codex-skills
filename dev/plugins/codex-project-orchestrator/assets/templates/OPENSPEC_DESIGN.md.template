@@ -1,0 +1,17 @@
+# Design: {{title}}
+
+## Approach
+
+Use the smallest compatible implementation that satisfies the requirements and preserves existing project conventions.
+
+## Data Flow
+
+Document concrete data flow before implementation when this change touches persistence, APIs, integrations, or cross-module behavior.
+
+## Compatibility
+
+Do not introduce breaking behavior without explicit approval.
+
+## Testing
+
+Add or update tests before implementation for behavior changes. Record verification evidence before archive.

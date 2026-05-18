@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "test": "node --test",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "typescript": "^5.0.0"
+  }
+}
