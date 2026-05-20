@@ -106,6 +106,17 @@ Run workflow doctor:
 python3 scripts/doctor_workflow.py --repo /path/to/repo --write-report --json
 ```
 
+Maintain local Codex plugins and skills:
+
+```bash
+python3 scripts/codex_auto_update_plugins_skills.py --apply --json
+```
+
+Dry-run mode omits `--apply`. The updater refreshes clean Git mirrors,
+OpenAI curated plugin caches, OpenAI curated skills, and known external
+tooling such as Agent Reach, Lark, GSD, and OpenSpec. It skips local copies
+that differ from their previous upstream mirror instead of overwriting them.
+
 ## Safety
 
 - Existing `AGENTS.md` is not overwritten by default. The scaffold writes `AGENTS.md.generated` instead.
