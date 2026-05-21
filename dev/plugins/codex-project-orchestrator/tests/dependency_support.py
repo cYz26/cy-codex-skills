@@ -9,6 +9,9 @@ PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 MARKETPLACE = next(
     path for path in [PLUGIN_ROOT, *PLUGIN_ROOT.parents] if (path / ".agents" / "plugins" / "marketplace.json").exists()
 ) / ".agents" / "plugins" / "marketplace.json"
+REPO_ROOT = MARKETPLACE.parents[2]
+DEV_MARKETPLACE = REPO_ROOT / ".agents" / "plugins" / "marketplace.dev.json"
+RELEASE_PLUGIN_ROOT = REPO_ROOT / "plugins" / "codex-project-orchestrator"
 
 
 def run_json(name, *args):
@@ -93,6 +96,7 @@ class DependencyFixtureMixin:
                     "verify-and-archive",
                     "workflow-doctor",
                     "checkpoint-compact",
+                    "context-tool-audit",
                 ]
             )
         for skill in skills:

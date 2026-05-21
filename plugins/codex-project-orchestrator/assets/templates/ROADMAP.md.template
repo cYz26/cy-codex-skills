@@ -1,0 +1,13 @@
+# Roadmap
+
+Project mode: {{project_mode}}
+
+## Current Phase
+
+- `01-foundation`: initialize workflow, establish baseline commands, and plan the first safe change.
+
+## Next Milestones
+
+- Confirm MVP or current-system scope.
+- Complete active OpenSpec change planning.
+- Establish repeatable verification commands.

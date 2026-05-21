@@ -13,6 +13,15 @@ FIXTURES = PLUGIN_ROOT / "fixtures"
 MARKETPLACE = next(
     path for path in [PLUGIN_ROOT, *PLUGIN_ROOT.parents] if (path / ".agents" / "plugins" / "marketplace.json").exists()
 ) / ".agents" / "plugins" / "marketplace.json"
+REPO_ROOT = MARKETPLACE.parents[2]
+DEV_MARKETPLACE = REPO_ROOT / ".agents" / "plugins" / "marketplace.dev.json"
+RELEASE_PLUGIN_ROOT = REPO_ROOT / "plugins" / "codex-project-orchestrator"
+
+
+def registered_plugin_path(marketplace_path, plugin_name):
+    marketplace = json.loads(marketplace_path.read_text())
+    entry = next(item for item in marketplace["plugins"] if item["name"] == plugin_name)
+    return (marketplace_path.parents[2] / entry["source"]["path"]).resolve(), entry
 
 
 def run_script(name, *args, input_text=None, cwd=PLUGIN_ROOT):
@@ -73,11 +82,18 @@ class ProjectOrchestratorTests(unittest.TestCase):
         self.assertTrue((PLUGIN_ROOT / manifest["interface"]["composerIcon"]).exists())
         self.assertTrue((PLUGIN_ROOT / "hooks.json").exists())
 
-        marketplace = json.loads(MARKETPLACE.read_text())
-        entry = next(item for item in marketplace["plugins"] if item["name"] == "codex-project-orchestrator")
-        marketplace_root = MARKETPLACE.parents[2]
-        self.assertEqual((marketplace_root / entry["source"]["path"]).resolve(), PLUGIN_ROOT.resolve())
+        release_path, entry = registered_plugin_path(MARKETPLACE, "codex-project-orchestrator")
+        self.assertEqual(release_path, RELEASE_PLUGIN_ROOT.resolve())
         self.assertEqual(entry["category"], "Coding")
+        self.assertTrue((RELEASE_PLUGIN_ROOT / ".codex-plugin" / "plugin.json").exists())
+        self.assertTrue((RELEASE_PLUGIN_ROOT / "hooks.json").exists())
+        self.assertFalse((RELEASE_PLUGIN_ROOT / "tests").exists())
+        self.assertFalse((RELEASE_PLUGIN_ROOT / "fixtures").exists())
+        self.assertFalse((RELEASE_PLUGIN_ROOT / "log").exists())
+
+        dev_path, dev_entry = registered_plugin_path(DEV_MARKETPLACE, "codex-project-orchestrator")
+        self.assertEqual(dev_path, PLUGIN_ROOT.resolve())
+        self.assertEqual(dev_entry["category"], "Coding")
 
     def test_all_expected_skills_have_codex_frontmatter(self):
         expected = {
@@ -89,6 +105,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
             "execute-task",
             "verify-and-archive",
             "workflow-doctor",
+            "context-tool-audit",
         }
         self.assertEqual({path.name for path in (PLUGIN_ROOT / "skills").iterdir() if path.is_dir()}, expected)
         for skill in expected:
@@ -189,6 +206,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
                 "gsd-verify-work",
                 "superpowers:test-driven-development",
             ],
+            "project-setup": ["audit_context_tools.py", "context-tool-audit"],
             "feature-intake": [
                 "superpowers:brainstorming",
                 "superpowers:writing-plans",
@@ -210,6 +228,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
                 "openspec-archive-change",
             ],
             "workflow-doctor": ["gsd-progress", "openspec-explore"],
+            "context-tool-audit": ["audit_context_tools.py", "apply_context_tool_actions.py"],
         }
         for skill, names in expectations.items():
             text = (PLUGIN_ROOT / "skills" / skill / "SKILL.md").read_text()

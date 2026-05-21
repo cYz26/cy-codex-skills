@@ -11,17 +11,25 @@ It combines:
 
 ## Install
 
-This plugin is registered in:
+The release plugin is registered in:
 
 ```bash
-/Users/cy/Dev/agents-dev/.agents/plugins/marketplace.json
+/path/to/cy-codex-skills/.agents/plugins/marketplace.json
 ```
 
-The plugin root is:
+The release plugin root is:
 
 ```bash
-/Users/cy/Dev/agents-dev/plugins/codex-project-orchestrator
+/path/to/cy-codex-skills/plugins/codex-project-orchestrator
 ```
+
+The development plugin root is:
+
+```bash
+/path/to/cy-codex-skills/dev/plugins/codex-project-orchestrator
+```
+
+Use `.agents/plugins/marketplace.dev.json` when local testing needs the development copy.
 
 ## Usage
 
@@ -29,7 +37,7 @@ Check required dependencies before use:
 
 ```bash
 python3 scripts/check_dependencies.py \
-  --plugin-root /Users/cy/Dev/agents-dev/plugins/codex-project-orchestrator \
+  --plugin-root /path/to/cy-codex-skills/plugins/codex-project-orchestrator \
   --repo /path/to/repo \
   --json
 ```
@@ -68,6 +76,42 @@ After activation, open or reload Codex from the target repo so the project-local
 Recommended for development:
 
 - `plugin-eval@openai-curated` enabled, with `evaluate-plugin`
+
+## Context Tool Audit
+
+As a skill, invoke `context-tool-audit` when you want Codex to run the audit workflow, explain the report, and ask before applying selected actions.
+
+Audit globally enabled plugins, global skills, project-local skills, installed plugin-cache skills, and project-relevant tool recommendations:
+
+```bash
+/opt/homebrew/bin/python3.11 scripts/audit_context_tools.py \
+  --repo /path/to/repo \
+  --codex-home /path/to/codex-home \
+  --json > audit-report.json
+```
+
+The report is read-only. It includes `findings`, `recommendations`, and stable `actions` that can be reviewed before anything changes.
+
+Preview selected actions without changing files:
+
+```bash
+/opt/homebrew/bin/python3.11 scripts/apply_context_tool_actions.py \
+  --plan audit-report.json \
+  --action disable-global-plugin-superpowers-openai-curated \
+  --json
+```
+
+Apply selected actions after review:
+
+```bash
+/opt/homebrew/bin/python3.11 scripts/apply_context_tool_actions.py \
+  --plan audit-report.json \
+  --action disable-global-plugin-superpowers-openai-curated \
+  --apply \
+  --json
+```
+
+Apply operations create timestamped backups before editing `config.toml`. First-version cleanup disables global config entries or installs known cached skills into the project; it does not delete global skill files or plugin cache directories.
 
 Set up a repository:
 
@@ -201,14 +245,17 @@ Compaction is never a substitute for durable state files.
 Run tests:
 
 ```bash
-python3 -m unittest discover -s /Users/cy/Dev/agents-dev/plugins/codex-project-orchestrator/tests
+python3 -m unittest discover -s /path/to/cy-codex-skills/dev/plugins/codex-project-orchestrator/tests
 ```
 
-Run preflight:
+Run release preflight:
 
 ```bash
-python3 /Users/cy/Dev/agents-dev/plugins/codex-project-orchestrator/scripts/codex_plugin_preflight.py \
-  --plugin-root /Users/cy/Dev/agents-dev/plugins/codex-project-orchestrator \
-  --marketplace /Users/cy/Dev/agents-dev/.agents/plugins/marketplace.json \
+python3 /path/to/cy-codex-skills/plugins/codex-project-orchestrator/scripts/codex_plugin_preflight.py \
+  --plugin-root /path/to/cy-codex-skills/plugins/codex-project-orchestrator \
+  --marketplace /path/to/cy-codex-skills/.agents/plugins/marketplace.json \
+  --repo /path/to/repo \
+  --codex-home /path/to/codex-home \
+  --config /path/to/codex-home/config.toml \
   --json
 ```

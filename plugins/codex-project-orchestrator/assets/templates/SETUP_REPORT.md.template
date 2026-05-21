@@ -1,0 +1,23 @@
+# Setup Report
+
+## Project Mode
+
+Detected mode: `{{project_mode}}`
+
+Recommended flow: `{{recommended_flow}}`
+
+## Written
+
+{{written}}
+
+## Skipped
+
+{{skipped}}
+
+## Risks
+
+{{risks}}
+
+## Next Action
+
+{{next_action}}

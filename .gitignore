@@ -1,2 +1,11 @@
 .DS_Store
 plugins/godot-core/evals/artifacts/
+.release/
+**/__pycache__/
+**/*.py[cod]
+**/*.egg-info/
+dev/log/
+dev/plugins/*/log/
+dev/skills/*/log/
+dev/tools/*/.codex/
+dev/tools/*/log/

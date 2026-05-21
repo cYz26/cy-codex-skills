@@ -1,0 +1,13 @@
+# Specification Delta: {{title}}
+
+## ADDED Requirements
+
+### Requirement: {{title}}
+
+The system SHALL support the behavior described by this change after the plan is approved.
+
+#### Scenario: Planned behavior
+
+- GIVEN the active change `{{change_id}}`
+- WHEN implementation is completed
+- THEN the verified behavior matches this requirement and evidence is recorded.

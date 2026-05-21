@@ -28,9 +28,20 @@ Mirror of the non-system Codex skills currently loaded from `~/.codex/skills`, p
 
 ## Development plugins
 
-Development-stage Codex plugins live under `dev/plugins/`.
+Development-stage Codex plugins live under `dev/plugins/`; release-ready plugins live under `plugins/`.
 
 - `dev/plugins/codex-project-orchestrator`
+
+## Release plugins
+
+- `plugins/godot-core`
+- `plugins/codex-project-orchestrator`
+
+## Development skills
+
+Development-stage standalone Codex skills live under `dev/skills/`; release-ready standalone skills live at the repository root.
+
+See `docs/release-isolation.md` for the promotion and marketplace isolation rules.
 
 ## Restore on another machine
 

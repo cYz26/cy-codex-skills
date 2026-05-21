@@ -1,0 +1,15 @@
+[project]
+name = "context-fixer"
+version = "0.4.0"
+description = "A professional fixer for Codex context usage, attribution, compaction timing, and AI project configuration."
+requires-python = ">=3.9"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "cy-codex-skills"}]
+
+[project.scripts]
+context-fixer = "context_fixer.cli:main"
+codex-context-lens = "context_fixer.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,64 @@
+---
+workflow_version: 0.3.0
+project_mode: {{project_mode}}
+current_stage: {{current_stage}}
+
+current_phase:
+  id: {{phase_id}}
+  status: planning
+
+current_change:
+  id: {{change_id}}
+  status: {{change_status}}
+
+gates:
+  workflow_initialized: true
+  spec_approved: false
+  plan_written: {{plan_written}}
+  tests_baseline_known: false
+  implementation_done: false
+  verification_passed: false
+  state_updated: true
+  archive_allowed: false
+
+context_management:
+  compact_policy: checkpoint_boundary
+  last_checkpoint_id: {{last_checkpoint_id}}
+  last_checkpoint_file: {{last_checkpoint_file}}
+  compact_recommended: {{compact_recommended}}
+  compact_status: {{compact_status}}
+  last_compact_result_file: {{last_compact_result_file}}
+  compact_source: {{compact_source}}
+  compact_updated_at: {{compact_updated_at}}
+  compact_skip_reason: {{compact_skip_reason}}
+  compact_error: {{compact_error}}
+  compact_after:
+    - project_setup_completed
+    - codebase_mapping_completed
+    - design_saved
+    - openspec_change_planned
+    - phase_plan_saved
+    - verification_passed
+    - change_archived
+    - phase_shipped
+  skip_compact_for:
+    - small_task_update
+    - typo_fix
+    - docs_only_micro_change
+  require_before_compact:
+    - state_updated
+    - durable_context_written
+    - next_action_recorded
+    - risks_recorded
+    - validation_recorded_if_applicable
+---
+
+# Workflow State
+
+## Current Status
+
+{{status_text}}
+
+## Next Action
+
+{{next_action}}

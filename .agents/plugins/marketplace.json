@@ -20,7 +20,7 @@
       "name": "codex-project-orchestrator",
       "source": {
         "source": "local",
-        "path": "./dev/plugins/codex-project-orchestrator"
+        "path": "./plugins/codex-project-orchestrator"
       },
       "policy": {
         "installation": "AVAILABLE",

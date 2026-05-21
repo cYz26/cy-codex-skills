@@ -5,7 +5,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from dependency_support import DependencyFixtureMixin, MARKETPLACE, PLUGIN_ROOT, run_json
+from dependency_support import (
+    DEV_MARKETPLACE,
+    DependencyFixtureMixin,
+    MARKETPLACE,
+    PLUGIN_ROOT,
+    RELEASE_PLUGIN_ROOT,
+    run_json,
+)
 
 
 class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
@@ -32,6 +39,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertTrue(checks["global skill inactive: brainstorming"]["ok"])
         self.assertTrue(checks["global skill inactive: test-driven-development"]["ok"])
         self.assertTrue(checks["project skill active: project-orchestrator"]["ok"])
+        self.assertTrue(checks["project skill active: context-tool-audit"]["ok"])
         self.assertTrue(checks["project skill active: brainstorming"]["ok"])
         self.assertTrue(checks["project skill active: writing-plans"]["ok"])
         self.assertTrue(checks["project skill active: test-driven-development"]["ok"])
@@ -152,24 +160,49 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         )
         self.assertTrue(report["ok"], report)
         self.assertTrue((repo / ".codex" / "skills" / "project-orchestrator" / "SKILL.md").exists())
+        self.assertTrue((repo / ".codex" / "skills" / "context-tool-audit" / "SKILL.md").exists())
         self.assertTrue((repo / ".codex" / "skills" / "brainstorming" / "SKILL.md").exists())
         self.assertTrue((repo / ".codex" / "skills" / "writing-plans" / "SKILL.md").exists())
         self.assertTrue((repo / ".codex" / "skills" / "test-driven-development" / "SKILL.md").exists())
         self.assertFalse((repo / ".codex" / "config.toml").exists())
 
     def test_plugin_preflight_passes(self):
-        report = run_json(
+        codex_home = self.make_codex_home()
+        repo = self.make_project_repo()
+        release_report = run_json(
+            "codex_plugin_preflight.py",
+            "--plugin-root",
+            str(RELEASE_PLUGIN_ROOT),
+            "--marketplace",
+            str(MARKETPLACE),
+            "--repo",
+            str(repo),
+            "--codex-home",
+            str(codex_home),
+            "--config",
+            str(codex_home / "config.toml"),
+            "--json",
+        )
+        self.assertTrue(release_report["ok"], release_report)
+        self.assertIn("dependencies", release_report)
+        self.assertTrue(release_report["dependencies"]["ok"], release_report["dependencies"])
+        self.assertTrue(any(item["name"] == "dependencies ready" for item in release_report["checks"]))
+
+        dev_report = run_json(
             "codex_plugin_preflight.py",
             "--plugin-root",
             str(PLUGIN_ROOT),
             "--marketplace",
-            str(MARKETPLACE),
+            str(DEV_MARKETPLACE),
+            "--repo",
+            str(repo),
+            "--codex-home",
+            str(codex_home),
+            "--config",
+            str(codex_home / "config.toml"),
             "--json",
         )
-        self.assertTrue(report["ok"], report)
-        self.assertIn("dependencies", report)
-        self.assertTrue(report["dependencies"]["ok"], report["dependencies"])
-        self.assertTrue(any(item["name"] == "dependencies ready" for item in report["checks"]))
+        self.assertTrue(dev_report["ok"], dev_report)
 
 
 if __name__ == "__main__":
