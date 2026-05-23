@@ -1,0 +1,21 @@
+# Project-Local Codex Setup
+
+This directory keeps only the small project-local Codex configuration files that are useful to review.
+
+Tracked files:
+
+- `.gsd-profile`: selected GSD local profile.
+
+Ignored files under `.codex/` are installer/runtime output from GSD, OpenSpec, Superpowers, and local plugin activation.
+This includes generated `config.toml` and `hooks.json`, which contain machine-local absolute paths.
+Regenerate them with:
+
+```bash
+python3 dev/plugins/codex-project-orchestrator/scripts/activate_project_dependencies.py \
+  --repo /Users/cy/Dev/agents-dev/cy-codex-skills \
+  --plugin-root /Users/cy/Dev/agents-dev/cy-codex-skills/dev/plugins/codex-project-orchestrator \
+  --codex-home /Users/cy/.codex \
+  --json
+```
+
+Then reload Codex from this repository.

@@ -82,6 +82,32 @@ Do not promote `tests/`, `fixtures/`, `log/`, `__pycache__/`, generated eval art
 
 For `codex-project-orchestrator`, keep iterating in `dev/plugins/codex-project-orchestrator`. Its release copy lives at `plugins/codex-project-orchestrator`.
 
+On this machine, the active development install is `codex-project-orchestrator@agents-dev-local`.
+The `agents-dev-local` marketplace is still rooted at `/Users/cy/Dev/agents-dev` so it can also serve
+other local plugins, but its `codex-project-orchestrator` entry should resolve to:
+
+```text
+/Users/cy/Dev/agents-dev/cy-codex-skills/dev/plugins/codex-project-orchestrator
+```
+
+After changing the dev plugin, refresh the local install with:
+
+```bash
+codex plugin add codex-project-orchestrator@agents-dev-local
+```
+
+Then verify the source marketplace mapping with:
+
+```bash
+python3 dev/plugins/codex-project-orchestrator/scripts/codex_plugin_preflight.py \
+  --plugin-root /Users/cy/Dev/agents-dev/cy-codex-skills/dev/plugins/codex-project-orchestrator \
+  --marketplace /Users/cy/Dev/agents-dev/.agents/plugins/marketplace.json \
+  --repo /Users/cy/Dev/agents-dev/cy-codex-skills \
+  --codex-home /Users/cy/.codex \
+  --config /Users/cy/.codex/config.toml \
+  --json
+```
+
 When promoting it:
 
 1. Copy the allowlisted plugin runtime files from `dev/plugins/codex-project-orchestrator` to `plugins/codex-project-orchestrator`.
