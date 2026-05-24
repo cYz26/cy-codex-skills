@@ -80,27 +80,27 @@ Do not promote `tests/`, `fixtures/`, `log/`, `__pycache__/`, generated eval art
 
 ## Current Repository Migration
 
-For `codex-project-orchestrator`, keep iterating in `dev/plugins/codex-project-orchestrator`. Its release copy lives at `plugins/codex-project-orchestrator`.
+For `dev-flow`, keep iterating in `dev/plugins/dev-flow`. Its release copy lives at `plugins/dev-flow`.
 
-On this machine, the active development install is `codex-project-orchestrator@agents-dev-local`.
+On this machine, the active development install is `dev-flow@agents-dev-local`.
 The `agents-dev-local` marketplace is still rooted at `/Users/cy/Dev/agents-dev` so it can also serve
-other local plugins, but its `codex-project-orchestrator` entry should resolve to:
+other local plugins, but its `dev-flow` entry should resolve to:
 
 ```text
-/Users/cy/Dev/agents-dev/cy-codex-skills/dev/plugins/codex-project-orchestrator
+/Users/cy/Dev/agents-dev/cy-codex-skills/dev/plugins/dev-flow
 ```
 
 After changing the dev plugin, refresh the local install with:
 
 ```bash
-codex plugin add codex-project-orchestrator@agents-dev-local
+codex plugin add dev-flow@agents-dev-local
 ```
 
 Then verify the source marketplace mapping with:
 
 ```bash
-python3 dev/plugins/codex-project-orchestrator/scripts/codex_plugin_preflight.py \
-  --plugin-root /Users/cy/Dev/agents-dev/cy-codex-skills/dev/plugins/codex-project-orchestrator \
+python3 dev/plugins/dev-flow/scripts/codex_plugin_preflight.py \
+  --plugin-root /Users/cy/Dev/agents-dev/cy-codex-skills/dev/plugins/dev-flow \
   --marketplace /Users/cy/Dev/agents-dev/.agents/plugins/marketplace.json \
   --repo /Users/cy/Dev/agents-dev/cy-codex-skills \
   --codex-home /Users/cy/.codex \
@@ -110,9 +110,9 @@ python3 dev/plugins/codex-project-orchestrator/scripts/codex_plugin_preflight.py
 
 When promoting it:
 
-1. Copy the allowlisted plugin runtime files from `dev/plugins/codex-project-orchestrator` to `plugins/codex-project-orchestrator`.
-2. Keep `.agents/plugins/marketplace.json` pointed at `./plugins/codex-project-orchestrator`.
-3. Keep `.agents/plugins/marketplace.dev.json` pointed at `./dev/plugins/codex-project-orchestrator` for local development testing.
+1. Copy the allowlisted plugin runtime files from `dev/plugins/dev-flow` to `plugins/dev-flow`.
+2. Keep `.agents/plugins/marketplace.json` pointed at `./plugins/dev-flow`.
+3. Keep `.agents/plugins/marketplace.dev.json` pointed at `./dev/plugins/dev-flow` for local development testing.
 4. Keep tests and fixtures in the dev copy.
 5. Run unit tests from the dev copy and plugin preflight against both the release and dev marketplace paths.
 

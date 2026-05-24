@@ -1,0 +1,16 @@
+# Phase Plan: {{phase_id}}
+
+## Goal
+
+Initialize the Codex project workflow and make the next Target State executable.
+
+## Tasks
+
+- [ ] Confirm project mode and workflow files.
+- [ ] Review active OpenSpec change.
+- [ ] Confirm Target State and Completion Contract.
+- [ ] Break work into Capability Slices with validation commands.
+- [ ] Create or update the Execution Ledger.
+- [ ] Establish test, lint, typecheck, and build commands.
+- [ ] Execute one planned task at a time.
+- [ ] Record verification evidence.

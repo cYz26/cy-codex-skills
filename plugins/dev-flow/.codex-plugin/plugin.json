@@ -1,0 +1,45 @@
+{
+  "name": "dev-flow",
+  "version": "0.3.0",
+  "description": "Codex dev workflow.",
+  "author": {
+    "name": "Codex Local",
+    "url": "https://github.com/local/dev-flow"
+  },
+  "homepage": "https://github.com/local/dev-flow",
+  "repository": "https://github.com/local/dev-flow",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "plugin",
+    "openspec",
+    "planning",
+    "workflow"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks.json",
+  "interface": {
+    "displayName": "DevFlow",
+    "shortDescription": "Plan-first project workflow setup and gates",
+    "longDescription": "Initializes Codex-first setup, AI-native target-state planning, OpenSpec planning, verification, checkpoints, and repair.",
+    "developerName": "Codex Local",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/local/dev-flow",
+    "privacyPolicyURL": "https://openai.com/policies/privacy-policy/",
+    "termsOfServiceURL": "https://openai.com/policies/terms-of-use/",
+    "defaultPrompt": [
+      "Plan work",
+      "Setup workflow",
+      "Verify work"
+    ],
+    "brandColor": "#2563EB",
+    "composerIcon": "./assets/dev-flow.svg",
+    "logo": "./assets/dev-flow.svg",
+    "screenshots": []
+  }
+}

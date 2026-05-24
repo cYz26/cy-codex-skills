@@ -1,8 +1,0 @@
-# Tasks: {{title}}
-
-- [ ] Review requirements and scenarios.
-- [ ] Add or update tests for the behavior change.
-- [ ] Implement the smallest compatible change.
-- [ ] Run focused verification.
-- [ ] Run broader project verification where applicable.
-- [ ] Record verification evidence and update workflow state.

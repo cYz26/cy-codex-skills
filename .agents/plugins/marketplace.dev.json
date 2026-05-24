@@ -17,10 +17,10 @@
       "category": "Developer Tools"
     },
     {
-      "name": "codex-project-orchestrator",
+      "name": "dev-flow",
       "source": {
         "source": "local",
-        "path": "./dev/plugins/codex-project-orchestrator"
+        "path": "./dev/plugins/dev-flow"
       },
       "policy": {
         "installation": "AVAILABLE",

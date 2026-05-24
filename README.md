@@ -30,12 +30,12 @@ Mirror of the non-system Codex skills currently loaded from `~/.codex/skills`, p
 
 Development-stage Codex plugins live under `dev/plugins/`; release-ready plugins live under `plugins/`.
 
-- `dev/plugins/codex-project-orchestrator`
+- `dev/plugins/dev-flow`
 
 ## Release plugins
 
 - `plugins/godot-core`
-- `plugins/codex-project-orchestrator`
+- `plugins/dev-flow`
 
 ## Development skills
 

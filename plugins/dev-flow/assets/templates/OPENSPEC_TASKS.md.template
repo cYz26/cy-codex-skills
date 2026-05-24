@@ -1,0 +1,133 @@
+# Tasks: {{title}}
+
+## Target State
+
+Implement the complete approved behavior for `{{change_id}}`, not a partial delivery. Keep GSD phases as workflow governance and use the slices below as executable technical checkpoints.
+
+## Completion Contract
+
+- [ ] Target State is implemented.
+- [ ] Every Capability Slice is done or blocked with a recorded reason.
+- [ ] Acceptance Criteria are checked.
+- [ ] Validation Commands have been run or documented as unavailable.
+- [ ] Verification evidence is recorded.
+- [ ] Workflow state is updated.
+
+## Capability Slices
+
+### Slice 1: Requirements and validation surface
+
+**Status:** todo
+
+**Goal**
+- Confirm the behavior boundary and test strategy before editing implementation files.
+
+**Files / Modules**
+- `openspec/changes/{{change_id}}/proposal.md`
+- `openspec/changes/{{change_id}}/design.md`
+- `openspec/changes/{{change_id}}/specs/`
+- relevant source and test files
+
+**Implementation**
+- [ ] Review requirements and scenarios.
+- [ ] Identify affected files and compatibility constraints.
+
+**Tests**
+- [ ] Add or update failing tests for behavior changes.
+
+**Validation Commands**
+```bash
+<focused test command>
+```
+
+**Done When**
+- [ ] Requirements, files, tests, and validation commands are known.
+
+**Risks / Rollback**
+- Return to planning if requirements or compatibility are unclear.
+
+### Slice 2: Implementation and focused verification
+
+**Status:** todo
+
+**Goal**
+- Implement the smallest compatible change that satisfies the Target State.
+
+**Files / Modules**
+- relevant source and test files
+
+**Implementation**
+- [ ] Implement the approved behavior.
+- [ ] Keep edits scoped to the active change.
+
+**Tests**
+- [ ] Run focused regression tests.
+
+**Validation Commands**
+```bash
+<focused test command>
+```
+
+**Done When**
+- [ ] Focused verification passes.
+
+**Risks / Rollback**
+- Revert or repair this slice before starting broader verification if focused tests fail.
+
+### Slice 3: Broader verification and state update
+
+**Status:** todo
+
+**Goal**
+- Prove the change is complete and durable.
+
+**Files / Modules**
+- `.planning/STATE.md`
+- `.planning/verification/`
+- `openspec/changes/{{change_id}}/tasks.md`
+
+**Implementation**
+- [ ] Run broader project verification where applicable.
+- [ ] Record verification evidence.
+- [ ] Update workflow state and this ledger.
+
+**Tests**
+- [ ] Run the smallest relevant broader suite.
+
+**Validation Commands**
+```bash
+<broader verification command>
+```
+
+**Done When**
+- [ ] Verification evidence exists and the Completion Contract is checked.
+
+**Risks / Rollback**
+- Keep archive blocked until verification evidence is recorded.
+
+## Execution Ledger
+
+| Slice | Status | Evidence |
+|---|---|---|
+| Requirements and validation surface | todo | |
+| Implementation and focused verification | todo | |
+| Broader verification and state update | todo | |
+
+## Acceptance Criteria
+
+- [ ] Required behavior matches the OpenSpec scenarios.
+- [ ] Tests or documented manual checks cover the changed behavior.
+- [ ] No required capability remains unimplemented without a blocker.
+
+## Validation Commands
+
+```bash
+<focused test command>
+<broader verification command>
+```
+
+## Final Verification
+
+- [ ] Focused tests pass.
+- [ ] Broader tests, lint, typecheck, or build pass where applicable.
+- [ ] Verification evidence is recorded.
