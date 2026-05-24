@@ -13,6 +13,16 @@ Do not implement non-trivial changes directly from chat memory.
 - Engineering discipline governs clarification, brainstorming, planning, TDD, review, and finishing.
 - Codex planning behavior is required before major design or implementation boundaries.
 
+## Superpowers Artifact Mapping
+
+Superpowers provides process discipline for brainstorming, planning, TDD, and verification gates. OpenSpec, GSD, and DevFlow planning files are the canonical artifacts for this workflow.
+
+- If `superpowers:brainstorming` produces design notes for behavior, API, data, integration, compatibility, or error-handling work, map the approved content into `openspec/changes/<change-id>/proposal.md`, `design.md`, and `specs/`.
+- If `superpowers:writing-plans` produces task guidance for an OpenSpec change, map it into `openspec/changes/<change-id>/tasks.md`, including Capability Slices, Execution Ledger, Acceptance Criteria, and Validation Commands.
+- If `superpowers:writing-plans` supports GSD phase or milestone work, map it into `.planning/phases/.../PLAN.md` or a DevFlow-approved ledger.
+- Treat `docs/superpowers/specs/...` and `docs/superpowers/plans/...` as drafts, review notes, or inputs unless their content has been copied into the canonical artifacts above.
+- If Superpowers notes conflict with OpenSpec, GSD, or DevFlow files, update or discard the notes; do not let them become a second source of truth.
+
 ## GSD/OpenSpec Skills
 
 GSD and OpenSpec are activated project-locally through `.codex/skills/`; do not enable them globally for this workflow.

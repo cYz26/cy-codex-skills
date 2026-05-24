@@ -239,6 +239,25 @@ class ProjectOrchestratorTests(unittest.TestCase):
             ]:
                 self.assertIn(heading, text, f"{template} should include {heading}")
 
+    def test_superpowers_artifacts_map_to_canonical_workflow_artifacts(self):
+        agents_template = (PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template").read_text()
+        for phrase in [
+            "## Superpowers Artifact Mapping",
+            "Superpowers provides process discipline",
+            "OpenSpec, GSD, and DevFlow planning files are the canonical artifacts",
+            "docs/superpowers/specs",
+            "docs/superpowers/plans",
+            "openspec/changes/<change-id>/",
+            ".planning/phases/",
+        ]:
+            self.assertIn(phrase, agents_template)
+
+        for skill in ["project-orchestrator", "feature-intake", "change-plan", "ai-native-tech-plan"]:
+            text = (PLUGIN_ROOT / "skills" / skill / "SKILL.md").read_text()
+            self.assertIn("Superpowers Artifact Mapping", text, skill)
+            self.assertIn("canonical", text, skill)
+            self.assertIn("docs/superpowers", text, skill)
+
     def test_scaffold_preserves_existing_agents_and_adds_brownfield_docs(self):
         existing = self.make_repo("existing-agents")
         original = (existing / "AGENTS.md").read_text()

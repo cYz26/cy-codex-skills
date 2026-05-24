@@ -50,6 +50,10 @@ Use instead:
 - OpenSpec remains required for behavior-level proposal, design, specs, tasks, verification, sync, and archive.
 - The AI-native plan adds execution contracts, ledgers, and validation surfaces so work can continue after interruption or compaction.
 
+## Superpowers Artifact Mapping
+
+Use Superpowers outputs as planning discipline, then persist the approved result in canonical workflow files. `docs/superpowers/specs/...` maps to OpenSpec proposal/design/specs for behavior work. `docs/superpowers/plans/...` maps to OpenSpec `tasks.md`, `.planning/phases/.../PLAN.md`, or a DevFlow-approved ledger. Do not keep Superpowers notes as a second source of truth after the canonical artifacts exist.
+
 ## Output Contract
 
 When generating a plan, include:

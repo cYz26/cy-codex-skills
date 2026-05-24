@@ -71,6 +71,7 @@ class DependencyFixtureMixin:
             "gsd-discuss-phase",
             "gsd-plan-phase",
             "gsd-execute-phase",
+            "gsd-progress",
             "gsd-verify-work",
             "openspec-propose",
             "openspec-explore",

@@ -12,14 +12,15 @@ def ensure_project_local_skills(
     plugin_root: Path,
     codex_home: Path,
     dry_run: bool = False,
+    refresh_existing: bool = False,
 ) -> dict[str, Any]:
     installed = []
     for skill in PROJECT_ORCHESTRATOR_SKILLS:
         source = plugin_root / "skills" / skill
-        installed.append(install_project_skill(repo, "dev-flow", skill, source, dry_run))
+        installed.append(install_project_skill(repo, "dev-flow", skill, source, dry_run, refresh_existing))
     for skill in REQUIRED_SUPERPOWERS_PROJECT_SKILLS:
         source = find_cached_plugin_skill(codex_home, "superpowers", skill)
-        installed.append(install_project_skill(repo, "superpowers", skill, source, dry_run))
+        installed.append(install_project_skill(repo, "superpowers", skill, source, dry_run, refresh_existing))
     return {
         "ok": all(item["ok"] for item in installed),
         "strategy": "project-local .codex/skills",
@@ -31,9 +32,12 @@ def find_cached_plugin_skill(codex_home: Path, plugin: str, skill: str) -> Path 
     cache = codex_home / "plugins" / "cache"
     if not cache.exists():
         return None
-    for path in cache.rglob(f"skills/{skill}/SKILL.md"):
+    candidates: list[Path] = []
+    for path in sorted(cache.rglob(f"skills/{skill}/SKILL.md")):
         if plugin in path.parts:
-            return path.parent
+            candidates.append(path.parent)
+    if candidates:
+        return candidates[-1]
     return None
 
 
@@ -43,12 +47,22 @@ def install_project_skill(
     skill: str,
     source: Path | None,
     dry_run: bool = False,
+    refresh_existing: bool = False,
 ) -> dict[str, Any]:
     target = repo / ".codex" / "skills" / skill
     if source is None or not (source / "SKILL.md").exists():
         return install_result(provider, skill, source, target, False, "missing-source")
     if target.is_symlink():
-        status = "already-linked" if target.resolve() == source.resolve() else "already-linked-existing-source"
+        if target.resolve() == source.resolve():
+            return install_result(provider, skill, source, target, (target / "SKILL.md").exists(), "already-linked")
+        if refresh_existing:
+            if dry_run:
+                return install_result(provider, skill, source, target, True, "would-refresh-link")
+            target.unlink()
+            status = write_skill_tree(source, target)
+            refresh_status = "refreshed-link" if status == "linked" else "refreshed-copy"
+            return install_result(provider, skill, source, target, (target / "SKILL.md").exists(), refresh_status)
+        status = "already-linked-existing-source"
         return install_result(provider, skill, source, target, (target / "SKILL.md").exists(), status)
     if target.exists():
         return install_result(provider, skill, source, target, (target / "SKILL.md").exists(), "already-present")

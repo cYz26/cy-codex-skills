@@ -38,3 +38,11 @@
 - `plugin-eval development: node /Users/cy/.codex/plugins/cache/openai-curated/plugin-eval/6188456f/scripts/plugin-eval.js analyze dev/plugins/dev-flow --format markdown`: pass (.planning/verification/20260524040228-plugin-eval-development-node-users-cy-.codex-plugins-cache-opena.md)
 
 - Final archive and commit-prep verification: pass (.planning/verification/20260524112808-final-devflow-archive-commit-prep.md)
+
+- `python3 dev/plugins/dev-flow/scripts/check_dependencies.py --plugin-root /Users/cy/Dev/agents-dev/cy-codex-skills/dev/plugins/dev-flow --repo /Users/cy/Dev/agents-dev/cy-codex-skills --json`: pass (.planning/verification/20260524125709-python3-dev-plugins-dev-flow-scripts-check_dependencies.py---plu.md)
+
+- `python3 dev/plugins/dev-flow/scripts/validate_workflow_state.py --repo /Users/cy/Dev/agents-dev/cy-codex-skills --json`: pass (.planning/verification/20260524125714-python3-dev-plugins-dev-flow-scripts-validate_workflow_state.py-.md)
+
+- `python3 dev/plugins/dev-flow/scripts/doctor_workflow.py --repo /Users/cy/Dev/agents-dev/cy-codex-skills --write-report --json`: pass (.planning/verification/20260524125719-python3-dev-plugins-dev-flow-scripts-doctor_workflow.py---repo-u.md)
+
+- `DevFlow dependency workflow verification suite`: pass (.planning/verification/20260524132559-devflow-dependency-workflow-verification-suite.md)

@@ -20,6 +20,10 @@ Kinds: `new-feature`, `bug-fix`, `behavior-change`, `api-change`, `data-model-ch
 - Use `gsd-discuss-phase` and `gsd-plan-phase` for stages, refactors, or milestones.
 - Use `superpowers:writing-plans` before committing to a non-trivial plan.
 
+## Superpowers Artifact Mapping
+
+When Superpowers produces `docs/superpowers/specs/...` or `docs/superpowers/plans/...`, treat those files as drafts or review notes. For behavior work, copy the approved design and task content into canonical OpenSpec artifacts under `openspec/changes/<change-id>/`. For phase or milestone work, copy the approved plan content into `.planning/phases/.../PLAN.md` or a DevFlow-approved ledger.
+
 ## Output
 
 For behavior work, clarify Target State, Completion Contract, validation surface, and success criteria, then run `scripts/create_change.py --repo <repo> --change-id <id> --title <title> --type <kind> --json`.

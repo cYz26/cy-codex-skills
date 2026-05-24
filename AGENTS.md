@@ -30,9 +30,50 @@ GSD and OpenSpec are activated project-locally through `.codex/skills/`; do not 
 - Use `openspec-explore` during brainstorming when the uncertainty is about user-visible behavior, compatibility, requirements, or acceptance criteria.
 - Use `gsd-discuss-phase` during brainstorming when the uncertainty is about milestones, sequencing, scope boundaries, or phase structure.
 - Use `superpowers:writing-plans` before writing a non-trivial implementation plan, phase plan, migration plan, or refactor plan.
+- Use `ai-native-tech-plan` when generating technical plans, implementation plans, architecture plans, Codex execution plans, workflow plans, or anti-partial-delivery plans.
 - Use `openspec-propose` after brainstorming when behavior-level artifacts need to become proposal, design, specs, and tasks.
 - Use `gsd-plan-phase` after brainstorming when the work should become an approved phase plan.
 - Do not move from brainstorming/planning into implementation until the chosen plan, scope, verification approach, and open risks are recorded.
+
+## AI Coding Planning Rules
+
+This repository follows an AI-native execution model.
+
+Do not produce human-style delivery plans such as:
+
+- MVP or prototype as the default completion boundary.
+- Numbered delivery phases as completion boundaries for required behavior.
+- Future Work sections for required functionality.
+- Calendar estimates, sprint estimates, or staffing assumptions.
+- Partial implementation plans that stop after a simplified first slice.
+
+Unless explicitly requested, assume the user wants the complete Target State.
+
+When asked to design or implement a technical solution, use this structure:
+
+1. Target State
+   - Describe the complete final behavior after the task is done.
+   - Include user-visible behavior, internal structure, boundaries, and non-goals.
+
+2. Completion Contract
+   - List concrete acceptance criteria.
+   - Include tests, commands, screenshots, docs, or runtime checks where applicable.
+
+3. Capability Slices
+   - Break work into dependency-ordered, independently verifiable slices.
+   - Each slice must be production-complete for its own scope.
+   - Each slice must include implementation, validation, and cleanup.
+
+4. Execution Ledger
+   - Maintain a checklist in the plan or a repo file.
+   - Mark each item done only after validation.
+   - Resume from the ledger after interruption or context compaction.
+
+5. Final Verification
+   - Run the smallest relevant test suite, lint/typecheck, and project-specific checks.
+   - Report exact commands and results.
+
+GSD phases are governance and sequencing containers, not technical completion boundaries.
 
 ## Project Mode
 
@@ -40,9 +81,9 @@ Project mode: brownfield
 
 ### Greenfield
 
-- Establish MVP scope first.
+- Establish Target State and Completion Contract first.
 - Create or update `.planning/ROADMAP.md`.
-- Create initial OpenSpec specs or an `initial-mvp` change.
+- Create initial OpenSpec specs or an `initial-target-state` change.
 - Establish test, lint, and build baselines early.
 
 ### Brownfield

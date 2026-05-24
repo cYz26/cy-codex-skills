@@ -33,6 +33,7 @@ REQUIRED_GSD_SKILLS = [
     "gsd-discuss-phase",
     "gsd-plan-phase",
     "gsd-execute-phase",
+    "gsd-progress",
     "gsd-verify-work",
 ]
 

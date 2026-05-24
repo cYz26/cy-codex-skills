@@ -14,6 +14,7 @@ def activate_project_dependencies(
     skip_official_installs: bool = False,
     plugin_root: Path | None = None,
     codex_home: Path | None = None,
+    refresh_project_skills: bool = False,
 ) -> dict[str, Any]:
     repo = repo_path(repo)
     plugin_root = repo_path(plugin_root or Path(__file__).resolve().parents[1])
@@ -23,7 +24,7 @@ def activate_project_dependencies(
     if not skip_official_installs:
         for command in commands:
             command_results.append(run_command(command, repo, dry_run))
-    skills_result = ensure_project_local_skills(repo, plugin_root, codex_home, dry_run)
+    skills_result = ensure_project_local_skills(repo, plugin_root, codex_home, dry_run, refresh_project_skills)
     return {
         "ok": all(item["ok"] for item in command_results) and skills_result["ok"],
         "repo": str(repo),
@@ -31,6 +32,7 @@ def activate_project_dependencies(
         "codex_home": str(codex_home),
         "dry_run": dry_run,
         "skip_official_installs": skip_official_installs,
+        "refresh_project_skills": refresh_project_skills,
         "commands": command_results,
         "local_skills": skills_result,
     }

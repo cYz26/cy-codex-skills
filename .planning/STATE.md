@@ -1,32 +1,32 @@
 ---
 workflow_version: 0.3.0
 project_mode: brownfield
-current_stage: archived_commit_ready
+current_stage: review_current_system
 
 current_phase:
   id: 01-foundation
   status: planning
 
 current_change:
-  id: optimize-devflow-plugin-eval-score
-  status: archived
+  id: current-system
+  status: planned
 
 gates:
   workflow_initialized: true
-  spec_approved: true
+  spec_approved: false
   plan_written: true
-  tests_baseline_known: true
-  implementation_done: true
+  tests_baseline_known: false
+  implementation_done: false
   verification_passed: true
   state_updated: true
-  archive_allowed: true
+  archive_allowed: false
 
 context_management:
   compact_policy: checkpoint_boundary
-  last_checkpoint_id: none
-  last_checkpoint_file: none
-  compact_recommended: false
-  compact_status: not_needed
+  last_checkpoint_id: 2026-05-24-project_setup_completed-current-system-2
+  last_checkpoint_file: .planning/checkpoints/2026-05-24-project_setup_completed-current-system-2.md
+  compact_recommended: true
+  compact_status: pending
   last_compact_result_file: none
   compact_source: none
   compact_updated_at: none
@@ -57,8 +57,8 @@ context_management:
 
 ## Current Status
 
-DevFlow rename and Plugin Eval optimization are implemented, verified, and archived. Release Plugin Eval improved from `68/100` to `91/100`; manifest starter prompts, release smoke tests, context-tool module boundaries, long-line findings, and release complexity findings were addressed. Development-root Plugin Eval remains lower because it includes dev-only tests, historical planning records, and auto-update tooling outside the release package surface.
+Workflow state updated.
 
 ## Next Action
 
-Review staged changes and commit the archived DevFlow rename plus Plugin Eval optimization.
+Continue with the active planned task.

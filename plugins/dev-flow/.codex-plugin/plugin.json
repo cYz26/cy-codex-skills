@@ -38,8 +38,8 @@
       "Verify work"
     ],
     "brandColor": "#2563EB",
-    "composerIcon": "./assets/dev-flow.svg",
-    "logo": "./assets/dev-flow.svg",
+    "composerIcon": "./assets/dev-flow.png",
+    "logo": "./assets/dev-flow.png",
     "screenshots": []
   }
 }

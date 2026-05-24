@@ -18,6 +18,11 @@ def main() -> int:
         action="store_true",
         help="Only install project-local orchestrator/Superpowers skills; do not run GSD/OpenSpec installers.",
     )
+    parser.add_argument(
+        "--refresh-project-skills",
+        action="store_true",
+        help="Refresh project-local symlinks that point at an older provider skill source.",
+    )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
     report = activate_project_dependencies(
@@ -26,6 +31,7 @@ def main() -> int:
         args.skip_official_installs,
         args.plugin_root,
         args.codex_home,
+        args.refresh_project_skills,
     )
     if args.json:
         print(json.dumps(report, indent=2))

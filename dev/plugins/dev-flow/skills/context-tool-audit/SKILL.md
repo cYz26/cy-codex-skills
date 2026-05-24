@@ -12,7 +12,7 @@ Use this skill when the user wants to inspect, reduce, or rebalance Codex plugin
 Generate a report first:
 
 ```bash
-/opt/homebrew/bin/python3.11 scripts/audit_context_tools.py \
+python3 scripts/audit_context_tools.py \
   --repo <repo> \
   --codex-home <codex-home> \
   --json > audit-report.json
@@ -37,7 +37,7 @@ Review:
 Preview selected actions:
 
 ```bash
-/opt/homebrew/bin/python3.11 scripts/apply_context_tool_actions.py \
+python3 scripts/apply_context_tool_actions.py \
   --plan audit-report.json \
   --action <action-id> \
   --json
@@ -46,7 +46,7 @@ Preview selected actions:
 Apply only after the user confirms the selected action ids:
 
 ```bash
-/opt/homebrew/bin/python3.11 scripts/apply_context_tool_actions.py \
+python3 scripts/apply_context_tool_actions.py \
   --plan audit-report.json \
   --action <action-id> \
   --apply \
