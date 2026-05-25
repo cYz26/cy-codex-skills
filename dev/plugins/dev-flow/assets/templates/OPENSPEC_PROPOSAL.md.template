@@ -1,0 +1,35 @@
+# {{title}}
+
+## Why
+
+{{why}}
+
+## What Changes
+
+- {{what}}
+
+## Target State
+
+- Complete the approved behavior for `{{change_id}}`.
+- Keep required capabilities in the active change unless explicitly marked as non-goals.
+- Use capability slices and validation evidence as the execution boundary.
+
+## Scope
+
+- Project mode: {{project_mode}}
+- Change type: {{change_type}}
+
+## Non-Goals
+
+- Do not expand beyond the requested change without updating this proposal.
+
+## Completion Contract
+
+- [ ] Target State is clear.
+- [ ] Acceptance Criteria are defined in specs.
+- [ ] Capability Slices and Validation Commands are defined in tasks.
+- [ ] Verification evidence is recorded before archive.
+
+## Risks
+
+- Compatibility and verification risks must be resolved before archive.

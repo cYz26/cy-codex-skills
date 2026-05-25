@@ -1,0 +1,10 @@
+{
+  "checkpoint_id": "2026-05-18-change_archived-project",
+  "checkpoint_file": ".planning/checkpoints/2026-05-18-change_archived-project.md",
+  "status": "completed",
+  "source": "harness",
+  "recorded_at": "2026-05-19T16:19:24+08:00",
+  "raw_result": "Context handoff/compaction summary was provided to this session and used to resume from the archived current-system checkpoint.",
+  "skip_reason": "none",
+  "error": "none"
+}

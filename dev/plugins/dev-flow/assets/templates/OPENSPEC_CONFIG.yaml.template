@@ -1,0 +1,4 @@
+project: {{project_name}}
+spec_dir: specs
+change_dir: changes
+workflow_version: 0.3.0

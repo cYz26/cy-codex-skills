@@ -1,0 +1,70 @@
+---
+checkpoint_id: {{checkpoint_id}}
+created_at: {{created_at}}
+boundary: {{boundary}}
+project_mode: {{project_mode}}
+phase_id: {{phase_id}}
+change_id: {{change_id}}
+compact_recommended: {{compact_recommended}}
+compact_status: {{compact_status}}
+next_stage: {{next_stage}}
+---
+
+# Checkpoint: {{title}}
+
+## Current goal
+
+{{current_goal}}
+
+## Completed work
+
+{{completed_work}}
+
+## Durable context written
+
+{{durable_context}}
+
+## Key decisions
+
+{{key_decisions}}
+
+## Open questions
+
+{{open_questions}}
+
+## Risks
+
+{{risks}}
+
+## Validation performed
+
+```text
+command: {{validation_command}}
+result: {{validation_result}}
+notes: {{validation_notes}}
+```
+
+## Git state
+
+```text
+branch: {{git_branch}}
+changed_files:
+{{changed_files}}
+```
+
+## Next action
+
+The next stage should start by reading:
+
+1. `AGENTS.md`
+2. `.planning/STATE.md`
+3. this checkpoint file
+4. relevant OpenSpec change files
+5. relevant phase plan files
+
+Then proceed to: `{{next_stage}}`.
+
+## Compact instruction
+
+Checkpoint is complete. Run `/compact` before continuing if using Codex CLI.
+If compaction is unavailable, start a new session and provide this checkpoint file as the handoff context.

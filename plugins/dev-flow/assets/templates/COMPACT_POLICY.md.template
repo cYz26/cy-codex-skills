@@ -1,0 +1,21 @@
+# Compact Policy
+
+Compact only at major workflow boundaries after durable project context is written.
+
+## Source Of Truth
+
+- `AGENTS.md`
+- `.planning/STATE.md`
+- `.planning/phases/`
+- `.planning/checkpoints/`
+- `openspec/`
+- git diff and log
+
+## Instruction
+
+When a checkpoint reports `compact_status: pending`, run `/compact` in Codex CLI before continuing to the
+next major stage. If compaction is unavailable, start a new session using the checkpoint file as handoff
+context.
+
+When an external API or harness runs compaction, record the returned payload with `record_compact_result.py`.
+The compact record is evidence for the gate; repository files remain the source of truth.

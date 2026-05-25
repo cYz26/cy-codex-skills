@@ -26,6 +26,23 @@ Mirror of the non-system Codex skills currently loaded from `~/.codex/skills`, p
 - `spec-workflow`
 - `uninstall-claude-code`
 
+## Development plugins
+
+Development-stage Codex plugins live under `dev/plugins/`; release-ready plugins live under `plugins/`.
+
+- `dev/plugins/dev-flow`
+
+## Release plugins
+
+- `plugins/godot-core`
+- `plugins/dev-flow`
+
+## Development skills
+
+Development-stage standalone Codex skills live under `dev/skills/`; release-ready standalone skills live at the repository root.
+
+See `docs/release-isolation.md` for the promotion and marketplace isolation rules.
+
 ## Restore on another machine
 
 Clone this repo, then copy or symlink each skill directory into `~/.codex/skills/`, and restart Codex.

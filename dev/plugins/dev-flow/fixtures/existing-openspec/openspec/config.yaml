@@ -1,0 +1,3 @@
+project: existing-openspec
+spec_dir: specs
+change_dir: changes

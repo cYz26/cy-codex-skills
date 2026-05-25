@@ -1,0 +1,89 @@
+# Design: {{title}}
+
+## Target State
+
+Describe the complete behavior, internal structure, boundaries, and validation surface expected after `{{change_id}}` is done.
+
+## Scope / Non-Goals
+
+- In scope: behavior required by `{{change_id}}`.
+- Non-goals: unrelated refactors, dependency changes, or compatibility breaks not approved in the proposal.
+
+## Architecture Decisions
+
+| Decision | Rationale | Alternatives Considered |
+|---|---|---|
+| Preserve project conventions | Keeps the change compatible with brownfield code. | Broad rewrite |
+
+## Completion Contract
+
+- [ ] Target State is implemented.
+- [ ] Required behavior is covered by tests or documented manual checks.
+- [ ] No required capability remains outside the active change.
+- [ ] Verification evidence is recorded before archive.
+
+## Capability Slices
+
+### Slice 1: Verified behavior change
+
+**Goal**
+- Implement the requested behavior as a complete, verifiable slice.
+
+**Files / Modules**
+- Identify concrete files before implementation.
+
+**Implementation**
+- [ ] Make the smallest compatible code change that satisfies the Target State.
+
+**Tests**
+- [ ] Add or update regression tests before implementation when behavior changes.
+
+**Validation Commands**
+```bash
+<focused test command>
+```
+
+**Done When**
+- [ ] Tests pass and evidence is recorded.
+
+**Risks / Rollback**
+- Revert this slice if validation fails and the failure cannot be fixed within the approved scope.
+
+## Execution Ledger
+
+Track slice status in `tasks.md`, `.planning/STATE.md`, or a repo-specific ledger file. Mark a slice done only after its validation command passes or a blocker is recorded.
+
+## Approach
+
+Use the smallest compatible implementation that satisfies the requirements and preserves existing project conventions.
+
+## Data Flow
+
+Document concrete data flow before implementation when this change touches persistence, APIs, integrations, or cross-module behavior.
+
+## Compatibility
+
+Do not introduce breaking behavior without explicit approval.
+
+## Testing
+
+Add or update tests before implementation for behavior changes. Record verification evidence before archive.
+
+## Acceptance Criteria
+
+- [ ] The Target State is satisfied.
+- [ ] The Completion Contract is fully checked.
+- [ ] Required validation commands pass or have recorded blockers.
+
+## Validation Commands
+
+```bash
+<focused test command>
+<broader verification command>
+```
+
+## Final Verification
+
+- [ ] Focused tests pass.
+- [ ] Broader tests, lint, typecheck, or build pass where applicable.
+- [ ] Verification evidence is recorded.
