@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import shutil
 import sys
-import tomllib
 from pathlib import Path
 from typing import Any
 
+from workflow_context_config import read_config
 from workflow_dependency_checks import check_external_dependencies
 from workflow_paths import repo_path
 
@@ -40,13 +40,6 @@ def dependency_report(
         "project_config": str(project_config_path) if project_config_path else None,
         "checks": checks,
     }
-
-
-def read_config(config_path: Path) -> dict[str, Any]:
-    if not config_path.exists():
-        return {}
-    return tomllib.loads(config_path.read_text())
-
 
 def add_check(checks: list[dict[str, Any]], name: str, ok: bool, required: bool, detail: str = "") -> None:
     checks.append({"name": name, "ok": bool(ok), "required": bool(required), "detail": detail})

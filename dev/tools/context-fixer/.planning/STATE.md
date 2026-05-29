@@ -1,7 +1,9 @@
 ---
 workflow_version: 0.3.0
 project_mode: brownfield
-current_stage: implementation
+development_status: pending
+recommendation_status: not_recommended_for_new_use
+current_stage: pending
 
 current_phase:
   id: 01-foundation
@@ -57,8 +59,11 @@ context_management:
 
 ## Current Status
 
-OpenSpec change `add-capability-activity-log` is implemented and verified.
+Context Fixer development is temporarily pending. Historical OpenSpec changes
+and implementation artifacts remain in the repository for reference, but the
+previous Context Fixer feature set is not recommended for new use.
 
 ## Next Action
 
-Review or archive completed OpenSpec changes when ready.
+Resume only after a fresh scope, plan, and verification contract are recorded.
+Use DevFlow context-health tooling for current Codex context checks.

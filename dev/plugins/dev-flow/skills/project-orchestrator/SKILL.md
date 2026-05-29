@@ -1,6 +1,6 @@
 ---
 name: project-orchestrator
-description: Use when routing Codex setup, planning, execution, verification, or repair.
+description: Use when routing Codex setup, planning, execution, verify, or repair.
 ---
 
 # Project Orchestrator

@@ -32,7 +32,7 @@ def parse_state_line(state: dict[str, Any], raw_line: str, current_section: str 
     line = raw_line.rstrip()
     if not line:
         return current_section
-    if line.startswith(("current_phase:", "current_change:", "context_management:")):
+    if line.startswith(("current_phase:", "current_change:", "context_management:", "context_health:")):
         section = line.split(":", 1)[0]
         state[section] = {}
         return section
@@ -72,6 +72,12 @@ def default_state_values(project_mode: str, change_id: str, change_status: str =
         "compact_updated_at": "none",
         "compact_skip_reason": "none",
         "compact_error": "none",
+        "last_context_health_report": "none",
+        "last_context_health_risk": "unknown",
+        "last_context_health_confidence": "unknown",
+        "last_context_health_decision": "none",
+        "last_goal_status": "unknown",
+        "goal_summary": "none",
     }
 
 
@@ -133,6 +139,21 @@ def merged_state_values(existing: dict[str, Any], overrides: dict[str, Any]) -> 
         overrides.get("compact_skip_reason", context.get("compact_skip_reason", "none"))
     )
     values["compact_error"] = str(overrides.get("compact_error", context.get("compact_error", "none")))
+    health = existing.get("context_health", {})
+    values["last_context_health_report"] = str(
+        overrides.get("last_context_health_report", health.get("last_report", "none"))
+    )
+    values["last_context_health_risk"] = str(
+        overrides.get("last_context_health_risk", health.get("last_risk", "unknown"))
+    )
+    values["last_context_health_confidence"] = str(
+        overrides.get("last_context_health_confidence", health.get("last_confidence", "unknown"))
+    )
+    values["last_context_health_decision"] = str(
+        overrides.get("last_context_health_decision", health.get("last_decision", "none"))
+    )
+    values["last_goal_status"] = str(overrides.get("last_goal_status", health.get("last_goal_status", "unknown")))
+    values["goal_summary"] = str(overrides.get("goal_summary", health.get("goal_summary", "none")))
     return values
 
 

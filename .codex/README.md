@@ -11,10 +11,10 @@ This includes generated `config.toml` and `hooks.json`, which contain machine-lo
 Regenerate them with:
 
 ```bash
-python3 dev/plugins/codex-project-orchestrator/scripts/activate_project_dependencies.py \
-  --repo /Users/cy/Dev/agents-dev/cy-codex-skills \
-  --plugin-root /Users/cy/Dev/agents-dev/cy-codex-skills/dev/plugins/codex-project-orchestrator \
-  --codex-home /Users/cy/.codex \
+/opt/homebrew/bin/python3.11 dev/plugins/dev-flow/scripts/activate_project_dependencies.py \
+  --repo /Users/cY/dev/skills/cy-codex-skills \
+  --plugin-root /Users/cY/dev/skills/cy-codex-skills/dev/plugins/dev-flow \
+  --codex-home /Users/cY/.codex \
   --json
 ```
 

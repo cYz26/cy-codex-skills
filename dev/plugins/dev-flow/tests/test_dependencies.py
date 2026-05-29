@@ -59,19 +59,91 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertTrue(checks["project skill active: gsd-new-project"]["ok"])
         self.assertTrue(checks["project skill active: gsd-progress"]["ok"])
         self.assertTrue(checks["project gsd agent active: gsd-planner.toml"]["ok"])
-        self.assertTrue(checks["project skill active: openspec-propose"]["ok"])
+        self.assertTrue(checks["project openspec setup active"]["ok"])
         self.assertTrue(checks["developer plugin enabled: plugin-eval"]["ok"])
 
-    def test_dependency_check_fails_when_project_gsd_and_openspec_skills_are_missing(self):
+    def test_dependency_check_warns_when_superpowers_plugin_is_global(self):
+        codex_home = self.make_codex_home(enable_superpowers_plugin=True)
+        repo = self.make_project_repo(enable_legacy_openspec_skills=False)
+
+        report = run_json(
+            "check_dependencies.py",
+            "--plugin-root",
+            str(PLUGIN_ROOT),
+            "--repo",
+            str(repo),
+            "--codex-home",
+            str(codex_home),
+            "--config",
+            str(codex_home / "config.toml"),
+            "--json",
+        )
+
+        checks = {item["name"]: item for item in report["checks"]}
+        self.assertTrue(report["ok"], report)
+        self.assertEqual(report["status"], "ready_with_recommendations")
+        self.assertFalse(checks["global plugin inactive: superpowers"]["ok"])
+        self.assertFalse(checks["global plugin inactive: superpowers"]["required"])
+
+    def test_dependency_check_accepts_openspec_config_without_legacy_openspec_skills(self):
         codex_home = self.make_codex_home()
-        repo = self.make_project_repo()
-        for directory in [
-            repo / ".codex" / "skills" / "gsd-new-project",
-            repo / ".codex" / "skills" / "openspec-propose",
-        ]:
+        repo = self.make_project_repo(enable_legacy_openspec_skills=False, enable_openspec_config=True)
+
+        report = run_json(
+            "check_dependencies.py",
+            "--plugin-root",
+            str(PLUGIN_ROOT),
+            "--repo",
+            str(repo),
+            "--codex-home",
+            str(codex_home),
+            "--config",
+            str(codex_home / "config.toml"),
+            "--json",
+        )
+
+        checks = {item["name"]: item for item in report["checks"]}
+        self.assertTrue(report["ok"], report)
+        self.assertTrue(checks["project openspec setup active"]["ok"])
+        self.assertTrue(checks["legacy project skill active: openspec-propose"]["required"] is False)
+        self.assertFalse(checks["legacy project skill active: openspec-propose"]["ok"])
+
+    def test_dependency_check_requires_openspec_config_when_legacy_skills_are_missing(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_project_repo(enable_legacy_openspec_skills=False, enable_openspec_config=False)
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(PLUGIN_ROOT / "scripts" / "check_dependencies.py"),
+                "--plugin-root",
+                str(PLUGIN_ROOT),
+                "--repo",
+                str(repo),
+                "--codex-home",
+                str(codex_home),
+                "--config",
+                str(codex_home / "config.toml"),
+                "--json",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 1)
+        report = json.loads(result.stdout)
+        required_failures = [item["name"] for item in report["checks"] if item["required"] and not item["ok"]]
+        self.assertIn("project openspec setup active", required_failures)
+
+    def test_dependency_check_fails_when_project_gsd_and_openspec_setup_are_missing(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_project_repo(enable_legacy_openspec_skills=False)
+        for directory in [repo / ".codex" / "skills" / "gsd-new-project"]:
             for path in directory.rglob("*"):
                 path.unlink()
             directory.rmdir()
+        (repo / "openspec" / "config.yaml").unlink()
 
         result = subprocess.run(
             [
@@ -95,7 +167,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         report = json.loads(result.stdout)
         required_failures = [item["name"] for item in report["checks"] if item["required"] and not item["ok"]]
         self.assertIn("project skill active: gsd-new-project", required_failures)
-        self.assertIn("project skill active: openspec-propose", required_failures)
+        self.assertIn("project openspec setup active", required_failures)
 
     def test_dependency_check_fails_when_gsd_progress_is_missing(self):
         codex_home = self.make_codex_home()
@@ -212,7 +284,16 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         repo = Path(tempfile.mkdtemp(prefix="cpo-refresh-repo-"))
         codex_home = self.make_codex_home()
         plugin_root = PLUGIN_ROOT
-        old_source = codex_home / "plugins" / "cache" / "openai-curated" / "superpowers" / "000-old" / "skills" / "brainstorming"
+        old_source = (
+            codex_home
+            / "plugins"
+            / "cache"
+            / "openai-curated"
+            / "superpowers"
+            / "000-old"
+            / "skills"
+            / "brainstorming"
+        )
         old_source.mkdir(parents=True)
         (old_source / "SKILL.md").write_text("---\nname: brainstorming\ndescription: old\n---\n")
         target = repo / ".codex" / "skills" / "brainstorming"
@@ -229,7 +310,16 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         repo = Path(tempfile.mkdtemp(prefix="cpo-refresh-repo-"))
         codex_home = self.make_codex_home()
         plugin_root = PLUGIN_ROOT
-        old_source = codex_home / "plugins" / "cache" / "openai-curated" / "superpowers" / "000-old" / "skills" / "brainstorming"
+        old_source = (
+            codex_home
+            / "plugins"
+            / "cache"
+            / "openai-curated"
+            / "superpowers"
+            / "000-old"
+            / "skills"
+            / "brainstorming"
+        )
         old_source.mkdir(parents=True)
         (old_source / "SKILL.md").write_text("---\nname: brainstorming\ndescription: old\n---\n")
         target = repo / ".codex" / "skills" / "brainstorming"

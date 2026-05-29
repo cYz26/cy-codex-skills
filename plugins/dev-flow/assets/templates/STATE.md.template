@@ -51,6 +51,14 @@ context_management:
     - next_action_recorded
     - risks_recorded
     - validation_recorded_if_applicable
+
+context_health:
+  last_report: {{last_context_health_report}}
+  last_risk: {{last_context_health_risk}}
+  last_confidence: {{last_context_health_confidence}}
+  last_decision: {{last_context_health_decision}}
+  last_goal_status: {{last_goal_status}}
+  goal_summary: {{goal_summary}}
 ---
 
 # Workflow State

@@ -23,6 +23,13 @@ from workflow_paths import (
 )
 from workflow_change import create_change
 from workflow_compact import compact_recommendation, create_checkpoint, record_compact_result, validate_checkpoint
+from workflow_context_health import (
+    context_health_check,
+    context_health_history,
+    import_codex_sessions,
+    read_context_health_events,
+    record_context_health_event,
+)
 from workflow_context_tools import apply_context_tool_actions, audit_context_tools
 from workflow_dependencies import dependency_report
 from workflow_project_activation import activate_project_dependencies
@@ -53,6 +60,8 @@ __all__ = [
     "compact_recommendation",
     "create_change",
     "create_checkpoint",
+    "context_health_check",
+    "context_health_history",
     "default_state_values",
     "dependency_report",
     "detect_commands",
@@ -63,12 +72,15 @@ __all__ = [
     "hook_mode",
     "hook_response",
     "inspect_repo",
+    "import_codex_sessions",
     "normalize_project_name",
     "parse_frontmatter",
     "parse_scalar",
     "parse_state",
     "production_like_path",
     "read_json",
+    "read_context_health_events",
+    "record_context_health_event",
     "record_compact_result",
     "record_verification",
     "rel",

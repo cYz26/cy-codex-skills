@@ -60,6 +60,42 @@ def run_json(name, *args, input_text=None, cwd=PLUGIN_ROOT):
     return json.loads(result.stdout)
 
 
+def write_ai_plan(
+    path,
+    capability_line,
+    *,
+    preface=None,
+    title="# Plan",
+    target="Build the complete feature.",
+    contract="- [ ] Works",
+):
+    lines = []
+    if preface:
+        lines.append(preface)
+    lines.extend(
+        [
+            title,
+            "",
+            "## Target State",
+            target,
+            "",
+            "## Completion Contract",
+            contract,
+            "",
+            "## Capability Slices",
+            capability_line,
+            "",
+            "## Acceptance Criteria",
+            "- [ ] Accepted",
+            "",
+            "## Validation Commands",
+            "`python3 -m unittest`",
+            "",
+        ]
+    )
+    path.write_text("\n".join(lines))
+
+
 class ProjectOrchestratorTests(unittest.TestCase):
     def make_repo(self, fixture_name=None):
         tmp = Path(tempfile.mkdtemp(prefix="cpo-test-"))
@@ -126,6 +162,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
             "workflow-doctor",
             "context-tool-audit",
             "ai-native-tech-plan",
+            "context-health-check",
         }
         self.assertEqual({path.name for path in (PLUGIN_ROOT / "skills").iterdir() if path.is_dir()}, expected)
         for skill in expected:
@@ -133,6 +170,23 @@ class ProjectOrchestratorTests(unittest.TestCase):
             self.assertTrue(text.startswith("---\n"), skill)
             self.assertIn(f"name: {skill}", text)
             self.assertRegex(text, r"description: .+")
+
+    def test_devflow_no_longer_owns_agent_kb_hooks_or_core_behavior(self):
+        forbidden_skills = {
+            "kb-ingest",
+            "kb-query",
+            "kb-update",
+            "kb-compact",
+            "kb-lint",
+            "kb-reflect",
+            "kb-promote",
+        }
+        self.assertTrue(forbidden_skills.isdisjoint({path.name for path in (PLUGIN_ROOT / "skills").iterdir() if path.is_dir()}))
+
+        hooks = (PLUGIN_ROOT / "hooks.json").read_text()
+        self.assertNotIn("kb_event_hook.py", hooks)
+        self.assertFalse((PLUGIN_ROOT / "scripts" / "workflow_agent_kb.py").exists())
+        self.assertFalse((PLUGIN_ROOT / "scripts" / "workflow_obsidian_kb.py").exists())
 
     def test_high_cost_skill_descriptions_are_concise_and_routable(self):
         expectations = {
@@ -339,86 +393,24 @@ class ProjectOrchestratorTests(unittest.TestCase):
     def test_lint_ai_plan_flags_human_planning_terms(self):
         repo = self.make_repo()
         bad_plan = repo / "bad-plan.md"
-        bad_plan.write_text(
-            "\n".join(
-                [
-                    "# Plan",
-                    "",
-                    "## Target State",
-                    "Build the complete feature.",
-                    "",
-                    "## Completion Contract",
-                    "- [ ] Works",
-                    "",
-                    "## Capability Slices",
-                    "Phase 1: MVP first.",
-                    "",
-                    "## Acceptance Criteria",
-                    "- [ ] Accepted",
-                    "",
-                    "## Validation Commands",
-                    "`python3 -m unittest`",
-                    "",
-                ]
-            )
-        )
-
+        write_ai_plan(bad_plan, "Phase 1: MVP first.")
         bad = run_script_allow_failure("lint_ai_plan.py", str(bad_plan))
         self.assertEqual(bad.returncode, 1)
         self.assertIn("Forbidden human-style planning terms found", bad.stdout)
 
         good_plan = repo / "good-plan.md"
-        good_plan.write_text(
-            "\n".join(
-                [
-                    "# Plan",
-                    "",
-                    "## Target State",
-                    "Build the complete feature.",
-                    "",
-                    "## Completion Contract",
-                    "- [ ] Works",
-                    "",
-                    "## Capability Slices",
-                    "Slice 1: validated capability.",
-                    "",
-                    "## Acceptance Criteria",
-                    "- [ ] Accepted",
-                    "",
-                    "## Validation Commands",
-                    "`python3 -m unittest`",
-                    "",
-                ]
-            )
-        )
-
+        write_ai_plan(good_plan, "Slice 1: validated capability.")
         good = run_script_allow_failure("lint_ai_plan.py", str(good_plan))
         self.assertEqual(good.returncode, 0, good.stdout + good.stderr)
 
         policy_doc = repo / "policy.md"
-        policy_doc.write_text(
-            "\n".join(
-                [
-                    "<!-- ai-native-plan-lint: allow-human-planning-terms -->",
-                    "# Policy",
-                    "",
-                    "## Target State",
-                    "Explain why MVP framing is not the default.",
-                    "",
-                    "## Completion Contract",
-                    "- [ ] Policy is clear",
-                    "",
-                    "## Capability Slices",
-                    "- Policy only",
-                    "",
-                    "## Acceptance Criteria",
-                    "- [ ] Reviewed",
-                    "",
-                    "## Validation Commands",
-                    "`python3 -m unittest`",
-                    "",
-                ]
-            )
+        write_ai_plan(
+            policy_doc,
+            "- Policy only",
+            preface="<!-- ai-native-plan-lint: allow-human-planning-terms -->",
+            title="# Policy",
+            target="Explain why MVP framing is not the default.",
+            contract="- [ ] Policy is clear",
         )
         allowed = run_script_allow_failure("lint_ai_plan.py", str(policy_doc))
         self.assertEqual(allowed.returncode, 0, allowed.stdout + allowed.stderr)

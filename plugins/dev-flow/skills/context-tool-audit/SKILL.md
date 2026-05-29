@@ -1,6 +1,6 @@
 ---
 name: context-tool-audit
-description: Use when auditing Codex plugins or skills, reducing global context, recommending project tools, or applying cleanup.
+description: Use when auditing context-heavy skills/plugins or project tool cleanup.
 ---
 
 # Context Tool Audit

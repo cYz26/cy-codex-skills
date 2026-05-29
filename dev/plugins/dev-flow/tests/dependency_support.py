@@ -30,11 +30,11 @@ def run_json(name, *args):
 
 
 class DependencyFixtureMixin:
-    def make_codex_home(self, *, enable_plugin_eval=True):
+    def make_codex_home(self, *, enable_plugin_eval=True, enable_superpowers_plugin=False):
         home = Path(tempfile.mkdtemp(prefix="cpo-codex-home-"))
         config_lines = ['model = "gpt-5"']
         self.add_plugin_config(config_lines, PLUGIN_ID, False)
-        self.add_plugin_config(config_lines, "superpowers", False)
+        self.add_plugin_config(config_lines, "superpowers", enable_superpowers_plugin)
         self.add_plugin_config(config_lines, "plugin-eval", enable_plugin_eval)
         (home / "config.toml").write_text("\n".join(config_lines) + "\n")
         self.write_required_skills(home, enable_plugin_eval)
@@ -57,15 +57,31 @@ class DependencyFixtureMixin:
         path.parent.mkdir(parents=True)
         path.write_text(f"---\nname: {skill}\ndescription: fixture\n---\n")
 
-    def make_project_repo(self, *, enable_orchestrator=True, enable_superpowers=True):
+    def make_project_repo(
+        self,
+        *,
+        enable_orchestrator=True,
+        enable_superpowers=True,
+        enable_legacy_openspec_skills=True,
+        enable_openspec_config=True,
+    ):
         repo = Path(tempfile.mkdtemp(prefix="cpo-project-"))
         (repo / ".codex").mkdir()
         (repo / ".codex" / "config.toml").write_text('model = "gpt-5"\n')
-        self.write_project_skills(repo, enable_orchestrator, enable_superpowers)
+        if enable_openspec_config:
+            (repo / "openspec").mkdir()
+            (repo / "openspec" / "config.yaml").write_text("schema: spec-driven\n")
+        self.write_project_skills(repo, enable_orchestrator, enable_superpowers, enable_legacy_openspec_skills)
         self.write_gsd_agents(repo)
         return repo
 
-    def write_project_skills(self, repo, enable_orchestrator=True, enable_superpowers=True):
+    def write_project_skills(
+        self,
+        repo,
+        enable_orchestrator=True,
+        enable_superpowers=True,
+        enable_legacy_openspec_skills=True,
+    ):
         skills = [
             "gsd-new-project",
             "gsd-discuss-phase",
@@ -73,11 +89,16 @@ class DependencyFixtureMixin:
             "gsd-execute-phase",
             "gsd-progress",
             "gsd-verify-work",
-            "openspec-propose",
-            "openspec-explore",
-            "openspec-apply-change",
-            "openspec-archive-change",
         ]
+        if enable_legacy_openspec_skills:
+            skills.extend(
+                [
+                    "openspec-propose",
+                    "openspec-explore",
+                    "openspec-apply-change",
+                    "openspec-archive-change",
+                ]
+            )
         if enable_superpowers:
             skills.extend(
                 [

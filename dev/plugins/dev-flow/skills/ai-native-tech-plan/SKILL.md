@@ -1,6 +1,6 @@
 ---
 name: ai-native-tech-plan
-description: Use when creating technical plans or architecture plans with Target State, Completion Contract, Execution Ledger, criteria, and validation commands.
+description: Use when writing technical plans with Target State, Completion Contract, Execution Ledger.
 ---
 
 # AI-native Technical Planning

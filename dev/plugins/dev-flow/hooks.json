@@ -6,6 +6,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "./scripts/context_health_hook.py --event pre_tool_use",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "./scripts/pre_edit_policy.py",
             "timeout": 10
           }
@@ -14,6 +19,11 @@
       {
         "matcher": "Bash",
         "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/context_health_hook.py --event pre_tool_use",
+            "timeout": 10
+          },
           {
             "type": "command",
             "command": "./scripts/pre_next_phase_checkpoint_policy.py",
@@ -27,9 +37,59 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Write|Edit|MultiEdit|Read|Grep|Glob|LS",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/context_health_hook.py --event post_tool_use",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/context_health_hook.py --event user_prompt_submit",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/context_health_hook.py --event subagent_start",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/context_health_hook.py --event subagent_stop",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/context_health_hook.py --event stop --check",
+            "timeout": 10
+          },
           {
             "type": "command",
             "command": "./scripts/stop_verification_policy.py",

@@ -8,7 +8,8 @@ It combines:
 - OpenSpec-style change proposal, requirements, tasks, and archive gates.
 - Superpowers-style engineering discipline for clarification, planning, TDD, review, and verification.
 - AI-native Target State, Capability Slice, Execution Ledger, Completion Contract, and validation-loop planning.
-- Soft hook warnings for unplanned edits, incomplete verification, and checkpoint compact gates.
+- Runtime context-health checks for repeated failures, diff spread, stale validation, stale goals, and subagent handoff recommendations.
+- Soft hook warnings for unplanned edits, incomplete verification, context health, and checkpoint compact gates.
 
 ## Install
 
@@ -46,13 +47,16 @@ python3 scripts/check_dependencies.py \
 Required:
 
 - Python runtime and Codex CLI available.
-- `superpowers` is not globally enabled.
-- GSD, OpenSpec, and Superpowers skills are not globally active.
+- GSD, legacy OpenSpec, and Superpowers skills are not globally active.
 - Superpowers is installed in the Codex plugin cache, with `brainstorming`, `writing-plans`, `test-driven-development`, and `verification-before-completion`.
 - Target repo has GSD local Codex skills and agents under `.codex/`.
-- Target repo has OpenSpec local Codex skills under `.codex/`.
+- Target repo has OpenSpec project setup (`openspec/config.yaml`) from `openspec init --tools codex`; legacy project-local OpenSpec skills are reported only as optional diagnostics.
 - Target repo has project-local Superpowers skills under `.codex/skills/`.
 - Target repo has project-local orchestrator skills under `.codex/skills/`.
+
+Recommended:
+
+- Keep `superpowers` disabled as a global plugin so project-local workflow rules stay obvious. DevFlow reports global Superpowers activation as a warning, not a blocking dependency failure.
 
 Activate dependencies in one target repo:
 
@@ -68,7 +72,7 @@ npx -y get-shit-done-cc@latest --codex --local --profile=standard
 ```
 
 It also links or copies the required Superpowers skills and this plugin's skills into `/path/to/repo/.codex/skills/`.
-This keeps Superpowers, GSD, and OpenSpec out of the global default context while making them available inside repos that opt into this orchestrator.
+This keeps the required workflow skills available inside repos that opt into this orchestrator while avoiding reliance on global skill installation.
 
 Codex currently resolves project-local skills reliably, while project-local plugin enable sections are not treated as runtime plugin activation. For that reason the activation script does not rely on `.codex/config.toml` plugin sections for dependency visibility.
 
@@ -137,6 +141,53 @@ Apply selected actions after review:
 ```
 
 Apply operations create timestamped backups before editing `config.toml`. First-version cleanup disables global config entries or installs known cached skills into the project; it does not delete global skill files or plugin cache directories.
+
+## Context Health Check
+
+Use `context-health-check` when a long-running task may be drifting, repeating failed commands, expanding diff scope, missing validation evidence, or approaching a checkpoint/compact boundary.
+
+DevFlow records sanitized runtime metadata through hooks under:
+
+```text
+.dev-flow/context-health/events.jsonl
+```
+
+The event log is runtime telemetry and should not be committed. Durable derived reports are written under:
+
+```text
+.planning/context-health/reports/
+```
+
+Run an immediate check:
+
+```bash
+python3 scripts/context_health_check.py --repo /path/to/repo --write-report --json
+```
+
+Import older Codex local history on a best-effort basis:
+
+```bash
+python3 scripts/context_health_import_codex_sessions.py \
+  --repo /path/to/repo \
+  --codex-home ~/.codex \
+  --json
+```
+
+Summarize collected history:
+
+```bash
+python3 scripts/context_health_history.py --repo /path/to/repo --json
+```
+
+Reports include risk, confidence, decision, runtime signals, repo truth, workflow truth, Goal Mode Prompt guidance, subagent recommendations, and minimal next context. Missing runtime-only metrics are marked `unknown` and lower confidence instead of being treated as healthy.
+
+DevFlow does not execute `/goal` or spawn subagents from scripts or hooks. It generates Goal Mode prompts and scoped subagent delegation prompts for the active Codex agent or user to apply when supported.
+
+## AgentKB
+
+The Markdown-first knowledge-base workflow is packaged separately as the `agent-kb` plugin. DevFlow can be used alongside it for planning and verification, but DevFlow no longer owns KB scripts, skills, or hook behavior.
+
+Use `agent-kb` when a project should maintain a Git-reviewable Markdown knowledge base. Obsidian is supported there as the `obsidian-compatible-markdown` editor profile, and Codex is one packaged agent adapter.
 
 Set up a repository:
 

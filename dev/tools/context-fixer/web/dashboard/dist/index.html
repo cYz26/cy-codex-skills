@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Context Fixer Dashboard</title>
+  <style>
+    body {
+      margin: 0;
+      background: #f6f7f9;
+      color: #18202f;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+    }
+    main { width: min(1100px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 40px; }
+    h1 { margin: 0 0 4px; font-size: 28px; letter-spacing: 0; }
+    h2 { margin: 0 0 10px; font-size: 17px; letter-spacing: 0; }
+    .muted { color: #647084; overflow-wrap: anywhere; }
+    .grid { display: grid; gap: 12px; }
+    .summary { grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 18px 0; }
+    .layout { grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.85fr); align-items: start; }
+    .metric, .panel { background: #fff; border: 1px solid #d8dee8; border-radius: 8px; padding: 14px; }
+    .metric-label { color: #647084; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .metric-value { margin-top: 7px; font-size: 22px; font-weight: 740; overflow-wrap: anywhere; }
+    .stack { display: grid; gap: 12px; }
+    .list { display: grid; gap: 8px; padding: 0; margin: 0; list-style: none; }
+    .item { border: 1px solid #d8dee8; border-radius: 8px; padding: 10px; background: #fbfcfe; }
+    .item-head { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+    .badge { border-radius: 999px; padding: 2px 8px; background: #edf2f7; font-size: 12px; font-weight: 700; }
+    @media (max-width: 900px) { .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .layout { grid-template-columns: 1fr; } }
+    @media (max-width: 560px) { main { width: min(100% - 20px, 720px); } .summary { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Context Fixer Dashboard</h1>
+    <div class="muted" id="repo"></div>
+    <section class="grid summary" id="summary"></section>
+    <section class="grid layout">
+      <div class="stack">
+        <section class="panel"><h2>Top Offenders</h2><ul class="list" id="offenders"></ul></section>
+        <section class="panel"><h2>Recommendations</h2><ul class="list" id="recommendations"></ul></section>
+      </div>
+      <aside class="stack">
+        <section class="panel"><h2>Data Sources</h2><ul class="list" id="sources"></ul></section>
+        <section class="panel"><h2>History</h2><ul class="list" id="history"></ul></section>
+        <section class="panel"><h2>Privacy</h2><div class="muted" id="privacy"></div></section>
+      </aside>
+    </section>
+  </main>
+  <script type="application/json" id="embedded-data">__CONTEXT_FIXER_DASHBOARD_JSON__</script>
+  <script>
+    const embedded = document.getElementById("embedded-data").textContent;
+    const load = embedded.startsWith("__") ? fetch("/api/dashboard").then((response) => response.json()) : Promise.resolve(JSON.parse(embedded));
+    const text = (value) => value === undefined || value === null || value === "" ? "unknown" : String(value);
+    const fmt = (value) => Number(value || 0).toLocaleString();
+    const pct = (value) => `${(Number(value || 0) * 100).toFixed(1)}%`;
+    const item = (title, meta = "", badge = "") => `<li class="item"><div class="item-head"><strong>${text(title)}</strong><span class="badge">${text(badge)}</span></div><div class="muted">${text(meta)}</div></li>`;
+    load.then((data) => {
+      document.getElementById("repo").textContent = text(data.overview.repo);
+      document.getElementById("summary").innerHTML = [
+        ["Severity", text(data.overview.severity)],
+        ["Policy", text(data.overview.policy_status)],
+        ["Peak", `${fmt(data.overview.max_input_tokens)} tokens`],
+        ["Window", pct(data.overview.max_context_pct)],
+        ["Headroom", fmt(data.overview.headroom_tokens)]
+      ].map(([label, value]) => `<div class="metric"><div class="metric-label">${label}</div><div class="metric-value">${value}</div></div>`).join("");
+      document.getElementById("offenders").innerHTML = (data.top_offenders || []).slice(0, 8).map((entry) => item(entry.label, entry.category, fmt(entry.estimated_tokens))).join("") || item("No offenders");
+      document.getElementById("recommendations").innerHTML = (data.recommendations || []).slice(0, 8).map((entry) => item(entry.title, entry.action, entry.priority)).join("") || item("No recommendations");
+      document.getElementById("sources").innerHTML = Object.entries(data.data_sources || {}).map(([key, value]) => item(key, value.precision, value.status)).join("") || item("No data sources");
+      document.getElementById("history").innerHTML = (data.history || []).slice(0, 8).map((entry) => item(entry.id, entry.generated_at, entry.severity)).join("") || item("No saved snapshots");
+      document.getElementById("privacy").textContent = `Local only. Omitted bodies: ${(data.privacy.omitted_bodies || []).join(", ")}.`;
+    });
+  </script>
+</body>
+</html>

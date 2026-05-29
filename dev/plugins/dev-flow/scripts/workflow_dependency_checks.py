@@ -6,11 +6,11 @@ from typing import Any
 
 from workflow_dependency_catalog import (
     DEVELOPER_SKILLS,
+    LEGACY_OPENSPEC_SKILLS,
     PROJECT_ORCHESTRATOR_SKILLS,
     REQUIRED_CLI_TOOLS,
     REQUIRED_GSD_AGENTS,
     REQUIRED_GSD_SKILLS,
-    REQUIRED_OPENSPEC_SKILLS,
     REQUIRED_SKILLS,
     REQUIRED_SUPERPOWERS_PROJECT_SKILLS,
 )
@@ -30,14 +30,15 @@ def check_external_dependencies(
     repo: Path | None = None,
 ) -> None:
     check_required_cli_tools(checks)
-    check_global_plugin_inactive(checks, global_config, "superpowers")
+    check_global_plugin_inactive(checks, global_config, "superpowers", required=False)
     check_global_skills_inactive(checks, codex_home, global_config)
     if repo is not None:
         check_project_skills(checks, repo, PROJECT_ORCHESTRATOR_SKILLS, True)
         check_project_skills(checks, repo, REQUIRED_SUPERPOWERS_PROJECT_SKILLS, True)
         check_project_skills(checks, repo, REQUIRED_GSD_SKILLS, True)
         check_project_gsd_agents(checks, repo, True)
-        check_project_skills(checks, repo, REQUIRED_OPENSPEC_SKILLS, True)
+        check_project_openspec_setup(checks, repo, True)
+        check_legacy_project_skills(checks, repo, LEGACY_OPENSPEC_SKILLS, False)
     for plugin, skills in REQUIRED_SKILLS.items():
         check_plugin_installed(checks, codex_home, plugin, "external plugin installed", True)
         add_skill_checks(checks, codex_home, plugin, skills, True)
@@ -63,6 +64,31 @@ def check_project_skills(
         add_check(checks, f"project skill active: {skill}", path.exists(), required, str(path))
 
 
+def check_legacy_project_skills(
+    checks: list[dict[str, Any]],
+    repo: Path,
+    skills: list[str],
+    required: bool,
+) -> None:
+    for skill in skills:
+        path = repo / ".codex" / "skills" / skill / "SKILL.md"
+        add_check(checks, f"legacy project skill active: {skill}", path.exists(), required, str(path))
+
+
+def check_project_openspec_setup(checks: list[dict[str, Any]], repo: Path, required: bool) -> None:
+    config_path = repo / "openspec" / "config.yaml"
+    legacy_skill_paths = [repo / ".codex" / "skills" / skill / "SKILL.md" for skill in LEGACY_OPENSPEC_SKILLS]
+    legacy_complete = all(path.exists() for path in legacy_skill_paths)
+    ok = config_path.exists() or legacy_complete
+    if config_path.exists():
+        detail = str(config_path)
+    elif legacy_complete:
+        detail = "legacy project-local OpenSpec skills"
+    else:
+        detail = f"missing {config_path}"
+    add_check(checks, "project openspec setup active", ok, required, detail)
+
+
 def check_project_gsd_agents(checks: list[dict[str, Any]], repo: Path, required: bool) -> None:
     for agent in REQUIRED_GSD_AGENTS:
         path = repo / ".codex" / "agents" / agent
@@ -74,7 +100,7 @@ def check_global_skills_inactive(
     codex_home: Path,
     config: dict[str, Any],
 ) -> None:
-    for skill in [*REQUIRED_GSD_SKILLS, *REQUIRED_OPENSPEC_SKILLS, *REQUIRED_SUPERPOWERS_PROJECT_SKILLS]:
+    for skill in [*REQUIRED_GSD_SKILLS, *LEGACY_OPENSPEC_SKILLS, *REQUIRED_SUPERPOWERS_PROJECT_SKILLS]:
         path = codex_home / "skills" / skill / "SKILL.md"
         inactive = not path.exists() or skill_disabled(config, path)
         detail = "not installed globally" if not path.exists() else skill_detail(path, config)

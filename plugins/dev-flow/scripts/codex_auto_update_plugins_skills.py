@@ -10,8 +10,9 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-import tomllib
 from typing import Any
+
+from workflow_context_config import read_config as read_toml_config
 
 
 def parse_args() -> argparse.Namespace:
@@ -155,9 +156,7 @@ def short_output(result: dict[str, Any], limit: int = 600) -> str:
 
 def read_config(codex_home: Path) -> dict[str, Any]:
     path = codex_home / "config.toml"
-    if not path.exists():
-        return {}
-    return tomllib.loads(path.read_text())
+    return read_toml_config(path)
 
 
 def git_head(repo: Path) -> str | None:
@@ -192,7 +191,15 @@ def update_git_repo(repo: Path, name: str, apply: bool) -> dict[str, Any]:
     after = git_head(repo)
     if result["ok"]:
         status = "updated" if before != after else "unchanged"
-        return item("git", name, status, short_output(result) or "already up to date", before=before, after=after, path=repo)
+        return item(
+            "git",
+            name,
+            status,
+            short_output(result) or "already up to date",
+            before=before,
+            after=after,
+            path=repo,
+        )
     return item("git", name, "failed", short_output(result), before=before, after=after, path=repo)
 
 
@@ -340,7 +347,15 @@ def sync_openai_curated_plugin_cache(
         cache = record["cache"]
         source = record["source"]
         if not record["safe"]:
-            results.append(item("plugin-cache", name, "skipped", "cache differs from previous marketplace mirror", path=cache))
+            results.append(
+                item(
+                    "plugin-cache",
+                    name,
+                    "skipped",
+                    "cache differs from previous marketplace mirror",
+                    path=cache,
+                )
+            )
             continue
         if same_tree(cache, source):
             results.append(item("plugin-cache", name, "unchanged", "matches marketplace mirror", path=cache))
@@ -399,7 +414,13 @@ def run_external_updaters(codex_home: Path, apply: bool) -> list[dict[str, Any]]
     has_lark_skills = (Path.home() / ".agents" / "skills" / "lark-shared" / "SKILL.md").exists()
     if executable_exists("lark-cli") or has_lark_skills:
         if not apply:
-            results.append(item("external-updater", "lark-cli-and-skills", "would-try", "would run npm update -g @larksuite/cli and npx skills add larksuite/cli -g -y"))
+            detail = (
+                "would run npm update -g @larksuite/cli and "
+                "npx skills add larksuite/cli -g -y"
+            )
+            results.append(
+                item("external-updater", "lark-cli-and-skills", "would-try", detail)
+            )
         elif executable_exists("npm") and executable_exists("npx"):
             first = run_command(["npm", "update", "-g", "@larksuite/cli"], timeout=900)
             second = run_command(["npx", "-y", "skills", "add", "larksuite/cli", "-g", "-y"], timeout=900)
@@ -409,7 +430,10 @@ def run_external_updaters(codex_home: Path, apply: bool) -> list[dict[str, Any]]
         else:
             results.append(item("external-updater", "lark-cli-and-skills", "skipped", "npm or npx not available"))
 
-    has_gsd = (codex_home / "get-shit-done" / "VERSION").exists() or (codex_home / "skills" / "gsd-update" / "SKILL.md").exists()
+    has_gsd = (
+        (codex_home / "get-shit-done" / "VERSION").exists()
+        or (codex_home / "skills" / "gsd-update" / "SKILL.md").exists()
+    )
     if has_gsd:
         if not apply:
             current = installed_gsd_version(codex_home)

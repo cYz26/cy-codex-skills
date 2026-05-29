@@ -1,0 +1,38 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Write|Edit|MultiEdit|Read|Grep|Glob|LS",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/kb_event_hook.py --event post_tool_use",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/kb_event_hook.py --event user_prompt_submit",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/kb_event_hook.py --event stop",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

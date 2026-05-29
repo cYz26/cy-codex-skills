@@ -2,6 +2,14 @@
 
 <img src="./assets/context-fixer-icon.svg" alt="Context Fixer pixel icon" width="96" height="96">
 
+## Status
+
+Context Fixer development is temporarily **pending**. The current code and
+archived feature work are retained for reference, but the earlier Context Fixer
+workflows are not recommended for new use. Prefer the DevFlow context-health
+tooling for current Codex context checks until Context Fixer is resumed with a
+fresh scope and verification plan.
+
 Context Fixer diagnoses how Codex context is being used in a local project.
 It reads local Codex session JSONL, `~/.codex/config.toml`, project `AGENTS.md`,
 project-local `.codex/config.toml`, project-local skills, and workflow files,

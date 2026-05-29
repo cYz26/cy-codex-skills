@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import shlex
 from pathlib import Path
 from typing import Any
 
@@ -90,11 +92,20 @@ def resolve_registered_path(marketplace: Path, registration: dict[str, Any] | No
 
 def check_hooks(checks: list[dict[str, Any]], plugin_root: Path, hooks_path: Path) -> dict[str, Any]:
     for command in hook_commands(read_json(hooks_path)):
-        script = plugin_root / command
+        script = plugin_root / hook_script(command)
         add_check(checks, f"hook command {command}", script.exists(), str(script))
+        add_check(checks, f"hook executable {command}", os.access(script, os.X_OK), str(script))
     hook_result = simulate_hook(plugin_root)
     add_check(checks, "hook simulation", hook_result["exit_code"] == 0, hook_result["stderr"])
     return hook_result
+
+
+def hook_script(command: str) -> str:
+    try:
+        parts = shlex.split(command)
+    except ValueError:
+        return command
+    return parts[0] if parts else command
 
 
 def check_dependencies(

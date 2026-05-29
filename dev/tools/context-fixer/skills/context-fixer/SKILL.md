@@ -1,12 +1,17 @@
 ---
 name: context-fixer
-description: Use when auditing Codex context usage, context pressure, compaction timing, request trace attribution, or AI project configuration for a local repository.
+description: Use only when explicitly asked to inspect the pending Context Fixer prototype or legacy reports; prefer DevFlow context-health for new Codex context checks.
 ---
 
 # Context Fixer
 
-Context Fixer is a local-first auditor for Codex sessions, context usage,
-compaction timing, request traces, and AI project configuration.
+Context Fixer development is temporarily **pending**. The existing workflows are
+kept for legacy inspection, but they are not recommended for new Codex context
+audits. Prefer DevFlow context-health tooling unless the user explicitly asks
+for Context Fixer.
+
+Context Fixer was built as a local-first auditor for Codex sessions, context
+usage, compaction timing, request traces, and AI project configuration.
 
 Use this skill when the user asks to:
 

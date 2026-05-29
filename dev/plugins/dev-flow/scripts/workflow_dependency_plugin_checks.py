@@ -27,10 +27,15 @@ def check_plugin_activation(
     add_check(checks, f"{label}: {plugin}", enabled, required, detail)
 
 
-def check_global_plugin_inactive(checks: list[dict[str, Any]], config: dict[str, Any], plugin: str) -> None:
+def check_global_plugin_inactive(
+    checks: list[dict[str, Any]],
+    config: dict[str, Any],
+    plugin: str,
+    required: bool = True,
+) -> None:
     enabled = plugin_enabled(config, plugin)
     detail = "globally enabled" if enabled else "not globally enabled"
-    add_check(checks, f"global plugin inactive: {plugin}", not enabled, True, detail)
+    add_check(checks, f"global plugin inactive: {plugin}", not enabled, required, detail)
 
 
 def check_plugin_installed(

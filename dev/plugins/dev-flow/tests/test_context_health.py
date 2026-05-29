@@ -1,0 +1,260 @@
+import json
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+
+PLUGIN_ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS = PLUGIN_ROOT / "scripts"
+sys.path.insert(0, str(SCRIPTS))
+
+from workflow_context_health import (
+    context_health_check,
+    import_codex_sessions,
+    read_context_health_events,
+    record_context_health_event,
+)
+
+
+def run_script(name, *args, input_text=None, cwd=PLUGIN_ROOT):
+    script = PLUGIN_ROOT / "scripts" / name
+    return subprocess.run(
+        [sys.executable, str(script), *args],
+        input=input_text,
+        text=True,
+        cwd=cwd,
+        capture_output=True,
+        check=False,
+    )
+
+
+class ContextHealthTests(unittest.TestCase):
+    def make_repo(self):
+        repo = Path(tempfile.mkdtemp(prefix="devflow-health-repo-"))
+        subprocess.run(["git", "init"], cwd=repo, capture_output=True, check=False)
+        (repo / "AGENTS.md").write_text("Project rules\n")
+        (repo / "openspec").mkdir()
+        (repo / "openspec" / "config.yaml").write_text("project: fixture\n")
+        (repo / ".planning").mkdir()
+        (repo / ".planning" / "STATE.md").write_text(self.state_text())
+        return repo
+
+    def state_text(self, compact_status="not_needed", goal_summary="none"):
+        return f"""---
+workflow_version: 0.3.0
+project_mode: brownfield
+current_stage: executing
+
+current_phase:
+  id: 01-foundation
+  status: planning
+
+current_change:
+  id: add-context-health-check
+  status: planned
+
+gates:
+  workflow_initialized: true
+  spec_approved: true
+  plan_written: true
+  tests_baseline_known: false
+  implementation_done: false
+  verification_passed: false
+  state_updated: true
+  archive_allowed: false
+
+context_management:
+  compact_policy: checkpoint_boundary
+  last_checkpoint_id: none
+  last_checkpoint_file: none
+  compact_recommended: false
+  compact_status: {compact_status}
+  last_compact_result_file: none
+  compact_source: none
+  compact_updated_at: none
+  compact_skip_reason: none
+  compact_error: none
+
+context_health:
+  last_report: none
+  last_risk: unknown
+  last_confidence: unknown
+  last_decision: none
+  last_goal_status: unknown
+  goal_summary: {goal_summary}
+---
+
+# Workflow State
+
+## Current Status
+
+Fixture state.
+
+## Next Action
+
+Continue fixture work.
+"""
+
+    def test_record_context_health_event_sanitizes_tool_bodies(self):
+        repo = self.make_repo()
+
+        event = record_context_health_event(
+            repo,
+            "post_tool_use",
+            {
+                "cwd": str(repo),
+                "tool_name": "Bash",
+                "tool_input": {"command": "python3 -m unittest tests/test_example.py --token SECRET_TOKEN"},
+                "tool_response": {
+                    "exit_code": 1,
+                    "duration_ms": 1200,
+                    "output": "SECRET_OUTPUT_SHOULD_NOT_BE_PERSISTED\n" * 4,
+                },
+            },
+        )
+
+        events_path = repo / ".dev-flow" / "context-health" / "events.jsonl"
+        text = events_path.read_text()
+        self.assertEqual(event["tool"], "Bash")
+        self.assertEqual(event["command_category"], "test")
+        self.assertEqual(event["status"], "fail")
+        self.assertIn("command_hash", event)
+        self.assertEqual(event["output_lines"], 4)
+        self.assertNotIn("SECRET_OUTPUT_SHOULD_NOT_BE_PERSISTED", text)
+        self.assertNotIn("SECRET_TOKEN", text)
+        self.assertEqual(len(read_context_health_events(repo)), 1)
+
+    def test_repeated_failed_command_recommends_reconciliation(self):
+        repo = self.make_repo()
+        payload = {
+            "cwd": str(repo),
+            "tool_name": "Bash",
+            "tool_input": {"command": "python3 -m unittest tests/test_example.py"},
+            "tool_response": {"exit_code": 1, "output": "failure\n"},
+        }
+        record_context_health_event(repo, "post_tool_use", payload)
+        record_context_health_event(repo, "post_tool_use", payload)
+
+        report = context_health_check(repo, {"current_objective": "Implement context health checks"})
+
+        self.assertEqual(report["risk"], "medium")
+        self.assertEqual(report["decision"], "reconcile")
+        self.assertIn("repeated_command_failure", {signal["id"] for signal in report["signals"]})
+
+    def test_pending_compact_is_high_risk(self):
+        repo = self.make_repo()
+        (repo / ".planning" / "STATE.md").write_text(self.state_text(compact_status="pending"))
+
+        report = context_health_check(repo, {"current_objective": "Continue implementation"})
+
+        self.assertEqual(report["risk"], "high")
+        self.assertEqual(report["decision"], "checkpoint_compact")
+        self.assertIn("compact_pending", {signal["id"] for signal in report["signals"]})
+
+    def test_missing_goal_generates_goal_mode_prompt(self):
+        repo = self.make_repo()
+        (repo / "feature.py").write_text("print('changed')\n")
+        subprocess.run(["git", "add", "AGENTS.md", "openspec/config.yaml"], cwd=repo, capture_output=True, check=False)
+        subprocess.run(["git", "commit", "-m", "baseline"], cwd=repo, capture_output=True, check=False)
+
+        report = context_health_check(
+            repo,
+            {
+                "current_objective": "Add context health checks",
+                "validation_commands": ["python3 -m unittest discover -s dev/plugins/dev-flow/tests"],
+            },
+        )
+
+        self.assertEqual(report["goal"]["status"], "missing")
+        self.assertIn("Goal Mode Prompt", report["goal"]["prompt"])
+        self.assertIn("Add context health checks", report["goal"]["prompt"])
+
+    def test_repeated_file_reads_recommend_explorer_subagent(self):
+        repo = self.make_repo()
+        for _ in range(4):
+            record_context_health_event(
+                repo,
+                "pre_tool_use",
+                {
+                    "cwd": str(repo),
+                    "tool_name": "Read",
+                    "tool_input": {"file_path": str(repo / "dev/plugins/dev-flow/scripts/workflow_state.py")},
+                },
+            )
+
+        report = context_health_check(repo, {"current_objective": "Diagnose workflow state drift"})
+
+        self.assertEqual(report["subagents"]["recommendation"], "explorer")
+        self.assertIn("workflow_state.py", " ".join(report["subagents"]["scoped_files"]))
+        self.assertIn("Do not edit files", report["subagents"]["prompt"])
+
+    def test_import_codex_sessions_is_best_effort_and_sanitized(self):
+        repo = self.make_repo()
+        codex_home = Path(tempfile.mkdtemp(prefix="devflow-codex-home-"))
+        session = codex_home / "sessions" / "2026" / "05" / "27" / "session-test.jsonl"
+        session.parent.mkdir(parents=True)
+        session.write_text(
+            json.dumps(
+                {
+                    "cwd": str(repo),
+                    "timestamp": "2026-05-27T12:00:00+08:00",
+                    "tool_name": "Bash",
+                    "tool_input": {"command": "pytest tests/test_example.py"},
+                    "tool_response": {"exit_code": 0, "output": "SECRET_SESSION_OUTPUT"},
+                }
+            )
+            + "\n"
+            + json.dumps(
+                {
+                    "tool_name": "Bash",
+                    "tool_input": {"command": "pytest unrelated.py"},
+                    "tool_response": {"exit_code": 0, "output": "SECRET_NO_CWD_OUTPUT"},
+                }
+            )
+            + "\n"
+            + json.dumps(
+                {
+                    "cwd": str(repo.parent / "other-repo"),
+                    "tool_name": "Bash",
+                    "tool_input": {"command": "pytest unrelated.py"},
+                    "tool_response": {"exit_code": 0, "output": "SECRET_OTHER_REPO_OUTPUT"},
+                }
+            )
+            + "\n"
+        )
+
+        report = import_codex_sessions(repo, codex_home)
+        imported_path = repo / ".dev-flow" / "context-health" / "imported-events.jsonl"
+        imported_text = imported_path.read_text()
+
+        self.assertEqual(report["coverage"], "partial")
+        self.assertEqual(report["confidence"], "low")
+        self.assertEqual(report["imported_events"], 1)
+        self.assertNotIn("SECRET_SESSION_OUTPUT", imported_text)
+        self.assertNotIn("SECRET_NO_CWD_OUTPUT", imported_text)
+        self.assertNotIn("SECRET_OTHER_REPO_OUTPUT", imported_text)
+
+    def test_context_health_cli_writes_report(self):
+        repo = self.make_repo()
+
+        result = run_script(
+            "context_health_check.py",
+            "--repo",
+            str(repo),
+            "--current-objective",
+            "Implement context health checks",
+            "--write-report",
+            "--json",
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertTrue(payload["report_file"].startswith(".planning/context-health/reports/"))
+        self.assertTrue((repo / payload["report_file"]).exists())
+
+
+if __name__ == "__main__":
+    unittest.main()

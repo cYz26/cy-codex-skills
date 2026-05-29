@@ -1,6 +1,6 @@
 ---
 name: checkpoint-compact
-description: Use when creating checkpoints or preparing /compact at workflow boundaries.
+description: Use when checkpointing or preparing /compact at workflow boundaries.
 ---
 
 # Checkpoint Compact Gate
