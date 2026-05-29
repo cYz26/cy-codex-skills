@@ -1,0 +1,7 @@
+interface:
+  display_name: Lark Feishu Ops
+  short_description: Route Feishu/Lark work through one checked subagent.
+  brand_color: "#2563EB"
+  default_prompt: Use Lark Feishu Ops to run a lark-cli preflight before this Feishu task.
+policy:
+  allow_implicit_invocation: true

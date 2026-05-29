@@ -1,0 +1,44 @@
+{
+  "name": "lark-feishu-ops",
+  "version": "0.1.0",
+  "description": "Route Feishu/Lark operations through one short-lived subagent with lark-cli dependency checks.",
+  "author": {
+    "name": "cY",
+    "url": "https://github.com/changyiZ"
+  },
+  "homepage": "https://github.com/changyiZ/cy-codex-skills/tree/main/plugins/lark-feishu-ops",
+  "repository": "https://github.com/changyiZ/cy-codex-skills",
+  "license": "UNLICENSED",
+  "keywords": [
+    "codex",
+    "lark",
+    "feishu",
+    "lark-cli",
+    "subagent"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Lark Feishu Ops",
+    "shortDescription": "One subagent entry for lark-cli and Feishu/Lark operations",
+    "longDescription": "Centralizes Feishu/Lark document, IM, calendar, meeting, sheet, Base, Wiki, Drive, and OpenAPI work behind a short-lived subagent. Includes lark-cli preflight, update checks, global lark skill context audit, and post-operation validation guidance.",
+    "developerName": "cY",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Use Lark Feishu Ops to read this document.",
+      "Use Lark Feishu Ops to send this Feishu message.",
+      "Run the Lark Feishu Ops doctor."
+    ],
+    "brandColor": "#2563EB",
+    "composerIcon": "./assets/lark-feishu-ops.png",
+    "logo": "./assets/lark-feishu-ops.png",
+    "websiteURL": "https://github.com/changyiZ/cy-codex-skills/tree/main/plugins/lark-feishu-ops",
+    "privacyPolicyURL": "https://github.com/changyiZ/cy-codex-skills/blob/main/plugins/lark-feishu-ops/README.md",
+    "termsOfServiceURL": "https://github.com/changyiZ/cy-codex-skills/blob/main/plugins/lark-feishu-ops/README.md",
+    "screenshots": []
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "skill": "lark-feishu-ops",
+  "cases": [
+    {
+      "id": "trigger-doc-fetch",
+      "prompt": "用 FeishuOps 读取这个飞书文档并返回摘要：https://example.feishu.cn/docx/abc",
+      "expected": "trigger"
+    },
+    {
+      "id": "trigger-doc-review-with-parent-judgment",
+      "prompt": "用 FeishuOps 读取这个飞书文档，然后判断这个文档对 Harness 的理解到位不：https://bytedance.larkoffice.com/docx/V6BWdzXCroVmenxvpzEcyL31nPC",
+      "expected": "trigger"
+    },
+    {
+      "id": "trigger-global-unload",
+      "prompt": "检查 Lark CLI 依赖，并把全局 lark skills 从 Codex 主上下文里取消加载",
+      "expected": "trigger"
+    },
+    {
+      "id": "trigger-im-send",
+      "prompt": "用 lark-cli 给研发群发送这段飞书消息，发送前确认目标群",
+      "expected": "trigger"
+    },
+    {
+      "id": "non-trigger-product-review",
+      "prompt": "评审这个 PRD 的产品逻辑是否合理，不需要操作飞书",
+      "expected": "do_not_trigger"
+    },
+    {
+      "id": "non-trigger-app-code",
+      "prompt": "修改 Android Compose 页面里的按钮样式",
+      "expected": "do_not_trigger"
+    }
+  ]
+}

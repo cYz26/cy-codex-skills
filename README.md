@@ -36,6 +36,7 @@ Development-stage Codex plugins live under `dev/plugins/`; release-ready plugins
 
 - `plugins/godot-core`
 - `plugins/dev-flow`
+- `plugins/lark-feishu-ops`
 
 ## Development skills
 
