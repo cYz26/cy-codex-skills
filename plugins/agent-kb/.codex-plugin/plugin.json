@@ -38,8 +38,8 @@
       "Lint AgentKB"
     ],
     "brandColor": "#0F766E",
-    "composerIcon": "./assets/agent-kb.svg",
-    "logo": "./assets/agent-kb.svg",
+    "composerIcon": "./assets/agentkb-icon.png",
+    "logo": "./assets/agentkb-icon.png",
     "screenshots": []
   }
 }
