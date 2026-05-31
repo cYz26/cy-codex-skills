@@ -14,6 +14,7 @@ Kinds: `new-feature`, `bug-fix`, `behavior-change`, `api-change`, `data-model-ch
 ## Routes
 
 - Use `ai-native-tech-plan` for technical plans, implementation plans, architecture plans, Codex execution plans, workflow plans, or requests to avoid partial delivery.
+- Use `capability-research` when the requirement depends on a current or external capability, platform behavior, plugin/runtime behavior, hook/API support, CLI support, installed-cache state, or local-vs-platform ambiguity.
 - Use `superpowers:brainstorming` for open goals, constraints, tradeoffs, or implementation shape.
 - Use `openspec-explore` for unclear behavior, compatibility, requirements, or acceptance criteria.
 - Use `openspec-propose` before behavior/API/data/integration changes.

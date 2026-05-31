@@ -53,6 +53,16 @@ Describe the complete behavior, internal structure, boundaries, and validation s
 
 Track slice status in `tasks.md`, `.planning/STATE.md`, or a repo-specific ledger file. Mark a slice done only after its validation command passes or a blocker is recorded.
 
+## Capability Evidence
+
+Complete this section when the design depends on current, external, platform, plugin, API, hook, CLI, installed-cache, or local-vs-platform capability.
+
+- authoritative/current: source or command used, observed capability, version or date when available.
+- local scan: files, config, cache paths, scripts, tests, or generated artifacts inspected.
+- comparison: native option, local state, fallback option, recommendation, and tradeoffs.
+- assumptions: what remains unverified and why it is acceptable or blocking.
+- contract: scenarios and validation commands that prove the selected behavior.
+
 ## Approach
 
 Use the smallest compatible implementation that satisfies the requirements and preserves existing project conventions.

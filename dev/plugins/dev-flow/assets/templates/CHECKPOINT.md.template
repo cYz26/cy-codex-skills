@@ -66,5 +66,5 @@ Then proceed to: `{{next_stage}}`.
 
 ## Compact instruction
 
-Checkpoint is complete. Run `/compact` before continuing if using Codex CLI.
-If compaction is unavailable, start a new session and provide this checkpoint file as the handoff context.
+{{compact_instruction}}
+If compaction is unavailable or not needed, repository files and this checkpoint remain the handoff source of truth.

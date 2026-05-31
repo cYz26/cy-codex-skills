@@ -11,7 +11,9 @@ sys.path.insert(0, str(SCRIPTS))
 
 from workflow_context_health import context_health_check, record_context_health_event
 from workflow_context_tools import apply_context_tool_actions, audit_context_tools
+from workflow_compact_recovery import handle_compact_recovery_event
 from workflow_dependencies import dependency_report
+from codex_auto_update_plugins_skills import plugin_install_results, run_external_updaters
 
 
 class ReleaseSmokeTests(unittest.TestCase):
@@ -52,7 +54,17 @@ class ReleaseSmokeTests(unittest.TestCase):
             "test-driven-development",
             "verification-before-completion",
         ]:
-            self.write_skill(home / "plugins" / "cache" / "openai-curated" / "superpowers" / "local" / "skills" / skill / "SKILL.md")
+            self.write_skill(
+                home
+                / "plugins"
+                / "cache"
+                / "openai-curated"
+                / "superpowers"
+                / "local"
+                / "skills"
+                / skill
+                / "SKILL.md"
+            )
         return home
 
     def make_repo(self):
@@ -106,6 +118,8 @@ context_health:
     def make_dependency_ready_repo(self):
         repo = self.make_repo()
         required_skills = [
+            "capability-research",
+            "claude-code-delegate",
             "project-orchestrator",
             "project-setup",
             "feature-intake",
@@ -142,6 +156,82 @@ context_health:
         self.assertEqual(manifest["name"], "dev-flow")
         self.assertEqual(manifest["interface"]["displayName"], "DevFlow")
         self.assertLessEqual(len(manifest["interface"]["defaultPrompt"]), 3)
+
+    def test_capability_research_skill_is_packaged(self):
+        skill = (PLUGIN_ROOT / "skills" / "capability-research" / "SKILL.md").read_text()
+        self.assertIn("Capability Evidence Gate", skill)
+        self.assertIn("authoritative/current capability", skill)
+        self.assertIn("local implementation scan", skill)
+        self.assertIn("OpenSpec/test contract", skill)
+
+        templates_root = PLUGIN_ROOT / "assets" / "templates"
+        self.assertIn("Capability Evidence", (templates_root / "OPENSPEC_DESIGN.md.template").read_text())
+        self.assertIn("capability-research", (templates_root / "AGENTS.md.template").read_text())
+
+    def test_claude_code_delegation_is_packaged(self):
+        skill = (PLUGIN_ROOT / "skills" / "claude-code-delegate" / "SKILL.md").read_text()
+        self.assertIn("Claude Code Delegation", skill)
+        self.assertIn("plan-only delegation", skill)
+        self.assertTrue((PLUGIN_ROOT / "scripts" / "claude_code_delegate.py").exists())
+        self.assertTrue((PLUGIN_ROOT / "scripts" / "workflow_claude_delegate.py").exists())
+
+        scripts = str(PLUGIN_ROOT / "scripts")
+        sys.path.insert(0, scripts)
+        try:
+            from workflow_dependency_catalog import PROJECT_ORCHESTRATOR_SKILLS
+            from workflow_claude_delegate import ClaudeDelegateOptions
+        finally:
+            sys.path.remove(scripts)
+
+        self.assertIn("claude-code-delegate", PROJECT_ORCHESTRATOR_SKILLS)
+        self.assertEqual(ClaudeDelegateOptions(repo=Path("/tmp/example")).mode, "plan")
+
+    def test_low_frequency_skills_are_explicit_only(self):
+        explicit_only = {
+            "ai-native-tech-plan",
+            "checkpoint-compact",
+            "claude-code-delegate",
+            "context-health-check",
+            "context-tool-audit",
+            "execute-task",
+            "project-setup",
+            "verify-and-archive",
+            "workflow-doctor",
+        }
+        for skill in explicit_only:
+            policy = PLUGIN_ROOT / "skills" / skill / "agents" / "openai.yaml"
+            with self.subTest(skill=skill):
+                self.assertTrue(policy.exists())
+                self.assertIn("allow_implicit_invocation: false", policy.read_text())
+
+    def test_core_routing_skills_remain_implicit(self):
+        implicit = {"project-orchestrator", "feature-intake", "change-plan", "capability-research"}
+        for skill in implicit:
+            policy = PLUGIN_ROOT / "skills" / skill / "agents" / "openai.yaml"
+            with self.subTest(skill=skill):
+                self.assertFalse(policy.exists())
+
+    def test_release_python_lines_stay_under_120_characters(self):
+        long_lines = []
+        for path in sorted(PLUGIN_ROOT.rglob("*.py")):
+            for number, line in enumerate(path.read_text().splitlines(), 1):
+                if len(line) > 120:
+                    long_lines.append(f"{path.relative_to(PLUGIN_ROOT)}:{number}:{len(line)}")
+
+        self.assertEqual(long_lines, [])
+
+    def test_compact_recovery_hooks_are_packaged(self):
+        hooks = json.loads((PLUGIN_ROOT / "hooks.json").read_text())["hooks"]
+        post_compact_commands = [
+            hook["command"]
+            for group in hooks["PostCompact"]
+            for hook in group["hooks"]
+        ]
+        post_compact_matchers = [group.get("matcher") for group in hooks["PostCompact"]]
+
+        self.assertIn("^manual$", post_compact_matchers)
+        self.assertIn("./scripts/compact_recovery_hook.py --event post_compact", post_compact_commands)
+        self.assertTrue(callable(handle_compact_recovery_event))
 
     def test_context_tool_facade_audits_and_dry_runs_packaged_behavior(self):
         codex_home = self.make_codex_home()
@@ -192,6 +282,46 @@ context_health:
         self.assertEqual(report["status"], "ready_with_recommendations")
         self.assertFalse(checks["global plugin inactive: superpowers"]["required"])
 
+    def test_release_updater_excludes_agent_reach(self):
+        codex_home = self.make_codex_home()
+
+        results = run_external_updaters(codex_home, apply=False)
+
+        self.assertNotIn("agent-reach", {item["name"] for item in results})
+
+    def test_release_updater_plans_installed_plugin_refresh(self):
+        marketplace_root = Path(tempfile.mkdtemp(prefix="devflow-release-marketplace-"))
+        source = marketplace_root / "plugins" / "example"
+        source.mkdir(parents=True)
+        (source / ".codex-plugin").mkdir()
+        (source / ".codex-plugin" / "plugin.json").write_text('{"name":"example"}\n')
+        catalog = marketplace_root / ".agents" / "plugins"
+        catalog.mkdir(parents=True)
+        (catalog / "marketplace.json").write_text(
+            json.dumps({"plugins": [{"name": "example", "source": {"path": "./plugins/example"}}]})
+        )
+        config = {
+            "marketplaces": {"local": {"source": str(marketplace_root)}},
+            "plugins": {"example@local": {"enabled": True}},
+        }
+
+        results = plugin_install_results(config, apply=False)
+
+        self.assertEqual(results[0]["kind"], "plugin-install")
+        self.assertEqual(results[0]["name"], "example@local")
+        self.assertEqual(results[0]["status"], "would-refresh")
+
+    def test_release_codex_updater_skill_is_packaged(self):
+        skill_path = PLUGIN_ROOT / "skills" / "codex-updater" / "SKILL.md"
+        text = skill_path.read_text()
+
+        self.assertIn("name: codex-updater", text)
+        self.assertIn("codex_auto_update_plugins_skills.py --json", text)
+        self.assertIn("--apply --json", text)
+        self.assertIn("plugin-install", text)
+        self.assertIn("plugin-cache-verify", text)
+        self.assertIn("do not check, update, or run Agent Reach", text)
+
     def test_devflow_release_does_not_package_agent_kb_core(self):
         forbidden_skills = {
             "kb-ingest",
@@ -202,7 +332,8 @@ context_health:
             "kb-reflect",
             "kb-promote",
         }
-        self.assertTrue(forbidden_skills.isdisjoint({path.name for path in (PLUGIN_ROOT / "skills").iterdir() if path.is_dir()}))
+        packaged_skills = {path.name for path in (PLUGIN_ROOT / "skills").iterdir() if path.is_dir()}
+        self.assertTrue(forbidden_skills.isdisjoint(packaged_skills))
 
         workflow_lib = (PLUGIN_ROOT / "scripts" / "workflow_lib.py").read_text()
         hooks = (PLUGIN_ROOT / "hooks.json").read_text()

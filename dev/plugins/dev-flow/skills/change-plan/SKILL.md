@@ -11,9 +11,12 @@ Use when an active change lacks complete OpenSpec artifacts or needs implementat
 
 Ensure `openspec/changes/<change-id>/` has proposal, design, tasks, requirement scenarios, Target State, Completion Contract, Capability Slices, Execution Ledger, Acceptance Criteria, and Validation Commands.
 
+When the design depends on current, external, platform, plugin, API, hook, CLI, installed-cache, or local-vs-platform capability, add Capability Evidence before implementation. Use `capability-research` to confirm authoritative/current behavior, run the local scan, compare options, and turn the result into OpenSpec scenarios and validation commands.
+
 ## Routes
 
 - Use `ai-native-tech-plan` when plan structure, execution ledger, completion contract, or anti-partial-delivery guidance is needed.
+- Use `capability-research` before finalizing design when capability evidence is incomplete or assumptions are unstable.
 - Use `openspec-explore` if design tradeoffs, compatibility, or acceptance criteria remain unclear.
 - Use `openspec-propose` when intent is ready for canonical proposal, design, specs, and tasks.
 - Use `superpowers:brainstorming` while solution shape is open.

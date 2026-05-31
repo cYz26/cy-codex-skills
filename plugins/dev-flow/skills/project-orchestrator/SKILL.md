@@ -15,6 +15,7 @@ Read `AGENTS.md`, `.planning/STATE.md`, and `openspec/config.yaml`. Run dependen
 
 - No workflow files: use `project-setup`.
 - Technical plan, implementation plan, architecture plan, Codex execution plan, workflow plan, or anti-partial-delivery request: use `ai-native-tech-plan`.
+- Current, external, platform, plugin, API, hook, CLI, installed-cache, or local-vs-platform capability uncertainty: use `capability-research` for the Capability Evidence Gate before choosing a solution.
 - New feature, bug, behavior/API change, migration, or integration: use `feature-intake`.
 - Active change without proposal/design/specs/tasks: use `change-plan`.
 - Approved task with plan and tests ready: use `execute-task`.
@@ -25,7 +26,7 @@ Read `AGENTS.md`, `.planning/STATE.md`, and `openspec/config.yaml`. Run dependen
 
 ## Dependency Skills
 
-Routes: `ai-native-tech-plan`; `superpowers:brainstorming`, `superpowers:writing-plans`, `superpowers:test-driven-development`, `superpowers:verification-before-completion`; `openspec-explore`, `openspec-propose`, `openspec-apply-change`, `openspec-archive-change`; `gsd-discuss-phase`, `gsd-plan-phase`, `gsd-execute-phase`, `gsd-verify-work`.
+Routes: `capability-research`; `ai-native-tech-plan`; `superpowers:brainstorming`, `superpowers:writing-plans`, `superpowers:test-driven-development`, `superpowers:verification-before-completion`; `openspec-explore`, `openspec-propose`, `openspec-apply-change`, `openspec-archive-change`; `gsd-discuss-phase`, `gsd-plan-phase`, `gsd-execute-phase`, `gsd-verify-work`.
 
 ## Superpowers Artifact Mapping
 

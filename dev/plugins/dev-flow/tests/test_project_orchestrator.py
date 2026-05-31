@@ -152,6 +152,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
 
     def test_all_expected_skills_have_codex_frontmatter(self):
         expected = {
+            "capability-research",
             "project-orchestrator",
             "project-setup",
             "checkpoint-compact",
@@ -162,7 +163,9 @@ class ProjectOrchestratorTests(unittest.TestCase):
             "workflow-doctor",
             "context-tool-audit",
             "ai-native-tech-plan",
+            "claude-code-delegate",
             "context-health-check",
+            "codex-updater",
         }
         self.assertEqual({path.name for path in (PLUGIN_ROOT / "skills").iterdir() if path.is_dir()}, expected)
         for skill in expected:
@@ -170,6 +173,40 @@ class ProjectOrchestratorTests(unittest.TestCase):
             self.assertTrue(text.startswith("---\n"), skill)
             self.assertIn(f"name: {skill}", text)
             self.assertRegex(text, r"description: .+")
+
+    def test_capability_research_gate_is_packaged_and_routed(self):
+        skill = (PLUGIN_ROOT / "skills" / "capability-research" / "SKILL.md").read_text()
+        for phrase in [
+            "Capability Evidence Gate",
+            "authoritative/current capability",
+            "local implementation scan",
+            "solution comparison",
+            "OpenSpec/test contract",
+            "local absence is not platform absence",
+        ]:
+            self.assertIn(phrase, skill)
+
+        routing_expectations = {
+            "project-orchestrator": ["Capability Evidence Gate", "capability-research"],
+            "feature-intake": ["capability-research", "current or external capability"],
+            "change-plan": ["Capability Evidence", "capability-research"],
+            "ai-native-tech-plan": ["capability-research", "unstable platform assumptions"],
+        }
+        for skill_name, phrases in routing_expectations.items():
+            text = (PLUGIN_ROOT / "skills" / skill_name / "SKILL.md").read_text()
+            for phrase in phrases:
+                self.assertIn(phrase, text, skill_name)
+
+    def test_dependency_catalog_installs_capability_research(self):
+        scripts = PLUGIN_ROOT / "scripts"
+        sys.path.insert(0, str(scripts))
+        try:
+            from workflow_dependency_catalog import PROJECT_ORCHESTRATOR_SKILLS
+        finally:
+            sys.path.remove(str(scripts))
+
+        self.assertIn("capability-research", PROJECT_ORCHESTRATOR_SKILLS)
+        self.assertIn("claude-code-delegate", PROJECT_ORCHESTRATOR_SKILLS)
 
     def test_devflow_no_longer_owns_agent_kb_hooks_or_core_behavior(self):
         forbidden_skills = {
@@ -181,7 +218,12 @@ class ProjectOrchestratorTests(unittest.TestCase):
             "kb-reflect",
             "kb-promote",
         }
-        self.assertTrue(forbidden_skills.isdisjoint({path.name for path in (PLUGIN_ROOT / "skills").iterdir() if path.is_dir()}))
+        packaged_skills = {
+            path.name
+            for path in (PLUGIN_ROOT / "skills").iterdir()
+            if path.is_dir()
+        }
+        self.assertTrue(forbidden_skills.isdisjoint(packaged_skills))
 
         hooks = (PLUGIN_ROOT / "hooks.json").read_text()
         self.assertNotIn("kb_event_hook.py", hooks)
@@ -293,6 +335,22 @@ class ProjectOrchestratorTests(unittest.TestCase):
             ]:
                 self.assertIn(heading, text, f"{template} should include {heading}")
 
+    def test_templates_include_capability_evidence_without_agents_procedure(self):
+        for template in [
+            "OPENSPEC_PROPOSAL.md.template",
+            "OPENSPEC_DESIGN.md.template",
+            "OPENSPEC_TASKS.md.template",
+        ]:
+            text = (PLUGIN_ROOT / "assets" / "templates" / template).read_text()
+            self.assertIn("Capability Evidence", text, template)
+            self.assertIn("authoritative/current", text, template)
+            self.assertIn("local", text, template)
+
+        agents = (PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template").read_text()
+        self.assertIn("capability-research", agents)
+        self.assertIn("detailed evidence workflow lives in that skill", agents)
+        self.assertNotIn("official capability \u2192 local implementation scan \u2192 solution comparison", agents)
+
     def test_superpowers_artifacts_map_to_canonical_workflow_artifacts(self):
         agents_template = (PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template").read_text()
         for phrase in [
@@ -311,6 +369,20 @@ class ProjectOrchestratorTests(unittest.TestCase):
             self.assertIn("Superpowers Artifact Mapping", text, skill)
             self.assertIn("canonical", text, skill)
             self.assertIn("docs/superpowers", text, skill)
+
+    def test_plugin_eval_gate_is_required_for_plugin_and_skill_changes(self):
+        paths = {
+            "root": REPO_ROOT / "AGENTS.md",
+            "dev-template": PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template",
+            "release-template": RELEASE_PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template",
+        }
+        for label, path in paths.items():
+            text = path.read_text()
+            with self.subTest(path=label):
+                self.assertIn("## Plugin Eval Gate", text)
+                self.assertIn("plugin-eval analyze", text)
+                self.assertIn("creating or updating Codex plugins or skills", text)
+                self.assertIn("record the score, findings, and optimization decisions", text)
 
     def test_scaffold_preserves_existing_agents_and_adds_brownfield_docs(self):
         existing = self.make_repo("existing-agents")
@@ -523,6 +595,118 @@ class ProjectOrchestratorTests(unittest.TestCase):
         )
         self.assertTrue(recommendation["recommend_compact"])
         self.assertIn("/compact", recommendation["instruction"])
+
+    def test_checkpoint_compact_is_not_blocking_at_stopping_point(self):
+        repo = self.make_repo("greenfield-empty")
+        run_json("scaffold_workflow.py", "--repo", str(repo), "--json")
+        previous = self.create_pending_checkpoint(repo)
+        run_json(
+            "record_compact_result.py",
+            "--repo",
+            str(repo),
+            "--checkpoint",
+            previous["checkpoint_file"],
+            "--status",
+            "completed",
+            "--source",
+            "responses_api",
+            "--raw-result",
+            "previous compact payload",
+            "--json",
+        )
+
+        checkpoint = run_json(
+            "create_checkpoint.py",
+            "--repo",
+            str(repo),
+            "--boundary",
+            "verification_passed",
+            "--phase",
+            "01-foundation",
+            "--change",
+            "initial-target-state",
+            "--next-stage",
+            "review_or_archive",
+            "--current-goal",
+            "Finish verified work",
+            "--completed-work",
+            "Verification passed",
+            "--decision",
+            "Stop at review boundary",
+            "--risk",
+            "No continuation required",
+            "--validation-command",
+            "python3 -m unittest",
+            "--validation-result",
+            "pass",
+            "--json",
+        )
+
+        self.assertFalse(checkpoint["compact_recommended"])
+        self.assertEqual(checkpoint["compact_status"], "not_needed")
+        checkpoint_text = (repo / checkpoint["checkpoint_file"]).read_text()
+        self.assertIn("Compact is optional", checkpoint_text)
+        self.assertNotIn("Run `/compact` before continuing", checkpoint_text)
+
+        state = (repo / ".planning" / "STATE.md").read_text()
+        self.assertIn(f"last_checkpoint_id: {checkpoint['checkpoint_id']}", state)
+        self.assertIn("compact_status: not_needed", state)
+        self.assertIn("last_compact_result_file: none", state)
+        self.assertIn("compact_source: checkpoint", state)
+        self.assertIn("compact_skip_reason: none", state)
+
+        valid = run_json("validate_workflow_state.py", "--repo", str(repo), "--json")
+        self.assertTrue(valid["ok"], valid)
+        self.assertEqual(valid["warnings"], [])
+
+        recommendation = run_json(
+            "compact_recommendation.py",
+            "--repo",
+            str(repo),
+            "--boundary",
+            "verification_passed",
+            "--next-stage",
+            "review_or_archive",
+            "--json",
+        )
+        self.assertFalse(recommendation["recommend_compact"])
+        self.assertIn("optional", recommendation["instruction"])
+
+    def test_checkpoint_can_force_continuation_required_for_review_stage(self):
+        repo = self.make_repo("greenfield-empty")
+        run_json("scaffold_workflow.py", "--repo", str(repo), "--json")
+
+        checkpoint = run_json(
+            "create_checkpoint.py",
+            "--repo",
+            str(repo),
+            "--boundary",
+            "verification_passed",
+            "--phase",
+            "01-foundation",
+            "--change",
+            "initial-target-state",
+            "--next-stage",
+            "review_or_archive",
+            "--continuation-required",
+            "--current-goal",
+            "Continue review in this thread",
+            "--completed-work",
+            "Verification passed",
+            "--decision",
+            "Continue immediately",
+            "--risk",
+            "Context may be long",
+            "--validation-command",
+            "python3 -m unittest",
+            "--validation-result",
+            "pass",
+            "--json",
+        )
+
+        self.assertTrue(checkpoint["compact_recommended"])
+        self.assertEqual(checkpoint["compact_status"], "pending")
+        self.assertIn("Run `/compact` before continuing", (repo / checkpoint["checkpoint_file"]).read_text())
 
     def test_validate_checkpoint_reports_missing_required_sections(self):
         repo = self.make_repo("greenfield-empty")

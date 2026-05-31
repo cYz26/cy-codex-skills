@@ -8,7 +8,7 @@ current_phase:
   status: verification_passed
 
 current_change:
-  id: extract-agent-kb-plugin
+  id: optimize-devflow-plugin-eval-followup
   status: verified
 
 gates:
@@ -23,14 +23,14 @@ gates:
 
 context_management:
   compact_policy: checkpoint_boundary
-  last_checkpoint_id: 2026-05-28-agent-kb-plugin-eval-optimized
-  last_checkpoint_file: .planning/checkpoints/2026-05-28-agent-kb-plugin-eval-optimized.md
-  compact_recommended: true
-  compact_status: pending
-  last_compact_result_file: .planning/compact-results/2026-05-28-verification_passed-repair-devflow-dependency-gates.json
-  compact_source: manual
-  compact_updated_at: 2026-05-28T23:10:32+08:00
-  compact_skip_reason: Plugin Eval hardening passed for extract-agent-kb-plugin; run /compact before review or archive.
+  last_checkpoint_id: 2026-05-31-verification_passed-optimize-devflow-plugin-eval-followup
+  last_checkpoint_file: .planning/checkpoints/2026-05-31-verification_passed-optimize-devflow-plugin-eval-followup.md
+  compact_recommended: false
+  compact_status: not_needed
+  last_compact_result_file: none
+  compact_source: checkpoint
+  compact_updated_at: 2026-05-31T20:13:18+08:00
+  compact_skip_reason: none
   compact_error: none
   compact_after:
     - project_setup_completed
@@ -65,15 +65,10 @@ context_health:
 
 ## Current Status
 
-Change `extract-agent-kb-plugin` is implemented, verified, and Plugin Eval hardened.
-`agent-kb` now reports `95/100`, grade `A`, for both dev and release plugin roots.
-Archive remains blocked until the review/archive workflow runs.
+Change `optimize-devflow-plugin-eval-followup` is implemented and verified. DevFlow now marks low-frequency skills explicit-only through `agents/openai.yaml`, keeps core routing skills implicit, fixes scoped release Python long lines, and removes generated `__pycache__` artifacts from the plugin trees.
+
+Plugin Eval improved from 68/100 grade D to 77/100 grade C. Trigger budget improved from 264 heavy to 99 moderate, invoke budget improved from 6671 heavy to 2941 heavy, and the Python long-line warning was cleared. The remaining high-risk finding is the release package's deferred token budget, which still requires a larger packaging or documentation-size follow-up.
 
 ## Next Action
 
-Run `/compact` at this verification boundary, then review or archive `extract-agent-kb-plugin`.
-
-## Residual Risks
-
-- Plugin Eval still reports a static deferred-token budget warning for `agent-kb` because bundled scripts and tests are counted as deferred support files.
-- Active budget remains moderate; no observed usage benchmark has been attached yet.
+Review and archive `optimize-devflow-plugin-eval-followup` if the remaining deferred-budget risk is accepted as follow-up work.

@@ -15,12 +15,12 @@ Implement the complete approved behavior for `{{change_id}}`, not a partial deli
 
 ## Capability Slices
 
-### Slice 1: Requirements and validation surface
+### Slice 1: Capability evidence and validation surface
 
 **Status:** todo
 
 **Goal**
-- Confirm the behavior boundary and test strategy before editing implementation files.
+- Confirm the behavior boundary, capability evidence, and test strategy before editing implementation files.
 
 **Files / Modules**
 - `openspec/changes/{{change_id}}/proposal.md`
@@ -30,6 +30,8 @@ Implement the complete approved behavior for `{{change_id}}`, not a partial deli
 
 **Implementation**
 - [ ] Review requirements and scenarios.
+- [ ] If current, external, platform, plugin, API, hook, CLI, installed-cache, or local-vs-platform capability affects the design, run `capability-research` and record Capability Evidence.
+- [ ] Record authoritative/current evidence, local scan findings, comparison, assumptions, and the selected validation contract.
 - [ ] Identify affected files and compatibility constraints.
 
 **Tests**
@@ -41,7 +43,7 @@ Implement the complete approved behavior for `{{change_id}}`, not a partial deli
 ```
 
 **Done When**
-- [ ] Requirements, files, tests, and validation commands are known.
+- [ ] Requirements, Capability Evidence, files, tests, and validation commands are known.
 
 **Risks / Rollback**
 - Return to planning if requirements or compatibility are unclear.
@@ -109,7 +111,7 @@ Implement the complete approved behavior for `{{change_id}}`, not a partial deli
 
 | Slice | Status | Evidence |
 |---|---|---|
-| Requirements and validation surface | todo | |
+| Capability evidence and validation surface | todo | |
 | Implementation and focused verification | todo | |
 | Broader verification and state update | todo | |
 

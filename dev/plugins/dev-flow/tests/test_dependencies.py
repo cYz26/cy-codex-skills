@@ -16,6 +16,7 @@ from dependency_support import (
     DependencyFixtureMixin,
     MARKETPLACE,
     PLUGIN_ROOT,
+    REPO_ROOT,
     RELEASE_PLUGIN_ROOT,
     run_json,
 )
@@ -47,6 +48,8 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertTrue(checks["global plugin inactive: superpowers"]["ok"])
         self.assertTrue(checks["global skill inactive: brainstorming"]["ok"])
         self.assertTrue(checks["global skill inactive: test-driven-development"]["ok"])
+        self.assertTrue(checks["project skill active: capability-research"]["ok"])
+        self.assertTrue(checks["project skill active: claude-code-delegate"]["ok"])
         self.assertTrue(checks["project skill active: project-orchestrator"]["ok"])
         self.assertTrue(checks["project skill active: context-tool-audit"]["ok"])
         self.assertTrue(checks["project skill active: brainstorming"]["ok"])
@@ -274,6 +277,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         )
         self.assertTrue(report["ok"], report)
         self.assertTrue((repo / ".codex" / "skills" / "project-orchestrator" / "SKILL.md").exists())
+        self.assertTrue((repo / ".codex" / "skills" / "claude-code-delegate" / "SKILL.md").exists())
         self.assertTrue((repo / ".codex" / "skills" / "context-tool-audit" / "SKILL.md").exists())
         self.assertTrue((repo / ".codex" / "skills" / "brainstorming" / "SKILL.md").exists())
         self.assertTrue((repo / ".codex" / "skills" / "writing-plans" / "SKILL.md").exists())
@@ -358,6 +362,181 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertEqual(by_name["gsd-codex"]["latest"], "1.42.4")
         self.assertEqual(by_name["openspec-cli"]["status"], "update-available")
         self.assertEqual(by_name["openspec-cli"]["latest"], "1.3.2")
+
+    def test_git_dry_run_reports_unchanged_when_upstream_matches(self):
+        repo = Path(tempfile.mkdtemp(prefix="cpo-git-current-"))
+
+        def fake_run(command, cwd=None, timeout=300):
+            if command[3:] == ["status", "--porcelain"]:
+                return {"ok": True, "returncode": 0, "stdout": "", "stderr": ""}
+            if command[3:] == ["rev-parse", "HEAD"]:
+                return {"ok": True, "returncode": 0, "stdout": "aaa111\n", "stderr": ""}
+            if command[3:] == ["fetch", "--quiet"]:
+                return {"ok": True, "returncode": 0, "stdout": "", "stderr": ""}
+            if command[3:] == ["rev-parse", "@{upstream}"]:
+                return {"ok": True, "returncode": 0, "stdout": "aaa111\n", "stderr": ""}
+            raise AssertionError(f"unexpected command: {command}")
+
+        with mock.patch.object(auto_update, "is_git_repo", return_value=True), mock.patch.object(
+            auto_update, "run_command", side_effect=fake_run
+        ):
+            result = auto_update.update_git_repo(repo, "mirror", apply=False)
+
+        self.assertEqual(result["status"], "unchanged")
+        self.assertEqual(result["before"], "aaa111")
+        self.assertEqual(result["after"], "aaa111")
+
+    def test_git_dry_run_reports_update_available_when_upstream_differs(self):
+        repo = Path(tempfile.mkdtemp(prefix="cpo-git-update-"))
+
+        def fake_run(command, cwd=None, timeout=300):
+            if command[3:] == ["status", "--porcelain"]:
+                return {"ok": True, "returncode": 0, "stdout": "", "stderr": ""}
+            if command[3:] == ["rev-parse", "HEAD"]:
+                return {"ok": True, "returncode": 0, "stdout": "aaa111\n", "stderr": ""}
+            if command[3:] == ["fetch", "--quiet"]:
+                return {"ok": True, "returncode": 0, "stdout": "", "stderr": ""}
+            if command[3:] == ["rev-parse", "@{upstream}"]:
+                return {"ok": True, "returncode": 0, "stdout": "bbb222\n", "stderr": ""}
+            raise AssertionError(f"unexpected command: {command}")
+
+        with mock.patch.object(auto_update, "is_git_repo", return_value=True), mock.patch.object(
+            auto_update, "run_command", side_effect=fake_run
+        ):
+            result = auto_update.update_git_repo(repo, "mirror", apply=False)
+
+        self.assertEqual(result["status"], "would-update")
+        self.assertEqual(result["before"], "aaa111")
+        self.assertEqual(result["after"], "bbb222")
+
+    def test_installed_plugin_refresh_is_planned_and_applied(self):
+        marketplace_root = Path(tempfile.mkdtemp(prefix="cpo-plugin-install-"))
+        source = marketplace_root / "plugins" / "dev-flow"
+        source.mkdir(parents=True)
+        (source / ".codex-plugin").mkdir()
+        (source / ".codex-plugin" / "plugin.json").write_text('{"name":"dev-flow"}\n')
+        catalog = marketplace_root / ".agents" / "plugins"
+        catalog.mkdir(parents=True)
+        (catalog / "marketplace.json").write_text(
+            json.dumps({"plugins": [{"name": "dev-flow", "source": {"path": "./plugins/dev-flow"}}]})
+        )
+        config = {
+            "marketplaces": {"local": {"source": str(marketplace_root)}},
+            "plugins": {
+                "dev-flow@local": {"enabled": True},
+                "disabled@local": {"enabled": False},
+                "other@missing": {"enabled": True},
+            },
+        }
+
+        dry_run = auto_update.plugin_install_results(config, apply=False)
+        self.assertEqual([item["name"] for item in dry_run], ["dev-flow@local"])
+        self.assertEqual(dry_run[0]["status"], "would-refresh")
+
+        with mock.patch.object(auto_update, "run_command") as run_command:
+            run_command.return_value = {"ok": True, "returncode": 0, "stdout": "installed\n", "stderr": ""}
+            applied = auto_update.plugin_install_results(config, apply=True)
+
+        self.assertEqual(applied[0]["status"], "updated-or-unchanged")
+        run_command.assert_called_once_with(["codex", "plugin", "add", "dev-flow@local"], timeout=600)
+
+    def test_plugin_cache_verification_compares_source_and_installed_cache(self):
+        codex_home = self.make_codex_home()
+        marketplace_root = Path(tempfile.mkdtemp(prefix="cpo-marketplace-"))
+        source = marketplace_root / "plugins" / "sample"
+        cache = codex_home / "plugins" / "cache" / "local" / "sample" / "1.0.0"
+        source.mkdir(parents=True)
+        cache.mkdir(parents=True)
+        (source / ".codex-plugin").mkdir()
+        (cache / ".codex-plugin").mkdir()
+        (source / ".codex-plugin" / "plugin.json").write_text('{"name":"sample","version":"1.0.0"}\n')
+        (cache / ".codex-plugin" / "plugin.json").write_text('{"name":"sample","version":"1.0.0"}\n')
+        (source / "payload.txt").write_text("same\n")
+        (cache / "payload.txt").write_text("same\n")
+        config = {
+            "marketplaces": {"local": {"source": str(marketplace_root)}},
+            "plugins": {"sample@local": {"enabled": True}},
+        }
+
+        results = auto_update.plugin_cache_verification_results(codex_home, config)
+
+        self.assertEqual(results[0]["kind"], "plugin-cache-verify")
+        self.assertEqual(results[0]["name"], "sample@local")
+        self.assertEqual(results[0]["status"], "matches-source")
+
+        (cache / "payload.txt").write_text("different\n")
+        results = auto_update.plugin_cache_verification_results(codex_home, config)
+
+        self.assertEqual(results[0]["status"], "differs-from-source")
+
+    def test_root_updater_delegates_to_devflow_implementation(self):
+        root_script = REPO_ROOT / "dev" / "scripts" / "codex_auto_update_plugins_skills.py"
+        text = root_script.read_text()
+
+        self.assertIn("CANONICAL_UPDATER", text)
+        self.assertIn("dev/plugins/dev-flow/scripts/codex_auto_update_plugins_skills.py", text)
+        self.assertNotIn("def run_external_updaters", text)
+
+    def test_codex_updater_skill_is_packaged_with_trigger_language(self):
+        skill_path = PLUGIN_ROOT / "skills" / "codex-updater" / "SKILL.md"
+        text = skill_path.read_text()
+        lowered = text.lower()
+
+        self.assertIn("name: codex-updater", text)
+        self.assertIn("Use when", text)
+        for phrase in [
+            "codex plugins",
+            "codex skills",
+            "marketplace",
+            "plugin cache",
+            "external updater",
+        ]:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, lowered)
+
+    def test_codex_updater_skill_requires_dry_run_before_apply_and_excludes_agent_reach(self):
+        text = (PLUGIN_ROOT / "skills" / "codex-updater" / "SKILL.md").read_text()
+        lowered = text.lower()
+
+        self.assertIn("codex_auto_update_plugins_skills.py --json", text)
+        self.assertIn("--apply --json", text)
+        self.assertIn("dry-run first", lowered)
+        self.assertIn("explicit", lowered)
+        self.assertIn("plugin-install", text)
+        self.assertIn("plugin-cache-verify", text)
+        self.assertIn("Agent Reach", text)
+        self.assertIn("do not check, update, or run Agent Reach", text)
+
+    def test_agent_reach_is_excluded_from_external_update_plan(self):
+        codex_home = self.make_codex_home()
+
+        def fake_exists(name):
+            return name in {"agent-reach", "pipx"}
+
+        with mock.patch.object(auto_update, "executable_exists", side_effect=fake_exists), mock.patch.object(
+            auto_update, "run_command"
+        ) as run_command:
+            dry_run_results = auto_update.run_external_updaters(codex_home, apply=False)
+            apply_results = auto_update.run_external_updaters(codex_home, apply=True)
+
+        self.assertNotIn("agent-reach", {item["name"] for item in dry_run_results})
+        self.assertNotIn("agent-reach", {item["name"] for item in apply_results})
+        run_command.assert_not_called()
+
+    def test_agent_reach_is_documented_as_not_recommended(self):
+        repo_root = PLUGIN_ROOT.parents[2]
+        docs = {
+            "README.md": repo_root / "README.md",
+            "agent-reach/SKILL.md": repo_root / "agent-reach" / "SKILL.md",
+            "dev/scripts/README.md": repo_root / "dev" / "scripts" / "README.md",
+            "dev/plugins/dev-flow/README.md": PLUGIN_ROOT / "README.md",
+        }
+
+        for label, path in docs.items():
+            text = path.read_text().lower()
+            with self.subTest(path=label):
+                self.assertIn("agent reach", text)
+                self.assertRegex(text, r"deprecated|not recommended")
 
     def test_plugin_preflight_passes(self):
         codex_home = self.make_codex_home()

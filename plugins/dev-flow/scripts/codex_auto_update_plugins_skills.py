@@ -43,7 +43,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--skip-external-updaters",
         action="store_true",
-        help="Do not run known external updaters such as Lark, Agent Reach, GSD, or OpenSpec.",
+        help="Do not run known external updaters such as Lark, GSD, or OpenSpec.",
     )
     return parser.parse_args()
 
@@ -166,6 +166,16 @@ def git_head(repo: Path) -> str | None:
     return result["stdout"].strip()
 
 
+def git_upstream_head(repo: Path) -> tuple[str | None, str]:
+    fetch = run_command(["git", "-C", str(repo), "fetch", "--quiet"], timeout=600)
+    if not fetch["ok"]:
+        return None, short_output(fetch) or "could not fetch upstream"
+    result = run_command(["git", "-C", str(repo), "rev-parse", "@{upstream}"])
+    if not result["ok"]:
+        return None, short_output(result) or "could not resolve upstream"
+    return result["stdout"].strip(), ""
+
+
 def git_is_clean(repo: Path) -> bool:
     result = run_command(["git", "-C", str(repo), "status", "--porcelain"])
     return result["ok"] and result["stdout"].strip() == ""
@@ -185,7 +195,12 @@ def update_git_repo(repo: Path, name: str, apply: bool) -> dict[str, Any]:
 
     before = git_head(repo)
     if not apply:
-        return item("git", name, "would-update", "clean git checkout", before=before, path=repo)
+        after, detail = git_upstream_head(repo)
+        if after is None:
+            return item("git", name, "check-unavailable", detail, before=before, path=repo)
+        status = "unchanged" if before == after else "would-update"
+        message = "matches upstream" if status == "unchanged" else "remote update available"
+        return item("git", name, status, message, before=before, after=after, path=repo)
 
     result = run_command(["git", "-C", str(repo), "pull", "--ff-only"], timeout=600)
     after = git_head(repo)
@@ -368,6 +383,103 @@ def sync_openai_curated_plugin_cache(
     return results
 
 
+def configured_plugin_selectors(config: dict[str, Any]) -> list[str]:
+    marketplaces = set(config.get("marketplaces", {}))
+    selectors: list[str] = []
+    for selector, plugin_config in sorted(config.get("plugins", {}).items()):
+        if "@" not in selector:
+            continue
+        marketplace = selector.rsplit("@", 1)[1]
+        if marketplace not in marketplaces:
+            continue
+        if isinstance(plugin_config, dict) and not plugin_config.get("enabled", False):
+            continue
+        selectors.append(selector)
+    return selectors
+
+
+def marketplace_plugin_source(config: dict[str, Any], selector: str) -> Path | None:
+    plugin_name, marketplace = selector.rsplit("@", 1)
+    marketplace_config = config.get("marketplaces", {}).get(marketplace, {})
+    source_root_value = marketplace_config.get("source") if isinstance(marketplace_config, dict) else None
+    if not source_root_value:
+        return None
+    source_root = Path(str(source_root_value)).expanduser()
+    catalog = source_root / ".agents" / "plugins" / "marketplace.json"
+    if catalog.exists():
+        try:
+            data = json.loads(catalog.read_text())
+        except json.JSONDecodeError:
+            data = {}
+        for record in data.get("plugins", []):
+            if record.get("name") != plugin_name:
+                continue
+            source = record.get("source", {})
+            path_value = source.get("path") if isinstance(source, dict) else None
+            if path_value:
+                return (source_root / path_value).resolve()
+    for candidate in [source_root / "plugins" / plugin_name, source_root / plugin_name]:
+        if candidate.exists():
+            return candidate.resolve()
+    return None
+
+
+def installed_plugin_cache_dirs(codex_home: Path, selector: str) -> list[Path]:
+    plugin_name, marketplace = selector.rsplit("@", 1)
+    root = codex_home / "plugins" / "cache" / marketplace / plugin_name
+    if not root.exists():
+        return []
+    return sorted(path for path in root.iterdir() if (path / ".codex-plugin" / "plugin.json").exists())
+
+
+def plugin_cache_verification_results(codex_home: Path, config: dict[str, Any]) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    for selector in configured_plugin_selectors(config):
+        source = marketplace_plugin_source(config, selector)
+        caches = installed_plugin_cache_dirs(codex_home, selector)
+        if source is None:
+            results.append(item("plugin-cache-verify", selector, "source-unavailable", "marketplace source not found"))
+            continue
+        if not caches:
+            results.append(
+                item(
+                    "plugin-cache-verify",
+                    selector,
+                    "cache-missing",
+                    "installed plugin cache not found",
+                    source=str(source),
+                )
+            )
+            continue
+        for cache in caches:
+            status = "matches-source" if same_tree(cache, source) else "differs-from-source"
+            detail = (
+                "installed cache matches marketplace source"
+                if status == "matches-source"
+                else "installed cache differs from marketplace source"
+            )
+            results.append(item("plugin-cache-verify", selector, status, detail, path=cache, source=str(source)))
+    return results
+
+
+def plugin_install_results(config: dict[str, Any], apply: bool) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    for selector in configured_plugin_selectors(config):
+        source = marketplace_plugin_source(config, selector)
+        if source is None:
+            results.append(item("plugin-install", selector, "source-unavailable", "marketplace source not found"))
+            continue
+        if not apply:
+            results.append(
+                item("plugin-install", selector, "would-refresh", "would run codex plugin add", source=str(source))
+            )
+            continue
+        result = run_command(["codex", "plugin", "add", selector], timeout=600)
+        status = "updated-or-unchanged" if result["ok"] else "failed"
+        results.append(item("plugin-install", selector, status, short_output(result), source=str(source)))
+    return results
+
+
 def marketplace_upgrade_results(config: dict[str, Any], apply: bool) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
     for name in sorted(config.get("marketplaces", {})):
@@ -398,18 +510,6 @@ def executable_exists(name: str) -> bool:
 
 def run_external_updaters(codex_home: Path, apply: bool) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
-
-    if executable_exists("agent-reach"):
-        if not apply:
-            results.append(item("external-updater", "agent-reach", "would-try", "would run pipx upgrade agent-reach"))
-        elif executable_exists("pipx"):
-            result = run_command(["pipx", "upgrade", "agent-reach"], timeout=600)
-            status = "updated-or-unchanged" if result["ok"] else "failed"
-            results.append(item("external-updater", "agent-reach", status, short_output(result)))
-        else:
-            result = run_command(["agent-reach", "check-update"], timeout=300)
-            status = "checked" if result["ok"] else "failed"
-            results.append(item("external-updater", "agent-reach", status, short_output(result)))
 
     has_lark_skills = (Path.home() / ".agents" / "skills" / "lark-shared" / "SKILL.md").exists()
     if executable_exists("lark-cli") or has_lark_skills:
@@ -554,6 +654,8 @@ def main() -> int:
     if not args.skip_openai_curated_cache:
         results.extend(sync_openai_curated_plugin_cache(plugin_cache_safety, backup_root, args.apply))
     results.extend(marketplace_upgrade_results(config, args.apply))
+    results.extend(plugin_install_results(config, args.apply))
+    results.extend(plugin_cache_verification_results(codex_home, config))
 
     report = {
         "apply": bool(args.apply),

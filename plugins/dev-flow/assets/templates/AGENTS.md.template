@@ -37,6 +37,7 @@ GSD and OpenSpec are activated project-locally through `.codex/skills/`; do not 
 ## Brainstorm and Planning Flow
 
 - Use `superpowers:brainstorming` before committing to a solution when goals, constraints, tradeoffs, or implementation shape are still open.
+- Use `capability-research` when a solution depends on current, external, platform, plugin, API, hook, CLI, installed-cache, or local-vs-platform capability evidence; the detailed evidence workflow lives in that skill.
 - Use `openspec-explore` during brainstorming when the uncertainty is about user-visible behavior, compatibility, requirements, or acceptance criteria.
 - Use `gsd-discuss-phase` during brainstorming when the uncertainty is about milestones, sequencing, scope boundaries, or phase structure.
 - Use `superpowers:writing-plans` before writing a non-trivial implementation plan, phase plan, migration plan, or refactor plan.
@@ -117,6 +118,12 @@ Superpowers is activated project-locally through `.codex/skills/`; do not enable
 - Before claiming work is complete, fixed, passing, ready to commit, or ready for PR, use `superpowers:verification-before-completion`.
 - If either Superpowers skill is unavailable, run the project orchestrator dependency check and activation before continuing.
 
+## Plugin Eval Gate
+
+- When creating or updating Codex plugins or skills, proactively run Plugin Eval on the changed skill or plugin path: `plugin-eval analyze <path> --format markdown`. If `plugin-eval` is not on PATH, use the installed Plugin Eval plugin's `scripts/plugin-eval.js` with `node`.
+- Address failures, warnings, and fix-first recommendations before completion, or record why a finding is deferred.
+- Verification evidence must record the score, findings, and optimization decisions, plus the evaluated target.
+
 ## Execution Rules
 
 - Execute one task at a time unless explicitly instructed otherwise.
@@ -137,10 +144,11 @@ Major boundaries include project setup completed, codebase mapping completed, de
 
 Before compaction, persist `.planning/STATE.md`, relevant `.planning/phases/` files, relevant `openspec/changes/` files, changed files summary, validation commands and results, unresolved risks, and next action.
 
-Compaction is not a source of truth. Repository files remain authoritative. When a checkpoint is complete,
-recommend `/compact` in Codex CLI before moving to the next major stage. If an external harness runs API
-compaction, record the compact result under `.planning/compact-results/`. If compaction is unavailable,
-start a new session from the checkpoint file.
+Compaction is not a source of truth. Repository files remain authoritative. When a checkpoint is a
+continuation gate for the current thread, recommend `/compact` in Codex CLI before moving to the next major
+stage. When the task is complete or at a handoff/review boundary, update state immediately and treat compact
+as optional. If an external harness runs API compaction for a pending gate, record the compact result under
+`.planning/compact-results/`. If compaction is unavailable, start a new session from the checkpoint file.
 
 ## Forbidden Without Explicit Approval
 

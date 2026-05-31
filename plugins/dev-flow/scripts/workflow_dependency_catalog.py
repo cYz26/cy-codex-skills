@@ -2,6 +2,8 @@ from __future__ import annotations
 
 
 PROJECT_ORCHESTRATOR_SKILLS = [
+    "capability-research",
+    "claude-code-delegate",
     "project-orchestrator",
     "project-setup",
     "feature-intake",

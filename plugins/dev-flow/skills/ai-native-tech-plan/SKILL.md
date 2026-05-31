@@ -37,11 +37,12 @@ Use instead:
 
 1. Read project context: `AGENTS.md`, `.planning/STATE.md`, active OpenSpec change, and relevant source files.
 2. If behavior, API, persistence, integration, compatibility, or error handling changes are involved, route through OpenSpec before implementation.
-3. If goals or tradeoffs are still open, use `superpowers:brainstorming`.
-4. Before committing to a non-trivial implementation plan, use `superpowers:writing-plans`.
-5. For medium or large tasks, write the Execution Ledger to a repo file such as `.ai/tasks/<yyyy-mm-dd>-<task-name>.md`, or the repo's established planning location.
-6. During implementation, use `superpowers:test-driven-development` where applicable and update ledger statuses only after validation.
-7. Before completion, use `superpowers:verification-before-completion` and verify the Completion Contract.
+3. If the plan depends on current documentation, external/platform behavior, plugin or hook semantics, local installed cache, or unstable platform assumptions, use `capability-research` before choosing the implementation path.
+4. If goals or tradeoffs are still open, use `superpowers:brainstorming`.
+5. Before committing to a non-trivial implementation plan, use `superpowers:writing-plans`.
+6. For medium or large tasks, write the Execution Ledger to a repo file such as `.ai/tasks/<yyyy-mm-dd>-<task-name>.md`, or the repo's established planning location.
+7. During implementation, use `superpowers:test-driven-development` where applicable and update ledger statuses only after validation.
+8. Before completion, use `superpowers:verification-before-completion` and verify the Completion Contract.
 
 ## Superpowers, GSD, and OpenSpec Fit
 

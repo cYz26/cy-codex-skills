@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from workflow_compact_policy import recommend_compact
+from workflow_compact_policy import compact_recommendation, recommend_compact, resolve_continuation_required
 from workflow_git import git_branch, git_changed_files
 from workflow_paths import rel, render_template, repo_path
 from workflow_state import parse_state, update_state
@@ -42,6 +42,11 @@ def write_checkpoint(
         last_checkpoint_file=rel(repo, checkpoint_file),
         compact_recommended=values["compact_recommended"],
         compact_status=values["compact_status"],
+        last_compact_result_file="none",
+        compact_source="checkpoint",
+        compact_updated_at=values["created_at"],
+        compact_skip_reason="none",
+        compact_error="none",
         current_stage=options.get("next_stage", state.get("current_stage", "planning")),
     )
 
@@ -107,7 +112,10 @@ def checkpoint_values(
     change_id: str,
 ) -> dict[str, Any]:
     boundary = options["boundary"]
-    compact = recommend_compact(boundary)
+    next_stage = options.get("next_stage", "next_stage")
+    continuation_required = resolve_continuation_required(next_stage, options.get("continuation_required"))
+    compact = recommend_compact(boundary, continuation_required)
+    compact_report = compact_recommendation(repo, boundary, next_stage, continuation_required)
     return {
         "checkpoint_id": checkpoint_file.stem,
         "created_at": datetime.now().astimezone().isoformat(timespec="seconds"),
@@ -117,7 +125,9 @@ def checkpoint_values(
         "change_id": change_id,
         "compact_recommended": compact,
         "compact_status": "pending" if compact else "not_needed",
-        "next_stage": options.get("next_stage", "next_stage"),
+        "compact_instruction": compact_report["instruction"],
+        "continuation_required": continuation_required,
+        "next_stage": next_stage,
         "title": title_for_boundary(boundary, change_id),
         "current_goal": options.get("current_goal", "Not recorded."),
         "completed_work": list_block(options.get("completed_work"), "No completed work recorded."),

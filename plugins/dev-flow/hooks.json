@@ -1,5 +1,17 @@
 {
   "hooks": {
+    "PostCompact": [
+      {
+        "matcher": "^manual$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/compact_recovery_hook.py --event post_compact",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",

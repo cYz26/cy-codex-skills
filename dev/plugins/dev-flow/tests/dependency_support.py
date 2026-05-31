@@ -111,6 +111,8 @@ class DependencyFixtureMixin:
         if enable_orchestrator:
             skills.extend(
                 [
+                    "capability-research",
+                    "claude-code-delegate",
                     "project-orchestrator",
                     "project-setup",
                     "feature-intake",

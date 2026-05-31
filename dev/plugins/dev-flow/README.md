@@ -106,6 +106,37 @@ Policy documents that intentionally discuss human-style planning terms can inclu
 <!-- ai-native-plan-lint: allow-human-planning-terms -->
 ```
 
+## Claude Code Delegation
+
+Use `claude-code-delegate` when Codex should ask Claude Code to analyze, review, plan, or explicitly execute a bounded task while keeping DevFlow gates authoritative.
+
+Check whether the optional local Claude Code runtime is available:
+
+```bash
+python3 scripts/claude_code_delegate.py --repo /path/to/repo --check --json
+```
+
+Delegate a plan-only task. This is the default mode:
+
+```bash
+python3 scripts/claude_code_delegate.py \
+  --repo /path/to/repo \
+  --task "Review the active OpenSpec task and suggest the smallest safe implementation." \
+  --json
+```
+
+Delegate an edit-capable task only when the active plan explicitly allows it:
+
+```bash
+python3 scripts/claude_code_delegate.py \
+  --repo /path/to/repo \
+  --task-file /path/to/task.md \
+  --apply \
+  --json
+```
+
+Apply mode refuses to run on a dirty Git worktree unless `--allow-dirty` is passed. Codex remains responsible for inspecting diffs, running verification, recording evidence, and updating OpenSpec tasks before claiming completion.
+
 ## Context Tool Audit
 
 As a skill, invoke `context-tool-audit` when you want Codex to run the audit workflow, explain the report, and ask before applying selected actions.
@@ -232,10 +263,20 @@ Maintain local Codex plugins and skills:
 python3 scripts/codex_auto_update_plugins_skills.py --apply --json
 ```
 
-Dry-run mode omits `--apply`. The updater refreshes clean Git mirrors,
-OpenAI curated plugin caches, OpenAI curated skills, and known external
-tooling such as Agent Reach, Lark, GSD, and OpenSpec. It skips local copies
-that differ from their previous upstream mirror instead of overwriting them.
+The `codex-updater` skill wraps this workflow for chat use. It runs dry-run
+checks first, summarizes plugin install refresh and cache verification results,
+and only applies updates after explicit update intent or confirmation.
+
+Dry-run mode omits `--apply`. The updater checks clean Git mirrors against their
+upstream remotes, refreshes configured plugin marketplaces, plans or applies
+installed plugin cache refreshes with `codex plugin add`, verifies installed
+plugin caches against marketplace sources when possible, refreshes OpenAI
+curated plugin caches and skills, and maintains known external tooling such as
+Lark, GSD, and OpenSpec. It skips local copies that differ from their previous
+upstream mirror instead of overwriting them.
+
+Agent Reach is deprecated and not recommended for new use. It is intentionally
+excluded from DevFlow's automatic update planning.
 
 ## Safety
 
@@ -255,14 +296,14 @@ that differ from their previous upstream mirror instead of overwriting them.
 
 ## Checkpoint Compact Gate
 
-Create durable checkpoints at major workflow boundaries and recommend context compaction before continuing.
+Create durable checkpoints at major workflow boundaries and recommend context compaction only when continuing in the current thread.
 
 The sequence is:
 
 1. Persist project state to `.planning/` and `openspec/`.
 2. Create a checkpoint under `.planning/checkpoints/`.
 3. Validate that decisions, risks, verification results, and next action are recorded.
-4. Recommend `/compact` in Codex CLI, or use API compaction in external orchestration.
+4. Recommend `/compact` in Codex CLI only when the checkpoint is a continuation gate, or use API compaction in external orchestration.
 5. Continue by rereading repo files, not relying on chat memory.
 
 Create a checkpoint:

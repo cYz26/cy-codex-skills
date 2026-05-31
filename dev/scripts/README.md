@@ -22,9 +22,20 @@ Dry-run mode omits `--apply`:
 python3.11 dev/scripts/codex_auto_update_plugins_skills.py --json
 ```
 
-The updater refreshes clean Git mirrors, OpenAI curated plugin caches, OpenAI
-curated skills, and known external tooling such as Agent Reach, Lark, GSD, and
-OpenSpec. It skips local copies that differ from their previous upstream mirror
-instead of overwriting them.
+The DevFlow `codex-updater` skill wraps this script for chat use. It runs dry-run
+checks first, summarizes plugin install refresh and cache verification results,
+and only applies updates after explicit update intent or confirmation.
+
+The updater delegates to DevFlow's canonical updater implementation. It checks
+clean Git mirrors against their upstream remotes in dry-run mode, refreshes
+configured plugin marketplaces, plans or applies installed plugin cache refreshes
+with `codex plugin add`, verifies installed plugin caches against marketplace
+sources when possible, refreshes OpenAI curated plugin caches and skills, and
+maintains known external tooling such as Lark, GSD, and OpenSpec. It skips local
+copies that differ from their previous upstream mirror instead of overwriting
+them.
+
+Agent Reach is deprecated in this repository and is not recommended for new use;
+it is intentionally excluded from automatic update planning.
 
 Use Python 3.11 or newer; the script uses the standard-library `tomllib` module.

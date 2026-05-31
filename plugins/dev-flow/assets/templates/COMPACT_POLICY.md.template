@@ -13,9 +13,10 @@ Compact only at major workflow boundaries after durable project context is writt
 
 ## Instruction
 
-When a checkpoint reports `compact_status: pending`, run `/compact` in Codex CLI before continuing to the
-next major stage. If compaction is unavailable, start a new session using the checkpoint file as handoff
+When a checkpoint reports `compact_status: pending`, run `/compact` in Codex CLI before continuing in the
+current thread. When a checkpoint reports `compact_status: not_needed`, the task is at a stopping point and
+state is already updated; compact is optional before starting a new thread or using the checkpoint as handoff
 context.
 
-When an external API or harness runs compaction, record the returned payload with `record_compact_result.py`.
+When an external API or harness runs compaction for a pending gate, record the returned payload with `record_compact_result.py`.
 The compact record is evidence for the gate; repository files remain the source of truth.
