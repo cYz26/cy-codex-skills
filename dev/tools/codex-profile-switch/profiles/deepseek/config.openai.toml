@@ -1,0 +1,4 @@
+[model_providers.ccx]
+name = "CCX"
+base_url = "http://127.0.0.1:3688/v1"
+wire_api = "responses"

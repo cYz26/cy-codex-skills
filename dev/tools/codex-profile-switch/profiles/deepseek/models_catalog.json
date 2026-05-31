@@ -1,0 +1,45 @@
+{
+  "models": [
+    {
+      "slug": "ccx",
+      "display_name": "DeepSeek (via CCX)",
+      "description": "DeepSeek V4 routed through the local CCX Responses proxy.",
+      "model": "ccx",
+      "model_provider": "ccx",
+      "default_reasoning_level": "high",
+      "model_context_window": 1000000,
+      "model_max_output_tokens": 384000,
+      "supported_reasoning_levels": [
+        {"effort": "high", "description": "DeepSeek thinking mode"}
+      ],
+      "input_modalities": ["text"],
+      "shell_type": "shell_command",
+      "visibility": "list",
+      "supported_in_api": true,
+      "priority": 50,
+      "additional_speed_tiers": [],
+      "service_tiers": [],
+      "availability_nux": null,
+      "upgrade": null,
+      "base_instructions": "You are Codex, a coding agent. Work carefully with the user's repository, use tools to inspect and verify, and keep changes focused.",
+      "model_messages": {
+        "instructions_template": "{{ base_instructions }}",
+        "instructions_variables": {}
+      },
+      "supports_reasoning_summaries": false,
+      "default_reasoning_summary": "none",
+      "support_verbosity": false,
+      "default_verbosity": "low",
+      "apply_patch_tool_type": "freeform",
+      "web_search_tool_type": "text_and_image",
+      "truncation_policy": {"mode": "tokens", "limit": 10000},
+      "supports_parallel_tool_calls": true,
+      "supports_image_detail_original": false,
+      "context_window": 1000000,
+      "max_context_window": 1000000,
+      "effective_context_window_percent": 95,
+      "experimental_supported_tools": [],
+      "supports_search_tool": true
+    }
+  ]
+}
