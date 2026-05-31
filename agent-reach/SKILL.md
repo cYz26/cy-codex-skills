@@ -1,13 +1,13 @@
 ---
 name: agent-reach
-description: Install, update, diagnose, configure, and operate Agent Reach so Codex can access platform-specific internet channels through local CLIs and MCP services. Use when the user asks to install or update Agent Reach, run `agent-reach doctor`, configure cookies or proxies, or access Twitter/X, YouTube subtitles, Reddit, GitHub, Bilibili, XiaoHongShu, Douyin, LinkedIn, WeChat articles, Weibo, Xiaoyuzhou podcasts, V2EX, RSS, Exa search, or arbitrary web pages via the Agent Reach toolchain rather than generic browsing alone.
+description: Deprecated and not recommended for new use. Legacy guidance for installing, updating, diagnosing, configuring, and operating Agent Reach only when the user explicitly asks for that local toolchain.
 ---
 
 # Agent Reach
 
-Adapt the [Agent Reach](https://github.com/Panniantong/Agent-Reach) project into a Codex workflow.
+Deprecated and not recommended for new use. This skill is retained as legacy compatibility guidance for the [Agent Reach](https://github.com/Panniantong/Agent-Reach) project.
 
-Prefer Codex's built-in browsing for ordinary web research and sourced latest-info answers. Use Agent Reach when the user wants the local toolchain itself, asks to install or repair it, or needs platform-specific access that generic browsing cannot provide reliably.
+Prefer Codex's built-in browsing for ordinary web research and sourced latest-info answers. Use Agent Reach only when the user explicitly wants the local toolchain itself or asks to install, repair, or operate an existing Agent Reach setup.
 
 ## Start Here
 
@@ -36,7 +36,7 @@ agent-reach doctor
 
 - Treat Agent Reach as an installer and health checker. After setup, use the upstream tools directly: `xreach`, `yt-dlp`, `gh`, `mcporter`, `curl`, `feedparser`, or the bundled Xiaoyuzhou transcription script.
 - Re-run `agent-reach doctor` after installs, updates, or channel configuration and report what changed.
-- Prefer Agent Reach over generic browsing when the user needs richer platform-native output:
+- Do not prefer Agent Reach over generic browsing. Because this skill is deprecated, use it only when the user explicitly requests Agent Reach or must operate an existing setup:
   - Twitter/X: search, threads, timelines, posting
   - YouTube and Bilibili: subtitles and metadata
   - XiaoHongShu, Douyin, LinkedIn, WeChat: MCP or browser-driven access

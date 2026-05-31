@@ -107,6 +107,12 @@ Superpowers is activated project-locally through `.codex/skills/`; do not enable
 - Before claiming work is complete, fixed, passing, ready to commit, or ready for PR, use `superpowers:verification-before-completion`.
 - If either Superpowers skill is unavailable, run the project orchestrator dependency check and activation before continuing.
 
+## Plugin Eval Gate
+
+- When creating or updating Codex plugins or skills, proactively run Plugin Eval on the changed skill or plugin path: `plugin-eval analyze <path> --format markdown`. If `plugin-eval` is not on PATH, use the installed Plugin Eval plugin's `scripts/plugin-eval.js` with `node`.
+- Address failures, warnings, and fix-first recommendations before completion, or record why a finding is deferred.
+- Verification evidence must record the score, findings, and optimization decisions, plus the evaluated target.
+
 ## Execution Rules
 
 - Execute one task at a time unless explicitly instructed otherwise.

@@ -5,7 +5,7 @@ Mirror of the non-system Codex skills currently loaded from `~/.codex/skills`, p
 ## Synced skills
 
 - `agents-md-context-manager`
-- `agent-reach`
+- `agent-reach` (Agent Reach; deprecated and not recommended for new use)
 - `develop-web-game`
 - `durable-knowledge-maintainer`
 - `game-image-asset-pipeline`
