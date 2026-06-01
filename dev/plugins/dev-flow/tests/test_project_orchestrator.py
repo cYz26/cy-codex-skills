@@ -383,6 +383,9 @@ class ProjectOrchestratorTests(unittest.TestCase):
                 self.assertIn("plugin-eval analyze", text)
                 self.assertIn("creating or updating Codex plugins or skills", text)
                 self.assertIn("record the score, findings, and optimization decisions", text)
+                self.assertIn("default to fixing or optimizing", text)
+                self.assertIn("Deferral is an exception", text)
+                self.assertIn("residual risk and follow-up path", text)
 
     def test_scaffold_preserves_existing_agents_and_adds_brownfield_docs(self):
         existing = self.make_repo("existing-agents")

@@ -179,3 +179,17 @@
 - `python3 dev/plugins/dev-flow/scripts/validate_workflow_state.py --repo /Users/cy/Dev/agents-dev/cy-codex-skills --json`: pass (.planning/verification/20260531053617-python3-dev-plugins-dev-flow-scripts-validate_workflow_state.py-.md)
 
 - `node /Users/cy/.codex/plugins/cache/openai-curated/plugin-eval/fef63ecf/scripts/plugin-eval.js analyze plugins/dev-flow --format markdown`: pass (.planning/verification/20260531053742-plugin-eval-analyze-plugins-dev-flow.md)
+
+## default-plugin-eval-remediation
+
+- RED focused test: `python3 -m unittest dev.plugins.dev-flow.tests.test_project_orchestrator.ProjectOrchestratorTests.test_plugin_eval_gate_is_required_for_plugin_and_skill_changes`: failed before policy text updates.
+- GREEN focused test: `python3 -m unittest dev.plugins.dev-flow.tests.test_project_orchestrator.ProjectOrchestratorTests.test_plugin_eval_gate_is_required_for_plugin_and_skill_changes`: pass.
+- `python3 -m unittest discover -s dev/plugins/dev-flow/tests`: pass, 72 tests.
+- `python3 -m unittest discover -s plugins/dev-flow/tests`: pass, 22 tests.
+- `openspec validate --all --strict`: pass, 17 items.
+- `git diff --check`: pass.
+- `python3 dev/plugins/dev-flow/scripts/codex_plugin_preflight.py --plugin-root plugins/dev-flow --marketplace .agents/plugins/marketplace.json --json`: pass.
+- `python3 dev/plugins/dev-flow/scripts/codex_plugin_preflight.py --plugin-root dev/plugins/dev-flow --marketplace .agents/plugins/marketplace.dev.json --json`: pass.
+- `plugin-eval analyze plugins/dev-flow`: pass, score 77/100 grade C high risk.
+- `plugin-eval analyze dev/plugins/dev-flow`: pass, score 77/100 grade C high risk.
+- Deferred Plugin Eval findings: full-plugin deferred/invoke token budget and Python complexity require a dedicated packaging/helper-script refactor follow-up.

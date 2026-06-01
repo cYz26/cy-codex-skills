@@ -110,7 +110,9 @@ Superpowers is activated project-locally through `.codex/skills/`; do not enable
 ## Plugin Eval Gate
 
 - When creating or updating Codex plugins or skills, proactively run Plugin Eval on the changed skill or plugin path: `plugin-eval analyze <path> --format markdown`. If `plugin-eval` is not on PATH, use the installed Plugin Eval plugin's `scripts/plugin-eval.js` with `node`.
-- Address failures, warnings, and fix-first recommendations before completion, or record why a finding is deferred.
+- When Plugin Eval reports failures, warnings, or fix-first recommendations, default to fixing or optimizing them before completion.
+- Deferral is an exception: only defer findings that are out of scope, destructive or risky, require dependency or architecture decisions, or need explicit user approval.
+- Deferred findings must record the reason, residual risk and follow-up path.
 - Verification evidence must record the score, findings, and optimization decisions, plus the evaluated target.
 
 ## Execution Rules

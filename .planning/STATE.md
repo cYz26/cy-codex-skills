@@ -8,7 +8,7 @@ current_phase:
   status: verification_passed
 
 current_change:
-  id: optimize-devflow-plugin-eval-followup
+  id: default-plugin-eval-remediation
   status: verified
 
 gates:
@@ -23,13 +23,13 @@ gates:
 
 context_management:
   compact_policy: checkpoint_boundary
-  last_checkpoint_id: 2026-05-31-verification_passed-optimize-devflow-plugin-eval-followup
-  last_checkpoint_file: .planning/checkpoints/2026-05-31-verification_passed-optimize-devflow-plugin-eval-followup.md
+  last_checkpoint_id: 2026-06-01-verification_passed-default-plugin-eval-remediation
+  last_checkpoint_file: .planning/checkpoints/2026-06-01-verification_passed-default-plugin-eval-remediation.md
   compact_recommended: false
   compact_status: not_needed
   last_compact_result_file: none
   compact_source: checkpoint
-  compact_updated_at: 2026-05-31T20:13:18+08:00
+  compact_updated_at: 2026-06-01T08:11:08+08:00
   compact_skip_reason: none
   compact_error: none
   compact_after:
@@ -65,10 +65,12 @@ context_health:
 
 ## Current Status
 
-Change `optimize-devflow-plugin-eval-followup` is implemented and verified. DevFlow now marks low-frequency skills explicit-only through `agents/openai.yaml`, keeps core routing skills implicit, fixes scoped release Python long lines, and removes generated `__pycache__` artifacts from the plugin trees.
+Change `default-plugin-eval-remediation` is implemented and verified. The Plugin Eval Gate now says plugin and skill work must default to fixing or optimizing failures, warnings, and fix-first recommendations before completion.
 
-Plugin Eval improved from 68/100 grade D to 77/100 grade C. Trigger budget improved from 264 heavy to 99 moderate, invoke budget improved from 6671 heavy to 2941 heavy, and the Python long-line warning was cleared. The remaining high-risk finding is the release package's deferred token budget, which still requires a larger packaging or documentation-size follow-up.
+Deferral is now documented as an exception for out-of-scope, destructive/risky, dependency or architecture decision, or explicit user-approval cases. Deferred findings must record reason, residual risk, and follow-up path.
+
+Verification passed for focused gate tests, dev/release DevFlow tests, OpenSpec strict validation, dev/release plugin preflight, and Plugin Eval. Plugin Eval remains 77/100 grade C with high risk due to existing full-plugin token budget and Python complexity findings. Those findings are deferred under the new exception path because they require broad packaging and helper-script refactors outside this policy change.
 
 ## Next Action
 
-Review and archive `optimize-devflow-plugin-eval-followup` if the remaining deferred-budget risk is accepted as follow-up work.
+Review and archive `default-plugin-eval-remediation` if the deferred full-plugin packaging and complexity risks are accepted as follow-up work.
