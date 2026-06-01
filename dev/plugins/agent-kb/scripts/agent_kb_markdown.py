@@ -43,7 +43,7 @@ def word_count(text: str):
 
 def write_lint_report(vault: Path, project: str, findings: list[dict[str, str]]):
     today = date.today().isoformat()
-    path = vault / "20-projects" / project / "proposed-changes" / f"kb-lint-{today}.md"
+    path = vault / "projects" / project / "proposed-changes" / f"kb-lint-{today}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
         f"# KB Lint Report {today}",

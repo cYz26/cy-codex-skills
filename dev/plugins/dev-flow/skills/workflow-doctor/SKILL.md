@@ -7,6 +7,14 @@ description: Use when workflow state, specs, tasks, or evidence drift.
 
 Use when artifacts conflict, tasks lack evidence, implementation lacks specs, state is stale, or hooks/scripts break.
 
+## Repair Solution Discipline
+
+Workflow repair starts with diagnosis, not a minimal fix. After investigation,
+describe the systemic and thorough solution first: root cause, broken contracts,
+durable prevention, required tests, documentation updates, and verification.
+Then decide whether to execute that solution, a minimal fix, a staged repair, or
+a deferred follow-up, and record why the selected path fits the current state.
+
 ## Procedure
 
 1. Run `scripts/validate_workflow_state.py --repo <repo> --json`.

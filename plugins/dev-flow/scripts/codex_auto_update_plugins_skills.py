@@ -13,6 +13,7 @@ import sys
 from typing import Any
 
 from workflow_context_config import read_config as read_toml_config
+from plugin_project_migration import project_migration_sync_result
 
 
 def parse_args() -> argparse.Namespace:
@@ -44,6 +45,14 @@ def parse_args() -> argparse.Namespace:
         "--skip-external-updaters",
         action="store_true",
         help="Do not run known external updaters such as Lark, GSD, or OpenSpec.",
+    )
+    parser.add_argument(
+        "--repo",
+        default=None,
+        help=(
+            "Target project repo for read-only plugin project migration sync. "
+            "Defaults to cwd when it looks like a repo."
+        ),
     )
     return parser.parse_args()
 
@@ -508,6 +517,13 @@ def executable_exists(name: str) -> bool:
     return shutil.which(name) is not None
 
 
+def migration_sync_repo(value: str | None) -> Path | None:
+    repo = Path(value).expanduser().resolve() if value else Path.cwd().resolve()
+    if (repo / ".git").exists() or (repo / "AGENTS.md").exists() or (repo / ".planning").exists():
+        return repo
+    return None
+
+
 def run_external_updaters(codex_home: Path, apply: bool) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
 
@@ -656,6 +672,10 @@ def main() -> int:
     results.extend(marketplace_upgrade_results(config, args.apply))
     results.extend(plugin_install_results(config, args.apply))
     results.extend(plugin_cache_verification_results(codex_home, config))
+    target_repo = migration_sync_repo(args.repo)
+    if target_repo is not None:
+        plugin_root = Path(__file__).resolve().parents[1]
+        results.append(project_migration_sync_result(target_repo, plugin_root, codex_home))
 
     report = {
         "apply": bool(args.apply),

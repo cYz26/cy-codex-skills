@@ -75,6 +75,20 @@ When asked to design or implement a technical solution, use this structure:
 
 GSD phases are governance and sequencing containers, not technical completion boundaries.
 
+## Repair Solution Discipline
+
+When asked to repair a bug, workflow break, or broken behavior, do not start
+from the minimal fix as the default recommendation; after investigation,
+present the systemic and thorough solution first: root cause, affected
+contracts, durable prevention, tests, docs, migrations or compatibility
+concerns, and verification.
+
+Then compare whether actual execution should be the systemic repair, a minimal
+fix, a staged repair, or a deferred follow-up. Explain why the selected path is
+appropriate for the current repo state, risk, approval boundary, and validation
+cost. This does not override brownfield compatibility, OpenSpec, safety, or
+user-approval gates.
+
 ## Project Mode
 
 Project mode: brownfield

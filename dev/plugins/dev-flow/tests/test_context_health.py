@@ -190,6 +190,17 @@ Continue fixture work.
         self.assertEqual(report["subagents"]["recommendation"], "explorer")
         self.assertIn("workflow_state.py", " ".join(report["subagents"]["scoped_files"]))
         self.assertIn("Do not edit files", report["subagents"]["prompt"])
+        for phrase in [
+            "DONE",
+            "DONE_WITH_CONCERNS",
+            "NEEDS_CONTEXT",
+            "BLOCKED",
+            "files changed or inspected",
+            "commands or tests run",
+            "residual risks",
+            "review needs",
+        ]:
+            self.assertIn(phrase, report["subagents"]["prompt"])
 
     def test_import_codex_sessions_is_best_effort_and_sanitized(self):
         repo = self.make_repo()

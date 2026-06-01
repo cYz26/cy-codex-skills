@@ -13,6 +13,12 @@ Ensure `openspec/changes/<change-id>/` has proposal, design, tasks, requirement 
 
 When the design depends on current, external, platform, plugin, API, hook, CLI, installed-cache, or local-vs-platform capability, add Capability Evidence before implementation. Use `capability-research` to confirm authoritative/current behavior, run the local scan, compare options, and turn the result into OpenSpec scenarios and validation commands.
 
+For bug-fix or workflow-repair changes, the Target State and Completion
+Contract should describe the systemic and thorough solution first after
+investigation. If tasks choose a minimal fix, staged repair, or deferred
+follow-up, record why that smaller path is correct for the current state,
+approval boundary, risk, and validation cost.
+
 ## Routes
 
 - Use `ai-native-tech-plan` when plan structure, execution ledger, completion contract, or anti-partial-delivery guidance is needed.

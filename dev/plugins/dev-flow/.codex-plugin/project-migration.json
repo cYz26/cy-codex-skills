@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0",
+  "plugin": "dev-flow",
+  "stateKey": "dev-flow",
+  "projectLocalSkills": [
+    "capability-research",
+    "claude-code-delegate",
+    "project-orchestrator",
+    "project-setup",
+    "feature-intake",
+    "change-plan",
+    "execute-task",
+    "verify-and-archive",
+    "workflow-doctor",
+    "checkpoint-compact",
+    "context-tool-audit",
+    "plugin-project-migration"
+  ],
+  "managedFiles": []
+}

@@ -4,9 +4,24 @@ from pathlib import Path
 from typing import Any
 
 from workflow_paths import repo_path
+from workflow_compact_state import SUPPORTED_COMPACT_STATUSES
 from workflow_state import parse_frontmatter, parse_state
 
 
+CHECKPOINT_REPAIR_GUIDANCE = (
+    "Regenerate this checkpoint with create_checkpoint.py or the canonical checkpoint tool before compacting."
+)
+REQUIRED_FRONTMATTER_KEYS = {
+    "checkpoint_id",
+    "created_at",
+    "boundary",
+    "project_mode",
+    "phase_id",
+    "change_id",
+    "compact_recommended",
+    "compact_status",
+    "next_stage",
+}
 REQUIRED_SECTIONS = {
     "current_goal": "## Current goal",
     "completed_work": "## Completed work",
@@ -27,12 +42,39 @@ def validate_checkpoint(repo: Path, checkpoint: str) -> dict[str, Any]:
         return {"valid": False, "missing": ["checkpoint_file"], "compact_allowed": False}
     text = path.read_text()
     frontmatter, _ = parse_frontmatter(text)
+    missing.extend(missing_frontmatter(frontmatter))
     missing.extend(missing_sections(text))
     check_active_artifacts(repo, parse_state(repo), missing)
     if frontmatter_value(frontmatter, "boundary") == "verification_passed":
         check_verification_evidence(text, missing)
     missing = sorted(set(missing))
-    return {"valid": not missing, "missing": missing, "compact_allowed": not missing}
+    return {
+        "valid": not missing,
+        "missing": missing,
+        "compact_allowed": not missing,
+        "repair": CHECKPOINT_REPAIR_GUIDANCE if missing else "",
+    }
+
+
+def missing_frontmatter(frontmatter: str) -> list[str]:
+    if not frontmatter.strip():
+        return ["canonical_frontmatter"]
+    keys = frontmatter_keys(frontmatter)
+    missing = []
+    if not REQUIRED_FRONTMATTER_KEYS.issubset(keys):
+        missing.append("canonical_frontmatter")
+    status = frontmatter_value(frontmatter, "compact_status")
+    if status and status not in SUPPORTED_COMPACT_STATUSES:
+        missing.append("compact_status")
+    return missing
+
+
+def frontmatter_keys(frontmatter: str) -> set[str]:
+    keys = set()
+    for line in frontmatter.splitlines():
+        if ":" in line and not line.startswith(" "):
+            keys.add(line.split(":", 1)[0].strip())
+    return keys
 
 
 def missing_sections(text: str) -> list[str]:

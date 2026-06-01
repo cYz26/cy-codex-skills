@@ -50,7 +50,9 @@ The parent should pass a compact request:
 
 ```json
 {
+  "request_id": "parent-generated stable id",
   "action": "docs.fetch | docs.upsert | im.send | contact.resolve | calendar.agenda | vc.notes | sheets.read | base.query | wiki.node | drive.file | openapi.call | auth.check | domain.call | <lark-domain>.<operation>",
+  "goal": "specific FeishuOps deliverable",
   "intent": "human-readable reason",
   "question": "optional user question the parent will answer from this evidence",
   "handoff_context": {
@@ -67,12 +69,22 @@ The parent should pass a compact request:
     "non_goals": []
   },
   "target": {},
+  "dispatch_hints": {
+    "identity": "user | bot | mixed | none",
+    "profile": "optional lark-cli profile",
+    "read_only": true,
+    "bounded": true,
+    "explicit_subagent": true
+  },
   "evidence_request": {
     "mode": "summary | evidence_pack | full_content",
     "focus": ["optional topics, entities, or sections to inspect"]
   },
   "content": {},
   "constraints": [],
+  "expected_output": "evidence_pack | side_effect_report | artifact | blocker",
+  "success_criteria": [],
+  "stop_conditions": [],
   "return_format": "json"
 }
 ```
@@ -177,6 +189,23 @@ Domain-specific evidence examples:
 
 For write operations, return a side-effect evidence pack: target IDs, command/request used,
 confirmation state, created/updated/deleted object IDs, and read-back validation when available.
+
+## Context Cache Update Rules
+
+When your result creates useful continuity for related follow-ups, include `context_cache_update` in
+the final JSON. Use it for structured, auditable state only:
+
+- `resource_refs`: document, sheet, Base, chat, event, meeting, task, approval, cursor, revision, or
+  time-window refs.
+- `resource_map`: compact outline, schema, range list, thread list, artifact list, or relevant
+  object map.
+- `known_command_shapes`: command shapes that worked, with concrete secrets and tokens removed.
+- `missing_evidence`: important evidence not fetched or unavailable.
+- `freshness`: revision IDs, cursors, time windows, TTL, and whether refetch is required.
+- `provenance`: commands or sources that justify the cached evidence.
+
+Do not include full conversation transcripts, app secrets, access tokens, auth headers, cookies,
+large raw private payloads, or unsupported conclusions without provenance.
 
 ## Follow-Up Reuse
 
@@ -368,6 +397,14 @@ Return concise JSON-compatible Markdown:
   "validation": {},
   "artifacts": [],
   "blockers": [],
-  "residual_risk": []
+  "residual_risk": [],
+  "context_cache_update": {
+    "resource_refs": [],
+    "resource_map": {},
+    "known_command_shapes": [],
+    "missing_evidence": [],
+    "freshness": {},
+    "provenance": {}
+  }
 }
 ```

@@ -166,6 +166,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
             "claude-code-delegate",
             "context-health-check",
             "codex-updater",
+            "plugin-project-migration",
         }
         self.assertEqual({path.name for path in (PLUGIN_ROOT / "skills").iterdir() if path.is_dir()}, expected)
         for skill in expected:
@@ -386,6 +387,106 @@ class ProjectOrchestratorTests(unittest.TestCase):
                 self.assertIn("default to fixing or optimizing", text)
                 self.assertIn("Deferral is an exception", text)
                 self.assertIn("residual risk and follow-up path", text)
+
+    def test_repair_guidance_is_systemic_first_before_minimal_fix(self):
+        paths = {
+            "root": REPO_ROOT / "AGENTS.md",
+            "dev-template": PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template",
+            "release-template": RELEASE_PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template",
+        }
+        for label, path in paths.items():
+            text = path.read_text()
+            with self.subTest(path=label):
+                self.assertIn("## Repair Solution Discipline", text)
+                self.assertIn("systemic and thorough solution first", text)
+                self.assertIn("minimal fix", text)
+                self.assertIn("after investigation", text)
+
+        skill_expectations = {
+            "feature-intake": ["workflow-repair", "systemic and thorough solution first", "minimal fix"],
+            "change-plan": ["systemic and thorough solution first", "Target State", "Completion Contract"],
+            "workflow-doctor": ["Repair Solution Discipline", "systemic and thorough solution first", "minimal fix"],
+            "project-orchestrator": ["workflow-doctor", "systemic repair framing"],
+        }
+        for skill_name, phrases in skill_expectations.items():
+            text = (PLUGIN_ROOT / "skills" / skill_name / "SKILL.md").read_text()
+            for phrase in phrases:
+                self.assertIn(phrase, text, skill_name)
+
+    def test_subagent_strategy_is_routed_with_explicit_authorization(self):
+        project_orchestrator = (PLUGIN_ROOT / "skills" / "project-orchestrator" / "SKILL.md").read_text()
+        for phrase in [
+            "## SubAgent Decision Gate",
+            "recommend a split without spawning",
+            "explicit user authorization",
+            "disjoint write sets",
+            "main agent owns OpenSpec",
+            "gsd-execute-phase",
+            "subagent-driven-development",
+            "dispatching-parallel-agents",
+        ]:
+            self.assertIn(phrase, project_orchestrator)
+
+        ai_plan = (PLUGIN_ROOT / "skills" / "ai-native-tech-plan" / "SKILL.md").read_text()
+        for phrase in [
+            "SubAgent Strategy",
+            "independent Capability Slices",
+            "authorization state",
+            "main-agent-owned artifacts",
+        ]:
+            self.assertIn(phrase, ai_plan)
+
+        execute_task = (PLUGIN_ROOT / "skills" / "execute-task" / "SKILL.md").read_text()
+        for phrase in [
+            "Delegated Execution",
+            "DONE_WITH_CONCERNS",
+            "files changed or inspected",
+            "shared files remain serialized",
+        ]:
+            self.assertIn(phrase, execute_task)
+
+        context_health = (PLUGIN_ROOT / "skills" / "context-health-check" / "SKILL.md").read_text()
+        for phrase in [
+            "planning, execution, context-health, and review boundaries",
+            "repeated investigation pressure",
+            "bounded review or delegation need",
+        ]:
+            self.assertIn(phrase, context_health)
+
+    def test_subagent_strategy_is_documented_in_dev_and_release_readmes(self):
+        expectations = [
+            "## SubAgent Strategy",
+            "policy/router layer",
+            "does not spawn subagents from scripts or hooks",
+            "explicit user authorization",
+            "main agent owns OpenSpec",
+            "status (`DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`)",
+        ]
+        for label, path in {
+            "dev": PLUGIN_ROOT / "README.md",
+            "release": RELEASE_PLUGIN_ROOT / "README.md",
+        }.items():
+            text = path.read_text()
+            with self.subTest(readme=label):
+                for phrase in expectations:
+                    self.assertIn(phrase, text)
+
+    def test_devflow_hooks_and_scripts_do_not_spawn_subagents(self):
+        forbidden = ["spawn_agent", "Task(", "/goal"]
+        scan_roots = [
+            PLUGIN_ROOT / "hooks.json",
+            *sorted((PLUGIN_ROOT / "scripts").glob("*.py")),
+            RELEASE_PLUGIN_ROOT / "hooks.json",
+            *sorted((RELEASE_PLUGIN_ROOT / "scripts").glob("*.py")),
+        ]
+        violations = []
+        for path in scan_roots:
+            text = path.read_text()
+            for token in forbidden:
+                if token in text:
+                    violations.append(f"{path.relative_to(REPO_ROOT)} contains {token}")
+
+        self.assertEqual(violations, [])
 
     def test_scaffold_preserves_existing_agents_and_adds_brownfield_docs(self):
         existing = self.make_repo("existing-agents")

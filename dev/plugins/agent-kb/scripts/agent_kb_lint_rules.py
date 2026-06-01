@@ -17,10 +17,15 @@ from agent_kb_templates import required_core_files
 
 def missing_core_file_findings(vault: Path, project: str):
     findings: list[dict[str, str]] = []
-    for relative in required_core_files(project):
+    personal_first = is_personal_first_vault(vault)
+    for relative in required_core_files(project, personal_first=personal_first):
         if not (vault / relative).exists():
             findings.append(finding("missing-core-file", relative, "blocking", "Required KB file is missing."))
     return findings
+
+
+def is_personal_first_vault(vault: Path):
+    return (vault / "_system").exists() or (vault / "knowledge").exists()
 
 
 def frontmatter_findings(vault: Path):
@@ -61,7 +66,7 @@ def context_pack_findings(
     stale_context_days: int,
 ):
     findings: list[dict[str, str]] = []
-    context_pack = vault / "20-projects" / project / "context-pack.md"
+    context_pack = vault / "projects" / project / "context-pack.md"
     if not context_pack.exists():
         return findings
     findings.extend(context_size_findings(vault, context_pack, max_context_words))
@@ -98,7 +103,7 @@ def context_staleness_findings(vault: Path, context_pack: Path, stale_context_da
 
 
 def raw_source_findings(vault: Path, raw_stale_days: int):
-    raw_root = vault / "01-raw"
+    raw_root = vault / "raw"
     if not raw_root.exists():
         return []
     return [
@@ -109,7 +114,7 @@ def raw_source_findings(vault: Path, raw_stale_days: int):
 
 
 def is_stale_raw_source(path: Path, raw_stale_days: int):
-    return path.is_file() and path.name != ".gitkeep" and file_age_days(path) > raw_stale_days
+    return all((path.is_file(), path.name != ".gitkeep", file_age_days(path) > raw_stale_days))
 
 
 def stale_raw_source_finding(vault: Path, path: Path):

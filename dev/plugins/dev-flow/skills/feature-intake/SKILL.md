@@ -11,6 +11,13 @@ Classify new requirements, bugs, behavior/API changes, refactors, migrations, to
 
 Kinds: `new-feature`, `bug-fix`, `behavior-change`, `api-change`, `data-model-change`, `migration`, `refactor`, `test-only`, `docs-only`, `tooling`, `workflow-repair`.
 
+## Repair Intake
+
+For `bug-fix` and `workflow-repair`, do not treat a minimal fix as the default
+solution. After investigation, require the intake to state the systemic and thorough solution first,
+then compare whether execution should be systemic, minimal, staged, or deferred
+based on current state, risk, approval, and validation cost.
+
 ## Routes
 
 - Use `ai-native-tech-plan` for technical plans, implementation plans, architecture plans, Codex execution plans, workflow plans, or requests to avoid partial delivery.

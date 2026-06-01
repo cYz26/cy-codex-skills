@@ -6,13 +6,13 @@ import subprocess
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from workflow_paths import rel, repo_path
 
 
 Runner = Callable[..., subprocess.CompletedProcess[str]]
-PathResolver = Callable[[str], str | None]
+PathResolver = Callable[[str], Optional[str]]
 
 
 PLAN_DELEGATION_CONTRACT = "\n".join(
@@ -46,12 +46,12 @@ APPLY_DELEGATION_CONTRACT = "\n".join(
 class ClaudeDelegateOptions:
     repo: Path
     task: str = ""
-    task_file: Path | None = None
+    task_file: Optional[Path] = None
     apply: bool = False
     allow_dirty: bool = False
     max_budget_usd: str = "1.00"
-    model: str | None = None
-    effort: str | None = None
+    model: Optional[str] = None
+    effort: Optional[str] = None
     add_dirs: list[str] = field(default_factory=list)
     allowed_tools: list[str] = field(default_factory=list)
     log: bool = True

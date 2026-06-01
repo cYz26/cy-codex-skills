@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./scripts/kb_event_hook.py --event post_tool_use",
+            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/agent-kb/0.1.0/scripts/kb_event_hook.py\" --event post_tool_use",
             "timeout": 10
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./scripts/kb_event_hook.py --event user_prompt_submit",
+            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/agent-kb/0.1.0/scripts/kb_event_hook.py\" --event user_prompt_submit",
             "timeout": 10
           }
         ]
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./scripts/kb_event_hook.py --event stop",
+            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/agent-kb/0.1.0/scripts/kb_event_hook.py\" --event stop",
             "timeout": 10
           }
         ]

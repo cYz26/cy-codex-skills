@@ -19,7 +19,9 @@ Read only:
 4. `decisions.md`
 5. `open-questions.md`
 6. Recent project logs
-7. `10-wiki/index.md` if navigation has changed
+7. `_system/indexes/knowledge-index.md` if navigation has changed
+
+Do not read `personal/` or `archive/` unless the user explicitly authorizes it.
 
 ## Procedure
 

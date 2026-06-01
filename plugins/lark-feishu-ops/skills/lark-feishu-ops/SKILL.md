@@ -119,7 +119,9 @@ Pass a compact request to `FeishuOps`:
 
 ```json
 {
+  "request_id": "parent-generated stable id",
   "action": "docs.fetch | docs.upsert | im.send | contact.resolve | calendar.agenda | vc.notes | sheets.read | base.query | wiki.node | drive.file | openapi.call | auth.check | domain.call | <lark-domain>.<operation>",
+  "goal": "specific FeishuOps deliverable",
   "intent": "why this Feishu operation is needed",
   "question": "optional user question the parent must answer from the fetched evidence",
   "handoff_context": {
@@ -136,12 +138,24 @@ Pass a compact request to `FeishuOps`:
     "non_goals": []
   },
   "target": {},
+  "dispatch_hints": {
+    "explicit_subagent": false,
+    "direct_allowed": true,
+    "read_only": true,
+    "bounded": true,
+    "single_domain": true,
+    "identity": "user | bot | mixed | none",
+    "profile": "optional lark-cli profile"
+  },
   "evidence_request": {
     "mode": "summary | evidence_pack | full_content",
     "focus": ["optional topics, entities, or sections to inspect"]
   },
   "content": {},
   "constraints": [],
+  "expected_output": "evidence_pack | side_effect_report | artifact | blocker",
+  "success_criteria": [],
+  "stop_conditions": [],
   "return_format": "json"
 }
 ```
@@ -185,6 +199,34 @@ Pass only the compact JSON request and the minimum content needed for the platfo
 The main agent may run `lark-cli` directly only when the dispatch policy allows direct mode. If the
 policy chose FeishuOps and the subagent cannot be spawned, report the blocker or ask for explicit
 permission before continuing with direct main-agent execution.
+
+### Agent Continuity Helper
+
+For related Lark/Feishu work, the parent can use the helper before deciding whether to run direct,
+reuse an active FeishuOps subagent, reconstruct from cache, or spawn a clean subagent:
+
+```bash
+python3 ../../scripts/lark_feishu_ops_agent_context.py prepare --repo <repo> --request-json <request.json> --json
+```
+
+Runtime state is local to the repository and ignored by Git:
+`.dev-flow/lark-feishu-ops/agent-context/`. It contains `active_agents.json` and `snapshots/`
+context capsules, not full conversations.
+
+The helper returns one of:
+
+- `direct`: bounded low-risk read can stay in the main agent.
+- `reuse_active`: send a compact follow-up request to the returned active `agent_id`.
+- `reconstruct_from_cache`: spawn a new FeishuOps subagent using the returned reconstructed request.
+- `fresh_subagent`: spawn a clean FeishuOps subagent because no safe continuity candidate exists.
+
+Use `record-active` after the parent actually spawns a FeishuOps subagent, and `record-result`
+after FeishuOps returns a structured result. FeishuOps should include `context_cache_update` when
+it has useful resource refs, resource maps, command shapes, missing evidence, freshness, or
+provenance for future related tasks.
+
+The helper does not spawn, message, wait for, or close subagents. Actual Codex runtime primitives
+remain the parent agent's responsibility.
 
 ### Context Handoff
 
@@ -380,7 +422,15 @@ or `artifacts` with enough IDs/tokens for the parent to dispatch follow-up tasks
   "validation": {},
   "artifacts": [],
   "blockers": [],
-  "residual_risk": []
+  "residual_risk": [],
+  "context_cache_update": {
+    "resource_refs": [],
+    "resource_map": {},
+    "known_command_shapes": [],
+    "missing_evidence": [],
+    "freshness": {},
+    "provenance": {}
+  }
 }
 ```
 

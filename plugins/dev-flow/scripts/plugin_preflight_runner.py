@@ -105,6 +105,10 @@ def hook_script(command: str) -> str:
         parts = shlex.split(command)
     except ValueError:
         return command
+    for part in parts:
+        if part.endswith(".py"):
+            name = Path(part).name
+            return f"scripts/{name}" if "/scripts/" in part else part
     return parts[0] if parts else command
 
 

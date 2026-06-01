@@ -14,8 +14,13 @@ AgentKB keeps Markdown as the canonical storage format. Load the smallest suffic
 - Missing frontmatter on formal notes
 - Missing required frontmatter fields
 - Missing core project files
+- Missing `_system/` protocol files
 - Oversized or stale `context-pack.md`
 - Raw sources that have not been processed
+- Unprocessed captures in `inbox/codex-captures/`
+- Stale candidates in `promotion/candidates/`
+- Notes marked `needs_review: true`
+- Active notes referencing `archive/`
 - Index or logs that need review
 
 ## Procedure

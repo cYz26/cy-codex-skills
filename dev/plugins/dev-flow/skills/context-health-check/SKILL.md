@@ -33,7 +33,15 @@ If the report says `goal.status` is `missing`, `stale`, or `conflicting`, do not
 
 ## Subagent Handling
 
-Subagent recommendations are advisory. Use them only when the user explicitly wants subagents or delegated parallel work. The generated prompt scopes the subagent to read-only exploration, disjoint write ownership, or diff-centric review.
+Evaluate subAgent usefulness at planning, execution, context-health, and review boundaries.
+A recommendation is appropriate for repeated investigation pressure,
+repeated command failures, diff spread across independent domains, or a bounded review or delegation need.
+
+Subagent recommendations are advisory. Use them only when the user explicitly
+wants subagents or delegated parallel work. The generated prompt scopes the
+subagent to read-only exploration, disjoint write ownership, or diff-centric
+review, and the main agent remains responsible for verification and durable
+workflow evidence.
 
 ## Historical Session Import
 

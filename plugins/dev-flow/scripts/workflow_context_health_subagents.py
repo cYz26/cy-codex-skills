@@ -44,7 +44,13 @@ def explorer_prompt(path: str, options: dict[str, Any]) -> str:
             f"Objective: {objective}",
             f"Scoped files: {path}",
             "Non-goals: Do not edit files. Do not broaden scope.",
-            "Output schema: findings, evidence, stale assumptions, recommended next action.",
+            "Output schema:",
+            "- status: DONE, DONE_WITH_CONCERNS, NEEDS_CONTEXT, or BLOCKED",
+            "- files changed or inspected",
+            "- commands or tests run",
+            "- residual risks",
+            "- review needs",
+            "- recommended next action",
             "Integration constraint: return a concise summary only; do not paste full logs.",
         ]
     )

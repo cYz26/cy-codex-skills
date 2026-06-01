@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from workflow_paths import as_bool_text, rel, render_template
 
@@ -22,13 +22,11 @@ def parse_state(repo: Path) -> dict[str, Any]:
         return {}
     frontmatter, body = parse_frontmatter(path.read_text())
     state: dict[str, Any] = {"body": body, "gates": {}}
-    current_section: str | None = None
-    for raw_line in frontmatter.splitlines():
-        current_section = parse_state_line(state, raw_line, current_section)
+    parse_yaml_subset(frontmatter, state)
     return state
 
 
-def parse_state_line(state: dict[str, Any], raw_line: str, current_section: str | None) -> str | None:
+def parse_state_line(state: dict[str, Any], raw_line: str, current_section: Optional[str]) -> Optional[str]:
     line = raw_line.rstrip()
     if not line:
         return current_section
@@ -46,6 +44,44 @@ def parse_state_line(state: dict[str, Any], raw_line: str, current_section: str 
         key, value = line.split(":", 1)
         state[key] = parse_scalar(value.strip())
     return None
+
+
+def parse_yaml_subset(frontmatter: str, state: dict[str, Any]) -> None:
+    stack: list[tuple[int, Any]] = [(-1, state)]
+    pending_key: Optional[tuple[int, dict[str, Any], str]] = None
+    for raw_line in frontmatter.splitlines():
+        line = raw_line.rstrip()
+        if not line.strip():
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        stripped = line.strip()
+        while stack and indent <= stack[-1][0]:
+            stack.pop()
+        parent = stack[-1][1]
+        if stripped.startswith("- "):
+            if not pending_key:
+                continue
+            pending_indent, pending_parent, pending_name = pending_key
+            if indent <= pending_indent:
+                continue
+            values = pending_parent.get(pending_name)
+            if not isinstance(values, list):
+                values = []
+                pending_parent[pending_name] = values
+            values.append(parse_scalar(stripped[2:].strip()))
+            continue
+        pending_key = None
+        if ":" not in stripped or not isinstance(parent, dict):
+            continue
+        key, value = stripped.split(":", 1)
+        value = value.strip()
+        if value:
+            parent[key] = parse_scalar(value)
+            continue
+        child: dict[str, Any] = {}
+        parent[key] = child
+        stack.append((indent, child))
+        pending_key = (indent, parent, key)
 
 
 def parse_scalar(value: str) -> Any:

@@ -156,7 +156,10 @@ def audit_project_lark_skills(repo: Path | str) -> dict[str, Any]:
             "title": f"Remove project-local scattered Lark skill {item['name']}",
             "skill": item["name"],
             "path": str(Path(str(item["path"])).parent),
-            "reason": "Project-local scattered lark-* skills increase main-agent context; route Feishu/Lark operations through lark-feishu-ops instead.",
+            "reason": (
+                "Project-local scattered lark-* skills increase main-agent context; "
+                "route Feishu/Lark operations through lark-feishu-ops instead."
+            ),
             "safety": "advisory",
             "requiresAuthorization": True,
         }
@@ -166,20 +169,35 @@ def audit_project_lark_skills(repo: Path | str) -> dict[str, Any]:
     recommendations: list[str] = []
     if scattered:
         recommendations.append(
-            "Remove or disable project-local scattered lark-* skills from the main-agent context and route Feishu/Lark work through lark-feishu-ops."
+            "Remove or disable project-local scattered lark-* skills from the main-agent "
+            "context and route Feishu/Lark work through lark-feishu-ops."
         )
         if not preferred:
-            recommendations.append("Add or enable lark-feishu-ops as the single project-local Feishu/Lark entry point.")
+            recommendations.append(
+                "Add or enable lark-feishu-ops as the single project-local Feishu/Lark entry point."
+            )
     elif preferred:
-        recommendations.append("Project-local lark-feishu-ops route is present; no scattered project Lark skill cleanup is needed.")
+        recommendations.append(
+            "Project-local lark-feishu-ops route is present; no scattered project Lark skill cleanup is needed."
+        )
     else:
-        recommendations.append("No project-local Lark skills found; keep Feishu/Lark operations routed through lark-feishu-ops when needed.")
+        recommendations.append(
+            "No project-local Lark skills found; keep Feishu/Lark operations routed through "
+            "lark-feishu-ops when needed."
+        )
 
     suggested_configuration = {
         "preferred_entrypoint": PREFERRED_PROJECT_SKILL,
         "main_agent_policy": "Keep scattered official lark-* skills out of the project-local main-agent context.",
-        "dispatch_policy": "Use direct main-agent lark-cli for bounded low-risk reads; escalate side effects, cross-domain work, auth/profile complexity, raw OpenAPI, broad pagination, and explicit FeishuOps requests to FeishuOps.",
-        "subagent_policy": "FeishuOps lazy-loads official lark-* guidance only when the dispatch policy chooses subagent execution.",
+        "dispatch_policy": (
+            "Use direct main-agent lark-cli for bounded low-risk reads; escalate side effects, "
+            "cross-domain work, auth/profile complexity, raw OpenAPI, broad pagination, and "
+            "explicit FeishuOps requests to FeishuOps."
+        ),
+        "subagent_policy": (
+            "FeishuOps lazy-loads official lark-* guidance only when the dispatch policy chooses "
+            "subagent execution."
+        ),
         "project_skill_state": (
             "scattered_present"
             if scattered
@@ -234,20 +252,26 @@ def check_lark_cli(skip_update_check: bool, offline: bool) -> dict[str, Any]:
     check["doctor"] = compact_result(doctor_result)
     if not doctor_result["ok"]:
         check["status"] = "WARN" if check["status"] == "PASS" else check["status"]
-        check["recommendations"].append("Run `lark-cli doctor` and repair local config/auth issues before platform writes.")
+        check["recommendations"].append(
+            "Run `lark-cli doctor` and repair local config/auth issues before platform writes."
+        )
 
     auth_result = run_command(["lark-cli", "auth", "status"], timeout=20)
     check["auth_status"] = compact_result(auth_result)
     if not auth_result["ok"]:
         check["status"] = "WARN" if check["status"] == "PASS" else check["status"]
-        check["recommendations"].append("Run `lark-cli auth status` and complete login/scope setup before protected operations.")
+        check["recommendations"].append(
+            "Run `lark-cli auth status` and complete login/scope setup before protected operations."
+        )
 
     if skip_update_check or offline:
         check["update_check"] = {
             "skipped": True,
             "reason": "offline or skip_update_check requested",
         }
-        check["recommendations"].append("Keep lark-cli updated; run `lark-cli update --check --json` periodically.")
+        check["recommendations"].append(
+            "Keep lark-cli updated; run `lark-cli update --check --json` periodically."
+        )
     else:
         update_result = run_command(["lark-cli", "update", "--check", "--json"], timeout=45)
         update_payload = parse_json_output(update_result)
@@ -260,10 +284,14 @@ def check_lark_cli(skip_update_check: bool, offline: bool) -> dict[str, Any]:
         }
         if not update_result["ok"]:
             check["status"] = "WARN" if check["status"] == "PASS" else check["status"]
-            check["recommendations"].append("Could not complete update check; retry `lark-cli update --check --json` later.")
+            check["recommendations"].append(
+                "Could not complete update check; retry `lark-cli update --check --json` later."
+            )
         elif isinstance(update_payload, dict) and update_payload.get("action") not in (None, "already_up_to_date"):
             check["status"] = "WARN" if check["status"] == "PASS" else check["status"]
-            check["recommendations"].append("Run `lark-cli update` when convenient; it is a high-risk-write command and should be explicit.")
+            check["recommendations"].append(
+                "Run `lark-cli update` when convenient; it is a high-risk-write command and should be explicit."
+            )
 
     return check
 
@@ -339,7 +367,8 @@ def audit_global_lark_skills() -> dict[str, Any]:
         "official_global_lark_skills": official,
         "codex_effective_official_lark_skills": codex_effective,
         "recommendation": (
-            "Unload official larksuite/cli lark-* skills from Codex and route Feishu/Lark work through the plugin subagent."
+            "Unload official larksuite/cli lark-* skills from Codex and route Feishu/Lark "
+            "work through the plugin subagent."
             if codex_effective
             else "No official larksuite/cli lark-* skills are globally active for Codex."
         ),

@@ -19,6 +19,29 @@ Use only after the active change has proposal, specs, design when needed, and ta
 
 Use `gsd-execute-phase` only for an approved phase plan.
 
+## Delegated Execution
+
+Use subAgents only when the user or active workflow explicitly authorized
+delegated parallel work and the approved task can be split into disjoint write
+sets. The shared files remain serialized through the main agent.
+
+For authorized execution, prefer the existing execution skills:
+
+- `gsd-execute-phase` for approved GSD phase waves.
+- `subagent-driven-development` for task-by-task implementation with review.
+- `dispatching-parallel-agents` for independent investigation or review.
+- `executing-plans` when subAgents are unavailable or the work is tightly coupled.
+
+Before dispatch, assign each worker concrete file ownership or read-only scope.
+Keep OpenSpec artifacts, `.planning/STATE.md`, verification evidence, shared
+README/docs, and final integration under main-agent ownership unless the plan
+serializes those edits.
+
+Each delegated result must report status (`DONE`, `DONE_WITH_CONCERNS`,
+`NEEDS_CONTEXT`, or `BLOCKED`), files changed or inspected, commands or tests
+run, residual risks, and review needs. Review those results before updating the
+Execution Ledger.
+
 ## Boundaries
 
 Do not expand scope, add dependencies, introduce migrations, or break public APIs without updating OpenSpec and getting approval. Do not mark a capability slice done before its validation command passes.

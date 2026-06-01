@@ -4,13 +4,16 @@ LEGACY_OBSIDIAN_CONFIG_PATH = ".codex/obsidian-kb.json"
 EVENT_DIR = ".agent-kb/events"
 
 FORMAL_NOTE_DIRS = (
-    "10-wiki",
-    "20-projects",
-    "30-research",
-    "40-decisions",
-    "50-playbooks",
-    "60-context-packs",
-    "70-agent-logs",
+    "knowledge",
+    "wiki",
+    "projects",
+    "research",
+    "decisions",
+    "playbooks",
+    "_agent/context-packs",
+    "_agent/logs",
+    "context-packs",
+    "agent-logs",
 )
 
 REQUIRED_FRONTMATTER_FIELDS = (

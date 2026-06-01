@@ -11,6 +11,40 @@ Router for Codex-first project work.
 
 Read `AGENTS.md`, `.planning/STATE.md`, and `openspec/config.yaml`. Run dependency check; activate missing project-local dependencies.
 
+## Repair Framing
+
+For bugs, broken workflows, state drift, or failed mechanisms, apply systemic repair framing
+before choosing an execution size. The route should gather
+enough evidence to describe the systemic and thorough solution first, then
+justify whether the work should execute that solution, a minimal fix, a staged
+repair, or a deferred follow-up.
+
+## SubAgent Decision Gate
+
+At planning, execution, context-health, and review boundaries, evaluate whether
+subAgents would materially improve the work. Recommend a split when the task has
+independent domains, disjoint write sets, repeated investigation pressure,
+repeated command failures, or a bounded review/delegation need.
+
+If the user or active workflow has not authorized delegated parallel work,
+recommend a split without spawning subAgents. Delegation requires explicit user authorization,
+an approved GSD execution flow, or an approved Superpowers subagent plan before execution.
+
+Reuse existing execution systems instead of duplicating them: route approved
+phase/wave execution to `gsd-execute-phase`, task-by-task implementation to
+`subagent-driven-development`, independent investigation to
+`dispatching-parallel-agents`, and inline fallback to `executing-plans`.
+
+Before delegation, define worker ownership and disjoint write sets. The main agent owns OpenSpec
+artifacts, `.planning/STATE.md`, verification evidence, shared README/docs
+coordination, and final integration unless those shared files are explicitly
+serialized.
+
+Require each subAgent result to report status (`DONE`, `DONE_WITH_CONCERNS`,
+`NEEDS_CONTEXT`, or `BLOCKED`), files changed or inspected, commands or tests
+run, residual risks, and review needs. The main agent reviews diffs and reruns
+validation before marking ledger items complete.
+
 ## Routing
 
 - No workflow files: use `project-setup`.

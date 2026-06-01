@@ -8,7 +8,7 @@ current_phase:
   status: verification_passed
 
 current_change:
-  id: harden-claude-delegate-execution-contract
+  id: add-devflow-subagent-strategy
   status: verified
 
 gates:
@@ -23,13 +23,13 @@ gates:
 
 context_management:
   compact_policy: checkpoint_boundary
-  last_checkpoint_id: 2026-06-01-verification_passed-harden-claude-delegate-execution-contract
-  last_checkpoint_file: .planning/checkpoints/2026-06-01-verification_passed-harden-claude-delegate-execution-contract.md
+  last_checkpoint_id: 2026-06-01-verification_passed-add-devflow-subagent-strategy
+  last_checkpoint_file: .planning/checkpoints/2026-06-01-verification_passed-add-devflow-subagent-strategy.md
   compact_recommended: false
   compact_status: not_needed
   last_compact_result_file: none
   compact_source: checkpoint
-  compact_updated_at: 2026-06-01T08:50:05+08:00
+  compact_updated_at: 2026-06-01T20:44:36+08:00
   compact_skip_reason: none
   compact_error: none
   compact_after:
@@ -54,39 +54,46 @@ context_management:
 
 context_health:
   last_report: none
-  last_risk: unknown
-  last_confidence: unknown
-  last_decision: none
-  last_goal_status: unknown
-  goal_summary: none
+  last_risk: medium
+  last_confidence: high
+  last_decision: devflow_subagent_strategy_verified
+  last_goal_status: verified
+  goal_summary: DevFlow SubAgent strategy is packaged as policy/router guidance and verified
 ---
 
 # Workflow State
 
 ## Current Status
 
-Change `harden-claude-delegate-execution-contract` is implemented and verified.
-The `claude-code-delegate` wrapper now prepends a mode-specific contract before
-invoking Claude Code. Plan mode tells Claude Code to complete the full
-non-editing deliverable. Apply mode tells Claude Code to complete all in-scope
-execution inside the Claude Code run, including Git operations only when the
-delegated task explicitly asks for them.
+DevFlow SubAgent strategy work is implemented and verified.
 
-The skill and README now define Codex as the supervisor/verifier: Codex scopes
-the task, invokes Claude Code, then verifies process evidence, diffs, tests, Git
-state, workflow records, and blockers. Codex should re-delegate or report a
-blocker when Claude leaves delegated execution unfinished instead of silently
-finishing the delegated work itself.
+Completed scope:
 
-Verification passed for RED/GREEN focused tests, dev/release DevFlow tests,
-OpenSpec strict validation, Claude Code capability check, dev/release plugin
-preflight, installed-cache refresh verification, workflow-state validation, and
-Plugin Eval. Plugin Eval remains 77/100 grade C with high risk due to existing
-full-plugin token budget and Python complexity findings. Those findings are
-deferred because they require broad packaging and helper-script refactors
-outside this contract change.
+- `project-orchestrator` now contains the SubAgent Decision Gate.
+- `ai-native-tech-plan`, `execute-task`, and `context-health-check` document
+  planning, delegated execution, and advisory recommendation rules.
+- Context-health SubAgent prompts now use the canonical
+  status/files/commands/risks/review-needs schema.
+- Dev and release hooks/scripts are covered by no automatic spawn regression
+  tests.
+- Dev and release DevFlow plugin copies are synchronized for this strategy.
+- Installed DevFlow plugin cache was refreshed with `codex plugin add
+  dev-flow@cy-codex-skills` and now matches the source package.
+
+Verification evidence is recorded in
+`.planning/verification/20260601204314-devflow-subagent-strategy.md`.
+Cache refresh evidence is recorded in
+`.planning/verification/20260601205116-devflow-cache-refresh.md`.
+
+Checkpoint
+`.planning/checkpoints/2026-06-01-verification_passed-add-devflow-subagent-strategy.md`
+was generated through `create_checkpoint.py` and validates successfully.
+
+Plugin Eval still reports 77/100, grade C, high risk for broad DevFlow token
+budget and Python complexity findings. Those findings are deferred outside this
+SubAgent strategy change.
 
 ## Next Action
 
-Review and archive `harden-claude-delegate-execution-contract` if the deferred
-full-plugin packaging and complexity risks are accepted as follow-up work.
+Review the SubAgent strategy change and archive readiness. OpenSpec archive gate
+is still closed, so do not archive until the workflow explicitly opens it.

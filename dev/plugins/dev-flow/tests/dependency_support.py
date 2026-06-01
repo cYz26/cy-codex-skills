@@ -122,6 +122,7 @@ class DependencyFixtureMixin:
                     "workflow-doctor",
                     "checkpoint-compact",
                     "context-tool-audit",
+                    "plugin-project-migration",
                 ]
             )
         for skill in skills:

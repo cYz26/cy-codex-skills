@@ -9,6 +9,12 @@ from agent_kb_lint_rules import (
     missing_core_file_findings,
     raw_source_findings,
 )
+from agent_kb_personal_lint import (
+    active_archive_reference_findings,
+    capture_backlog_findings,
+    needs_review_findings,
+    promotion_backlog_findings,
+)
 from agent_kb_markdown import write_lint_report
 from agent_kb_scaffold import sanitize_project
 from workflow_paths import rel, repo_path
@@ -24,7 +30,7 @@ def lint_agent_kb(
 ):
     vault = repo_path(vault)
     project = sanitize_project(project)
-    context_pack = vault / "20-projects" / project / "context-pack.md"
+    context_pack = vault / "projects" / project / "context-pack.md"
     findings = collect_findings(vault, project, max_context_words, stale_context_days, raw_stale_days)
     report = lint_report(vault, project, context_pack, findings)
     if write_report:
@@ -52,6 +58,10 @@ def collect_findings(
         )
     )
     findings.extend(raw_source_findings(vault, raw_stale_days))
+    findings.extend(capture_backlog_findings(vault, raw_stale_days))
+    findings.extend(promotion_backlog_findings(vault, raw_stale_days))
+    findings.extend(needs_review_findings(vault))
+    findings.extend(active_archive_reference_findings(vault))
     return findings
 
 

@@ -5,6 +5,18 @@ from typing import Any
 
 
 EMPTY_VALUES = (None, "", "none")
+SUPPORTED_COMPACT_STATUSES = {
+    "pending",
+    "not_needed",
+    "completed",
+    "skipped",
+    "failed",
+    "blocked",
+}
+
+
+def supported_compact_statuses_text() -> str:
+    return ", ".join(sorted(SUPPORTED_COMPACT_STATUSES))
 
 
 def check_compact_state(
@@ -15,6 +27,11 @@ def check_compact_state(
 ) -> None:
     context = state.get("context_management", {})
     status = context.get("compact_status")
+    if status not in SUPPORTED_COMPACT_STATUSES:
+        issues.append(
+            f"Unsupported compact_status `{status}`; must be one of: {supported_compact_statuses_text()}"
+        )
+        return
     if status == "pending":
         warnings.append("compact_status is pending; run /compact or record an explicit skip reason")
     if status == "skipped" and context.get("compact_skip_reason") in EMPTY_VALUES:

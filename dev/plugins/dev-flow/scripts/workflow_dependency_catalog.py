@@ -13,6 +13,7 @@ PROJECT_ORCHESTRATOR_SKILLS = [
     "workflow-doctor",
     "checkpoint-compact",
     "context-tool-audit",
+    "plugin-project-migration",
 ]
 
 REQUIRED_SUPERPOWERS_PROJECT_SKILLS = [

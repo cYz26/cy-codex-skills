@@ -1,18 +1,38 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Optional
 
 from workflow_paths import render_template, repo_path
 from workflow_validate import validate_workflow_state
 
 
-def doctor_workflow(repo: Path, write_report: bool = False) -> dict[str, object]:
+def doctor_workflow(
+    repo: Path,
+    write_report: bool = False,
+    *,
+    plugin_root: Optional[Path] = None,
+    codex_home: Optional[Path] = None,
+    check_cache_drift: bool = False,
+) -> dict[str, object]:
     repo = repo_path(repo)
-    validation = validate_workflow_state(repo)
+    drift_plugin_root = plugin_root
+    if check_cache_drift and drift_plugin_root is None:
+        drift_plugin_root = Path(__file__).resolve().parents[1]
+    validation = validate_workflow_state(
+        repo,
+        plugin_root=drift_plugin_root,
+        codex_home=codex_home,
+    )
     issues = validation["issues"] + validation["warnings"]
     recommendations = repair_recommendations(issues)
     status = "healthy" if validation["ok"] and not validation["warnings"] else "needs repair"
-    report = {"diagnosis": status, "issues": issues, "recommendations": recommendations}
+    report = {
+        "diagnosis": status,
+        "issues": issues,
+        "recommendations": recommendations,
+        "validation": validation,
+    }
     if write_report:
         write_doctor_reports(repo, status, issues, recommendations)
     return report

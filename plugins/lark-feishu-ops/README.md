@@ -73,6 +73,27 @@ and send related follow-up requests to it. This preserves recent IDs, revisions,
 cursors, time windows, and command choices. If the subagent has already been closed, start a new one
 and include the previous evidence pack or resource refs explicitly in the new request.
 
+## Agent Continuity Helper
+
+The plugin includes a parent-side helper for the continuity contract:
+
+```bash
+python3 plugins/lark-feishu-ops/scripts/lark_feishu_ops_agent_context.py prepare --repo /path/to/repo --request-json request.json --json
+```
+
+It stores repo-local runtime state under `.dev-flow/lark-feishu-ops/agent-context/`:
+
+- `active_agents.json` records parent-visible active FeishuOps state.
+- `snapshots/` stores redacted context capsules from completed FeishuOps results.
+
+The prepare command recommends `direct`, `reuse_active`, `reconstruct_from_cache`, or `fresh_subagent`.
+It uses resource refs, identity/profile, risk class, freshness, and provenance to
+avoid rebuilding context when a related active agent or fresh snapshot is safe to use.
+
+The helper does not call Codex subagent primitives. The parent agent still owns spawn, send, wait,
+and close. The helper only normalizes request/result JSON, reads/writes registry/cache state,
+redacts sensitive data, and returns a dispatch recommendation.
+
 The parent should monitor subagents with progress-aware waiting:
 
 - treat command starts, command outputs, discovered resource IDs, and validation notes as progress

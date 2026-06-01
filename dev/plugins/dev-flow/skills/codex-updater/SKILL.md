@@ -42,6 +42,8 @@ Summarize by actionable category:
 - `plugin-install`
 - `plugin-cache-verify`, including `differs-from-source`,
   `source-unavailable`, and `cache-missing`
+- `project-migration-sync`, including whether `plugin-project-migration` should
+  be run for explicit project-local migration
 - `skipped`, `failed`, `manual-required`, and the reason
 
 ## Apply Boundary
@@ -58,8 +60,9 @@ Otherwise, show the dry-run report and ask before `--apply`.
 
 After apply, report updated items, unchanged items, skipped items, failures,
 manual actions, installed plugin refresh results, and plugin cache verification
-results. Do not claim an installed plugin is refreshed unless cache verification
-or apply output supports it.
+results. Also report project migration sync findings, but do not apply project
+migrations from the updater path. Do not claim an installed plugin is refreshed
+unless cache verification or apply output supports it.
 
 ## Safety
 

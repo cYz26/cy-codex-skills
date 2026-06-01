@@ -5,6 +5,7 @@ import json
 import sys
 from pathlib import Path
 
+from workflow_compact_state import SUPPORTED_COMPACT_STATUSES, supported_compact_statuses_text
 from workflow_lib import hook_response, parse_state, repo_path
 
 
@@ -16,18 +17,25 @@ def main() -> int:
     repo = repo_path(payload.get("cwd") or Path.cwd())
     state = parse_state(repo)
     context = state.get("context_management", {})
-    if context.get("compact_status") == "pending":
+    status = context.get("compact_status")
+    if status not in SUPPORTED_COMPACT_STATUSES:
+        return hook_response(
+            repo,
+            f"DevFlow: unsupported compact_status `{status}`. "
+            f"Regenerate workflow state or set one of: {supported_compact_statuses_text()}.",
+        )
+    if status == "pending":
         return hook_response(
             repo,
             "DevFlow: checkpoint is pending compact. "
             "Run /compact before continuing to the next major stage.",
         )
-    if context.get("compact_status") == "skipped" and context.get("compact_skip_reason") in (None, "", "none"):
+    if status == "skipped" and context.get("compact_skip_reason") in (None, "", "none"):
         return hook_response(
             repo,
             "DevFlow: compact was skipped without a recorded reason.",
         )
-    if context.get("compact_status") in {"failed", "blocked"}:
+    if status in {"failed", "blocked"}:
         return hook_response(
             repo,
             "DevFlow: compact gate did not complete cleanly.",

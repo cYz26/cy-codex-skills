@@ -68,13 +68,24 @@ def configure_repo(
 def kb_config(vault: Path, project: str):
     return {
         "enabled": True,
+        "schema_version": 2,
         "vault": str(vault),
         "project": project,
+        "vault_profile": "personal-first",
         "storage_adapter": "markdown-filesystem",
         "editor_profile": "obsidian-compatible-markdown",
+        "editor_adapter": "obsidian-cli",
         "agent_adapter": "codex",
-        "context_pack": f"20-projects/{project}/context-pack.md",
-        "index": "10-wiki/index.md",
+        "context_pack": f"projects/{project}/context-pack.md",
+        "index": "_system/indexes/home.md",
+        "knowledge_index": "_system/indexes/knowledge-index.md",
+        "project_index": "projects/_project-index.md",
+        "obsidian_cli": {
+            "mode": "auto",
+            "command": "obsidian",
+            "fallback_command": "/Applications/Obsidian.app/Contents/MacOS/obsidian-cli",
+            "require_running_app": True,
+        },
     }
 
 

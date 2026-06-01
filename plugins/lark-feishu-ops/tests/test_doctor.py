@@ -168,6 +168,19 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
         for text in required:
             self.assertIn(text, prompt)
 
+    def test_runtime_prompt_documents_context_cache_update(self):
+        prompt = (PLUGIN_ROOT / "agents" / "runtime-prompts" / "feishu-ops.md").read_text()
+
+        required = [
+            "context_cache_update",
+            "resource_refs",
+            "known_command_shapes",
+            "Do not include full conversation transcripts",
+        ]
+
+        for text in required:
+            self.assertIn(text, prompt)
+
     def test_skill_documents_progress_aware_parent_waiting(self):
         skill = (PLUGIN_ROOT / "skills" / "lark-feishu-ops" / "SKILL.md").read_text()
 
@@ -216,6 +229,20 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
         for text in required:
             self.assertIn(text, readme)
 
+    def test_readme_documents_agent_continuity_helper(self):
+        readme = (PLUGIN_ROOT / "README.md").read_text()
+
+        required = [
+            "Agent Continuity Helper",
+            "active_agents.json",
+            "snapshots/",
+            "direct`, `reuse_active`, `reconstruct_from_cache`, or `fresh_subagent`",
+            "does not call Codex subagent primitives",
+        ]
+
+        for text in required:
+            self.assertIn(text, readme)
+
     def test_skill_documents_intent_and_follow_up_reuse(self):
         skill = (PLUGIN_ROOT / "skills" / "lark-feishu-ops" / "SKILL.md").read_text()
 
@@ -252,6 +279,23 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
         for text in required:
             self.assertIn(text, skill)
 
+    def test_skill_documents_agent_continuity_helper(self):
+        skill = (PLUGIN_ROOT / "skills" / "lark-feishu-ops" / "SKILL.md").read_text()
+
+        required = [
+            "Agent Continuity Helper",
+            "lark_feishu_ops_agent_context.py prepare",
+            ".dev-flow/lark-feishu-ops/agent-context/",
+            "reuse_active",
+            "reconstruct_from_cache",
+            "fresh_subagent",
+            "The helper does not spawn, message, wait for, or close subagents",
+            "context_cache_update",
+        ]
+
+        for text in required:
+            self.assertIn(text, skill)
+
     def test_skill_documents_codex_subagent_mechanics(self):
         skill = (PLUGIN_ROOT / "skills" / "lark-feishu-ops" / "SKILL.md").read_text()
 
@@ -281,6 +325,18 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
             "result.evidence_pack",
             "For write domains, return a side-effect evidence pack",
             "For related follow-ups in the same subagent",
+        ]
+
+        for text in required:
+            self.assertIn(text, agent)
+
+    def test_agent_instructions_document_context_cache_update(self):
+        agent = (PLUGIN_ROOT / "agents" / "feishu-ops.toml").read_text()
+
+        required = [
+            "context_cache_update",
+            "resource refs",
+            "freshness",
         ]
 
         for text in required:

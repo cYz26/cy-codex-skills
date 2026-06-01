@@ -12,8 +12,11 @@ AgentKB keeps Markdown as the canonical storage format. Load the smallest suffic
 ## Context Order
 
 1. Read the project `context-pack.md`.
-2. Read `current-state.md`, `decisions.md`, and `open-questions.md`.
-3. Read recent logs only as needed.
+2. Read `_system/write-policy.md` and `_system/promotion-policy.md`.
+3. Read `current-state.md`, `decisions.md`, and `open-questions.md`.
+4. Read recent logs only as needed.
+
+Do not read `personal/` or `archive/` unless the user explicitly authorizes it.
 
 ## Procedure
 
@@ -22,8 +25,10 @@ AgentKB keeps Markdown as the canonical storage format. Load the smallest suffic
 3. Update `decisions.md` only for durable decisions.
 4. Update `open-questions.md` when uncertainty remains.
 5. Refresh `context-pack.md` only when it is stale or missing important current context.
-6. Put high-impact or uncertain edits in `proposed-changes/`.
-7. Review the Git diff before completion.
+6. Move project-useful personal/work extracts into `projects/<project>/candidates/`.
+7. Put high-impact or uncertain edits in `proposed-changes/`.
+8. Write a routing receipt in `_agent/routing-receipts/` when routing or promotion happened.
+9. Review the Git diff before completion.
 
 ## Safety
 
