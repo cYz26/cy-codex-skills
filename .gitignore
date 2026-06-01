@@ -15,7 +15,7 @@ plugins/godot-core/evals/artifacts/
 # Local orchestration state is useful in-session but should not be committed
 # unless intentionally sharing the current development checkpoint.
 .planning/
-.dev-flow/context-health/
+.dev-flow/
 openspec/changes/
 setup-report.md
 repair-plan.md
