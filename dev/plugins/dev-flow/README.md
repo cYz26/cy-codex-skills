@@ -110,13 +110,21 @@ Policy documents that intentionally discuss human-style planning terms can inclu
 
 Use `claude-code-delegate` when Codex should ask Claude Code to analyze, review, plan, or explicitly execute a bounded task while keeping DevFlow gates authoritative.
 
+Delegation is a complete-task worker flow. Claude Code owns the bounded task
+inside the delegated run: plan mode owns the full non-editing deliverable, and
+apply mode owns the full in-scope execution. Codex verifies the process
+evidence, diffs, tests, Git state, and workflow records after Claude returns.
+If Claude leaves required delegated work unfinished, Codex should re-delegate a
+narrower follow-up or report a blocker instead of silently completing the task.
+
 Check whether the optional local Claude Code runtime is available:
 
 ```bash
 python3 scripts/claude_code_delegate.py --repo /path/to/repo --check --json
 ```
 
-Delegate a plan-only task. This is the default mode:
+Delegate a plan-only task. This is the default mode and Claude owns the complete
+analysis, review, or planning deliverable:
 
 ```bash
 python3 scripts/claude_code_delegate.py \
@@ -125,7 +133,9 @@ python3 scripts/claude_code_delegate.py \
   --json
 ```
 
-Delegate an edit-capable task only when the active plan explicitly allows it:
+Delegate an edit-capable task only when the active plan explicitly allows it.
+Claude owns the complete in-scope execution, including Git operations only when
+the delegated task asks for them:
 
 ```bash
 python3 scripts/claude_code_delegate.py \
@@ -135,7 +145,9 @@ python3 scripts/claude_code_delegate.py \
   --json
 ```
 
-Apply mode refuses to run on a dirty Git worktree unless `--allow-dirty` is passed. Codex remains responsible for inspecting diffs, running verification, recording evidence, and updating OpenSpec tasks before claiming completion.
+Apply mode refuses to run on a dirty Git worktree unless `--allow-dirty` is
+passed. Codex remains responsible for inspecting diffs, running verification,
+recording evidence, and updating OpenSpec tasks before claiming completion.
 
 ## Context Tool Audit
 

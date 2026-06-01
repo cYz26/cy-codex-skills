@@ -193,3 +193,19 @@
 - `plugin-eval analyze plugins/dev-flow`: pass, score 77/100 grade C high risk.
 - `plugin-eval analyze dev/plugins/dev-flow`: pass, score 77/100 grade C high risk.
 - Deferred Plugin Eval findings: full-plugin deferred/invoke token budget and Python complexity require a dedicated packaging/helper-script refactor follow-up.
+
+## harden-claude-delegate-execution-contract
+
+- RED focused test: `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s dev/plugins/dev-flow/tests -p 'test_claude_delegate.py'`: failed before wrapper prompt contracts.
+- RED release smoke test: `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest plugins/dev-flow/tests/test_release_smoke.py -k test_claude_code_delegation_is_packaged`: failed before skill wording updates.
+- GREEN focused dev test: `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s dev/plugins/dev-flow/tests -p 'test_claude_delegate.py'`: pass, 10 tests.
+- GREEN focused release test: `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s plugins/dev-flow/tests -p 'test_claude_delegate.py'`: pass, 10 tests.
+- `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s dev/plugins/dev-flow/tests`: pass, 74 tests.
+- `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s plugins/dev-flow/tests`: pass, 24 tests.
+- `openspec validate --all --strict`: pass, 18 items.
+- `git diff --check`: pass.
+- `PYTHONDONTWRITEBYTECODE=1 python3 dev/plugins/dev-flow/scripts/claude_code_delegate.py --repo /Users/cy/Dev/agents-dev/cy-codex-skills --check --json`: pass, Claude Code 2.1.158.
+- Dev and release plugin preflight checks: pass.
+- `plugin-eval analyze plugins/dev-flow`: pass, score 77/100 grade C high risk.
+- `plugin-eval analyze dev/plugins/dev-flow`: pass, score 77/100 grade C high risk.
+- Deferred Plugin Eval findings: full-plugin deferred/invoke token budget and Python complexity require a dedicated packaging/helper-script refactor follow-up.

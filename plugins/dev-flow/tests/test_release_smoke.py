@@ -172,6 +172,9 @@ context_health:
         skill = (PLUGIN_ROOT / "skills" / "claude-code-delegate" / "SKILL.md").read_text()
         self.assertIn("Claude Code Delegation", skill)
         self.assertIn("plan-only delegation", skill)
+        self.assertIn("Claude Code owns the complete bounded task", skill)
+        self.assertIn("Codex verifies", skill)
+        self.assertIn("re-delegate or report a blocker", skill)
         self.assertTrue((PLUGIN_ROOT / "scripts" / "claude_code_delegate.py").exists())
         self.assertTrue((PLUGIN_ROOT / "scripts" / "workflow_claude_delegate.py").exists())
 

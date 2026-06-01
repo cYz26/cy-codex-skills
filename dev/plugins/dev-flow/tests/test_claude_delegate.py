@@ -88,7 +88,40 @@ class ClaudeDelegateTests(unittest.TestCase):
         self.assertIn("--no-session-persistence", command)
         self.assertEqual(command[command.index("--permission-mode") + 1], "plan")
         self.assertEqual(command[command.index("--max-budget-usd") + 1], "1.00")
-        self.assertEqual(runner.calls[1]["kwargs"]["input"], "Explain the next change")
+        self.assertIn("Explain the next change", runner.calls[1]["kwargs"]["input"])
+
+    def test_plan_mode_wraps_task_with_complete_non_editing_contract(self):
+        repo = self.make_repo()
+        runner = FakeRunner(
+            [
+                completed(["/bin/claude", "--version"], stdout="2.1.158 (Claude Code)\n"),
+                completed(
+                    ["/bin/claude"],
+                    stdout=json.dumps(
+                        {
+                            "type": "result",
+                            "subtype": "success",
+                            "is_error": False,
+                            "session_id": "session-plan-contract",
+                            "result": "reviewed",
+                        }
+                    ),
+                ),
+            ]
+        )
+
+        delegate_to_claude(
+            ClaudeDelegateOptions(repo=repo, task="Review the active OpenSpec change", log=False),
+            path_resolver=lambda _: "/bin/claude",
+            runner=runner,
+        )
+
+        prompt = runner.calls[1]["kwargs"]["input"]
+        self.assertIn("DevFlow Claude Code delegation contract", prompt)
+        self.assertIn("complete the full analysis, review, or planning deliverable", prompt)
+        self.assertIn("Do not edit files in plan mode", prompt)
+        self.assertIn("Codex will independently verify", prompt)
+        self.assertIn("Review the active OpenSpec change", prompt)
 
     def test_apply_mode_blocks_dirty_worktree_before_invoking_claude(self):
         repo = self.make_repo()
@@ -141,6 +174,41 @@ class ClaudeDelegateTests(unittest.TestCase):
         self.assertTrue(report["ok"], report)
         self.assertEqual(report["mode"], "apply")
         self.assertEqual(command[command.index("--permission-mode") + 1], "bypassPermissions")
+
+    def test_apply_mode_wraps_task_with_complete_execution_contract(self):
+        repo = self.make_repo()
+        runner = FakeRunner(
+            [
+                completed(["/bin/claude", "--version"], stdout="2.1.158 (Claude Code)\n"),
+                completed(["git", "status", "--porcelain"], stdout=""),
+                completed(
+                    ["/bin/claude"],
+                    stdout=json.dumps(
+                        {
+                            "type": "result",
+                            "subtype": "success",
+                            "is_error": False,
+                            "session_id": "session-apply-contract",
+                            "result": "implemented",
+                        }
+                    ),
+                ),
+            ]
+        )
+
+        delegate_to_claude(
+            ClaudeDelegateOptions(repo=repo, task="Implement and test the active task", apply=True, log=False),
+            path_resolver=lambda _: "/bin/claude",
+            runner=runner,
+        )
+
+        prompt = runner.calls[2]["kwargs"]["input"]
+        self.assertIn("DevFlow Claude Code delegation contract", prompt)
+        self.assertIn("complete all in-scope execution inside this Claude Code run", prompt)
+        self.assertIn("Do not leave required delegated execution for Codex", prompt)
+        self.assertIn("Report files changed, commands run, verification results, Git operations", prompt)
+        self.assertIn("Codex will independently verify", prompt)
+        self.assertIn("Implement and test the active task", prompt)
 
     def test_claude_reported_error_json_is_normalized(self):
         repo = self.make_repo()

@@ -8,7 +8,7 @@ current_phase:
   status: verification_passed
 
 current_change:
-  id: default-plugin-eval-remediation
+  id: harden-claude-delegate-execution-contract
   status: verified
 
 gates:
@@ -23,13 +23,13 @@ gates:
 
 context_management:
   compact_policy: checkpoint_boundary
-  last_checkpoint_id: 2026-06-01-verification_passed-default-plugin-eval-remediation
-  last_checkpoint_file: .planning/checkpoints/2026-06-01-verification_passed-default-plugin-eval-remediation.md
+  last_checkpoint_id: 2026-06-01-verification_passed-harden-claude-delegate-execution-contract
+  last_checkpoint_file: .planning/checkpoints/2026-06-01-verification_passed-harden-claude-delegate-execution-contract.md
   compact_recommended: false
   compact_status: not_needed
   last_compact_result_file: none
   compact_source: checkpoint
-  compact_updated_at: 2026-06-01T08:11:08+08:00
+  compact_updated_at: 2026-06-01T08:50:05+08:00
   compact_skip_reason: none
   compact_error: none
   compact_after:
@@ -65,12 +65,28 @@ context_health:
 
 ## Current Status
 
-Change `default-plugin-eval-remediation` is implemented and verified. The Plugin Eval Gate now says plugin and skill work must default to fixing or optimizing failures, warnings, and fix-first recommendations before completion.
+Change `harden-claude-delegate-execution-contract` is implemented and verified.
+The `claude-code-delegate` wrapper now prepends a mode-specific contract before
+invoking Claude Code. Plan mode tells Claude Code to complete the full
+non-editing deliverable. Apply mode tells Claude Code to complete all in-scope
+execution inside the Claude Code run, including Git operations only when the
+delegated task explicitly asks for them.
 
-Deferral is now documented as an exception for out-of-scope, destructive/risky, dependency or architecture decision, or explicit user-approval cases. Deferred findings must record reason, residual risk, and follow-up path.
+The skill and README now define Codex as the supervisor/verifier: Codex scopes
+the task, invokes Claude Code, then verifies process evidence, diffs, tests, Git
+state, workflow records, and blockers. Codex should re-delegate or report a
+blocker when Claude leaves delegated execution unfinished instead of silently
+finishing the delegated work itself.
 
-Verification passed for focused gate tests, dev/release DevFlow tests, OpenSpec strict validation, dev/release plugin preflight, and Plugin Eval. Plugin Eval remains 77/100 grade C with high risk due to existing full-plugin token budget and Python complexity findings. Those findings are deferred under the new exception path because they require broad packaging and helper-script refactors outside this policy change.
+Verification passed for RED/GREEN focused tests, dev/release DevFlow tests,
+OpenSpec strict validation, Claude Code capability check, dev/release plugin
+preflight, installed-cache refresh verification, workflow-state validation, and
+Plugin Eval. Plugin Eval remains 77/100 grade C with high risk due to existing
+full-plugin token budget and Python complexity findings. Those findings are
+deferred because they require broad packaging and helper-script refactors
+outside this contract change.
 
 ## Next Action
 
-Review and archive `default-plugin-eval-remediation` if the deferred full-plugin packaging and complexity risks are accepted as follow-up work.
+Review and archive `harden-claude-delegate-execution-contract` if the deferred
+full-plugin packaging and complexity risks are accepted as follow-up work.

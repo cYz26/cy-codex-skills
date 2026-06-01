@@ -15,6 +15,33 @@ Runner = Callable[..., subprocess.CompletedProcess[str]]
 PathResolver = Callable[[str], str | None]
 
 
+PLAN_DELEGATION_CONTRACT = "\n".join(
+    [
+        "DevFlow Claude Code delegation contract (plan mode):",
+        "- You are Claude Code running as the delegated worker for Codex.",
+        "- Claude Code must complete the full analysis, review, or planning deliverable requested below inside "
+        "this Claude Code run.",
+        "- Do not edit files in plan mode.",
+        "- Report key process evidence, assumptions, risks, and blockers.",
+        "- Codex will independently verify the process and result evidence after you return.",
+    ]
+)
+
+
+APPLY_DELEGATION_CONTRACT = "\n".join(
+    [
+        "DevFlow Claude Code delegation contract (apply mode):",
+        "- You are Claude Code running as the delegated worker for Codex.",
+        "- Claude Code must complete all in-scope execution inside this Claude Code run: inspect relevant files, "
+        "edit files, run requested or relevant checks, update docs or workflow files, and perform Git operations "
+        "only when the delegated task explicitly asks for them.",
+        "- Do not leave required delegated execution for Codex unless you are blocked; report the blocker instead.",
+        "- Report files changed, commands run, verification results, Git operations, remaining risks, and blockers.",
+        "- Codex will independently verify the process and result evidence after you return.",
+    ]
+)
+
+
 @dataclass
 class ClaudeDelegateOptions:
     repo: Path
@@ -104,8 +131,8 @@ def delegate_to_claude(
                 "stderr": dirty.get("stderr", ""),
             }
 
-    task = task_text(options)
-    if not task.strip():
+    raw_task = task_text(options)
+    if not raw_task.strip():
         return {
             "ok": False,
             "reason": "missing-task",
@@ -115,6 +142,7 @@ def delegate_to_claude(
             "claudeVersion": capability.get("claudeVersion", ""),
             "command": [],
         }
+    task = delegated_task_prompt(options, raw_task)
 
     command = build_claude_command(capability["claudePath"], options)
     result = runner(
@@ -135,6 +163,11 @@ def task_text(options: ClaudeDelegateOptions) -> str:
     if options.task_file:
         return Path(options.task_file).expanduser().read_text()
     return options.task
+
+
+def delegated_task_prompt(options: ClaudeDelegateOptions, task: str) -> str:
+    contract = APPLY_DELEGATION_CONTRACT if options.apply else PLAN_DELEGATION_CONTRACT
+    return f"{contract}\n\nDelegated task:\n{task.strip()}\n"
 
 
 def dirty_worktree_report(repo: Path, *, runner: Runner = subprocess.run) -> dict[str, Any]:
