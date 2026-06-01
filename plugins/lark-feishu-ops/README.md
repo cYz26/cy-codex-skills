@@ -2,10 +2,11 @@
 
 This plugin exposes a single Codex skill, `lark-feishu-ops`, for Feishu/Lark platform work.
 The skill keeps official `lark-*` domain instructions and `lark-cli` details out of the main
-agent context by routing operations through a short-lived FeishuOps subagent.
-For Feishu/Lark platform operations, FeishuOps should preserve functional parity with scattered
-official `lark-*` skills by lazy-reading only the relevant domain skill or `lark-cli` help inside
-the subagent.
+agent context by using a hybrid route: direct main-agent `lark-cli` for bounded low-risk reads, and
+a short-lived FeishuOps subagent for complex, side-effectful, cross-domain, or explicitly delegated
+operations. For Feishu/Lark platform operations that use FeishuOps, the subagent should preserve
+functional parity with scattered official `lark-*` skills by lazy-reading only the relevant domain
+skill or `lark-cli` help inside the subagent.
 
 ## Why
 
@@ -14,15 +15,27 @@ large list of Feishu/Lark skills. This plugin keeps the main context small:
 
 - one plugin skill is visible to the main agent
 - `lark-cli` and official domain rules are checked before use
-- Feishu/Lark actions are delegated to a subagent
+- simple bounded reads can run directly through `lark-cli`
+- risky, broad, or multi-step Feishu/Lark actions are delegated to a subagent
 - global official `lark-*` skills for Codex can be audited and unloaded
 - project-local scattered `lark-*` skills can be audited with non-mutating cleanup recommendations
 
-## Delegation Model
+## Dispatch Model
 
-The main agent may technically run `lark-cli` directly when the CLI and auth are available, but that
-is not the normal path for this plugin. When a user invokes Lark Feishu Ops, the main agent should
-route the platform operation to FeishuOps and keep business judgment in the parent thread.
+The main agent can run `lark-cli` directly when the CLI and auth are available and the operation is
+read-only, bounded, single-domain or a small adjacent batch, easy to validate, and does not require
+auth/profile/scope changes, broad pagination, raw OpenAPI exploration, high-risk confirmation, or
+official `lark-*` skill loading in the parent context. Examples include a known document fetch, a
+bounded sheet range, a known Base query, auth status, update check, or focused command help.
+
+The main agent should route to FeishuOps when the user explicitly asks for FeishuOps/subagents, or
+when the operation writes/sends/updates/deletes, crosses domains, needs permission or profile work,
+uses raw OpenAPI, expands embedded resources, drains pages, downloads larger artifacts, or may need
+several related follow-up reads. In those cases the parent keeps business judgment in the parent
+thread and FeishuOps owns the platform operation.
+
+If a user explicitly asked for FeishuOps or subagent routing, do not silently fall back to direct
+main-agent `lark-cli`. Report the subagent blocker or ask for permission to continue direct.
 
 FeishuOps should receive one compact operation at a time. For example, `docs.fetch` returns the
 document content, IDs, revision, and discovered embedded resources. It should not silently expand
@@ -48,6 +61,13 @@ configuration overrides them. They do not automatically inherit the parent threa
 context. Pass business context explicitly through `handoff_context`, or intentionally fork context
 only for exceptional cases.
 
+Codex's subagent API gives the process primitives: spawn an agent, optionally fork the full context,
+send follow-up input to an active agent, wait, resume, and close. It does not automatically define a
+Lark evidence protocol or make closed subagent context durable. This plugin therefore keeps the
+domain protocol explicit: the parent passes intent and context, FeishuOps returns evidence packs and
+resource refs, and direct `lark-cli` remains valid when the dispatch policy says the communication
+overhead is not worth it.
+
 For repeated questions about the same resource, keep the same FeishuOps subagent open when possible
 and send related follow-up requests to it. This preserves recent IDs, revisions, resource tokens,
 cursors, time windows, and command choices. If the subagent has already been closed, start a new one
@@ -56,7 +76,10 @@ and include the previous evidence pack or resource refs explicitly in the new re
 The parent should monitor subagents with progress-aware waiting:
 
 - treat command starts, command outputs, discovered resource IDs, and validation notes as progress
-- use an idle timeout to detect stalls
+- use an idle timeout to detect stalls, usually 60-90 seconds after the last progress signal for
+  small reads and 2-3 minutes for known slow downloads or paginated calls
+- use a longer initial wait than a generic quick poll for Lark work; 2-3 minutes is reasonable when
+  progress is visible
 - do not close a subagent only because the final result has not arrived yet
 - ask for a compact partial result before stopping active work when possible
 

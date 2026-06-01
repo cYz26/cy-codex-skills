@@ -4,12 +4,22 @@
   "cases": [
     {
       "id": "trigger-doc-fetch",
-      "prompt": "用 FeishuOps 读取这个飞书文档并返回摘要：https://example.feishu.cn/docx/abc",
+      "prompt": "读取这个飞书文档并返回摘要，可以直接用 lark-cli：https://example.feishu.cn/docx/abc",
       "expected": "trigger"
     },
     {
       "id": "trigger-doc-review-with-parent-judgment",
       "prompt": "用 FeishuOps 读取这个飞书文档，然后判断这个文档对 Harness 的理解到位不：https://bytedance.larkoffice.com/docx/V6BWdzXCroVmenxvpzEcyL31nPC",
+      "expected": "trigger"
+    },
+    {
+      "id": "trigger-explicit-feishuops-no-silent-direct",
+      "prompt": "必须通过 FeishuOps subagent 查询这个飞书文档，不要主线程直接执行 lark-cli：https://example.feishu.cn/docx/abc",
+      "expected": "trigger"
+    },
+    {
+      "id": "trigger-cross-domain-escalation",
+      "prompt": "查这个飞书文档里提到的 Base 表和会议纪要，并判断上线 owner 是否明确：https://example.feishu.cn/docx/abc",
       "expected": "trigger"
     },
     {

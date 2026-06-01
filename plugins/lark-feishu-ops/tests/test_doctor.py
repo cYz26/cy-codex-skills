@@ -175,11 +175,46 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
             "Progress-Aware Waiting",
             "Use an idle timeout for stuck detection",
             "Do not close an agent merely because the overall wall-clock",
-            "do not silently fall back to direct main-agent `lark-cli` execution",
+            "2-3 minutes is reasonable",
+            "60-90 seconds of no progress",
+            "do not silently run direct",
         ]
 
         for text in required:
             self.assertIn(text, skill)
+
+    def test_skill_documents_hybrid_dispatch_policy(self):
+        skill = (PLUGIN_ROOT / "skills" / "lark-feishu-ops" / "SKILL.md").read_text()
+
+        required = [
+            "Dispatch Policy",
+            "Main-agent direct `lark-cli` is allowed",
+            "read-only, bounded, and easy to validate",
+            "The user did not explicitly ask for `FeishuOps`, subagents, or delegated execution",
+            "Escalate to `FeishuOps`",
+            "writes, sends, creates, updates, deletes",
+            "cross-domain, multi-step",
+            "raw-OpenAPI-heavy",
+            "If the user explicitly requested FeishuOps/subagent routing",
+        ]
+
+        for text in required:
+            self.assertIn(text, skill)
+
+    def test_readme_documents_hybrid_dispatch_policy(self):
+        readme = (PLUGIN_ROOT / "README.md").read_text()
+
+        required = [
+            "hybrid route",
+            "direct main-agent `lark-cli` for bounded low-risk reads",
+            "The main agent can run `lark-cli` directly",
+            "The main agent should route to FeishuOps",
+            "explicitly asked for FeishuOps or subagent routing",
+            "2-3 minutes is reasonable",
+        ]
+
+        for text in required:
+            self.assertIn(text, readme)
 
     def test_skill_documents_intent_and_follow_up_reuse(self):
         skill = (PLUGIN_ROOT / "skills" / "lark-feishu-ops" / "SKILL.md").read_text()
@@ -217,6 +252,23 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
         for text in required:
             self.assertIn(text, skill)
 
+    def test_skill_documents_codex_subagent_mechanics(self):
+        skill = (PLUGIN_ROOT / "skills" / "lark-feishu-ops" / "SKILL.md").read_text()
+
+        required = [
+            "Codex Subagent Mechanics",
+            "inherit the parent model selection",
+            "Do not assume every parent skill instruction is active",
+            "Use context forking only when",
+            "Pass the FeishuOps runtime prompt",
+            "Waiting primitives normally report final completion or timeout",
+            "official primitives solve process mechanics",
+            "domain mechanics",
+        ]
+
+        for text in required:
+            self.assertIn(text, skill)
+
     def test_agent_instructions_keep_subagent_bounded(self):
         agent = (PLUGIN_ROOT / "agents" / "feishu-ops.toml").read_text()
 
@@ -242,6 +294,8 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
         self.assertEqual("PASS", result["status"])
         self.assertEqual([], result["project_scattered_lark_skills"])
         self.assertEqual([], result["actions"])
+        self.assertIn("dispatch_policy", result["suggested_configuration"])
+        self.assertIn("bounded low-risk reads", result["suggested_configuration"]["dispatch_policy"])
 
     def test_project_lark_skill_audit_warns_for_scattered_lark_skills(self):
         repo = self.make_repo()

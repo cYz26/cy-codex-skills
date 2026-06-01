@@ -1,7 +1,7 @@
 {
   "name": "lark-feishu-ops",
   "version": "0.1.0",
-  "description": "Route Feishu/Lark operations through one short-lived subagent with lark-cli dependency checks.",
+  "description": "Use one Lark Feishu Ops entry point for direct lark-cli reads and FeishuOps subagent escalation.",
   "author": {
     "name": "cY",
     "url": "https://github.com/changyiZ"
@@ -19,8 +19,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Lark Feishu Ops",
-    "shortDescription": "One subagent entry for lark-cli and Feishu/Lark operations",
-    "longDescription": "Centralizes Feishu/Lark document, IM, calendar, meeting, sheet, Base, Wiki, Drive, and OpenAPI work behind a short-lived subagent. Includes lark-cli preflight, update checks, global lark skill context audit, and post-operation validation guidance.",
+    "shortDescription": "One entry for direct lark-cli reads and FeishuOps escalation",
+    "longDescription": "Centralizes Feishu/Lark document, IM, calendar, meeting, sheet, Base, Wiki, Drive, and OpenAPI work behind one dispatch policy: direct lark-cli for bounded low-risk reads, FeishuOps subagent for side effects, cross-domain work, auth/profile complexity, OpenAPI exploration, and long follow-ups. Includes lark-cli preflight, update checks, global lark skill context audit, and post-operation validation guidance.",
     "developerName": "cY",
     "category": "Developer Tools",
     "capabilities": [

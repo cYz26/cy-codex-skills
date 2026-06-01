@@ -178,7 +178,8 @@ def audit_project_lark_skills(repo: Path | str) -> dict[str, Any]:
     suggested_configuration = {
         "preferred_entrypoint": PREFERRED_PROJECT_SKILL,
         "main_agent_policy": "Keep scattered official lark-* skills out of the project-local main-agent context.",
-        "subagent_policy": "Route Feishu/Lark operations through FeishuOps, which lazy-loads official lark-* guidance only when needed.",
+        "dispatch_policy": "Use direct main-agent lark-cli for bounded low-risk reads; escalate side effects, cross-domain work, auth/profile complexity, raw OpenAPI, broad pagination, and explicit FeishuOps requests to FeishuOps.",
+        "subagent_policy": "FeishuOps lazy-loads official lark-* guidance only when the dispatch policy chooses subagent execution.",
         "project_skill_state": (
             "scattered_present"
             if scattered

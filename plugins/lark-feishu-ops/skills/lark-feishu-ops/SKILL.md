@@ -1,6 +1,6 @@
 ---
 name: lark-feishu-ops
-description: Use when Feishu/Lark/lark-cli platform work should be delegated to one short-lived FeishuOps subagent instead of loading many official lark-* skills in the main agent; includes lark-cli dependency preflight, update checks, Codex global lark-skill unloading, docs, IM, contacts, calendar, meetings, sheets, Base, Wiki, Drive, whiteboard, approvals, attendance, mail, OKR, slides, tasks, apps, auth, and raw OpenAPI operations.
+description: Use when Feishu/Lark/lark-cli platform work is needed through one Lark Feishu Ops entry point; includes dependency preflight, update checks, Codex global lark-skill unloading, docs, IM, contacts, calendar, meetings, sheets, Base, Wiki, Drive, whiteboard, approvals, attendance, mail, OKR, slides, tasks, apps, auth, and raw OpenAPI operations.
 metadata:
   requires:
     bins: ["lark-cli", "npx"]
@@ -11,12 +11,15 @@ metadata:
 ## Overview
 
 Use this skill as the single main-agent entry for Feishu/Lark platform work. The main agent should
-decide business intent and content, then delegate platform execution to a short-lived `FeishuOps`
-subagent.
+decide business intent and content, then choose the cheapest safe execution path: direct
+main-agent `lark-cli` for bounded low-risk reads, or a short-lived `FeishuOps` subagent for
+operations that need isolation, lazy domain-skill guidance, progress tracking, or side-effect
+safety.
 
 The plugin intentionally exposes only this thin skill. Do not install or load all official
-`lark-*` domain skills into the main agent context. The subagent may read official `lark-*` skill
-files or `lark-cli <domain> --help` only when that domain is actually needed.
+`lark-*` domain skills into the main agent context. Direct mode may use `lark-cli` and focused CLI
+help. Subagent mode may read official `lark-*` skill files or `lark-cli <domain> --help` only when
+that domain is actually needed.
 
 ## Before First Use
 
@@ -73,7 +76,44 @@ Do not use this skill for:
 - Product requirement judgment, PRD clarification content, technical design reasoning, app code changes, or test verdicts.
 - Replacing a repository-specific source-document snapshot/freeze script. Use the repository's own snapshot tool when OpenSpec or a similar workflow requires frozen source evidence.
 
-## Delegation Contract
+## Dispatch Policy
+
+Main-agent direct `lark-cli` is allowed when all of these are true:
+
+- The operation is read-only, bounded, and easy to validate.
+- The needed command is obvious from this skill, focused `lark-cli <domain> --help`, or prior
+  verified command knowledge.
+- The request is single-domain or a deliberately small adjacent batch.
+- The output can be summarized or converted into an evidence pack without loading official
+  `lark-*` skills into the parent context.
+- No auth login, profile switch, scope expansion, high-risk confirmation, write, destructive
+  action, raw OpenAPI exploration, broad pagination, or large attachment/media download is needed.
+- The user did not explicitly ask for `FeishuOps`, subagents, or delegated execution.
+
+Use direct mode for examples like dependency/auth status, one document fetch for a known URL, one
+bounded sheet range, one known Base table query, or a focused command-shape check. The parent still
+owns the final answer and must produce enough evidence for the user's question; direct mode is not a
+license to return an unsupported generic summary.
+
+Escalate to `FeishuOps` when any of these are true:
+
+- The user explicitly asks to use `FeishuOps`, a subagent, delegation, or this plugin's subagent
+  path.
+- The operation writes, sends, creates, updates, deletes, confirms, joins/leaves meetings, changes
+  profile/auth/scope, or otherwise has side effects.
+- The task is cross-domain, multi-step, permission-sensitive, raw-OpenAPI-heavy, or likely to need
+  official `lark-*` skill guidance.
+- The source is large, paginated, embedded-resource-heavy, or may need follow-up reads across docs,
+  Sheets, Base, Drive, Wiki, whiteboard, minutes, mail, IM, tasks, approvals, or OpenAPI.
+- Several related questions may be asked about the same resource and subagent context reuse would
+  reduce repeated setup.
+- The main agent cannot produce a reliable evidence pack from a small bounded CLI result.
+
+If the user explicitly requested FeishuOps/subagent routing, do not silently run direct
+main-agent `lark-cli` instead. Report the subagent blocker or ask for explicit permission to use
+direct mode.
+
+## FeishuOps Contract
 
 Pass a compact request to `FeishuOps`:
 
@@ -132,6 +172,8 @@ The parent agent remains responsible for:
 
 ## Subagent Dispatch
 
+Only use this section after the dispatch policy chooses FeishuOps.
+
 Preferred dispatch:
 
 1. Use a configured custom `feishu-ops`/`FeishuOps` subagent if the host runtime exposes it.
@@ -140,10 +182,9 @@ Preferred dispatch:
 Do not hand the subagent the full main-thread history unless the Feishu operation truly needs it.
 Pass only the compact JSON request and the minimum content needed for the platform operation.
 
-The main agent may technically run `lark-cli` directly when the binary and auth are available, but
-that is a fallback execution path, not the normal plugin path. If the user invoked this plugin or
-asked for FeishuOps routing, do not silently fall back to direct main-agent `lark-cli` execution.
-Report the subagent blocker or ask for explicit permission before continuing sequentially.
+The main agent may run `lark-cli` directly only when the dispatch policy allows direct mode. If the
+policy chose FeishuOps and the subagent cannot be spawned, report the blocker or ask for explicit
+permission before continuing with direct main-agent execution.
 
 ### Context Handoff
 
@@ -175,6 +216,28 @@ and can make the subagent inherit irrelevant business discussion.
 When a related subagent is still active, prefer sending it a follow-up request with the new
 `question` and updated `handoff_context`. When it is closed, start a new subagent and include the
 prior evidence pack and resource refs explicitly; do not rely on hidden memory from closed agents.
+
+### Codex Subagent Mechanics
+
+Codex subagents provide useful primitives, but they do not replace this Lark-specific contract.
+
+- Default spawned agents inherit the parent model selection unless an override is provided.
+- Runtime/tool access generally follows the host session configuration, but custom agent
+  definitions or host policy may narrow it. Do not assume every parent skill instruction is active
+  inside the subagent.
+- Use context forking only when the subagent truly needs the same conversation context as the
+  parent. For normal Lark operations, prefer the compact request plus `handoff_context`.
+- Pass the FeishuOps runtime prompt, needed skill file path, or concrete command guidance
+  explicitly when the subagent must follow it.
+- Reuse an active subagent for related follow-ups by sending another compact request. After a
+  subagent is closed, its hidden context is not a durable source of truth; pass prior evidence and
+  resource refs explicitly.
+- Waiting primitives normally report final completion or timeout. A wait timeout is not by itself
+  a task failure; inspect progress signals and use the idle-timeout rules above.
+
+The official primitives solve process mechanics: spawn, optional context fork, follow-up messages,
+wait, resume, and close. This skill still must solve domain mechanics: what context to pass, what
+evidence to return, when to expand resources, and when direct `lark-cli` is enough.
 
 ### Intent-Carrying Operations
 
@@ -243,15 +306,20 @@ wait for a final `completed` status elapsed.
 
 Recommended parent behavior:
 
-1. Start with a bounded wait for completion.
+1. Start with a bounded wait for completion. Use a longer initial wait for Lark work than a generic
+   quick poll; 2-3 minutes is reasonable for document, sheet, Base, or meeting reads when progress
+   is visible.
 2. If it times out, inspect the subagent's latest visible progress before deciding.
 3. Continue waiting when progress is fresh.
 4. Interrupt or close only when the idle timeout is exceeded, the subagent repeats the same blocker,
    or the task has expanded beyond the compact request.
 5. Ask FeishuOps for a compact partial result before closing an active task whenever possible.
 
-Keep a separate whole-task ceiling for runaway work, but make the user-facing timeout diagnosis
-about the last progress signal, not only about elapsed wall-clock time.
+Use an idle timeout around the last meaningful progress signal, not the initial spawn time. A
+practical default is 60-90 seconds of no progress for small reads and 2-3 minutes for known slow
+downloads or paginated calls. Keep a separate whole-task ceiling for runaway work, but make the
+user-facing timeout diagnosis about the last progress signal, not only about elapsed wall-clock
+time.
 
 ### Related Follow-Ups
 
@@ -341,10 +409,13 @@ python3 /Users/cY/.codex/skills/.system/plugin-creator/scripts/validate_plugin.p
 ## Common Mistakes
 
 - Loading all official `lark-*` skills in the main agent before knowing the action.
-- Treating the plugin as a replacement for `lark-cli`; it is a routing and safety layer over `lark-cli`.
+- Treating the plugin as a replacement for `lark-cli`; it is a routing and safety layer over
+  `lark-cli`, and direct CLI is valid for bounded low-risk reads.
 - Letting `FeishuOps` decide product or technical content instead of only executing platform operations.
 - Letting a narrow read operation silently expand into embedded sheet/Base/Drive/meeting reads.
 - Treating a still-active subagent as failed because it has not returned a final result yet.
 - Falling back to direct main-agent `lark-cli` execution without telling the user when FeishuOps was requested.
+- Spawning a fresh FeishuOps subagent for every related question when the current one is still open
+  and can accept a bounded follow-up.
 - Guessing Feishu IDs instead of resolving them through CLI.
 - Assuming global skill unload affects the already-running thread. It takes effect in a new thread.
