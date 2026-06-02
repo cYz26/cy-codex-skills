@@ -1,9 +1,17 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 
-PLUGIN_ROOT = Path(__file__).resolve().parents[1]
+def resolve_plugin_root(fallback_file: str = __file__) -> Path:
+    configured = os.environ.get("DEVFLOW_PLUGIN_ROOT") or os.environ.get("PLUGIN_ROOT")
+    if configured:
+        return Path(configured).expanduser().resolve()
+    return Path(fallback_file).resolve().parents[1]
+
+
+PLUGIN_ROOT = resolve_plugin_root()
 TEMPLATE_ROOT = PLUGIN_ROOT / "assets" / "templates"
 
 CODE_EXTENSIONS = {

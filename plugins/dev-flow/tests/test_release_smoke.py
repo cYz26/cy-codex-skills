@@ -1,15 +1,12 @@
 import json
-import sys
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS = PLUGIN_ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS))
-
-from workflow_context_tools import apply_context_tool_actions, audit_context_tools
+RUNTIME_ARCHIVE = PLUGIN_ROOT / "scripts" / "devflow_runtime.pyz"
 
 
 class ReleaseSmokeTests(unittest.TestCase):
@@ -31,14 +28,48 @@ class ReleaseSmokeTests(unittest.TestCase):
         skill.write_text("---\nname: example\ndescription: fixture\n---\n")
         (repo / "package.json").write_text('{"dependencies":{"react":"latest"}}\n')
 
-        audit = audit_context_tools(home, repo)
+        audit_result = subprocess.run(
+            [
+                "python3",
+                str(PLUGIN_ROOT / "scripts" / "audit_context_tools.py"),
+                "--codex-home",
+                str(home),
+                "--repo",
+                str(repo),
+                "--json",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(audit_result.returncode, 0, audit_result.stderr)
+        audit = json.loads(audit_result.stdout)
         self.assertTrue(audit["ok"])
         self.assertIn("inventory", audit)
         self.assertIn("actions", audit)
 
-        result = apply_context_tool_actions(audit, all_safe=True, apply=False)
+        plan = repo / "audit.json"
+        plan.write_text(json.dumps(audit))
+        apply_result = subprocess.run(
+            [
+                "python3",
+                str(PLUGIN_ROOT / "scripts" / "apply_context_tool_actions.py"),
+                "--plan",
+                str(plan),
+                "--all-safe",
+                "--json",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(apply_result.returncode, 0, apply_result.stderr)
+        result = json.loads(apply_result.stdout)
         self.assertTrue(result["dryRun"])
         self.assertIn("applied", result)
+
+    def test_runtime_archive_is_packaged(self):
+        self.assertTrue(RUNTIME_ARCHIVE.exists())
 
     def test_subagent_and_repair_guidance_is_packaged(self):
         readme = (PLUGIN_ROOT / "README.md").read_text()

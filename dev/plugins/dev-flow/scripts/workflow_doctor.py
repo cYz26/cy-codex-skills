@@ -5,6 +5,7 @@ from typing import Optional
 
 from workflow_paths import render_template, repo_path
 from workflow_validate import validate_workflow_state
+from workflow_constants import resolve_plugin_root
 
 
 def doctor_workflow(
@@ -18,7 +19,7 @@ def doctor_workflow(
     repo = repo_path(repo)
     drift_plugin_root = plugin_root
     if check_cache_drift and drift_plugin_root is None:
-        drift_plugin_root = Path(__file__).resolve().parents[1]
+        drift_plugin_root = resolve_plugin_root()
     validation = validate_workflow_state(
         repo,
         plugin_root=drift_plugin_root,

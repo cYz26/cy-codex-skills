@@ -114,6 +114,11 @@
           },
           {
             "type": "command",
+            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/dev-flow/0.3.0+codex.20260529145038/scripts/release_promotion_gate.py\"",
+            "timeout": 30
+          },
+          {
+            "type": "command",
             "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/dev-flow/0.3.0+codex.20260529145038/scripts/stop_checkpoint_policy.py\"",
             "timeout": 10
           }

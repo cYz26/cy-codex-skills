@@ -134,7 +134,9 @@ Superpowers is activated project-locally through `.codex/skills/`; do not enable
 
 ## Plugin Eval Gate
 
-- When creating or updating Codex plugins or skills, proactively run Plugin Eval on the changed skill or plugin path: `plugin-eval analyze <path> --format markdown`. If `plugin-eval` is not on PATH, use the installed Plugin Eval plugin's `scripts/plugin-eval.js` with `node`.
+- When creating or updating Codex plugins or skills, resolve the release target first: `sync_release_assets.py --eval-target <path> --json`. If a release counterpart exists, run Plugin Eval against the release path, for example `plugin-eval analyze plugins/<name> --format markdown` or `plugin-eval analyze <skill-name> --format markdown`.
+- Use direct dev-path Plugin Eval only as a diagnostic source-quality check; it is not the primary release readiness signal when a release package exists.
+- If `plugin-eval` is not on PATH, use the installed Plugin Eval plugin's `scripts/plugin-eval.js` with `node`.
 - When Plugin Eval reports failures, warnings, or fix-first recommendations, default to fixing or optimizing them before completion.
 - Deferral is an exception: only defer findings that are out of scope, destructive or risky, require dependency or architecture decisions, or need explicit user approval.
 - Deferred findings must record the reason, residual risk and follow-up path.

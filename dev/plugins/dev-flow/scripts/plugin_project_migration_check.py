@@ -9,6 +9,7 @@ from pathlib import Path
 
 from plugin_project_migration import migration_reminder
 from workflow_hooks import hook_response
+from workflow_constants import resolve_plugin_root
 
 
 def parse_args() -> argparse.Namespace:
@@ -26,7 +27,7 @@ def main() -> int:
     except json.JSONDecodeError:
         payload = {}
     repo = Path(payload.get("cwd") or Path.cwd()).expanduser().resolve()
-    plugin_root = Path(args.plugin_root).expanduser().resolve() if args.plugin_root else Path(__file__).parents[1]
+    plugin_root = Path(args.plugin_root).expanduser().resolve() if args.plugin_root else resolve_plugin_root()
     message = migration_reminder(repo=repo, plugin_root=plugin_root, codex_home=args.codex_home)
     if not message:
         return 0

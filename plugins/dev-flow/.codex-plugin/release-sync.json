@@ -1,0 +1,15 @@
+{
+  "exclude": [
+    "scripts/**"
+  ],
+  "buildCommands": [
+    [
+      "python3",
+      "dev/scripts/package_devflow_release_runtime.py"
+    ]
+  ],
+  "managedOutputs": [
+    "scripts/devflow_runtime.pyz",
+    "scripts/devflow_launcher.py"
+  ]
+}

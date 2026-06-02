@@ -14,6 +14,7 @@ from typing import Any
 
 from workflow_context_config import read_config as read_toml_config
 from plugin_project_migration import project_migration_sync_result
+from workflow_constants import resolve_plugin_root
 
 
 def parse_args() -> argparse.Namespace:
@@ -674,7 +675,7 @@ def main() -> int:
     results.extend(plugin_cache_verification_results(codex_home, config))
     target_repo = migration_sync_repo(args.repo)
     if target_repo is not None:
-        plugin_root = Path(__file__).resolve().parents[1]
+        plugin_root = resolve_plugin_root()
         results.append(project_migration_sync_result(target_repo, plugin_root, codex_home))
 
     report = {

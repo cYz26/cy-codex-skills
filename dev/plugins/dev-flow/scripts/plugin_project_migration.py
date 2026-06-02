@@ -3,12 +3,20 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 
 RUNTIME_DIR = ".dev-flow/plugin-project-migration"
+
+
+def default_plugin_root() -> Path:
+    configured = os.environ.get("DEVFLOW_PLUGIN_ROOT") or os.environ.get("PLUGIN_ROOT")
+    if configured:
+        return Path(configured).expanduser().resolve()
+    return Path(__file__).resolve().parents[1]
 
 
 def sync_project_migrations(
@@ -284,7 +292,7 @@ def now_iso() -> str:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Sync or apply Codex plugin project migrations.")
     parser.add_argument("--repo", default=".")
-    parser.add_argument("--plugin-root", default=Path(__file__).resolve().parents[1])
+    parser.add_argument("--plugin-root", default=default_plugin_root())
     parser.add_argument("--codex-home", default=Path.home() / ".codex")
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--write-report", action="store_true")

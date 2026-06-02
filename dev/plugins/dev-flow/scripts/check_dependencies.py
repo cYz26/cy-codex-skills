@@ -6,11 +6,12 @@ import json
 from pathlib import Path
 
 from workflow_dependencies import dependency_report
+from workflow_constants import resolve_plugin_root
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Check Codex plugin dependencies before use.")
-    parser.add_argument("--plugin-root", default=str(Path(__file__).resolve().parents[1]))
+    parser.add_argument("--plugin-root", default=str(resolve_plugin_root()))
     parser.add_argument("--repo", help="Target repo whose project-local .codex activation should be checked.")
     parser.add_argument("--codex-home")
     parser.add_argument("--config")

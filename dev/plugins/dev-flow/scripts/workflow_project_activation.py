@@ -6,6 +6,7 @@ from typing import Any
 
 from workflow_paths import repo_path
 from workflow_project_skill_install import ensure_project_local_skills
+from workflow_constants import resolve_plugin_root
 
 
 def activate_project_dependencies(
@@ -17,7 +18,7 @@ def activate_project_dependencies(
     refresh_project_skills: bool = False,
 ) -> dict[str, Any]:
     repo = repo_path(repo)
-    plugin_root = repo_path(plugin_root or Path(__file__).resolve().parents[1])
+    plugin_root = repo_path(plugin_root or resolve_plugin_root())
     codex_home = repo_path(codex_home or Path.home() / ".codex")
     commands = official_install_commands(repo)
     command_results = []

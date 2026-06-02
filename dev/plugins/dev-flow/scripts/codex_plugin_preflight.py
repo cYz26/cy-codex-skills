@@ -6,11 +6,12 @@ import json
 from pathlib import Path
 
 from plugin_preflight_runner import run_preflight
+from workflow_constants import resolve_plugin_root
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate dev-flow plugin packaging.")
-    parser.add_argument("--plugin-root", default=str(Path(__file__).resolve().parents[1]))
+    parser.add_argument("--plugin-root", default=str(resolve_plugin_root()))
     parser.add_argument("--marketplace")
     parser.add_argument("--repo", help="Target repo whose project-local .codex activation should be checked.")
     parser.add_argument("--codex-home")

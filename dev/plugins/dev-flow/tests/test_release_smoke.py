@@ -199,6 +199,7 @@ context_health:
             "ai-native-tech-plan",
             "checkpoint-compact",
             "claude-code-delegate",
+            "codex-updater",
             "context-health-check",
             "context-tool-audit",
             "execute-task",

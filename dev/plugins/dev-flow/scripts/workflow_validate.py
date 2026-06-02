@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 from plugin_preflight_hooks import hook_cache_drift_issues
 from workflow_compact_state import check_compact_state
+from workflow_constants import resolve_plugin_root
 from workflow_paths import repo_path
 from workflow_state import parse_state
 
@@ -101,5 +102,5 @@ def check_hook_cache_drift(
 ) -> None:
     if plugin_root is None and codex_home is None:
         return
-    root = plugin_root or Path(__file__).resolve().parents[1]
+    root = plugin_root or resolve_plugin_root()
     issues.extend(hook_cache_drift_issues(root, codex_home=codex_home))
