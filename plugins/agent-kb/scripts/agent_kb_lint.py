@@ -14,6 +14,7 @@ from agent_kb_personal_lint import (
     capture_backlog_findings,
     needs_review_findings,
     promotion_backlog_findings,
+    source_intake_backlog_findings,
 )
 from agent_kb_markdown import write_lint_report
 from agent_kb_scaffold import sanitize_project
@@ -60,6 +61,7 @@ def collect_findings(
     findings.extend(raw_source_findings(vault, raw_stale_days))
     findings.extend(capture_backlog_findings(vault, raw_stale_days))
     findings.extend(promotion_backlog_findings(vault, raw_stale_days))
+    findings.extend(source_intake_backlog_findings(vault, raw_stale_days))
     findings.extend(needs_review_findings(vault))
     findings.extend(active_archive_reference_findings(vault))
     return findings

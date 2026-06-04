@@ -26,6 +26,16 @@ def promotion_backlog_findings(vault: Path, stale_days: int):
     )
 
 
+def source_intake_backlog_findings(vault: Path, stale_days: int):
+    return aged_note_findings(
+        vault / "_agent" / "source-intake" / "extracted",
+        vault,
+        stale_days,
+        "source-intake-backlog",
+        "Source intake output is waiting for kb-ingest processing.",
+    )
+
+
 def aged_note_findings(root: Path, vault: Path, stale_days: int, rule: str, message: str):
     if not root.exists():
         return []

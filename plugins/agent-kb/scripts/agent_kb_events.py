@@ -9,6 +9,7 @@ from agent_kb_config import discover_agent_kb_config
 from agent_kb_constants import EVENT_DIR
 from agent_kb_event_security import hash_text, normalize_event_type, now_iso, redact_command
 from agent_kb_event_status import command_category, status_for
+from agent_kb_problem_capture import record_problem_signal
 from agent_kb_scaffold import sanitize_project
 from agent_kb_value_extract import first_dict, first_int, first_text
 from workflow_paths import rel, repo_path
@@ -27,12 +28,14 @@ def record_agent_kb_event(repo: Path, event_type: str, payload: dict[str, Any]):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
         handle.write(f"{json.dumps(event, sort_keys=True)}\n")
+    problem_signal = record_problem_signal(vault, project, config, event)
     return {
         "ok": True,
         "recorded": True,
         "path": rel(vault, path),
         "project": project,
         "event_type": event["event_type"],
+        "problem_signal": problem_signal,
     }
 
 

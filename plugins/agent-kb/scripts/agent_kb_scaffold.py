@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import json
 from datetime import date
 from pathlib import Path
 from typing import Any
 
 from agent_kb_constants import AGENT_KB_CONFIG_PATH
+from agent_kb_problem_capture import problem_capture_defaults
 from agent_kb_templates import scaffold_files, vault_directories, write_scaffold_file
 from workflow_paths import rel, repo_path, write_json
 
@@ -62,7 +64,13 @@ def configure_repo(
     if force or not config_path.exists():
         write_json(config_path, kb_config(vault, project))
     else:
-        result["skipped"].append(result["config"])
+        existing = read_json(config_path)
+        updated = ensure_problem_capture_config(existing, project)
+        if updated != existing:
+            write_json(config_path, updated)
+            result["written"].append(result["config"])
+        else:
+            result["skipped"].append(result["config"])
 
 
 def kb_config(vault: Path, project: str):
@@ -80,6 +88,7 @@ def kb_config(vault: Path, project: str):
         "index": "_system/indexes/home.md",
         "knowledge_index": "_system/indexes/knowledge-index.md",
         "project_index": "projects/_project-index.md",
+        "problem_capture": problem_capture_defaults(project),
         "obsidian_cli": {
             "mode": "auto",
             "command": "obsidian",
@@ -87,6 +96,26 @@ def kb_config(vault: Path, project: str):
             "require_running_app": True,
         },
     }
+
+
+def read_json(path: Path):
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+
+
+def ensure_problem_capture_config(config: dict[str, Any], project: str):
+    updated = dict(config)
+    current = updated.get("problem_capture")
+    if not isinstance(current, dict):
+        updated["problem_capture"] = problem_capture_defaults(project)
+        return updated
+    defaults = problem_capture_defaults(project)
+    merged = {**defaults, **current}
+    if merged != current:
+        updated["problem_capture"] = merged
+    return updated
 
 
 def sanitize_project(value: str):

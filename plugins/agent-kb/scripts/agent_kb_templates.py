@@ -14,6 +14,10 @@ def vault_directories(project: str):
         "_agent/evals",
         "_agent/context-packs",
         "_agent/lint-reports",
+        "_agent/source-intake",
+        "_agent/source-intake/extracted",
+        "_agent/source-intake/receipts",
+        "_agent/problem-signals",
         "_bases",
         "inbox/quick-captures",
         "inbox/codex-captures",
@@ -52,6 +56,7 @@ def vault_directories(project: str):
         "knowledge/playbooks",
         f"projects/{project}/logs",
         f"projects/{project}/proposed-changes",
+        f"projects/{project}/proposed-changes/problem-reflections",
         f"projects/{project}/candidates",
         f"projects/{project}/research",
         "research/agent-adapters",
@@ -84,6 +89,7 @@ def scaffold_files(values: dict[str, str]):
     today = values["today"]
     files = core_scaffold_files(project, owner, today)
     files.update(project_scaffold_files(project, owner, today))
+    files.update(problem_capture_scaffold_files(project, owner))
     files.update(decision_and_playbook_files(project, owner))
     files.update(context_and_profile_files(project, owner, today))
     return files
@@ -238,12 +244,33 @@ def project_scaffold_files(project: str, owner: str, today: str):
     }
 
 
+def problem_capture_scaffold_files(project: str, owner: str):
+    return {
+        f"projects/{project}/proposed-changes/problem-reflections/README.md": project_note(
+            project,
+            "Problem Reflection Drafts",
+            "problem-reflection-index",
+            "Automatic problem signals and manual problem records are reviewed here with `kb-reflect` "
+            "before any lesson becomes durable knowledge.",
+            agent_writable=True,
+            owner=owner,
+        ),
+    }
+
+
 def decision_and_playbook_files(project: str, owner: str):
     return {
         "playbooks/kb-capture.md": playbook_template(
             project,
             "kb-capture",
             "Preserve free-form input, route it through the vault protocol, write a routing receipt.",
+            owner,
+        ),
+        "playbooks/kb-import.md": playbook_template(
+            project,
+            "kb-import",
+            "Import local documents, links, Feishu/Lark docs, and Drive folders into preserved "
+            "source material before kb-ingest extracts durable knowledge.",
             owner,
         ),
         "decisions/adr-0001-use-markdown-as-canonical-kb.md": adr_template(
@@ -285,6 +312,7 @@ def decision_and_playbook_files(project: str, owner: str):
             project,
             "kb-reflect",
             "Turn failures, corrections, review findings into structured reflections. "
+            "Start from automatic problem signals or manual problem drafts when available. "
             "Capture the incident, root cause, generalized lesson, prevention mechanism, "
             "validation evidence, residual risk before deciding whether promotion is justified.",
             owner,
@@ -363,6 +391,7 @@ def required_core_files(project: str, *, personal_first: bool = True):
         "playbooks/kb-reflect.md",
         "playbooks/kb-promote.md",
         "playbooks/kb-capture.md",
+        "playbooks/kb-import.md",
         f"_agent/context-packs/{project}.md",
     ]
 
@@ -592,7 +621,9 @@ After completing knowledge-bearing work:
 4. Update `open-questions.md` when uncertainty remains.
 5. Refresh `context-pack.md` only when stale.
 6. Write `_agent/routing-receipts/` when capture, routing, update, or promotion occurred.
-7. Review `git diff` before committing.
+7. Review `_agent/problem-signals/` and `projects/{project}/proposed-changes/problem-reflections/`
+   with `kb-reflect` after failures, corrections, or review findings.
+8. Review `git diff` before committing.
 
 ## Safety Rules
 

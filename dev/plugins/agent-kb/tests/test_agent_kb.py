@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
@@ -21,6 +22,7 @@ RELEASE_PLUGIN_ROOT = REPO_ROOT / "plugins" / "agent-kb"
 PROJECT = "agent-kb-project"
 KB_SKILLS = {
     "kb-capture",
+    "kb-import",
     "kb-ingest",
     "kb-query",
     "kb-update",
@@ -28,6 +30,7 @@ KB_SKILLS = {
     "kb-lint",
     "kb-reflect",
     "kb-promote",
+    "kb-enable-project",
 }
 
 
@@ -126,6 +129,10 @@ class AgentKBTests(unittest.TestCase):
             "_system/templates/capture.md",
             "_agent/logs",
             "_agent/routing-receipts",
+            "_agent/source-intake",
+            "_agent/source-intake/extracted",
+            "_agent/source-intake/receipts",
+            "_agent/problem-signals",
             "_agent/lint-reports",
             "_bases/Inbox.base",
             "_bases/Projects.base",
@@ -143,6 +150,7 @@ class AgentKBTests(unittest.TestCase):
             f"projects/{PROJECT}/open-questions.md",
             f"projects/{PROJECT}/context-pack.md",
             f"projects/{PROJECT}/candidates",
+            f"projects/{PROJECT}/proposed-changes/problem-reflections",
             "decisions/adr-0001-use-markdown-as-canonical-kb.md",
             "decisions/adr-0002-use-context-pack.md",
             "playbooks/kb-ingest.md",
@@ -191,6 +199,14 @@ class AgentKBTests(unittest.TestCase):
         self.assertEqual(config["index"], "_system/indexes/home.md")
         self.assertEqual(config["knowledge_index"], "_system/indexes/knowledge-index.md")
         self.assertEqual(config["project_index"], "projects/_project-index.md")
+        self.assertTrue(config["problem_capture"]["enabled"])
+        self.assertTrue(config["problem_capture"]["auto_capture"])
+        self.assertTrue(config["problem_capture"]["manual_records"])
+        self.assertEqual(config["problem_capture"]["problem_signals"], "_agent/problem-signals")
+        self.assertEqual(
+            config["problem_capture"]["reflection_drafts"],
+            f"projects/{PROJECT}/proposed-changes/problem-reflections",
+        )
         self.assertEqual(config["obsidian_cli"]["command"], "obsidian")
         self.assertEqual(
             config["obsidian_cli"]["fallback_command"],
@@ -248,6 +264,56 @@ class AgentKBTests(unittest.TestCase):
         second = self.scaffold(repo, vault)
         self.assertIn(f"projects/{PROJECT}/context-pack.md", second["skipped"])
         self.assertIn("Manual edit that must survive scaffold reruns.", context_pack.read_text())
+
+    def test_project_cli_enables_status_and_verify_problem_capture(self):
+        repo, vault = self.make_repo_and_vault()
+
+        initial = run_json("kb_project.py", "status", "--repo", str(repo), "--json")
+
+        self.assertFalse(initial["configured"], initial)
+        self.assertFalse(initial["problem_capture"]["enabled"], initial)
+
+        enabled = run_json(
+            "kb_project.py",
+            "enable",
+            "--repo",
+            str(repo),
+            "--vault",
+            str(vault),
+            "--project",
+            PROJECT,
+            "--owner",
+            "chanYu",
+            "--json",
+        )
+
+        self.assertTrue(enabled["configured"], enabled)
+        self.assertTrue(enabled["problem_capture"]["enabled"], enabled)
+        self.assertTrue((repo / ".agent-kb.json").exists())
+        self.assertTrue((vault / "_agent" / "problem-signals").exists())
+        self.assertTrue((vault / "projects" / PROJECT / "proposed-changes" / "problem-reflections").exists())
+
+        status = run_json("kb_project.py", "status", "--repo", str(repo), "--json")
+        verify = run_json("kb_project.py", "verify", "--repo", str(repo), "--json")
+        second = run_json(
+            "kb_project.py",
+            "enable",
+            "--repo",
+            str(repo),
+            "--vault",
+            str(vault),
+            "--project",
+            PROJECT,
+            "--owner",
+            "chanYu",
+            "--json",
+        )
+
+        self.assertTrue(status["configured"], status)
+        self.assertTrue(status["problem_capture"]["auto_capture"], status)
+        self.assertTrue(verify["ok"], verify)
+        self.assertEqual([], verify["findings"], verify)
+        self.assertIn(".agent-kb.json", second["scaffold"]["skipped"])
 
     def test_lint_reports_health_and_writes_reviewable_report(self):
         repo, vault = self.make_repo_and_vault()
@@ -321,6 +387,186 @@ class AgentKBTests(unittest.TestCase):
         self.assertIn(("promotion-candidate-stale", "promotion/candidates/old-candidate.md"), findings)
         self.assertIn(("needs-review", "knowledge/concepts/needs-review.md"), findings)
         self.assertIn(("active-archive-reference", "knowledge/concepts/archive-ref.md"), findings)
+
+    def test_source_intake_dry_run_and_apply_preserves_raw_extracts_and_receipts(self):
+        repo, vault = self.make_repo_and_vault()
+        self.scaffold(repo, vault)
+        source = repo / "Research Note.md"
+        source.write_text("# Research Note\n\nDurable fact.\n", encoding="utf-8")
+
+        dry = run_json(
+            "kb_import.py",
+            "--vault",
+            str(vault),
+            "--project",
+            PROJECT,
+            "--source",
+            str(source),
+            "--dry-run",
+            "--json",
+        )
+
+        self.assertTrue(dry["ok"], dry)
+        self.assertTrue(dry["dry_run"], dry)
+        self.assertEqual("optional-but-primary", dry["extractor_capabilities"]["markitdown"]["importance"])
+        self.assertEqual(1, len(dry["planned"]))
+        self.assertFalse((vault / "_agent" / "source-intake" / "sources.jsonl").exists())
+
+        applied = run_json(
+            "kb_import.py",
+            "--vault",
+            str(vault),
+            "--project",
+            PROJECT,
+            "--source",
+            str(source),
+            "--apply",
+            "--json",
+        )
+
+        self.assertTrue(applied["ok"], applied)
+        self.assertFalse(applied["dry_run"], applied)
+        self.assertEqual(1, len(applied["imported"]))
+        item = applied["imported"][0]
+        for key in ["raw_path", "extracted_path", "summary_path", "receipt_path"]:
+            self.assertTrue((vault / item[key]).exists(), (key, item))
+        self.assertIn("Durable fact.", (vault / item["extracted_path"]).read_text())
+        self.assertIn("needs_review: true", (vault / item["summary_path"]).read_text())
+        self.assertIn(item["source_id"], (vault / "_agent/source-intake/sources.jsonl").read_text())
+        self.assertIn("Imported source", (vault / "knowledge" / "log.md").read_text())
+
+        duplicate = run_json(
+            "kb_import.py",
+            "--vault",
+            str(vault),
+            "--project",
+            PROJECT,
+            "--source",
+            str(source),
+            "--apply",
+            "--json",
+        )
+
+        self.assertEqual(0, len(duplicate["imported"]), duplicate)
+        self.assertEqual("duplicate", duplicate["skipped"][0]["reason"])
+
+    def test_source_intake_can_use_configured_external_markitdown_command(self):
+        repo, vault = self.make_repo_and_vault()
+        self.scaffold(repo, vault)
+        source = repo / "External Note.docx"
+        source.write_text("raw source placeholder", encoding="utf-8")
+        converter = repo / "fake-markitdown"
+        converter.write_text(
+            "#!/bin/sh\n"
+            "printf '# External Note\\n\\nConverted through configured MarkItDown.\\n'\n",
+            encoding="utf-8",
+        )
+        converter.chmod(0o755)
+
+        previous = os.environ.get("AGENT_KB_MARKITDOWN_CMD")
+        os.environ["AGENT_KB_MARKITDOWN_CMD"] = str(converter)
+        try:
+            dry = run_json(
+                "kb_import.py",
+                "--vault",
+                str(vault),
+                "--project",
+                PROJECT,
+                "--source",
+                str(source),
+                "--dry-run",
+                "--json",
+            )
+            applied = run_json(
+                "kb_import.py",
+                "--vault",
+                str(vault),
+                "--project",
+                PROJECT,
+                "--source",
+                str(source),
+                "--apply",
+                "--json",
+            )
+        finally:
+            if previous is None:
+                os.environ.pop("AGENT_KB_MARKITDOWN_CMD", None)
+            else:
+                os.environ["AGENT_KB_MARKITDOWN_CMD"] = previous
+
+        self.assertTrue(dry["extractor_capabilities"]["markitdown"]["available"], dry)
+        imported = applied["imported"][0]
+        extracted = (vault / imported["extracted_path"]).read_text(encoding="utf-8")
+        self.assertIn("extractor: markitdown", extracted)
+        self.assertIn("Converted through configured MarkItDown.", extracted)
+
+    def test_source_intake_optional_binary_extractors_report_unsupported_when_missing(self):
+        import agent_kb_extractors
+
+        root = Path(tempfile.mkdtemp(prefix="agent-kb-extractors-"))
+        pdf = root / "manual.pdf"
+        xlsx = root / "manual.xlsx"
+        pdf.write_bytes(b"%PDF-1.4\n%EOF\n")
+        xlsx.write_bytes(b"not-a-real-workbook")
+
+        with mock.patch.object(agent_kb_extractors.importlib.util, "find_spec", return_value=None):
+            self.assertEqual(".pdf", agent_kb_extractors.extract_pdf(pdf)["error"].split()[-1])
+            self.assertEqual(".xlsx", agent_kb_extractors.extract_xlsx(xlsx)["error"].split()[-1])
+
+    def test_source_intake_blocks_unsafe_urls_and_plans_feishu_commands(self):
+        repo, vault = self.make_repo_and_vault()
+        self.scaffold(repo, vault)
+
+        blocked = run_json(
+            "kb_import.py",
+            "--vault",
+            str(vault),
+            "--project",
+            PROJECT,
+            "--source",
+            "ftp://example.com/private.pdf",
+            "--dry-run",
+            "--json",
+        )
+
+        self.assertFalse(blocked["ok"], blocked)
+        self.assertEqual("blocked-url-scheme", blocked["warnings"][0]["rule"])
+
+        feishu = run_json(
+            "kb_import.py",
+            "--vault",
+            str(vault),
+            "--project",
+            PROJECT,
+            "--source",
+            "https://example.feishu.cn/docx/abc123",
+            "--dry-run",
+            "--json",
+        )
+
+        self.assertTrue(feishu["ok"], feishu)
+        self.assertEqual("feishu-doc", feishu["planned"][0]["kind"])
+        commands = [" ".join(command) for command in feishu["planned"][0]["commands"]]
+        self.assertIn("lark-cli drive +inspect", commands[0])
+        self.assertIn("lark-cli docs +fetch --api-version v2", commands[1])
+
+    def test_lint_reports_stale_source_intake_backlog(self):
+        repo, vault = self.make_repo_and_vault()
+        self.scaffold(repo, vault)
+        old_time = 1
+        extracted = vault / "_agent" / "source-intake" / "extracted" / "old-source.md"
+        receipt = vault / "_agent" / "source-intake" / "receipts" / "old-source.md"
+        extracted.parent.mkdir(parents=True, exist_ok=True)
+        receipt.parent.mkdir(parents=True, exist_ok=True)
+        extracted.write_text("# Old Source\n", encoding="utf-8")
+        receipt.write_text("# Old Receipt\n", encoding="utf-8")
+        os.utime(extracted, (old_time, old_time))
+        os.utime(receipt, (old_time, old_time))
+
+        report = run_json("kb_lint.py", "--vault", str(vault), "--project", PROJECT, "--json")
+
+        findings = set(map(lambda item: (item["rule"], item["path"]), report["findings"]))
+        self.assertIn(("source-intake-backlog", "_agent/source-intake/extracted/old-source.md"), findings)
 
     def test_obsidian_cli_adapter_reports_status_and_runs_whitelisted_commands(self):
         from agent_kb_obsidian_cli import obsidian_cli_status, run_obsidian_cli
@@ -421,6 +667,88 @@ class AgentKBTests(unittest.TestCase):
         self.assertTrue(legacy["recorded"], legacy)
         self.assertTrue(legacy["path"].startswith(".agent-kb/events/"), legacy)
 
+    def test_failed_event_hook_writes_sanitized_problem_signal(self):
+        repo, vault = self.make_repo_and_vault()
+        self.scaffold(repo, vault)
+        payload = {
+            "cwd": str(repo),
+            "prompt": "SECRET_PROMPT_TEXT",
+            "tool_name": "Bash",
+            "tool_input": {"command": "python3 -m unittest tests/test_example.py token=SECRET_TOKEN"},
+            "tool_response": {"exit_code": 1, "output": "SECRET_OUTPUT_BODY\nline2"},
+        }
+
+        report = run_json(
+            "kb_event_hook.py",
+            "--event",
+            "post_tool_use",
+            "--json",
+            input_text=json.dumps(payload),
+        )
+
+        self.assertTrue(report["recorded"], report)
+        self.assertTrue(report["problem_signal"]["recorded"], report)
+        signal_path = vault / report["problem_signal"]["path"]
+        signal_raw = signal_path.read_text()
+        self.assertNotIn("SECRET_PROMPT_TEXT", signal_raw)
+        self.assertNotIn("SECRET_OUTPUT_BODY", signal_raw)
+        self.assertNotIn("SECRET_TOKEN", signal_raw)
+        signal = json.loads(signal_raw.splitlines()[-1])
+        self.assertEqual(signal["status"], "fail")
+        self.assertEqual(signal["command_category"], "test")
+        self.assertTrue(signal["needs_review"])
+
+        success = run_json(
+            "kb_event_hook.py",
+            "--event",
+            "post_tool_use",
+            "--json",
+            input_text=json.dumps(
+                {
+                    "cwd": str(repo),
+                    "tool_name": "Bash",
+                    "tool_response": {"exit_code": 0, "output": "ok"},
+                }
+            ),
+        )
+
+        self.assertFalse(success["problem_signal"]["recorded"], success)
+
+    def test_manual_problem_record_writes_reviewable_reflection_draft(self):
+        repo, vault = self.make_repo_and_vault()
+        self.scaffold(repo, vault)
+
+        report = run_json(
+            "kb_problem.py",
+            "record",
+            "--repo",
+            str(repo),
+            "--incident",
+            "Unit tests failed after enabling AgentKB",
+            "--evidence",
+            "python3 -m unittest exited 1",
+            "--root-cause",
+            "Missing project problem capture configuration",
+            "--lesson",
+            "Project knowledge capture needs an explicit enablement check",
+            "--prevention",
+            "Run kb_project.py verify before relying on hooks",
+            "--validation",
+            "python3 -m unittest dev/plugins/agent-kb/tests/test_agent_kb.py -v",
+            "--residual-risk",
+            "Existing vaults may need manual enablement",
+            "--json",
+        )
+
+        self.assertTrue(report["recorded"], report)
+        self.assertTrue(report["needs_review"], report)
+        self.assertTrue(report["path"].startswith(f"projects/{PROJECT}/proposed-changes/problem-reflections/"))
+        draft = (vault / report["path"]).read_text()
+        self.assertIn("Unit tests failed after enabling AgentKB", draft)
+        self.assertIn("## Root Cause", draft)
+        self.assertIn("## Prevention Mechanism", draft)
+        self.assertIn("needs_review: true", draft)
+
     def test_kb_skills_are_packaged_with_markdown_first_safety_rules(self):
         skill_dirs = filter(lambda path: path.is_dir(), (PLUGIN_ROOT / "skills").iterdir())
         self.assertEqual(KB_SKILLS, set(map(lambda path: path.name, skill_dirs)))
@@ -438,12 +766,20 @@ class AgentKBTests(unittest.TestCase):
         self.assertIn("_agent/routing-receipts", capture)
         self.assertIn("personal/", capture)
         self.assertIn("archive/", capture)
+        import_skill = (PLUGIN_ROOT / "skills" / "kb-import" / "SKILL.md").read_text()
+        self.assertIn("MarkItDown", import_skill)
+        self.assertIn("kb-ingest", import_skill)
+        self.assertIn("_agent/source-intake", import_skill)
         reflect = (PLUGIN_ROOT / "skills" / "kb-reflect" / "SKILL.md").read_text()
         promote = (PLUGIN_ROOT / "skills" / "kb-promote" / "SKILL.md").read_text()
+        enable = (PLUGIN_ROOT / "skills" / "kb-enable-project" / "SKILL.md").read_text()
         self.assertIn("Generalized Lesson", reflect)
         self.assertIn("Prevention Mechanism", reflect)
+        self.assertIn("problem signals", reflect)
         self.assertIn("Promotion Thresholds", promote)
         self.assertIn("smallest durable destination", promote.lower())
+        self.assertIn("kb_project.py", enable)
+        self.assertIn("kb_problem.py", enable)
 
 if __name__ == "__main__":
     unittest.main()

@@ -49,6 +49,7 @@ def normalize_kb_config(data: dict[str, Any]):
     return {
         "vault": vault,
         "project": section.get("project") or section.get("name") or "knowledge-base",
+        "problem_capture": section.get("problem_capture") if isinstance(section.get("problem_capture"), dict) else {},
     }
 
 

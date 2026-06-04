@@ -6,6 +6,8 @@ description: Use when failures, corrections, or review findings should become Ag
 # KB Reflect
 
 Use after failures, user corrections, review findings, repeated tool mistakes, or context misses.
+Start from `_agent/problem-signals/` or `projects/<project>/proposed-changes/problem-reflections/`
+when automatic hooks or `kb_problem.py record` captured evidence.
 
 AgentKB keeps Markdown as the canonical storage format. Load the smallest sufficient context first, and make every write reviewable with Git diff.
 
@@ -13,7 +15,7 @@ AgentKB keeps Markdown as the canonical storage format. Load the smallest suffic
 
 1. Read the project `context-pack.md`.
 2. Read `_system/write-policy.md`.
-3. Read the relevant task log and open questions.
+3. Read relevant problem signals, reflection drafts, task logs, and open questions.
 4. Read only the notes needed to understand the failure.
 
 Do not read `personal/` or `archive/` unless the user explicitly authorizes it.
