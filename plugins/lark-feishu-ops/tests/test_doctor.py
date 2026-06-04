@@ -58,6 +58,7 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
 
     def run_check_lark_cli(self, *, offline):
         commands = []
+        cache_path = self.make_repo() / "update-check.json"
 
         def fake_run_command(command, timeout=30):
             commands.append(command)
@@ -78,7 +79,11 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
             mock.patch.object(lark_feishu_ops_doctor.shutil, "which", return_value="/usr/local/bin/lark-cli"),
             mock.patch.object(lark_feishu_ops_doctor, "run_command", side_effect=fake_run_command),
         ):
-            result = lark_feishu_ops_doctor.check_lark_cli(skip_update_check=False, offline=offline)
+            result = lark_feishu_ops_doctor.check_lark_cli(
+                skip_update_check=False,
+                offline=offline,
+                cache_path=cache_path,
+            )
 
         self.assertEqual(result["status"], "PASS")
         return commands
@@ -93,6 +98,138 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
         commands = self.run_check_lark_cli(offline=True)
 
         self.assertIn(["lark-cli", "doctor", "--offline"], commands)
+
+    def test_daily_update_check_uses_cache_for_current_local_date(self):
+        commands = []
+        cache_path = self.make_repo() / "update-check.json"
+        today = lark_feishu_ops_doctor.local_date()
+        cache_path.write_text(
+            json.dumps(
+                {
+                    "checked_local_date": today,
+                    "checked_at": "2026-06-04T20:00:00+08:00",
+                    "action": "already_up_to_date",
+                    "current_version": "1.0.47",
+                    "latest_version": "1.0.47",
+                    "ok": True,
+                    "payload": {"action": "already_up_to_date", "ok": True},
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        def fake_run_command(command, timeout=30):
+            commands.append(command)
+            stdout = "lark-cli version 1.0.47" if command == ["lark-cli", "--version"] else "{}"
+            return {
+                "command": command,
+                "ok": True,
+                "exit_code": 0,
+                "stdout": stdout,
+                "stderr": "",
+            }
+
+        with (
+            mock.patch.object(lark_feishu_ops_doctor.shutil, "which", return_value="/usr/local/bin/lark-cli"),
+            mock.patch.object(lark_feishu_ops_doctor, "run_command", side_effect=fake_run_command),
+        ):
+            result = lark_feishu_ops_doctor.check_lark_cli(
+                skip_update_check=False,
+                offline=False,
+                cache_path=cache_path,
+            )
+
+        self.assertEqual("PASS", result["status"])
+        self.assertNotIn(["lark-cli", "update", "--check", "--json"], commands)
+        self.assertTrue(result["update_check"]["cached"])
+        self.assertEqual("already_up_to_date", result["update_check"]["payload"]["action"])
+
+    def test_force_update_check_bypasses_daily_cache(self):
+        commands = []
+        cache_path = self.make_repo() / "update-check.json"
+        cache_path.write_text(
+            json.dumps(
+                {
+                    "checked_local_date": lark_feishu_ops_doctor.local_date(),
+                    "checked_at": "2026-06-04T20:00:00+08:00",
+                    "action": "already_up_to_date",
+                    "ok": True,
+                    "payload": {"action": "already_up_to_date", "ok": True},
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        def fake_run_command(command, timeout=30):
+            commands.append(command)
+            stdout = ""
+            if command == ["lark-cli", "--version"]:
+                stdout = "lark-cli version 1.0.47"
+            elif command == ["lark-cli", "update", "--check", "--json"]:
+                stdout = json.dumps({"action": "already_up_to_date", "ok": True})
+            return {
+                "command": command,
+                "ok": True,
+                "exit_code": 0,
+                "stdout": stdout,
+                "stderr": "",
+            }
+
+        with (
+            mock.patch.object(lark_feishu_ops_doctor.shutil, "which", return_value="/usr/local/bin/lark-cli"),
+            mock.patch.object(lark_feishu_ops_doctor, "run_command", side_effect=fake_run_command),
+        ):
+            result = lark_feishu_ops_doctor.check_lark_cli(
+                skip_update_check=False,
+                offline=False,
+                force_update_check=True,
+                cache_path=cache_path,
+            )
+
+        self.assertEqual("PASS", result["status"])
+        self.assertIn(["lark-cli", "update", "--check", "--json"], commands)
+        self.assertFalse(result["update_check"].get("cached", False))
+
+    def test_update_available_returns_confirmation_action(self):
+        cache_path = self.make_repo() / "update-check.json"
+
+        def fake_run_command(command, timeout=30):
+            stdout = ""
+            if command == ["lark-cli", "--version"]:
+                stdout = "lark-cli version 1.0.43"
+            elif command == ["lark-cli", "update", "--check", "--json"]:
+                stdout = json.dumps(
+                    {
+                        "action": "update_available",
+                        "ok": True,
+                        "current_version": "1.0.43",
+                        "latest_version": "1.0.47",
+                    }
+                )
+            return {
+                "command": command,
+                "ok": True,
+                "exit_code": 0,
+                "stdout": stdout,
+                "stderr": "",
+            }
+
+        with (
+            mock.patch.object(lark_feishu_ops_doctor.shutil, "which", return_value="/usr/local/bin/lark-cli"),
+            mock.patch.object(lark_feishu_ops_doctor, "run_command", side_effect=fake_run_command),
+        ):
+            result = lark_feishu_ops_doctor.check_lark_cli(
+                skip_update_check=False,
+                offline=False,
+                cache_path=cache_path,
+            )
+
+        self.assertEqual("WARN", result["status"])
+        self.assertTrue(result["update_action"]["requires_confirmation"])
+        self.assertEqual(["lark-cli", "update", "--json"], result["update_action"]["command"])
+        self.assertEqual("1.0.43", result["update_action"]["current_version"])
+        self.assertEqual("1.0.47", result["update_action"]["latest_version"])
+        self.assertIn("lark_feishu_ops_sync.py", " ".join(result["update_action"]["followup_command"]))
 
     def test_runtime_prompt_keeps_lazy_reference_parity_with_official_lark_skills(self):
         prompt = (PLUGIN_ROOT / "agents" / "runtime-prompts" / "feishu-ops.md").read_text()

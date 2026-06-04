@@ -124,6 +124,31 @@ Run the preflight doctor before using the plugin, or when Codex still shows many
 python3 plugins/lark-feishu-ops/scripts/lark_feishu_ops_doctor.py --json
 ```
 
+The doctor runs `lark-cli update --check --json` at most once per local day by default. The cached
+result lives at `${XDG_CACHE_HOME:-~/.cache}/lark-feishu-ops/update-check.json`, so repeated
+`lark-feishu-ops` calls on the same day do not keep prompting about the same Lark CLI version.
+Use `--force-update-check` or `--update-check-policy always` for explicit maintenance checks, and
+`--update-check-policy never` when update checks are intentionally out of scope.
+
+When the doctor returns `checks.lark_cli.update_action.requires_confirmation`, ask the user before
+running the listed `lark-cli update --json` command. After the update, run:
+
+```bash
+python3 plugins/lark-feishu-ops/scripts/lark_feishu_ops_sync.py --after-cli-update --json
+```
+
+For a single explicit maintenance command that performs the confirmed update and then validates
+state:
+
+```bash
+python3 plugins/lark-feishu-ops/scripts/lark_feishu_ops_sync.py --apply-cli-update --json
+```
+
+Pass `--refresh-installed-plugin` only when you want the sync script to run
+`codex plugin add lark-feishu-ops@cy-codex-skills`. Lark CLI upgrades do not automatically rewrite
+this plugin's source; source updates are only needed when compatibility checks show command schema,
+risk classification, auth/profile, official-skill, or dispatch-policy drift.
+
 To also inspect the current project for project-local scattered `lark-*` skills:
 
 ```bash

@@ -5,9 +5,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +18,7 @@ HOME = Path.home()
 SKILL_LOCK = HOME / ".agents" / ".skill-lock.json"
 GLOBAL_SKILLS_DIR = HOME / ".agents" / "skills"
 PREFERRED_PROJECT_SKILL = "lark-feishu-ops"
+UPDATE_CHECK_POLICIES = {"daily", "always", "never"}
 
 
 def run_command(command: list[str], timeout: int = 30) -> dict[str, Any]:
@@ -62,6 +65,89 @@ def parse_json_output(result: dict[str, Any]) -> Any | None:
         return json.loads(stdout)
     except json.JSONDecodeError:
         return None
+
+
+def local_date(now: datetime | None = None) -> str:
+    current = now or datetime.now().astimezone()
+    return current.date().isoformat()
+
+
+def default_update_cache_path() -> Path:
+    cache_home = os.environ.get("XDG_CACHE_HOME")
+    root = Path(cache_home).expanduser() if cache_home else HOME / ".cache"
+    return root / "lark-feishu-ops" / "update-check.json"
+
+
+def read_update_check_cache(cache_path: Path | str | None = None) -> dict[str, Any] | None:
+    path = Path(cache_path).expanduser() if cache_path is not None else default_update_cache_path()
+    if not path.is_file():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def write_update_check_cache(payload: dict[str, Any], cache_path: Path | str | None = None) -> dict[str, Any]:
+    path = Path(cache_path).expanduser() if cache_path is not None else default_update_cache_path()
+    record = {
+        "checked_local_date": local_date(),
+        "checked_at": datetime.now().astimezone().isoformat(),
+        "action": payload.get("action"),
+        "current_version": payload.get("current_version"),
+        "latest_version": payload.get("latest_version"),
+        "ok": payload.get("ok", True),
+        "payload": payload,
+    }
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
+        record["cache_path"] = str(path)
+        record["write_ok"] = True
+    except OSError as exc:
+        record["cache_path"] = str(path)
+        record["write_ok"] = False
+        record["write_error"] = str(exc)
+    return record
+
+
+def current_update_cache(cache_path: Path | str | None = None) -> dict[str, Any] | None:
+    record = read_update_check_cache(cache_path)
+    if not record:
+        return None
+    if record.get("checked_local_date") != local_date():
+        return None
+    payload = record.get("payload")
+    if not isinstance(payload, dict):
+        payload = {
+            "action": record.get("action"),
+            "ok": record.get("ok"),
+            "current_version": record.get("current_version"),
+            "latest_version": record.get("latest_version"),
+        }
+        record["payload"] = payload
+    return record
+
+
+def update_payload_requires_confirmation(payload: Any) -> bool:
+    return isinstance(payload, dict) and payload.get("action") not in (None, "already_up_to_date")
+
+
+def build_update_action(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "type": "lark_cli_update",
+        "requires_confirmation": True,
+        "command": ["lark-cli", "update", "--json"],
+        "current_version": payload.get("current_version"),
+        "latest_version": payload.get("latest_version"),
+        "followup_command": [
+            "python3",
+            "plugins/lark-feishu-ops/scripts/lark_feishu_ops_sync.py",
+            "--after-cli-update",
+            "--json",
+        ],
+    }
 
 
 def load_skill_lock_sources() -> dict[str, str]:
@@ -219,7 +305,16 @@ def audit_project_lark_skills(repo: Path | str) -> dict[str, Any]:
     }
 
 
-def check_lark_cli(skip_update_check: bool, offline: bool) -> dict[str, Any]:
+def check_lark_cli(
+    skip_update_check: bool,
+    offline: bool,
+    update_check_policy: str = "daily",
+    force_update_check: bool = False,
+    cache_path: Path | str | None = None,
+) -> dict[str, Any]:
+    if update_check_policy not in UPDATE_CHECK_POLICIES:
+        raise ValueError(f"unsupported update_check_policy: {update_check_policy}")
+
     executable = shutil.which("lark-cli")
     check: dict[str, Any] = {
         "status": "PASS" if executable else "FAIL",
@@ -229,6 +324,7 @@ def check_lark_cli(skip_update_check: bool, offline: bool) -> dict[str, Any]:
         "doctor": None,
         "auth_status": None,
         "update_check": None,
+        "update_action": None,
         "recommendations": [],
     }
 
@@ -264,33 +360,55 @@ def check_lark_cli(skip_update_check: bool, offline: bool) -> dict[str, Any]:
             "Run `lark-cli auth status` and complete login/scope setup before protected operations."
         )
 
-    if skip_update_check or offline:
+    if skip_update_check or offline or update_check_policy == "never":
         check["update_check"] = {
             "skipped": True,
-            "reason": "offline or skip_update_check requested",
+            "reason": "offline, skip_update_check, or never policy requested",
+            "policy": update_check_policy,
         }
         check["recommendations"].append(
             "Keep lark-cli updated; run `lark-cli update --check --json` periodically."
         )
     else:
-        update_result = run_command(["lark-cli", "update", "--check", "--json"], timeout=45)
-        update_payload = parse_json_output(update_result)
-        check["update_check"] = {
-            "command": update_result["command"],
-            "ok": update_result["ok"],
-            "exit_code": update_result["exit_code"],
-            "payload": update_payload,
-            "stderr": update_result["stderr"],
-        }
-        if not update_result["ok"]:
+        cached = None if force_update_check or update_check_policy == "always" else current_update_cache(cache_path)
+        if cached is not None:
+            update_payload = cached["payload"]
+            check["update_check"] = {
+                "cached": True,
+                "policy": update_check_policy,
+                "cache_path": str(Path(cache_path).expanduser() if cache_path else default_update_cache_path()),
+                "ok": True,
+                "exit_code": 0,
+                "payload": update_payload,
+                "stderr": "",
+            }
+        else:
+            update_result = run_command(["lark-cli", "update", "--check", "--json"], timeout=45)
+            update_payload = parse_json_output(update_result)
+            check["update_check"] = {
+                "command": update_result["command"],
+                "cached": False,
+                "policy": update_check_policy,
+                "ok": update_result["ok"],
+                "exit_code": update_result["exit_code"],
+                "payload": update_payload,
+                "stderr": update_result["stderr"],
+            }
+            if update_result["ok"] and isinstance(update_payload, dict):
+                check["update_check"]["cache"] = write_update_check_cache(update_payload, cache_path)
+
+            if not update_result["ok"]:
+                check["status"] = "WARN" if check["status"] == "PASS" else check["status"]
+                check["recommendations"].append(
+                    "Could not complete update check; retry `lark-cli update --check --json` later."
+                )
+                return check
+
+        if update_payload_requires_confirmation(update_payload):
             check["status"] = "WARN" if check["status"] == "PASS" else check["status"]
+            check["update_action"] = build_update_action(update_payload)
             check["recommendations"].append(
-                "Could not complete update check; retry `lark-cli update --check --json` later."
-            )
-        elif isinstance(update_payload, dict) and update_payload.get("action") not in (None, "already_up_to_date"):
-            check["status"] = "WARN" if check["status"] == "PASS" else check["status"]
-            check["recommendations"].append(
-                "Run `lark-cli update` when convenient; it is a high-risk-write command and should be explicit."
+                "Run `lark-cli update` only after explicit confirmation; it is a high-risk-write command."
             )
 
     return check
@@ -408,7 +526,13 @@ def apply_codex_global_unload(targets: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def build_report(args: argparse.Namespace) -> dict[str, Any]:
-    lark_cli = check_lark_cli(args.skip_update_check, args.offline)
+    lark_cli = check_lark_cli(
+        args.skip_update_check,
+        args.offline,
+        update_check_policy=args.update_check_policy,
+        force_update_check=args.force_update_check,
+        cache_path=args.update_cache_path,
+    )
     global_audit = audit_global_lark_skills()
     project_audit = audit_project_lark_skills(args.repo) if getattr(args, "repo", None) else None
 
@@ -465,6 +589,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--repo", help="Repository path to inspect for project-local Lark skills.")
     parser.add_argument("--offline", action="store_true", help="Skip network-sensitive checks.")
     parser.add_argument("--skip-update-check", action="store_true", help="Skip lark-cli update check.")
+    parser.add_argument(
+        "--update-check-policy",
+        choices=sorted(UPDATE_CHECK_POLICIES),
+        default="daily",
+        help="How often to run `lark-cli update --check --json`.",
+    )
+    parser.add_argument("--force-update-check", action="store_true", help="Bypass the daily update-check cache.")
+    parser.add_argument("--update-cache-path", help=argparse.SUPPRESS)
     parser.add_argument(
         "--apply-codex-global-unload",
         action="store_true",

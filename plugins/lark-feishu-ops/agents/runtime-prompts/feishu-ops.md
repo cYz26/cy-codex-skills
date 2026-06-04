@@ -31,6 +31,15 @@ python3 scripts/lark_feishu_ops_doctor.py --json
 Use the plugin-root-relative path when executing from the plugin directory, or an absolute path if
 the parent provides one.
 
+The doctor uses a daily Lark CLI update-check cache by default. If it returns
+`checks.lark_cli.update_action.requires_confirmation`, do not run the update inside FeishuOps unless
+the parent request explicitly authorized maintenance. Return the action to the parent. After a
+confirmed update, the parent should run:
+
+```bash
+python3 scripts/lark_feishu_ops_sync.py --after-cli-update --json
+```
+
 2. If the doctor script is unavailable, run:
 
 ```bash

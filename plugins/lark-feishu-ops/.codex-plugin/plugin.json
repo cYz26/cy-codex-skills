@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "Lark Feishu Ops",
     "shortDescription": "One entry for direct lark-cli reads and FeishuOps escalation",
-    "longDescription": "Centralizes Feishu/Lark document, IM, calendar, meeting, sheet, Base, Wiki, Drive, and OpenAPI work behind one dispatch policy: direct lark-cli for bounded low-risk reads, FeishuOps subagent for side effects, cross-domain work, auth/profile complexity, OpenAPI exploration, and long follow-ups. Includes lark-cli preflight, update checks, global lark skill context audit, and post-operation validation guidance.",
+    "longDescription": "Centralizes Feishu/Lark document, IM, calendar, meeting, sheet, Base, Wiki, Drive, and OpenAPI work behind one dispatch policy: direct lark-cli for bounded low-risk reads, FeishuOps subagent for side effects, cross-domain work, auth/profile complexity, OpenAPI exploration, and long follow-ups. Includes lark-cli preflight, daily update checks with explicit confirmation, post-update sync diagnostics, global lark skill context audit, and post-operation validation guidance.",
     "developerName": "cY",
     "category": "Developer Tools",
     "capabilities": [

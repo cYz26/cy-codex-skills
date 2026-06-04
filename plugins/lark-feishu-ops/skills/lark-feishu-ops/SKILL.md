@@ -39,9 +39,34 @@ The doctor checks:
 
 - `lark-cli` is installed and runnable.
 - `lark-cli doctor --offline` and `lark-cli auth status` are available.
-- `lark-cli update --check --json` can report whether the CLI is current.
+- `lark-cli update --check --json` can report whether the CLI is current; by default this network
+  update check runs at most once per local day and caches its result under
+  `${XDG_CACHE_HOME:-~/.cache}/lark-feishu-ops/update-check.json`.
 - Official `larksuite/cli` `lark-*` skills are not globally active for Codex.
 - Project-local `.codex/skills/lark-*` skills are not scattered into the main-agent context when `--repo` is provided.
+
+Use `--force-update-check` or `--update-check-policy always` for explicit maintenance. Use
+`--update-check-policy never` or `--skip-update-check` only when update checks are intentionally
+out of scope.
+
+If the doctor reports `checks.lark_cli.update_action.requires_confirmation`, surface the action to
+the user and wait for explicit confirmation before running `lark-cli update --json`. After a
+confirmed update, run the post-update sync:
+
+```bash
+python3 ../../scripts/lark_feishu_ops_sync.py --after-cli-update --json
+```
+
+To let the sync script perform the confirmed update and then validate state:
+
+```bash
+python3 ../../scripts/lark_feishu_ops_sync.py --apply-cli-update --json
+```
+
+Use `--refresh-installed-plugin` only when the user has authorized refreshing the installed Codex
+plugin cache. Lark CLI releases do not automatically require source changes to this plugin; update
+`lark-feishu-ops` source only when the sync or compatibility checks show a command contract,
+schema, risk-classification, auth/profile, official-skill, or dispatch-policy drift.
 
 If the doctor reports official `lark-*` skills globally active for Codex, and the user asked to
 reduce main-agent context, run:
@@ -441,6 +466,7 @@ After changing this plugin:
 ```bash
 python3 ../../scripts/lark_feishu_ops_doctor.py --json
 python3 ../../scripts/lark_feishu_ops_doctor.py --strict --json
+python3 ../../scripts/lark_feishu_ops_sync.py --after-cli-update --json
 ```
 
 After unloading global official `lark-*` skills:
