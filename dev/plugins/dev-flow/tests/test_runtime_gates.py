@@ -1,4 +1,6 @@
 import ast
+import contextlib
+import io
 import json
 import sys
 import tempfile
@@ -11,6 +13,7 @@ SCRIPTS = PLUGIN_ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 from workflow_doctor import doctor_workflow
+from workflow_hooks import hook_response
 from workflow_state import parse_state
 from workflow_validate import validate_workflow_state
 
@@ -144,6 +147,37 @@ context_management:
 
         self.assertTrue(validation["ok"], validation)
         self.assertFalse(any("source/cache hook drift" in issue for issue in validation["issues"]))
+
+    def test_hook_response_emits_structured_json_for_stop_warnings(self):
+        repo = self.make_repo()
+        stdout = io.StringIO()
+
+        with contextlib.redirect_stdout(stdout):
+            exit_code = hook_response(repo, "DevFlow: context health is medium.", event_name="Stop")
+
+        self.assertEqual(exit_code, 0)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["hookSpecificOutput"]["hookEventName"], "Stop")
+        self.assertEqual(
+            payload["hookSpecificOutput"]["additionalContext"],
+            "DevFlow: context health is medium.",
+        )
+
+    def test_hook_response_preserves_block_mode_exit_code_with_json_output(self):
+        repo = self.make_repo()
+        (repo / ".dev-flow.json").write_text(json.dumps({"hook": {"mode": "block"}}))
+        stdout = io.StringIO()
+
+        with contextlib.redirect_stdout(stdout):
+            exit_code = hook_response(repo, "DevFlow: verification is required.", event_name="Stop")
+
+        self.assertEqual(exit_code, 1)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["hookSpecificOutput"]["hookEventName"], "Stop")
+        self.assertEqual(
+            payload["hookSpecificOutput"]["additionalContext"],
+            "DevFlow: verification is required.",
+        )
 
 
 if __name__ == "__main__":

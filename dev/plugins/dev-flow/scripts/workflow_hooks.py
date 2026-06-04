@@ -52,9 +52,18 @@ def generated_workflow_files() -> set[str]:
     }
 
 
-def hook_response(repo: Path, message: str) -> int:
+def hook_response(repo: Path, message: str, event_name: str = "PreToolUse") -> int:
     mode = hook_mode(repo)
     if mode == "off":
         return 0
-    print(message)
+    print(
+        json.dumps(
+            {
+                "hookSpecificOutput": {
+                    "hookEventName": event_name,
+                    "additionalContext": message,
+                }
+            }
+        )
+    )
     return 1 if mode == "block" else 0

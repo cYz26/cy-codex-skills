@@ -48,7 +48,7 @@ def main() -> int:
         print(json.dumps(report, indent=2, sort_keys=True))
         return 0
     if report["status"] in {"synced", "pending"}:
-        return hook_response(repo_path(repo), report["message"])
+        return hook_response(repo_path(repo), report["message"], event_name="Stop")
     return 0
 
 

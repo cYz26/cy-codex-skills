@@ -23,28 +23,33 @@ def main() -> int:
             repo,
             f"DevFlow: unsupported compact_status `{status}`. "
             f"Regenerate workflow state or set one of: {supported_compact_statuses_text()}.",
+            event_name="Stop",
         )
     if status == "pending":
         return hook_response(
             repo,
             "DevFlow: checkpoint is pending compact. "
             "Run /compact before continuing to the next major stage.",
+            event_name="Stop",
         )
     if status == "skipped" and context.get("compact_skip_reason") in (None, "", "none"):
         return hook_response(
             repo,
             "DevFlow: compact was skipped without a recorded reason.",
+            event_name="Stop",
         )
     if status in {"failed", "blocked"}:
         return hook_response(
             repo,
             "DevFlow: compact gate did not complete cleanly.",
+            event_name="Stop",
         )
     if needs_checkpoint(state, context):
         return hook_response(
             repo,
             "DevFlow: major boundary reached without checkpoint. "
             "Run checkpoint-compact before ending this stage.",
+            event_name="Stop",
         )
     return 0
 

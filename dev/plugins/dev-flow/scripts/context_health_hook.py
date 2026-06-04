@@ -29,6 +29,7 @@ def main() -> int:
                 repo,
                 f"DevFlow: context health is {report['risk']} ({report['decision']}). "
                 "Run context-health-check before continuing.",
+                event_name="Stop" if args.event.lower() == "stop" else "PreToolUse",
             )
     return 0
 

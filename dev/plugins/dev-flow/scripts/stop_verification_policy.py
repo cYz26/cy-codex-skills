@@ -23,6 +23,7 @@ def main() -> int:
             repo,
             "DevFlow: verification has not been recorded. "
             "Run relevant checks and record evidence before claiming completion.",
+            event_name="Stop",
         )
     return 0
 
