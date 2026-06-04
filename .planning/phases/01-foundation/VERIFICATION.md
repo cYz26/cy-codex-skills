@@ -209,3 +209,44 @@
 - `plugin-eval analyze plugins/dev-flow`: pass, score 77/100 grade C high risk.
 - `plugin-eval analyze dev/plugins/dev-flow`: pass, score 77/100 grade C high risk.
 - Deferred Plugin Eval findings: full-plugin deferred/invoke token budget and Python complexity require a dedicated packaging/helper-script refactor follow-up.
+
+- `repair-devflow-stop-hook-json-output final verification`: pass (.planning/verification/20260602110208-repair-devflow-stop-hook-json-output-final-verification.md)
+
+- `refresh dev-flow plugin cache`: pass (.planning/verification/20260602114850-refresh-dev-flow-plugin-cache.md)
+
+## add-agent-kb-source-intake
+
+- RED focused development tests:
+  `python3 -m unittest dev/plugins/agent-kb/tests/test_agent_kb.py -v`
+  failed before implementation because source-intake CLI, scaffold directories,
+  lint backlog checks, and `kb-import` were missing.
+- GREEN development suite:
+  `python3 -m unittest discover -s dev/plugins/agent-kb/tests -v`: pass, 12 tests.
+- Release suite:
+  `python3 -m unittest discover -s plugins/agent-kb/tests -v`: pass, 4 tests.
+- OpenSpec:
+  `openspec validate add-agent-kb-source-intake --strict`: pass.
+- Diff hygiene:
+  `git diff --check`: pass.
+- Workflow state:
+  `python3 plugins/dev-flow/scripts/validate_workflow_state.py --repo /Users/cY/dev/skills/cy-codex-skills --json`: pass.
+- Plugin Eval:
+  `node /Users/cY/.codex/plugins/cache/openai-curated/plugin-eval/90718987/scripts/plugin-eval.js analyze plugins/agent-kb --format markdown`:
+  pass, score 86/100, grade B, medium risk.
+- MarkItDown install/config:
+  `/opt/homebrew/bin/python3.12 -m venv /Users/cY/.codex/agent-kb/markitdown-venv`
+  and
+  `/Users/cY/.codex/agent-kb/markitdown-venv/bin/python -m pip install "markitdown[pdf,docx,xlsx,pptx]"`:
+  pass, installed `markitdown-0.1.6`.
+- Installed AgentKB cache smoke:
+  `python3 /Users/cY/.codex/plugins/cache/cy-codex-skills/agent-kb/0.1.0/scripts/kb_import.py --vault <tmp>/vault --project cache-smoke --source <tmp>/repo/cache.md --apply --json`:
+  pass, MarkItDown `available: true`, `mode: command`, imported with
+  `extractor: markitdown`.
+- Cache refresh:
+  `codex plugin add agent-kb@cy-codex-skills` and
+  `codex plugin add dev-flow@cy-codex-skills`: pass.
+- Evidence file:
+  `.planning/verification/20260602195340-add-agent-kb-source-intake.md`.
+- Deferred findings:
+  Plugin Eval token-budget warnings require a dedicated AgentKB budget
+  optimization and observed-usage follow-up.
