@@ -75,3 +75,51 @@ Covered change groups:
 - `gh` is installed but not authenticated in this environment, so the publish
   flow can commit and push with `git` but cannot create or update a GitHub PR
   through `gh`.
+
+## Merge Readiness Recheck
+
+created_at: 2026-06-06T01:36:46+08:00
+
+Scope:
+
+- Repaired DevFlow project migration drift for project-local skill symlinks.
+- Repaired `.planning/STATE.md` so `current_change.id` points to the existing
+  verified `add-release-promotion-gate` OpenSpec change.
+- Updated `.planning/STATE.md` to reference the existing
+  `2026-06-02-verification_passed-add-release-promotion-gate` checkpoint.
+- Rechecked workflow state, OpenSpec validation, GitHub PR/check status, and
+  merge topology against `origin/main`.
+
+Verification:
+
+- `python3 plugins/dev-flow/scripts/plugin_project_migration.py --repo /Users/cy/Dev/agents-dev/cy-codex-skills --apply --json`
+  - Result: pass, `status: applied`, refreshed 12 project-local DevFlow skill symlinks, no conflicts.
+- `python3 plugins/dev-flow/scripts/plugin_project_migration.py --repo /Users/cy/Dev/agents-dev/cy-codex-skills --json`
+  - Result: pass, `status: current`, `pendingVersion: false`, no stale or missing project skills.
+- `python3 plugins/dev-flow/scripts/validate_workflow_state.py --repo /Users/cy/Dev/agents-dev/cy-codex-skills --json`
+  - Result: pass, `ok: true`, no issues, no warnings.
+- `python3 plugins/dev-flow/scripts/doctor_workflow.py --repo /Users/cy/Dev/agents-dev/cy-codex-skills --json`
+  - Result: pass, `diagnosis: healthy`, no issues.
+- `openspec validate --all --strict`
+  - Result: pass, 19 items passed, 0 failed.
+- `git rev-list --left-right --count origin/main...HEAD`
+  - Result: `0 8`.
+- `git merge-tree --write-tree origin/main HEAD`
+  - Result: pass, wrote tree `27a1b9b7c6a5c96087022fa1ee5fed43a0d78292`.
+- GitHub API PR query for head `cYz26:codex/lark-feishu-ops-progress-contract`
+  - Result: pass, no pull requests returned.
+- GitHub API commit status and check-runs query for `d0b0ee6a688599ad75222ed2fbe0e9972ef17f48`
+  - Result: pass, no individual statuses and `total_count: 0` check runs.
+- GitHub API compare `main...codex/lark-feishu-ops-progress-contract`
+  - Result: pass, `status: ahead`, `ahead_by: 8`, `behind_by: 0`, `total_commits: 8`.
+
+Residual risk:
+
+- `.planning/STATE.md` and this verification record are local repair changes
+  and must be committed and pushed before the remote branch reflects the repair.
+- No GitHub PR exists for this branch, so PR mergeability, reviews, and PR-bound
+  checks are not available yet.
+- GitHub has no statuses or check runs on commit `d0b0ee6a688599ad75222ed2fbe0e9972ef17f48`.
+- `gh` is installed but not authenticated in this environment.
+- `check_dependencies.py` still reports the recommended local-environment issue
+  `global plugin inactive: superpowers`: globally enabled.

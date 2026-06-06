@@ -8,7 +8,7 @@ current_phase:
   status: in_progress
 
 current_change:
-  id: add-agent-kb-project-problem-capture
+  id: add-release-promotion-gate
   status: verified
 
 gates:
@@ -23,8 +23,8 @@ gates:
 
 context_management:
   compact_policy: checkpoint_boundary
-  last_checkpoint_id: 2026-06-02-verification_passed-add-agent-kb-source-intake
-  last_checkpoint_file: .planning/checkpoints/2026-06-02-verification_passed-add-agent-kb-source-intake.md
+  last_checkpoint_id: 2026-06-02-verification_passed-add-release-promotion-gate
+  last_checkpoint_file: .planning/checkpoints/2026-06-02-verification_passed-add-release-promotion-gate.md
   compact_recommended: false
   compact_status: not_needed
   last_compact_result_file: none
@@ -56,28 +56,31 @@ context_health:
   last_report: .planning/verification/20260604211027-publish-local-changes.md
   last_risk: medium
   last_confidence: high
-  last_decision: publish_local_changes_verified
+  last_decision: workflow_state_migration_repaired
   last_goal_status: verified
-  goal_summary: Local plugin changes are verified and ready for commit/push
+  goal_summary: Workflow state and migration drift repaired; remote branch needs repair commit before merge
 ---
 
 # Workflow State
 
 ## Current Status
 
-Outstanding local plugin changes are verified and ready to commit and push.
+The `codex/lark-feishu-ops-progress-contract` branch is pushed to origin and
+under merge-readiness verification.
 
-This publish verification covers AgentKB source intake and problem capture,
-the AgentKB optional extractor regression fix, DevFlow Stop hook JSON output,
-Lark Feishu Ops daily update sync, and DevFlow project migration drift cleanup.
+The active OpenSpec state points at the existing verified
+`add-release-promotion-gate` change. Additional branch work for AgentKB source
+intake and problem capture, AgentKB optional extractor regression handling,
+DevFlow Stop hook JSON output, Lark Feishu Ops daily update sync, and DevFlow
+project migration cleanup is covered by publish verification evidence.
 
 ## Next Action
 
-Commit the verified change groups and push
-`codex/lark-feishu-ops-progress-contract` to `origin`.
+Confirm workflow validation, DevFlow doctor status, GitHub PR/check status, and
+merge readiness against `origin/main`.
 
-Archive `add-agent-kb-project-problem-capture` remains a separate post-publish
-workflow action when the archive gate is otherwise clear.
+Archive `add-release-promotion-gate` remains a separate post-merge workflow
+action when the archive gate is otherwise clear.
 
 ## Publish Verification
 
@@ -87,22 +90,21 @@ Evidence:
 
 ## Recent Verification
 
-AgentKB project problem capture is implemented and verified. The change adds
-`kb_project.py status|enable|verify`, `kb_problem.py record`, sanitized failed
-hook problem signals, scaffolded problem-capture paths, and `kb-enable-project`
+DevFlow release promotion gate is implemented and verified. The change adds the
+release sync engine, explicit sync CLI, Stop-hook promotion gate, DevFlow
+packaging metadata, release-first Plugin Eval target resolution, and updated
 guidance.
 
 Evidence:
 
-- `.planning/verification/20260602212419-add-agent-kb-project-problem-capture.md`
-- `openspec/changes/add-agent-kb-project-problem-capture/tasks.md`
+- `.planning/verification/20260602121017-add-release-promotion-gate.md`
+- `openspec/changes/add-release-promotion-gate/tasks.md`
 
 ## Side Conversation Verification
 
-Change `add-lark-cli-daily-update-sync` was implemented and verified in a side conversation without
-changing the active main-thread `current_change`.
+AgentKB and Lark Feishu Ops branch work was verified in side conversations
+without becoming the active main-thread `current_change`.
 
 Evidence:
 
-- `.planning/verification/20260604202702-add-lark-cli-daily-update-sync.md`
-- `openspec/changes/add-lark-cli-daily-update-sync/tasks.md`
+- `.planning/verification/20260604211027-publish-local-changes.md`
