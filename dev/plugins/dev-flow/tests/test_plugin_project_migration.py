@@ -48,6 +48,26 @@ class PluginProjectMigrationTests(unittest.TestCase):
         self.write_skill(plugin / "skills" / "plugin-project-migration" / "SKILL.md")
         return plugin
 
+    def write_marketplace(self, repo, plugin):
+        marketplace = repo / ".agents" / "plugins" / "marketplace.json"
+        marketplace.parent.mkdir(parents=True, exist_ok=True)
+        marketplace.write_text(
+            json.dumps(
+                {
+                    "plugins": [
+                        {
+                            "name": "dev-flow",
+                            "source": {
+                                "source": "local",
+                                "path": str(plugin),
+                            },
+                        }
+                    ]
+                }
+            )
+            + "\n"
+        )
+
     def make_codex_home(self):
         return Path(tempfile.mkdtemp(prefix="plugin-migration-home-"))
 
@@ -137,6 +157,17 @@ class PluginProjectMigrationTests(unittest.TestCase):
         self.assertIn("plugin-project-migration", message)
         self.assertIn("dev-flow", message)
         self.assertEqual(self.snapshot_project_files(repo), before)
+
+    def test_hook_reminder_prefers_repo_marketplace_source_over_cache_root(self):
+        repo = self.make_repo()
+        source_plugin = self.make_plugin_root(version="1.2.0")
+        cache_plugin = self.make_plugin_root(version="1.2.0")
+        self.write_marketplace(repo, source_plugin)
+        apply_project_migrations(repo=repo, plugin_root=source_plugin, codex_home=self.make_codex_home())
+
+        message = migration_reminder(repo=repo, plugin_root=cache_plugin, codex_home=self.make_codex_home())
+
+        self.assertEqual(message, "")
 
     def test_updater_result_uses_project_migration_sync_kind(self):
         repo = self.make_repo()

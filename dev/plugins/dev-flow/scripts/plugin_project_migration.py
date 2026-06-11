@@ -28,6 +28,7 @@ def sync_project_migrations(
     repo = normalize_path(repo)
     plugin_root = normalize_path(plugin_root)
     codex_home_path = normalize_path(codex_home or Path.home() / ".codex")
+    plugin_root = resolve_project_source_plugin_root(repo, plugin_root)
     adapter = load_adapter(plugin_root)
     if adapter is None:
         report = base_report(repo, plugin_root, codex_home_path, "not_applicable", [])
@@ -50,6 +51,7 @@ def apply_project_migrations(
     repo = normalize_path(repo)
     plugin_root = normalize_path(plugin_root)
     codex_home_path = normalize_path(codex_home or Path.home() / ".codex")
+    plugin_root = resolve_project_source_plugin_root(repo, plugin_root)
     adapter = load_adapter(plugin_root)
     if adapter is None:
         report = base_report(repo, plugin_root, codex_home_path, "not_applicable", [])
@@ -182,6 +184,57 @@ def load_adapter(plugin_root: Path) -> dict[str, Any] | None:
     data.setdefault("projectLocalSkills", [])
     data.setdefault("managedFiles", [])
     return data
+
+
+def resolve_project_source_plugin_root(repo: Path, plugin_root: Path) -> Path:
+    manifest = read_json(plugin_root / ".codex-plugin" / "plugin.json")
+    plugin_name = str(manifest.get("name") or plugin_root.name)
+    candidate = marketplace_plugin_root(repo, plugin_name)
+    if candidate is None:
+        return plugin_root
+    candidate_manifest = candidate / ".codex-plugin" / "plugin.json"
+    candidate_adapter = candidate / ".codex-plugin" / "project-migration.json"
+    if not candidate_manifest.exists() or not candidate_adapter.exists():
+        return plugin_root
+    try:
+        candidate_name = str(read_json(candidate_manifest).get("name") or candidate.name)
+    except json.JSONDecodeError:
+        return plugin_root
+    return candidate if candidate_name == plugin_name else plugin_root
+
+
+def marketplace_plugin_root(repo: Path, plugin_name: str) -> Path | None:
+    for marketplace in (repo / ".agents" / "plugins").glob("marketplace*.json"):
+        try:
+            data = read_json(marketplace)
+        except (OSError, json.JSONDecodeError):
+            continue
+        for record in data.get("plugins", []):
+            if record.get("name") != plugin_name:
+                continue
+            raw_path = marketplace_record_path(record)
+            if not raw_path:
+                continue
+            for candidate in resolve_marketplace_path(repo, marketplace, raw_path):
+                if (candidate / ".codex-plugin" / "plugin.json").exists():
+                    return candidate
+    return None
+
+
+def marketplace_record_path(record: dict[str, Any]) -> str | None:
+    source = record.get("source")
+    if isinstance(source, dict) and source.get("path"):
+        return str(source["path"])
+    if record.get("path"):
+        return str(record["path"])
+    return None
+
+
+def resolve_marketplace_path(repo: Path, marketplace: Path, raw_path: str) -> list[Path]:
+    path = Path(raw_path).expanduser()
+    if path.is_absolute():
+        return [path.resolve()]
+    return [(repo / path).resolve(), (marketplace.parent / path).resolve()]
 
 
 def read_state(repo: Path) -> dict[str, Any]:
