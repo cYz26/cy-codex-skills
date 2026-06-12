@@ -527,7 +527,9 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         repo_root = PLUGIN_ROOT.parents[2]
         docs = {
             "README.md": repo_root / "README.md",
-            "agent-reach/SKILL.md": repo_root / "agent-reach" / "SKILL.md",
+            "archived-skills/agent-reach/SKILL.md": (
+                repo_root / "archived-skills" / "agent-reach" / "SKILL.md"
+            ),
             "dev/scripts/README.md": repo_root / "dev" / "scripts" / "README.md",
             "dev/plugins/dev-flow/README.md": PLUGIN_ROOT / "README.md",
         }
