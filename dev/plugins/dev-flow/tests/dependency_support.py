@@ -64,6 +64,7 @@ class DependencyFixtureMixin:
         enable_superpowers=True,
         enable_legacy_openspec_skills=True,
         enable_openspec_config=True,
+        skill_layout="official",
     ):
         repo = Path(tempfile.mkdtemp(prefix="cpo-project-"))
         (repo / ".codex").mkdir()
@@ -71,8 +72,15 @@ class DependencyFixtureMixin:
         if enable_openspec_config:
             (repo / "openspec").mkdir()
             (repo / "openspec" / "config.yaml").write_text("schema: spec-driven\n")
-        self.write_project_skills(repo, enable_orchestrator, enable_superpowers, enable_legacy_openspec_skills)
+        self.write_project_skills(
+            repo,
+            enable_orchestrator,
+            enable_superpowers,
+            enable_legacy_openspec_skills,
+            layout=skill_layout,
+        )
         self.write_gsd_agents(repo)
+        self.write_gsd_core_runtime(repo)
         return repo
 
     def write_project_skills(
@@ -81,6 +89,7 @@ class DependencyFixtureMixin:
         enable_orchestrator=True,
         enable_superpowers=True,
         enable_legacy_openspec_skills=True,
+        layout="official",
     ):
         skills = [
             "gsd-new-project",
@@ -90,15 +99,14 @@ class DependencyFixtureMixin:
             "gsd-progress",
             "gsd-verify-work",
         ]
-        if enable_legacy_openspec_skills:
-            skills.extend(
-                [
-                    "openspec-propose",
-                    "openspec-explore",
-                    "openspec-apply-change",
-                    "openspec-archive-change",
-                ]
-            )
+        legacy_openspec_skills = [
+            "openspec-propose",
+            "openspec-explore",
+            "openspec-apply-change",
+            "openspec-archive-change",
+        ]
+        if enable_legacy_openspec_skills and layout == "legacy":
+            skills.extend(legacy_openspec_skills)
         if enable_superpowers:
             skills.extend(
                 [
@@ -111,6 +119,7 @@ class DependencyFixtureMixin:
         if enable_orchestrator:
             skills.extend(
                 [
+                    "ai-native-tech-plan",
                     "capability-research",
                     "claude-code-delegate",
                     "project-orchestrator",
@@ -121,17 +130,47 @@ class DependencyFixtureMixin:
                     "verify-and-archive",
                     "workflow-doctor",
                     "checkpoint-compact",
+                    "context-health-check",
                     "context-tool-audit",
+                    "codex-updater",
                     "plugin-project-migration",
                 ]
             )
         for skill in skills:
-            path = repo / ".codex" / "skills" / skill / "SKILL.md"
+            path = self.project_skill_path(repo, skill, layout=layout)
             path.parent.mkdir(parents=True)
             path.write_text(f"---\nname: {skill}\ndescription: fixture\n---\n")
+        if enable_legacy_openspec_skills and layout != "legacy":
+            for skill in legacy_openspec_skills:
+                path = self.project_skill_path(repo, skill, layout="legacy")
+                path.parent.mkdir(parents=True)
+                path.write_text(f"---\nname: {skill}\ndescription: fixture\n---\n")
+
+    def project_skill_root(self, repo, layout="official"):
+        if layout == "official":
+            return repo / ".agents" / "skills"
+        if layout == "legacy":
+            return repo / ".codex" / "skills"
+        raise ValueError(f"unknown skill layout: {layout}")
+
+    def project_skill_path(self, repo, skill, layout="official"):
+        return self.project_skill_root(repo, layout) / skill / "SKILL.md"
 
     def write_gsd_agents(self, repo):
         for agent in ["gsd-phase-researcher", "gsd-planner", "gsd-plan-checker", "gsd-executor"]:
             path = repo / ".codex" / "agents" / f"{agent}.toml"
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(f"name = \"{agent}\"\n")
+
+    def write_gsd_core_runtime(self, repo, version="1.4.5"):
+        runtime = repo / ".codex" / "gsd-core"
+        (runtime / "bin").mkdir(parents=True, exist_ok=True)
+        (runtime / "VERSION").write_text(f"{version}\n")
+        tools = runtime / "bin" / "gsd-tools.cjs"
+        tools.write_text(
+            "#!/usr/bin/env node\n"
+            "if (process.argv[2] === 'current-timestamp') {\n"
+            "  console.log(JSON.stringify({timestamp: '2026-06-14T00:00:00.000Z'}));\n"
+            "}\n"
+        )
+        tools.chmod(0o755)

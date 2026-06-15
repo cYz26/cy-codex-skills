@@ -5,6 +5,7 @@ from typing import Any
 
 from workflow_context_recommendation_common import recommendation
 from workflow_context_relevance import relevant_to_project, slug
+from workflow_project_skill_paths import OFFICIAL_PROJECT_SKILL_PATH_KIND, official_project_skill_dir
 
 
 def add_install_recommendations(
@@ -30,7 +31,7 @@ def add_project_skill_install(
     recommendations: list[dict[str, Any]],
     actions: list[dict[str, Any]],
 ) -> None:
-    destination = repo / ".codex" / "skills" / skill["name"]
+    destination = official_project_skill_dir(repo, skill["name"])
     action = {
         "id": f"install-project-skill-{slug(skill['name'])}",
         "type": "install_project_skill",
@@ -41,6 +42,7 @@ def add_project_skill_install(
         "payload": {
             "sourcePath": skill["path"],
             "destinationPath": str(destination),
+            "pathKind": OFFICIAL_PROJECT_SKILL_PATH_KIND,
             "repo": str(repo),
             "skillName": skill["name"],
         },

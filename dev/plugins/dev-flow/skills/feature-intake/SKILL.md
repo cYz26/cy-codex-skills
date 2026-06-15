@@ -20,6 +20,8 @@ based on current state, risk, approval, and validation cost.
 
 ## Routes
 
+- Before execution, route the request through DevFlow workflow modes:
+  `Full OpenSpec`, `Lightweight Ledger`, or `Prototype Mode`.
 - Use `ai-native-tech-plan` for technical plans, implementation plans, architecture plans, Codex execution plans, workflow plans, or requests to avoid partial delivery.
 - Use `capability-research` when the requirement depends on a current or external capability, platform behavior, plugin/runtime behavior, hook/API support, CLI support, installed-cache state, or local-vs-platform ambiguity.
 - Use `superpowers:brainstorming` for open goals, constraints, tradeoffs, or implementation shape.
@@ -27,6 +29,21 @@ based on current state, risk, approval, and validation cost.
 - Use `openspec-propose` before behavior/API/data/integration changes.
 - Use `gsd-discuss-phase` and `gsd-plan-phase` for stages, refactors, or milestones.
 - Use `superpowers:writing-plans` before committing to a non-trivial plan.
+
+## Workflow Mode Routing
+
+`Full OpenSpec` is mandatory for behavior, public API, data model,
+persistence, migration, integration, permission, error-handling, or
+compatibility changes. Configuration cannot bypass this gate.
+
+`Lightweight Ledger` may be used only when `.dev-flow.json` enables it and the
+work is docs-only, test-only, internal maintenance, or a low-risk bugfix. The
+ledger must include Target State, Scope / Non-Goals, Validation Commands,
+Execution Log, and Completion Claim.
+
+`Prototype Mode` requires an explicit user request for a spike, prototype,
+proof of concept, or demo. Record that the output is non-production and include
+cleanup or promotion criteria before any production use.
 
 ## Superpowers Artifact Mapping
 

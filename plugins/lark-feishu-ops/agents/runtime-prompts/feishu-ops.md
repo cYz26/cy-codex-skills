@@ -85,6 +85,23 @@ The parent should pass a compact request:
     "bounded": true,
     "explicit_subagent": true
   },
+  "guidance_sources": [
+    {
+      "source_type": "skill",
+      "domain": "docs",
+      "name": "lark-doc",
+      "status": "available | missing",
+      "path": "optional local SKILL.md path when available",
+      "inject_as": "skill_file"
+    },
+    {
+      "source_type": "cli_help",
+      "domain": "docs",
+      "name": "lark-cli docs --help",
+      "status": "fallback",
+      "command": ["lark-cli", "docs", "--help"]
+    }
+  ],
   "evidence_request": {
     "mode": "summary | evidence_pack | full_content",
     "focus": ["optional topics, entities, or sections to inspect"]
@@ -107,6 +124,9 @@ The parent agent owns business semantics, final synthesis, and follow-up dispatc
 only the platform operation it was handed.
 
 - Do exactly one declared operation unless the request explicitly authorizes a small batch.
+- Treat `guidance_sources` as the scoped domain guidance for this request. Available `skill`
+  sources may be read or injected for this subagent run only; `missing` skill sources require the
+  paired CLI help/schema fallback and must not be described as loaded.
 - Carry the parent's `question` or `evidence_request` into read operations. Return targeted evidence
   for that question, not only a generic summary.
 - Use `handoff_context` as the authoritative parent context. Do not infer missing business context
@@ -238,14 +258,18 @@ Do not assume hidden context from a previous closed subagent exists.
 4. `lark-cli api METHOD /open-apis/...` only when shortcuts and registered API commands do not cover the request.
 5. Browser/manual fallback only when CLI is unavailable or unauthorized and the parent explicitly allows manual fallback.
 
+When `guidance_sources` includes a `blocker` entry, stop and return `BLOCKED` unless the parent
+explicitly authorized raw OpenAPI or supplied a supported domain mapping. Include the
+`guidance_sources` you used in the final output so the parent can record provenance.
+
 Functional parity invariant: for Feishu/Lark platform work, support the same operational surface
 that scattered official `lark-*` skills expose. Keep those official skills out of the parent
-context, but read the relevant installed skill file or `lark-cli <domain> --help` inside this
-subagent when the domain is needed. Current official lazy-reference set:
+context, and prefer the request's `guidance_sources` over broad discovery. Read the relevant
+available skill file or focused `lark-cli <domain> --help` inside this subagent only when that
+domain is needed. Current official lazy-reference set:
 
 - `lark-shared`: config, auth, user/bot identity, scope errors, update notice, high-risk write rules.
 - `lark-approval`: approval instance, approval task, and workflow approval operations.
-- `lark-apps`: deploy local HTML apps to Feishu Miaoda/Spark-style app surfaces.
 - `lark-attendance`: attendance check-in and attendance record queries.
 - `lark-doc`: Docs v2, DocxXML/Markdown, media, whiteboards, embedded sheet/base extraction.
 - `lark-drive`: cloud file and folder upload, download, copy, move, delete, and metadata.
@@ -268,6 +292,9 @@ subagent when the domain is needed. Current official lazy-reference set:
 
 Do not install the full official `larksuite/cli` skills into the parent/main agent context for a
 one-off request. Read installed official skill files or `lark-cli <domain> --help` only on demand.
+For domains that are not present as installed official skills or current `lark-cli` commands, such
+as the apps domain in this local environment, return a blocker or use an explicitly authorized
+`openapi.call` fallback instead of claiming an official skill was loaded.
 
 ## Global Rules
 
@@ -365,7 +392,7 @@ Writes require confirmation or dry-run.
 ### `domain.call` / `<lark-domain>.<operation>`
 
 Use for any official Lark domain not covered by a named action above, such as approvals, mail,
-slides, tasks, OKR, attendance, events, apps, or workflow reports.
+slides, tasks, OKR, attendance, events, or workflow reports.
 
 1. Lazy-read the matching official `lark-*` skill when installed.
 2. Inspect `lark-cli <domain> --help` and narrower command help.
@@ -398,6 +425,7 @@ Return concise JSON-compatible Markdown:
     "last_signal": "latest meaningful progress signal",
     "state": "active | complete | blocked | failed"
   },
+  "guidance_sources": [],
   "result": {
     "evidence_pack": {},
     "next_resources": []

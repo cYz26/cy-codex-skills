@@ -2,7 +2,6 @@
 
 ## Purpose
 Define DevFlow's release-quality expectations for manifest discovery, concise skill metadata, context-tool implementation structure, packaged smoke tests, and Plugin Eval reassessment.
-
 ## Requirements
 ### Requirement: Manifest starter prompts fit Codex discovery
 The DevFlow plugin manifest SHALL expose no more than three default starter prompts.
@@ -49,3 +48,61 @@ The change SHALL record a fresh systematic assessment after implementation.
 - **THEN** Plugin Eval is run for the release plugin root
 - **AND** Plugin Eval is run for the development plugin root
 - **AND** the final report calls out remaining warnings, if any, with concrete follow-up recommendations
+
+### Requirement: Stop hooks use Codex Stop schema
+
+DevFlow SHALL emit Stop hook JSON that conforms to the current Codex Stop hook
+schema.
+
+#### Scenario: Stop warning asks Codex to continue
+
+- **WHEN** a DevFlow Stop hook has model-visible guidance to return
+- **THEN** the hook output contains top-level `decision: "block"`
+- **AND** the hook output contains a non-empty top-level `reason`
+- **AND** the hook output does not contain `hookSpecificOutput`
+
+#### Scenario: Non-Stop warning keeps additional context shape
+
+- **WHEN** a non-Stop DevFlow hook has model-visible guidance to return
+- **THEN** the hook output uses `hookSpecificOutput.additionalContext`
+- **AND** the hook output names the matching hook event
+
+### Requirement: Stop gates avoid repeated acknowledged maintenance prompts
+
+DevFlow SHALL avoid repeatedly blocking Stop for the same acknowledged
+medium-risk maintenance condition.
+
+#### Scenario: Medium context-health report already acknowledged
+
+- **GIVEN** a context-health report has been written into workflow state
+- **AND** the current context-health signature still matches that report
+- **WHEN** the Stop context-health hook runs again
+- **THEN** the hook exits without emitting another Stop block prompt
+
+#### Scenario: Context-health risk changes after acknowledgement
+
+- **GIVEN** a context-health report has been written into workflow state
+- **AND** the current context-health signature no longer matches that report
+- **WHEN** the Stop context-health hook runs again
+- **THEN** the hook may emit a Stop block prompt requiring reconciliation
+
+### Requirement: Release promotion reports only real release changes
+
+DevFlow SHALL report release promotion as synced only when runtime files,
+managed outputs, or required managed outputs actually change.
+
+#### Scenario: Build command is idempotent
+
+- **GIVEN** release runtime files are current
+- **AND** a release build command rewrites no managed output content
+- **WHEN** release promotion runs
+- **THEN** the promotion status is `current`
+- **AND** no release validation prompt is emitted
+
+#### Scenario: Build command updates managed output
+
+- **GIVEN** a managed output is missing or content changes during a release
+  build command
+- **WHEN** release promotion runs
+- **THEN** the promotion status is `synced`
+- **AND** DevFlow asks for release validation and Plugin Eval before commit

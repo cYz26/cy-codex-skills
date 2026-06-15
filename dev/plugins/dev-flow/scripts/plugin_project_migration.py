@@ -8,6 +8,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from workflow_project_activation import managed_project_skills
+from workflow_project_skill_paths import official_project_skill_dir, scan_project_skill_layout
+
 
 RUNTIME_DIR = ".dev-flow/plugin-project-migration"
 
@@ -62,27 +65,43 @@ def apply_project_migrations(
     plugin = inspect_plugin(repo, plugin_root, adapter)
     conflicts = list(plugin["conflicts"])
     changes: list[dict[str, Any]] = []
+    manifest = read_json(plugin_root / ".codex-plugin" / "plugin.json")
+    plugin_name = str(adapter.get("plugin") or manifest.get("name") or plugin_root.name)
     for skill in adapter.get("projectLocalSkills", []):
-        source = plugin_root / "skills" / skill
-        target = repo / ".codex" / "skills" / skill
+        source = preferred_project_skill_source(repo, plugin_root, plugin_name, skill)
+        accepted_sources = project_skill_sources(repo, plugin_root, plugin_name, skill)
+        target = official_project_skill_dir(repo, skill)
         if not (source / "SKILL.md").exists():
             conflicts.append(conflict(skill, target, source, "missing-source"))
             continue
         if target.exists() and not target.is_symlink():
             conflicts.append(conflict(skill, target, source, "target-exists-not-symlink"))
             continue
-        if target.is_symlink() and target.resolve() == source.resolve():
+        if target.is_symlink() and target_matches_any_source(target, accepted_sources):
             continue
         if target.is_symlink():
             target.unlink()
         target.parent.mkdir(parents=True, exist_ok=True)
         target.symlink_to(source, target_is_directory=True)
-        changes.append({"kind": "project-local-skill", "skill": skill, "target": str(target), "source": str(source)})
+        changes.append(
+            {
+                "kind": "project-local-skill",
+                "skill": skill,
+                "target": str(target),
+                "source": str(source),
+                "pathKind": "official_repo_skill_path",
+            }
+        )
 
     plugin["conflicts"] = conflicts
     plugin["changes"] = changes
     plugin["staleProjectSkills"] = []
     plugin["missingProjectSkills"] = []
+    plugin["skillLayout"] = scan_project_skill_layout(
+        repo,
+        migration_skill_layout_scope(adapter),
+        script_path=Path(__file__).with_name("activate_project_dependencies.py"),
+    )
     if conflicts:
         status = "blocked"
         ok = False
@@ -106,7 +125,12 @@ def project_migration_sync_result(
     report = sync_project_migrations(repo, plugin_root, codex_home)
     plugin = report["plugins"][0] if report["plugins"] else {"name": "none"}
     status = report["status"].replace("_", "-")
-    if status == "migration-pending":
+    skill_layout = plugin.get("skillLayout", {}) if isinstance(plugin, dict) else {}
+    layout_status = skill_layout.get("status")
+    if layout_status in {"legacy_detected", "legacy_duplicate", "skill_layout_conflict"}:
+        command = " ".join(skill_layout.get("dryRunCommand", []))
+        detail = f"legacy skill layout {layout_status.replace('_', '-')}; run dry-run migration first: {command}"
+    elif status == "migration-pending":
         detail = f"project migration drift detected; run plugin-project-migration for {plugin['name']}"
     elif status == "not-applicable":
         detail = "plugin has no project migration adapter"
@@ -118,6 +142,8 @@ def project_migration_sync_result(
         "status": status,
         "detail": detail,
         "repo": str(normalize_path(repo)),
+        "skillLayoutStatus": layout_status,
+        "skillLayoutDryRunCommand": skill_layout.get("dryRunCommand"),
     }
 
 
@@ -137,10 +163,11 @@ def inspect_plugin(repo: Path, plugin_root: Path, adapter: dict[str, Any]) -> di
     missing: list[dict[str, Any]] = []
     conflicts: list[dict[str, Any]] = []
     for skill in adapter.get("projectLocalSkills", []):
-        source = plugin_root / "skills" / skill
-        target = repo / ".codex" / "skills" / skill
+        source = preferred_project_skill_source(repo, plugin_root, plugin_name, skill)
+        accepted_sources = project_skill_sources(repo, plugin_root, plugin_name, skill)
+        target = official_project_skill_dir(repo, skill)
         if target.is_symlink():
-            if target.resolve() != source.resolve():
+            if not target_matches_any_source(target, accepted_sources):
                 stale.append(skill_record(skill, target, source, "stale-link"))
         elif target.exists():
             conflicts.append(conflict(skill, target, source, "target-exists-not-symlink"))
@@ -157,8 +184,59 @@ def inspect_plugin(repo: Path, plugin_root: Path, adapter: dict[str, Any]) -> di
         "staleProjectSkills": stale,
         "missingProjectSkills": missing,
         "conflicts": conflicts,
+        "skillLayout": scan_project_skill_layout(
+            repo,
+            migration_skill_layout_scope(adapter),
+            script_path=Path(__file__).with_name("activate_project_dependencies.py"),
+        ),
         "changes": [],
     }
+
+
+def migration_skill_layout_scope(adapter: dict[str, Any]) -> list[str]:
+    return sorted({*adapter.get("projectLocalSkills", []), *managed_project_skills()})
+
+
+def preferred_project_skill_source(repo: Path, plugin_root: Path, plugin_name: str, skill: str) -> Path:
+    dev_root = source_repo_dev_plugin_root(repo, plugin_root, plugin_name)
+    if dev_root is not None:
+        dev_source = dev_root / "skills" / skill
+        if (dev_source / "SKILL.md").exists():
+            return dev_source
+    return plugin_root / "skills" / skill
+
+
+def project_skill_sources(repo: Path, plugin_root: Path, plugin_name: str, skill: str) -> list[Path]:
+    sources = [plugin_root / "skills" / skill]
+    dev_root = source_repo_dev_plugin_root(repo, plugin_root, plugin_name)
+    if dev_root is not None:
+        dev_source = dev_root / "skills" / skill
+        if (dev_source / "SKILL.md").exists():
+            sources.append(dev_source)
+    return sources
+
+
+def source_repo_dev_plugin_root(repo: Path, plugin_root: Path, plugin_name: str) -> Path | None:
+    release_root = (repo / "plugins" / plugin_name).resolve()
+    if plugin_root.resolve() != release_root:
+        return None
+    candidate = (repo / "dev" / "plugins" / plugin_name).resolve()
+    if candidate == release_root:
+        return None
+    candidate_manifest = candidate / ".codex-plugin" / "plugin.json"
+    candidate_adapter = candidate / ".codex-plugin" / "project-migration.json"
+    if not candidate_manifest.exists() or not candidate_adapter.exists():
+        return None
+    try:
+        candidate_name = str(read_json(candidate_manifest).get("name") or candidate.name)
+    except json.JSONDecodeError:
+        return None
+    return candidate if candidate_name == plugin_name else None
+
+
+def target_matches_any_source(target: Path, sources: list[Path]) -> bool:
+    resolved = target.resolve()
+    return any(resolved == source.resolve() for source in sources)
 
 
 def plugin_report_status(plugin: dict[str, Any]) -> str:
@@ -168,6 +246,7 @@ def plugin_report_status(plugin: dict[str, Any]) -> str:
         or plugin["staleProjectSkills"]
         or plugin["missingProjectSkills"]
         or plugin["conflicts"]
+        or plugin.get("skillLayout", {}).get("status") != "current"
     ):
         return "migration_pending"
     return "current"
@@ -299,12 +378,18 @@ def base_report(
         "codexHome": str(codex_home),
         "checkedAt": now_iso(),
         "plugins": plugins,
-        "recommendation": recommendation(status),
+        "recommendation": recommendation(status, plugins),
     }
 
 
-def recommendation(status: str) -> str:
+def recommendation(status: str, plugins: list[dict[str, Any]] | None = None) -> str:
     if status == "migration_pending":
+        for plugin in plugins or []:
+            layout = plugin.get("skillLayout", {})
+            if layout.get("status") in {"legacy_detected", "legacy_duplicate", "skill_layout_conflict"}:
+                return "Run the official skill-layout dry-run migration after reviewing the sync report: " + " ".join(
+                    layout.get("dryRunCommand", [])
+                )
         return "Run plugin-project-migration migrate after reviewing the sync report."
     if status == "blocked":
         return "Resolve conflicts, then rerun plugin-project-migration migrate."

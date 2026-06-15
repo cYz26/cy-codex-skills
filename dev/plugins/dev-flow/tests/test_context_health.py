@@ -17,6 +17,8 @@ from workflow_context_health import (
     read_context_health_events,
     record_context_health_event,
 )
+from context_health_hook import context_health_signature, should_prompt_context_health
+from workflow_state import parse_state
 
 
 def run_script(name, *args, input_text=None, cwd=PLUGIN_ROOT):
@@ -201,6 +203,101 @@ Continue fixture work.
             "review needs",
         ]:
             self.assertIn(phrase, report["subagents"]["prompt"])
+
+    def test_stop_hook_does_not_repeat_medium_prompt_for_acknowledged_report(self):
+        repo = self.make_repo()
+        (repo / ".planning" / "STATE.md").write_text(self.state_text(goal_summary="Previous goal"))
+        for _ in range(4):
+            record_context_health_event(
+                repo,
+                "pre_tool_use",
+                {
+                    "cwd": str(repo),
+                    "tool_name": "Read",
+                    "tool_input": {"file_path": str(repo / "AGENTS.md")},
+                },
+            )
+        first_report = context_health_check(
+            repo,
+            {
+                "current_objective": "Resolve repeated DevFlow Stop hook prompts",
+                "write_report": True,
+            },
+        )
+
+        self.assertEqual(first_report["risk"], "medium")
+        self.assertEqual(first_report["goal"]["status"], "stale")
+        self.assertFalse(should_prompt_context_health(repo, context_health_check(repo)))
+
+        (repo / "new_production_file.py").write_text("print('changed')\n")
+
+        self.assertTrue(should_prompt_context_health(repo, context_health_check(repo)))
+
+    def test_stop_hook_records_new_medium_report_without_feedback_when_acknowledged(self):
+        repo = self.make_repo()
+        for _ in range(4):
+            record_context_health_event(
+                repo,
+                "pre_tool_use",
+                {
+                    "cwd": str(repo),
+                    "tool_name": "Read",
+                    "tool_input": {"file_path": str(repo / "AGENTS.md")},
+                },
+            )
+
+        result = run_script(
+            "context_health_hook.py",
+            "--event",
+            "stop",
+            "--check",
+            input_text=json.dumps({"cwd": str(repo)}),
+            cwd=repo,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "")
+        state = parse_state(repo)
+        last_report = state["context_health"]["last_report"]
+        self.assertNotEqual(last_report, "none")
+        report = json.loads((repo / last_report).read_text())
+        self.assertEqual(report["risk"], "medium")
+        self.assertEqual(
+            context_health_signature(report),
+            context_health_signature(context_health_check(repo)),
+        )
+        self.assertIn("Fixture state.", state["body"])
+        self.assertIn("Continue fixture work.", state["body"])
+
+    def test_high_context_health_stop_hook_still_emits_block_feedback(self):
+        repo = self.make_repo()
+        (repo / ".planning" / "STATE.md").write_text(self.state_text(compact_status="pending"))
+
+        result = run_script(
+            "context_health_hook.py",
+            "--event",
+            "stop",
+            "--check",
+            input_text=json.dumps({"cwd": str(repo)}),
+            cwd=repo,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["decision"], "block")
+        self.assertIn("context health is high", payload["reason"])
+        self.assertNotIn("hookSpecificOutput", payload)
+
+    def test_medium_context_health_without_acknowledged_report_still_prompts(self):
+        repo = self.make_repo()
+        report = {
+            "risk": "medium",
+            "decision": "reconcile",
+            "signals": [{"id": "repeated_file_read", "severity": "medium"}],
+            "repo_truth": {"changed_files": ["AGENTS.md"]},
+        }
+
+        self.assertTrue(should_prompt_context_health(repo, report))
 
     def test_import_codex_sessions_is_best_effort_and_sanitized(self):
         repo = self.make_repo()

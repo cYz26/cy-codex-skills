@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "lastVerified": "2026-06-14",
+  "dependencies": [
+    {
+      "name": "openspec-cli",
+      "required": true,
+      "purpose": "OpenSpec proposal, spec, task, validation, and archive workflows.",
+      "expectedVersion": "1.4.1",
+      "binary": "openspec",
+      "versionCommand": ["openspec", "--version"],
+      "installCommand": ["npm", "install", "-g", "@fission-ai/openspec@1.4.1"],
+      "updateCommand": ["npm", "update", "-g", "@fission-ai/openspec"],
+      "smokeCommand": ["openspec", "--version"],
+      "source": "https://www.npmjs.com/package/@fission-ai/openspec",
+      "failureMode": "Missing, drifted, or failing OpenSpec blocks spec-driven DevFlow tasks.",
+      "fallbackOrBlocker": "Install the expected package or run the recorded updater in explicit apply mode."
+    },
+    {
+      "name": "gsd-core",
+      "required": true,
+      "purpose": "Project-local GSD runtime used by DevFlow planning, verification, and state commands.",
+      "expectedVersion": "1.4.5",
+      "binaryPath": "{repo}/.codex/gsd-core/bin/gsd-tools.cjs",
+      "versionFile": "{repo}/.codex/gsd-core/VERSION",
+      "installCommand": ["npx", "-y", "@opengsd/gsd-core@latest", "--codex", "--local", "--profile=standard"],
+      "updateCommand": ["npx", "-y", "@opengsd/gsd-core@latest", "--codex", "--local", "--profile=standard"],
+      "smokeCommand": ["{binaryPath}", "current-timestamp"],
+      "source": "https://www.npmjs.com/package/@opengsd/gsd-core",
+      "failureMode": "Missing, drifted, or failing GSD Core blocks project-local planning and verification automation.",
+      "fallbackOrBlocker": "Run the recorded project-local installer in explicit apply mode for the target repo."
+    }
+  ]
+}

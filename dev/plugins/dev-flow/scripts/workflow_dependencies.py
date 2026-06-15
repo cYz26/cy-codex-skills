@@ -7,6 +7,7 @@ from typing import Any
 
 from workflow_context_config import read_config
 from workflow_dependency_checks import check_external_dependencies
+from workflow_dependency_provenance import dependency_provenance_report
 from workflow_paths import repo_path
 
 
@@ -29,6 +30,8 @@ def dependency_report(
     add_check(checks, "codex cli available", codex_cli is not None, True, codex_cli if codex_cli else "missing")
     add_check(checks, "plugin root", (plugin_root / ".codex-plugin" / "plugin.json").exists(), True, str(plugin_root))
     check_external_dependencies(checks, codex_home, config, strict, repo)
+    provenance = dependency_provenance_report(plugin_root, repo)
+    checks.extend(provenance["checks"])
     required_ok = all(item["ok"] for item in checks if item["required"])
     recommended_ok = all(item["ok"] for item in checks)
     return {
@@ -38,6 +41,8 @@ def dependency_report(
         "config": str(config_path),
         "repo": str(repo) if repo else None,
         "project_config": str(project_config_path) if project_config_path else None,
+        "provenance": provenance["provenance"],
+        "dependencies": provenance["dependencies"],
         "checks": checks,
     }
 

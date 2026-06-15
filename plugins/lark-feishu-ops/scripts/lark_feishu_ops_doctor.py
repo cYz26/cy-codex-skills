@@ -171,15 +171,9 @@ def load_skill_lock_sources() -> dict[str, str]:
 
 def is_official_lark_skill(item: dict[str, Any], sources: dict[str, str]) -> bool:
     name = item.get("name")
-    path = item.get("path")
     if not isinstance(name, str) or not name.startswith("lark-"):
         return False
-    if sources.get(name) == "larksuite/cli":
-        return True
-    if isinstance(path, str):
-        expected_prefix = str(GLOBAL_SKILLS_DIR / "lark-")
-        return path.startswith(expected_prefix)
-    return False
+    return sources.get(name) == "larksuite/cli"
 
 
 def normalize_agents(value: Any) -> set[str]:
@@ -334,6 +328,27 @@ def check_lark_cli(
         )
         return check
 
+    run_lark_cli_version_check(check)
+    run_lark_cli_doctor_check(check, offline=offline)
+    run_lark_cli_auth_status_check(check)
+    run_lark_cli_update_check(
+        check,
+        skip_update_check=skip_update_check,
+        offline=offline,
+        update_check_policy=update_check_policy,
+        force_update_check=force_update_check,
+        cache_path=cache_path,
+    )
+
+    return check
+
+
+def warn_lark_cli_check(check: dict[str, Any], recommendation: str) -> None:
+    check["status"] = "WARN" if check["status"] == "PASS" else check["status"]
+    check["recommendations"].append(recommendation)
+
+
+def run_lark_cli_version_check(check: dict[str, Any]) -> None:
     version_result = run_command(["lark-cli", "--version"], timeout=15)
     check["version_check"] = compact_result(version_result)
     if version_result["ok"]:
@@ -341,77 +356,114 @@ def check_lark_cli(
     else:
         check["status"] = "FAIL"
 
+
+def run_lark_cli_doctor_check(check: dict[str, Any], *, offline: bool) -> None:
     doctor_command = ["lark-cli", "doctor"]
     if offline:
         doctor_command.append("--offline")
     doctor_result = run_command(doctor_command, timeout=30)
     check["doctor"] = compact_result(doctor_result)
     if not doctor_result["ok"]:
-        check["status"] = "WARN" if check["status"] == "PASS" else check["status"]
-        check["recommendations"].append(
-            "Run `lark-cli doctor` and repair local config/auth issues before platform writes."
+        warn_lark_cli_check(
+            check,
+            "Run `lark-cli doctor` and repair local config/auth issues before platform writes.",
         )
 
+
+def run_lark_cli_auth_status_check(check: dict[str, Any]) -> None:
     auth_result = run_command(["lark-cli", "auth", "status"], timeout=20)
     check["auth_status"] = compact_result(auth_result)
     if not auth_result["ok"]:
-        check["status"] = "WARN" if check["status"] == "PASS" else check["status"]
-        check["recommendations"].append(
-            "Run `lark-cli auth status` and complete login/scope setup before protected operations."
+        warn_lark_cli_check(
+            check,
+            "Run `lark-cli auth status` and complete login/scope setup before protected operations.",
         )
 
+
+def run_lark_cli_update_check(
+    check: dict[str, Any],
+    *,
+    skip_update_check: bool,
+    offline: bool,
+    update_check_policy: str,
+    force_update_check: bool,
+    cache_path: Path | str | None,
+) -> None:
     if skip_update_check or offline or update_check_policy == "never":
-        check["update_check"] = {
-            "skipped": True,
-            "reason": "offline, skip_update_check, or never policy requested",
-            "policy": update_check_policy,
-        }
-        check["recommendations"].append(
-            "Keep lark-cli updated; run `lark-cli update --check --json` periodically."
-        )
+        record_skipped_update_check(check, update_check_policy)
+        return
+
+    cached = None if force_update_check or update_check_policy == "always" else current_update_cache(cache_path)
+    if cached is not None:
+        update_payload = cached["payload"]
+        check["update_check"] = cached_update_check_report(cached, update_check_policy, cache_path)
     else:
-        cached = None if force_update_check or update_check_policy == "always" else current_update_cache(cache_path)
-        if cached is not None:
-            update_payload = cached["payload"]
-            check["update_check"] = {
-                "cached": True,
-                "policy": update_check_policy,
-                "cache_path": str(Path(cache_path).expanduser() if cache_path else default_update_cache_path()),
-                "ok": True,
-                "exit_code": 0,
-                "payload": update_payload,
-                "stderr": "",
-            }
-        else:
-            update_result = run_command(["lark-cli", "update", "--check", "--json"], timeout=45)
-            update_payload = parse_json_output(update_result)
-            check["update_check"] = {
-                "command": update_result["command"],
-                "cached": False,
-                "policy": update_check_policy,
-                "ok": update_result["ok"],
-                "exit_code": update_result["exit_code"],
-                "payload": update_payload,
-                "stderr": update_result["stderr"],
-            }
-            if update_result["ok"] and isinstance(update_payload, dict):
-                check["update_check"]["cache"] = write_update_check_cache(update_payload, cache_path)
+        update_payload = run_fresh_update_check(check, update_check_policy, cache_path)
+        if update_payload is None:
+            return
 
-            if not update_result["ok"]:
-                check["status"] = "WARN" if check["status"] == "PASS" else check["status"]
-                check["recommendations"].append(
-                    "Could not complete update check; retry `lark-cli update --check --json` later."
-                )
-                return check
+    if update_payload_requires_confirmation(update_payload):
+        warn_lark_cli_check(
+            check,
+            "Run `lark-cli update` only after explicit confirmation; it is a high-risk-write command.",
+        )
+        check["update_action"] = build_update_action(update_payload)
 
-        if update_payload_requires_confirmation(update_payload):
-            check["status"] = "WARN" if check["status"] == "PASS" else check["status"]
-            check["update_action"] = build_update_action(update_payload)
-            check["recommendations"].append(
-                "Run `lark-cli update` only after explicit confirmation; it is a high-risk-write command."
-            )
 
-    return check
+def record_skipped_update_check(check: dict[str, Any], update_check_policy: str) -> None:
+    check["update_check"] = {
+        "skipped": True,
+        "reason": "offline, skip_update_check, or never policy requested",
+        "policy": update_check_policy,
+    }
+    check["recommendations"].append(
+        "Keep lark-cli updated; run `lark-cli update --check --json` periodically."
+    )
+
+
+def cached_update_check_report(
+    cached: dict[str, Any],
+    update_check_policy: str,
+    cache_path: Path | str | None,
+) -> dict[str, Any]:
+    return {
+        "cached": True,
+        "policy": update_check_policy,
+        "cache_path": str(Path(cache_path).expanduser() if cache_path else default_update_cache_path()),
+        "ok": True,
+        "exit_code": 0,
+        "payload": cached["payload"],
+        "stderr": "",
+    }
+
+
+def run_fresh_update_check(
+    check: dict[str, Any],
+    update_check_policy: str,
+    cache_path: Path | str | None,
+) -> Any | None:
+    update_result = run_command(["lark-cli", "update", "--check", "--json"], timeout=45)
+    update_payload = parse_json_output(update_result)
+    check["update_check"] = {
+        "command": update_result["command"],
+        "cached": False,
+        "policy": update_check_policy,
+        "ok": update_result["ok"],
+        "exit_code": update_result["exit_code"],
+        "payload": update_payload,
+        "stderr": update_result["stderr"],
+    }
+    if update_result["ok"] and isinstance(update_payload, dict):
+        check["update_check"]["cache"] = write_update_check_cache(update_payload, cache_path)
+
+    if update_result["ok"]:
+        return update_payload
+
+    warn_lark_cli_check(
+        check,
+        "Could not complete update check; retry `lark-cli update --check --json` later.",
+    )
+    return None
 
 
 def compact_result(result: dict[str, Any], *, max_output: int = 1200) -> dict[str, Any]:

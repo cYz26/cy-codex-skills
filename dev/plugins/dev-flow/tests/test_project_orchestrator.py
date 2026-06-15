@@ -207,6 +207,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
             sys.path.remove(str(scripts))
 
         self.assertIn("capability-research", PROJECT_ORCHESTRATOR_SKILLS)
+        self.assertIn("ai-native-tech-plan", PROJECT_ORCHESTRATOR_SKILLS)
         self.assertIn("claude-code-delegate", PROJECT_ORCHESTRATOR_SKILLS)
 
     def test_devflow_no_longer_owns_agent_kb_hooks_or_core_behavior(self):

@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from workflow_context_config import disabled_skill_paths
+from workflow_project_skill_paths import OFFICIAL_PROJECT_SKILL_PATH_KIND, OFFICIAL_PROJECT_SKILL_ROOT
 
 
 def global_skills(codex_home: Path, config: dict[str, Any]) -> list[dict[str, Any]]:
@@ -24,10 +25,13 @@ def global_skills(codex_home: Path, config: dict[str, Any]) -> list[dict[str, An
 def project_skills(repo: Path | None) -> list[dict[str, Any]]:
     if repo is None:
         return []
-    skills_root = repo / ".codex" / "skills"
+    skills_root = repo / OFFICIAL_PROJECT_SKILL_ROOT
     if not skills_root.exists():
         return []
-    return [{"name": path.parent.name, "path": str(path)} for path in sorted(skills_root.glob("*/SKILL.md"))]
+    return [
+        {"name": path.parent.name, "path": str(path), "pathKind": OFFICIAL_PROJECT_SKILL_PATH_KIND}
+        for path in sorted(skills_root.glob("*/SKILL.md"))
+    ]
 
 
 def installed_cache_skills(codex_home: Path) -> list[dict[str, Any]]:

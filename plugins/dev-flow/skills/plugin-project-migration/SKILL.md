@@ -12,8 +12,8 @@ plugins or skills update.
 
 Hooks and updater integration run sync-only checks. They may report pending
 migrations, stale project-local skill links, or missing migration state, but
-they do not edit `AGENTS.md`, `.codex/skills`, `openspec/`, `.planning/`, or
-project scripts.
+they do not edit `AGENTS.md`, `.agents/skills`, legacy `.codex/skills`,
+`openspec/`, `.planning/`, or project scripts.
 
 Project mutation requires explicit user intent to migrate/apply.
 

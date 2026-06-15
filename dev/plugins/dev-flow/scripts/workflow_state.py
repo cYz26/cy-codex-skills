@@ -153,8 +153,18 @@ def merged_state_values(existing: dict[str, Any], overrides: dict[str, Any]) -> 
     values["current_stage"] = str(overrides.get("current_stage", existing.get("current_stage", "planning")))
     values["phase_id"] = str(overrides.get("phase_id", phase.get("id", "01-foundation")))
     values["plan_written"] = bool(overrides.get("plan_written", gates.get("plan_written", True)))
-    values["status_text"] = str(overrides.get("status_text", "Workflow state updated."))
-    values["next_action"] = str(overrides.get("next_action", "Continue with the active planned task."))
+    values["status_text"] = str(
+        overrides.get(
+            "status_text",
+            state_body_section(existing, "Current Status") or "Workflow state updated.",
+        )
+    )
+    values["next_action"] = str(
+        overrides.get(
+            "next_action",
+            state_body_section(existing, "Next Action") or "Continue with the active planned task.",
+        )
+    )
     context = existing.get("context_management", {})
     values["last_checkpoint_id"] = str(overrides.get("last_checkpoint_id", context.get("last_checkpoint_id", "none")))
     values["last_checkpoint_file"] = str(
@@ -205,3 +215,13 @@ def merged_gates(gates: dict[str, Any], overrides: dict[str, Any]) -> dict[str, 
         "archive_allowed": False,
     }
     return {key: overrides.get(key, gates.get(key, fallback)) for key, fallback in defaults.items()}
+
+
+def state_body_section(existing: dict[str, Any], heading: str) -> str:
+    body = str(existing.get("body", ""))
+    match = re.search(
+        rf"^## {re.escape(heading)}\s*\n+(.*?)(?=\n## |\Z)",
+        body,
+        flags=re.MULTILINE | re.DOTALL,
+    )
+    return match.group(1).strip() if match else ""

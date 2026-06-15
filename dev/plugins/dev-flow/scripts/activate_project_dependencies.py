@@ -23,6 +23,16 @@ def main() -> int:
         action="store_true",
         help="Refresh project-local symlinks that point at an older provider skill source.",
     )
+    parser.add_argument(
+        "--migrate-official-skill-layout",
+        action="store_true",
+        help="Plan or apply migration from legacy .codex/skills to official .agents/skills.",
+    )
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Apply --migrate-official-skill-layout changes. Without this flag, migration runs as a dry-run.",
+    )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
     report = activate_project_dependencies(
@@ -32,6 +42,8 @@ def main() -> int:
         args.plugin_root,
         args.codex_home,
         args.refresh_project_skills,
+        args.migrate_official_skill_layout,
+        args.apply,
     )
     if args.json:
         print(json.dumps(report, indent=2))

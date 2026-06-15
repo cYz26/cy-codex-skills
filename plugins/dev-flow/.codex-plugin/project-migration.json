@@ -3,6 +3,7 @@
   "plugin": "dev-flow",
   "stateKey": "dev-flow",
   "projectLocalSkills": [
+    "ai-native-tech-plan",
     "capability-research",
     "claude-code-delegate",
     "project-orchestrator",
@@ -13,7 +14,9 @@
     "verify-and-archive",
     "workflow-doctor",
     "checkpoint-compact",
+    "context-health-check",
     "context-tool-audit",
+    "codex-updater",
     "plugin-project-migration"
   ],
   "managedFiles": []

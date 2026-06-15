@@ -60,4 +60,4 @@ Use `--all-safe` only after showing the user the selected safe actions.
 - Default to read-only reports and dry-runs.
 - Do not apply cleanup/install actions without explicit user authorization.
 - Cleanup disables global config entries or global skill activation; it does not delete plugin caches or skill files.
-- Installation copies known cached skills into `<repo>/.codex/skills/`.
+- Installation copies known cached skills into `<repo>/.agents/skills/`.

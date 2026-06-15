@@ -17,6 +17,14 @@ class LarkFeishuAgentContextTests(unittest.TestCase):
     def make_repo(self):
         return Path(tempfile.mkdtemp(prefix="lark-agent-context-test-"))
 
+    def make_skill_root(self, *skill_names):
+        root = Path(tempfile.mkdtemp(prefix="lark-agent-context-skills-"))
+        for skill_name in skill_names:
+            skill_dir = root / skill_name
+            skill_dir.mkdir(parents=True)
+            (skill_dir / "SKILL.md").write_text(f"# {skill_name}\n", encoding="utf-8")
+        return root
+
     def make_request(self, *, action="docs.fetch", identity="user", profile="default", hints=None):
         dispatch_hints = {
             "identity": identity,
@@ -107,6 +115,95 @@ class LarkFeishuAgentContextTests(unittest.TestCase):
         self.assertIn("doc-123", normalized["resource_refs"])
         self.assertIn("docs", normalized["affinity_key"])
         self.assertIn("doc-123", normalized["affinity_key"])
+
+    def test_resolve_guidance_sources_prefers_available_official_domain_skill(self):
+        skill_root = self.make_skill_root("lark-doc")
+
+        sources = agent_context.resolve_guidance_sources(
+            "docs.fetch",
+            {"dispatch_hints": {}},
+            skill_roots=[skill_root],
+        )
+
+        doc_source = next(source for source in sources if source["name"] == "lark-doc")
+        self.assertEqual("docs", doc_source["domain"])
+        self.assertEqual("skill", doc_source["source_type"])
+        self.assertEqual("available", doc_source["status"])
+        self.assertEqual(str((skill_root / "lark-doc" / "SKILL.md").resolve()), doc_source["path"])
+        self.assertTrue(
+            any(
+                source["source_type"] == "cli_help"
+                and source["domain"] == "docs"
+                and source["command"] == ["lark-cli", "docs", "--help"]
+                for source in sources
+            )
+        )
+
+    def test_resolve_guidance_sources_falls_back_when_official_skill_is_missing(self):
+        sources = agent_context.resolve_guidance_sources("base.query", {"dispatch_hints": {}}, skill_roots=[])
+
+        base_source = next(source for source in sources if source["name"] == "lark-base")
+        self.assertEqual("base", base_source["domain"])
+        self.assertEqual("skill", base_source["source_type"])
+        self.assertEqual("missing", base_source["status"])
+        self.assertNotIn("path", base_source)
+        self.assertTrue(
+            any(
+                source["source_type"] == "cli_help"
+                and source["domain"] == "base"
+                and source["command"] == ["lark-cli", "base", "--help"]
+                for source in sources
+            )
+        )
+
+    def test_normalize_request_adds_cross_domain_guidance_sources_for_expansion(self):
+        normalized = agent_context.normalize_delegation_request(
+            self.make_request(hints={"expand_resources": ["sheets"]})
+        )
+
+        guidance_domains = {source["domain"] for source in normalized["guidance_sources"]}
+        self.assertIn("docs", guidance_domains)
+        self.assertIn("sheets", guidance_domains)
+        self.assertTrue(
+            any(
+                source["source_type"] == "cli_help"
+                and source["domain"] == "sheets"
+                and source["command"] == ["lark-cli", "sheets", "--help"]
+                for source in normalized["guidance_sources"]
+            )
+        )
+
+    def test_normalize_agent_result_preserves_guidance_sources(self):
+        result = self.make_result()
+        result["guidance_sources"] = [
+            {
+                "source_type": "skill",
+                "domain": "docs",
+                "name": "lark-doc",
+                "status": "available",
+                "path": "/tmp/lark-doc/SKILL.md",
+            }
+        ]
+
+        normalized = agent_context.normalize_agent_result(result)
+
+        self.assertEqual(result["guidance_sources"], normalized["guidance_sources"])
+
+    def test_snapshot_write_records_guidance_sources(self):
+        repo = self.make_repo()
+        request = agent_context.normalize_delegation_request(self.make_request())
+        result = self.make_result()
+        result["guidance_sources"] = request["guidance_sources"]
+
+        snapshot = agent_context.write_context_snapshot(
+            repo,
+            request,
+            result,
+            agent_id="agent-doc",
+            now=datetime(2026, 6, 1, 9, 0, tzinfo=timezone.utc),
+        )
+
+        self.assertEqual(request["guidance_sources"], snapshot["snapshot"]["guidance_sources"])
 
     def test_snapshot_write_redacts_sensitive_and_large_values(self):
         repo = self.make_repo()
@@ -215,6 +312,8 @@ class LarkFeishuAgentContextTests(unittest.TestCase):
 
         self.assertEqual("fresh_subagent", report["dispatch"]["decision"])
         self.assertIn("stale", " ".join(report["dispatch"]["rejected_candidates"]))
+        self.assertIn("guidance_sources", report["dispatch"])
+        self.assertIn("docs", {source["domain"] for source in report["dispatch"]["guidance_sources"]})
 
     def test_identity_mismatch_recommends_clean_path(self):
         repo = self.make_repo()

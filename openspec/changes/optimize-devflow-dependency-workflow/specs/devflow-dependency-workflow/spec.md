@@ -28,6 +28,11 @@ DevFlow dependency checks SHALL require every GSD skill that DevFlow routing ins
 - **THEN** it checks that `.codex/skills/gsd-progress/SKILL.md` exists
 - **AND** missing `gsd-progress` is reported as a required dependency failure
 
+#### Scenario: Project-local GSD Core runtime is validated
+- **WHEN** dependency validation runs for a project using DevFlow
+- **THEN** it checks that `.codex/gsd-core/bin/gsd-tools.cjs` exists
+- **AND** it does not require the legacy `gsd-sdk` executable
+
 ### Requirement: Project-local skill activation can refresh stale provider symlinks
 
 DevFlow project activation SHALL detect project-local skill symlinks that point to an older provider source and SHALL refresh them only when explicitly requested.
@@ -52,6 +57,12 @@ DevFlow update tooling SHALL be able to report installed and latest GSD/OpenSpec
 - **WHEN** the update script runs without `--apply`
 - **THEN** it reports the installed and latest known GSD and OpenSpec versions when available
 - **AND** it does not execute `npx get-shit-done-cc@latest`, `npm update -g @fission-ai/openspec`, or equivalent mutating update commands
+
+#### Scenario: GSD checks use OpenGSD Core
+- **WHEN** the update script runs for a DevFlow project with `.codex/gsd-core/VERSION`
+- **THEN** it reports the GSD package state using `@opengsd/gsd-core`
+- **AND** apply mode uses `npx -y @opengsd/gsd-core@latest --codex --local --profile=standard`
+- **AND** it does not reference `get-shit-done-cc` or `gsd-sdk`
 
 ### Requirement: Context audit instructions are portable
 

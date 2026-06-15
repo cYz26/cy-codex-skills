@@ -15,7 +15,7 @@ Do not implement non-trivial changes directly from chat memory.
 
 ## GSD/OpenSpec Skills
 
-GSD and OpenSpec are activated project-locally through `.codex/skills/`; do not enable them globally for this workflow.
+GSD and OpenSpec are activated project-locally through `.agents/skills/`; do not enable them globally for this workflow. Legacy `.codex/skills/` entries should be treated as migration inputs, not as the normal target layout.
 
 - Use `openspec-explore` when requirements, compatibility, or behavior boundaries are unclear.
 - Use `openspec-propose` before implementing user-visible behavior, public API, data model, permission, persistence, integration, migration, error handling, or compatibility changes.
@@ -113,7 +113,7 @@ Create or update `openspec/changes/<change-id>/` before implementation if work c
 
 ## Superpowers Discipline
 
-Superpowers is activated project-locally through `.codex/skills/`; do not enable it globally for this workflow.
+Superpowers is activated project-locally through `.agents/skills/`; do not enable it globally for this workflow. Legacy `.codex/skills/` entries should be scanned and migrated through DevFlow rather than edited manually.
 
 - Before structured ideation or solution exploration, use `superpowers:brainstorming`.
 - Before writing or committing to a non-trivial plan, use `superpowers:writing-plans`.

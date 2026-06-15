@@ -73,6 +73,42 @@ and send related follow-up requests to it. This preserves recent IDs, revisions,
 cursors, time windows, and command choices. If the subagent has already been closed, start a new one
 and include the previous evidence pack or resource refs explicitly in the new request.
 
+## Dynamic Domain Guidance
+
+The parent-side agent-context helper resolves the compact request action into small
+`guidance_sources` metadata before FeishuOps is spawned. For example, `docs.fetch` maps to the
+`docs` domain, `base.query` maps to `base`, and a document request with
+`dispatch_hints.expand_resources: ["sheets"]` maps to both `docs` and `sheets`.
+
+Each domain source records whether the matching official `lark-*` skill file is available for
+request-local injection:
+
+```json
+[
+  {
+    "source_type": "skill",
+    "domain": "docs",
+    "name": "lark-doc",
+    "status": "available",
+    "path": "/Users/example/.codex/skills/lark-doc/SKILL.md",
+    "inject_as": "skill_file"
+  },
+  {
+    "source_type": "cli_help",
+    "domain": "docs",
+    "name": "lark-cli docs --help",
+    "status": "fallback",
+    "command": ["lark-cli", "docs", "--help"]
+  }
+]
+```
+
+This is not global skill activation. Missing official skills are recorded as `missing`, then paired
+with focused `lark-cli <domain> --help`, `lark-cli schema`, or `lark-cli api` fallback guidance.
+Unsupported domains return a blocker unless the parent explicitly authorizes raw OpenAPI. FeishuOps
+must report the `guidance_sources` it used so verification can distinguish real skill guidance from
+CLI fallback.
+
 ## Agent Continuity Helper
 
 The plugin includes a parent-side helper for the continuity contract:

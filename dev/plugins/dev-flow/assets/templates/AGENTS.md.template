@@ -25,7 +25,7 @@ Superpowers provides process discipline for brainstorming, planning, TDD, and ve
 
 ## GSD/OpenSpec Skills
 
-GSD and OpenSpec are activated project-locally through `.codex/skills/`; do not enable them globally for this workflow.
+GSD and OpenSpec are activated project-locally through `.agents/skills/`; do not enable them globally for this workflow. Legacy `.codex/skills/` entries should be treated as migration inputs, not as the normal target layout.
 
 - Use `openspec-explore` when requirements, compatibility, or behavior boundaries are unclear.
 - Use `openspec-propose` before implementing user-visible behavior, public API, data model, permission, persistence, integration, migration, error handling, or compatibility changes.
@@ -122,9 +122,29 @@ Project mode: {{project_mode}}
 
 Create or update `openspec/changes/<change-id>/` before implementation if work changes user-visible behavior, public APIs, data models, permissions, persistence, integrations, migrations, error handling, or compatibility behavior.
 
+## Workflow Mode Routing
+
+DevFlow routes work before execution:
+
+- `Full OpenSpec` is mandatory for user-visible behavior, public API, data model,
+  persistence, migration, integration, permission, error-handling, or
+  compatibility changes. `.dev-flow.json` configuration cannot bypass this gate.
+- `Lightweight Ledger` may be used only when `.dev-flow.json` enables it and the
+  work is docs-only, test-only, internal maintenance, or a low-risk bugfix. The
+  ledger must include Target State, Scope / Non-Goals, Validation Commands,
+  Execution Log, and Completion Claim.
+- `Prototype Mode` requires an explicit user request for a spike, prototype,
+  proof of concept, or demo. Record non-production status and cleanup or
+  promotion criteria before relying on the output.
+
+DevFlow hooks support `off`, `warn`, and `block` modes through `.dev-flow.json`.
+When hooks warn or block, diagnostics should preserve the Codex hook schema and
+include current stage, failed gates, next action, and recommended skill or
+command.
+
 ## Superpowers Discipline
 
-Superpowers is activated project-locally through `.codex/skills/`; do not enable it globally for this workflow.
+Superpowers is activated project-locally through `.agents/skills/`; do not enable it globally for this workflow. Legacy `.codex/skills/` entries should be scanned and migrated through DevFlow rather than edited manually.
 
 - Before structured ideation or solution exploration, use `superpowers:brainstorming`.
 - Before writing or committing to a non-trivial plan, use `superpowers:writing-plans`.

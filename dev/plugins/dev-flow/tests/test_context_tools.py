@@ -48,7 +48,7 @@ class ContextToolAuditTests(unittest.TestCase):
     def make_react_repo(self):
         repo = Path(tempfile.mkdtemp(prefix="cpo-context-repo-"))
         (repo / "package.json").write_text('{"dependencies":{"react":"latest","vite":"latest"}}\n')
-        self.write_skill(repo / ".codex" / "skills" / "project-orchestrator" / "SKILL.md")
+        self.write_skill(repo / ".agents" / "skills" / "project-orchestrator" / "SKILL.md")
         return repo
 
     def write_skill(self, path, name=None):
@@ -105,7 +105,7 @@ class ContextToolAuditTests(unittest.TestCase):
         self.assertTrue(result["ok"], result)
         self.assertTrue(result["dryRun"])
         self.assertEqual(before_config, (codex_home / "config.toml").read_text())
-        self.assertFalse((repo / ".codex" / "skills" / "react-best-practices" / "SKILL.md").exists())
+        self.assertFalse((repo / ".agents" / "skills" / "react-best-practices" / "SKILL.md").exists())
 
     def test_apply_actions_requires_selected_actions_and_writes_backup(self):
         codex_home = self.make_codex_home()
@@ -130,7 +130,7 @@ class ContextToolAuditTests(unittest.TestCase):
         self.assertIn('[plugins."unused-plugin@local"]', config_text)
         self.assertIn("enabled = true", config_text)
         self.assertTrue((codex_home / "config.toml.bak-20260518-120000").exists())
-        self.assertTrue((repo / ".codex" / "skills" / "react-best-practices" / "SKILL.md").exists())
+        self.assertTrue((repo / ".agents" / "skills" / "react-best-practices" / "SKILL.md").exists())
 
     def test_audit_recommends_relevant_source_catalog_tools(self):
         codex_home = self.make_codex_home()

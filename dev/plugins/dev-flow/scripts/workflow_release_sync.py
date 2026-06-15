@@ -70,11 +70,14 @@ class ReleaseAsset:
 def sync_release_assets(repo: Path, apply: bool = False) -> dict[str, Any]:
     repo = repo.resolve()
     assets = [sync_asset(repo, asset, apply=apply) for asset in discover_assets(repo)]
-    active = [asset for asset in assets if asset["changedFiles"] or asset["missingOutputs"]]
-    built = [asset for asset in assets if asset["buildCommands"] and apply]
+    active = [
+        asset
+        for asset in assets
+        if asset["changedFiles"] or asset["missingOutputs"] or asset["changedOutputs"]
+    ]
     if not assets:
         status = "not_applicable"
-    elif apply and (active or built):
+    elif apply and active:
         status = "synced"
     elif active:
         status = "pending"
@@ -166,19 +169,23 @@ def sync_asset(repo: Path, asset: ReleaseAsset, apply: bool) -> dict[str, Any]:
     runtime_files = list_runtime_files(asset)
     changed = changed_files(asset, runtime_files)
     missing_outputs = missing_managed_outputs(asset)
+    output_fingerprints = managed_output_fingerprints(asset) if apply else {}
     commands = [list(command) for command in asset.build_commands]
     if apply:
         copy_runtime_files(asset, runtime_files)
         command_results = run_build_commands(repo, commands)
+        changed_outputs = changed_managed_outputs(asset, output_fingerprints)
         missing_outputs = missing_managed_outputs(asset)
     else:
         command_results = []
+        changed_outputs = []
     return {
         "kind": asset.kind,
         "name": asset.name,
         "source": str(asset.source),
         "release": str(asset.release),
         "changedFiles": changed,
+        "changedOutputs": changed_outputs,
         "missingOutputs": missing_outputs,
         "buildCommands": commands,
         "commandResults": command_results,
@@ -232,6 +239,25 @@ def run_build_commands(repo: Path, commands: list[list[str]]) -> list[dict[str, 
 
 def missing_managed_outputs(asset: ReleaseAsset) -> list[str]:
     return [output for output in asset.managed_outputs if not (asset.release / output).exists()]
+
+
+def managed_output_fingerprints(asset: ReleaseAsset) -> dict[str, bytes | None]:
+    fingerprints: dict[str, bytes | None] = {}
+    for output in asset.managed_outputs:
+        path = asset.release / output
+        fingerprints[output] = path.read_bytes() if path.exists() else None
+    return fingerprints
+
+
+def changed_managed_outputs(asset: ReleaseAsset, before: dict[str, bytes | None]) -> list[str]:
+    changed = []
+    for output in asset.managed_outputs:
+        path = asset.release / output
+        previous = before.get(output)
+        current = path.read_bytes() if path.exists() else None
+        if current != previous:
+            changed.append(output)
+    return changed
 
 
 def eval_targets(repo: Path) -> list[dict[str, Any]]:

@@ -15,6 +15,7 @@ from typing import Any
 from workflow_context_config import read_config as read_toml_config
 from plugin_project_migration import project_migration_sync_result
 from workflow_constants import resolve_plugin_root
+from workflow_dependency_provenance import dependency_provenance_fields
 
 
 def parse_args() -> argparse.Namespace:
@@ -119,8 +120,25 @@ def read_first_existing(paths: list[Path]) -> str | None:
     return None
 
 
-def installed_gsd_version(codex_home: Path) -> str | None:
-    return read_first_existing([codex_home / "get-shit-done" / "VERSION"])
+def installed_gsd_core_version(codex_home: Path, repo: Path | None = None) -> str | None:
+    paths: list[Path] = []
+    if repo is not None:
+        paths.append(repo / ".codex" / "gsd-core" / "VERSION")
+    paths.append(codex_home / "gsd-core" / "VERSION")
+    return read_first_existing(paths)
+
+
+def has_gsd_core(codex_home: Path, repo: Path | None = None) -> bool:
+    if installed_gsd_core_version(codex_home, repo):
+        return True
+    if repo is not None and (repo / ".codex" / "skills" / "gsd-update" / "SKILL.md").exists():
+        return True
+    return (codex_home / "gsd-core" / "VERSION").exists()
+
+
+def gsd_core_update_command(repo: Path | None) -> list[str]:
+    scope = "--local" if repo is not None else "--global"
+    return ["npx", "-y", "@opengsd/gsd-core@latest", "--codex", scope, "--profile=standard"]
 
 
 def installed_openspec_version(codex_home: Path) -> str | None:
@@ -525,7 +543,7 @@ def migration_sync_repo(value: str | None) -> Path | None:
     return None
 
 
-def run_external_updaters(codex_home: Path, apply: bool) -> list[dict[str, Any]]:
+def run_external_updaters(codex_home: Path, apply: bool, repo: Path | None = None) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
 
     has_lark_skills = (Path.home() / ".agents" / "skills" / "lark-shared" / "SKILL.md").exists()
@@ -547,32 +565,28 @@ def run_external_updaters(codex_home: Path, apply: bool) -> list[dict[str, Any]]
         else:
             results.append(item("external-updater", "lark-cli-and-skills", "skipped", "npm or npx not available"))
 
-    has_gsd = (
-        (codex_home / "get-shit-done" / "VERSION").exists()
-        or (codex_home / "skills" / "gsd-update" / "SKILL.md").exists()
-    )
-    if has_gsd:
+    if has_gsd_core(codex_home, repo):
+        command = gsd_core_update_command(repo)
+        scope_detail = " ".join(command)
+        provenance = dependency_provenance_fields("gsd-core", command_name="updateCommand")
         if not apply:
-            current = installed_gsd_version(codex_home)
-            latest = npm_latest_version("get-shit-done-cc")
-            results.append(
-                version_check_item(
-                    "external-updater",
-                    "gsd-codex",
-                    current,
-                    latest,
-                    "read-only check; apply would run npx get-shit-done-cc@latest --codex --global --profile=standard",
-                )
+            current = installed_gsd_core_version(codex_home, repo)
+            latest = npm_latest_version("@opengsd/gsd-core")
+            version_item = version_check_item(
+                "external-updater",
+                "gsd-core",
+                current,
+                latest,
+                f"read-only check; apply would run {scope_detail}",
             )
+            version_item.update(provenance)
+            results.append(version_item)
         elif executable_exists("npx"):
-            result = run_command(
-                ["npx", "-y", "get-shit-done-cc@latest", "--codex", "--global", "--profile=standard"],
-                timeout=900,
-            )
+            result = run_command(command, cwd=repo, timeout=900)
             status = "updated-or-unchanged" if result["ok"] else "failed"
-            results.append(item("external-updater", "gsd-codex", status, short_output(result)))
+            results.append(item("external-updater", "gsd-core", status, short_output(result), **provenance))
         else:
-            results.append(item("external-updater", "gsd-codex", "skipped", "npx not available"))
+            results.append(item("external-updater", "gsd-core", "skipped", "npx not available", **provenance))
 
     has_openspec = any((codex_home / "skills" / skill / "SKILL.md").exists() for skill in [
         "openspec-propose",
@@ -581,24 +595,25 @@ def run_external_updaters(codex_home: Path, apply: bool) -> list[dict[str, Any]]
         "openspec-archive-change",
     ])
     if executable_exists("openspec") or has_openspec:
+        provenance = dependency_provenance_fields("openspec-cli", command_name="updateCommand")
         if not apply:
             current = installed_openspec_version(codex_home)
             latest = npm_latest_version("@fission-ai/openspec")
-            results.append(
-                version_check_item(
-                    "external-updater",
-                    "openspec-cli",
-                    current,
-                    latest,
-                    "read-only check; apply would run npm update -g @fission-ai/openspec",
-                )
+            version_item = version_check_item(
+                "external-updater",
+                "openspec-cli",
+                current,
+                latest,
+                "read-only check; apply would run npm update -g @fission-ai/openspec",
             )
+            version_item.update(provenance)
+            results.append(version_item)
         elif executable_exists("npm"):
             result = run_command(["npm", "update", "-g", "@fission-ai/openspec"], timeout=600)
             status = "updated-or-unchanged" if result["ok"] else "failed"
-            results.append(item("external-updater", "openspec-cli", status, short_output(result)))
+            results.append(item("external-updater", "openspec-cli", status, short_output(result), **provenance))
         else:
-            results.append(item("external-updater", "openspec-cli", "skipped", "npm not available"))
+            results.append(item("external-updater", "openspec-cli", "skipped", "npm not available", **provenance))
 
     return results
 
@@ -646,6 +661,7 @@ def main() -> int:
     curated_root = vendor_skills / "skills" / ".curated"
     openai_plugins_mirror = codex_home / ".tmp" / "plugins"
     config = read_config(codex_home)
+    target_repo = migration_sync_repo(args.repo)
 
     skill_safety = snapshot_curated_skill_safety(codex_home, curated_root)
     plugin_cache_safety = snapshot_openai_curated_cache_safety(codex_home, openai_plugins_mirror)
@@ -665,7 +681,7 @@ def main() -> int:
         results.append(update_git_repo(repo, name, args.apply))
 
     if not args.skip_external_updaters:
-        results.extend(run_external_updaters(codex_home, args.apply))
+        results.extend(run_external_updaters(codex_home, args.apply, repo=target_repo))
 
     results.extend(sync_curated_skills(codex_home, curated_root, skill_safety, backup_root, args.apply))
     if not args.skip_openai_curated_cache:
@@ -673,7 +689,6 @@ def main() -> int:
     results.extend(marketplace_upgrade_results(config, args.apply))
     results.extend(plugin_install_results(config, args.apply))
     results.extend(plugin_cache_verification_results(codex_home, config))
-    target_repo = migration_sync_repo(args.repo)
     if target_repo is not None:
         plugin_root = resolve_plugin_root()
         results.append(project_migration_sync_result(target_repo, plugin_root, codex_home))

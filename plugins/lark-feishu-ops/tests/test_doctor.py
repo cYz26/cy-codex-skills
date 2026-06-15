@@ -1,4 +1,5 @@
 import json
+import re
 import sys
 import tempfile
 import unittest
@@ -15,7 +16,6 @@ import lark_feishu_ops_doctor
 
 OFFICIAL_LARK_SKILLS = {
     "lark-approval",
-    "lark-apps",
     "lark-attendance",
     "lark-base",
     "lark-calendar",
@@ -41,6 +41,28 @@ OFFICIAL_LARK_SKILLS = {
     "lark-workflow-meeting-summary",
     "lark-workflow-standup-report",
 }
+
+INSTALLED_OFFICIAL_LARK_SKILLS = set(OFFICIAL_LARK_SKILLS)
+
+
+def extract_runtime_official_lark_skills(prompt):
+    section = prompt.split("Current official lazy-reference set:", 1)[1]
+    section = section.split("Do not install the full official", 1)[0]
+    return set(re.findall(r"`(lark-[a-z0-9-]+)`", section))
+
+
+def read_skill():
+    return (PLUGIN_ROOT / "skills" / "lark-feishu-ops" / "SKILL.md").read_text()
+
+
+def read_protocol_reference():
+    return (
+        PLUGIN_ROOT
+        / "skills"
+        / "lark-feishu-ops"
+        / "references"
+        / "feishuops-protocol.md"
+    ).read_text()
 
 
 class LarkFeishuOpsDoctorTests(unittest.TestCase):
@@ -231,12 +253,44 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
         self.assertEqual("1.0.47", result["update_action"]["latest_version"])
         self.assertIn("lark_feishu_ops_sync.py", " ".join(result["update_action"]["followup_command"]))
 
+    def test_global_audit_ignores_unmanaged_lark_directories_after_codex_unload(self):
+        listing = {
+            "status": "PASS",
+            "npx_path": "/usr/local/bin/npx",
+            "skills": [
+                {
+                    "name": "lark-doc",
+                    "path": "/Users/cy/.agents/skills/lark-doc",
+                    "agents": ["Codex", "Claude Code"],
+                }
+            ],
+            "error": None,
+        }
+
+        with (
+            mock.patch.object(lark_feishu_ops_doctor, "list_global_skills", return_value=listing),
+            mock.patch.object(lark_feishu_ops_doctor, "load_skill_lock_sources", return_value={}),
+        ):
+            result = lark_feishu_ops_doctor.audit_global_lark_skills()
+
+        self.assertEqual("PASS", result["status"])
+        self.assertEqual([], result["official_global_lark_skills"])
+        self.assertEqual([], result["codex_effective_official_lark_skills"])
+
     def test_runtime_prompt_keeps_lazy_reference_parity_with_official_lark_skills(self):
         prompt = (PLUGIN_ROOT / "agents" / "runtime-prompts" / "feishu-ops.md").read_text()
 
         missing = sorted(skill for skill in OFFICIAL_LARK_SKILLS if skill not in prompt)
 
         self.assertEqual([], missing)
+
+    def test_runtime_prompt_lazy_references_are_installed_official_skills(self):
+        prompt = (PLUGIN_ROOT / "agents" / "runtime-prompts" / "feishu-ops.md").read_text()
+
+        advertised = extract_runtime_official_lark_skills(prompt)
+        stale = sorted(advertised - INSTALLED_OFFICIAL_LARK_SKILLS)
+
+        self.assertEqual([], stale)
 
     def test_runtime_prompt_keeps_docs_fetch_bounded(self):
         prompt = (PLUGIN_ROOT / "agents" / "runtime-prompts" / "feishu-ops.md").read_text()
@@ -318,8 +372,16 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
         for text in required:
             self.assertIn(text, prompt)
 
-    def test_skill_documents_progress_aware_parent_waiting(self):
-        skill = (PLUGIN_ROOT / "skills" / "lark-feishu-ops" / "SKILL.md").read_text()
+    def test_skill_defers_deep_feishuops_protocol(self):
+        skill = read_skill()
+
+        self.assertIn("references/feishuops-protocol.md", skill)
+        self.assertLess(len(skill.splitlines()), 250)
+        self.assertNotIn("## Progress-Aware Waiting", skill)
+        self.assertIn("## Progress-Aware Waiting", read_protocol_reference())
+
+    def test_protocol_reference_documents_progress_aware_parent_waiting(self):
+        protocol = read_protocol_reference()
 
         required = [
             "Progress-Aware Waiting",
@@ -327,14 +389,13 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
             "Do not close an agent merely because the overall wall-clock",
             "2-3 minutes is reasonable",
             "60-90 seconds of no progress",
-            "do not silently run direct",
         ]
 
         for text in required:
-            self.assertIn(text, skill)
+            self.assertIn(text, protocol)
 
     def test_skill_documents_hybrid_dispatch_policy(self):
-        skill = (PLUGIN_ROOT / "skills" / "lark-feishu-ops" / "SKILL.md").read_text()
+        skill = read_skill()
 
         required = [
             "Dispatch Policy",
@@ -381,7 +442,7 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
             self.assertIn(text, readme)
 
     def test_skill_documents_intent_and_follow_up_reuse(self):
-        skill = (PLUGIN_ROOT / "skills" / "lark-feishu-ops" / "SKILL.md").read_text()
+        protocol = read_protocol_reference()
 
         required = [
             "Intent-Carrying Operations",
@@ -397,10 +458,10 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
         ]
 
         for text in required:
-            self.assertIn(text, skill)
+            self.assertIn(text, protocol)
 
     def test_skill_documents_context_handoff(self):
-        skill = (PLUGIN_ROOT / "skills" / "lark-feishu-ops" / "SKILL.md").read_text()
+        protocol = read_protocol_reference()
 
         required = [
             "Context Handoff",
@@ -414,10 +475,10 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
         ]
 
         for text in required:
-            self.assertIn(text, skill)
+            self.assertIn(text, protocol)
 
     def test_skill_documents_agent_continuity_helper(self):
-        skill = (PLUGIN_ROOT / "skills" / "lark-feishu-ops" / "SKILL.md").read_text()
+        protocol = read_protocol_reference()
 
         required = [
             "Agent Continuity Helper",
@@ -431,10 +492,10 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
         ]
 
         for text in required:
-            self.assertIn(text, skill)
+            self.assertIn(text, protocol)
 
     def test_skill_documents_codex_subagent_mechanics(self):
-        skill = (PLUGIN_ROOT / "skills" / "lark-feishu-ops" / "SKILL.md").read_text()
+        protocol = read_protocol_reference()
 
         required = [
             "Codex Subagent Mechanics",
@@ -448,7 +509,7 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
         ]
 
         for text in required:
-            self.assertIn(text, skill)
+            self.assertIn(text, protocol)
 
     def test_agent_instructions_keep_subagent_bounded(self):
         agent = (PLUGIN_ROOT / "agents" / "feishu-ops.toml").read_text()

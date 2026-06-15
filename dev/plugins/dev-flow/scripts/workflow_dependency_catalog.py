@@ -2,6 +2,7 @@ from __future__ import annotations
 
 
 PROJECT_ORCHESTRATOR_SKILLS = [
+    "ai-native-tech-plan",
     "capability-research",
     "claude-code-delegate",
     "project-orchestrator",
@@ -12,7 +13,9 @@ PROJECT_ORCHESTRATOR_SKILLS = [
     "verify-and-archive",
     "workflow-doctor",
     "checkpoint-compact",
+    "context-health-check",
     "context-tool-audit",
+    "codex-updater",
     "plugin-project-migration",
 ]
 
@@ -29,7 +32,7 @@ REQUIRED_SKILLS = {
 
 DEVELOPER_SKILLS = {"plugin-eval": ["evaluate-plugin"]}
 
-REQUIRED_CLI_TOOLS = ["openspec", "gsd-sdk"]
+REQUIRED_CLI_TOOLS = ["openspec"]
 
 REQUIRED_GSD_SKILLS = [
     "gsd-new-project",

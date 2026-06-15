@@ -31,7 +31,31 @@ def run_gate(repo: Path, apply: bool = True) -> dict:
         message = "DevFlow: release assets are current."
     else:
         message = "DevFlow: no release assets were applicable."
-    return {**report, "message": message}
+    return {**report, "message": message, "qualityGates": quality_gates(report)}
+
+
+def quality_gates(report: dict) -> list[dict]:
+    eval_targets = [target["target"] for target in report.get("evalTargets", [])]
+    plugin_eval_target = eval_targets[0] if eval_targets else "plugins/dev-flow"
+    return [
+        {
+            "name": "release runtime verification",
+            "command": [
+                "python3",
+                "plugins/dev-flow/scripts/verify_release_runtime.py",
+                "--plugin-root",
+                "plugins/dev-flow",
+                "--json",
+            ],
+            "required": True,
+        },
+        {
+            "name": "Plugin Eval release",
+            "command": ["plugin-eval", "analyze", plugin_eval_target, "--format", "markdown"],
+            "targets": eval_targets,
+            "required": True,
+        },
+    ]
 
 
 def main() -> int:

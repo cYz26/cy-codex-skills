@@ -27,4 +27,18 @@ python3 scripts/record_verification.py --repo <repo> --command "<command>" --res
 
 ## Archive Gate
 
-Archive only when spec, plan, implementation, verification, and state gates are clear. Then use `openspec-archive-change`. After verification, archive, or phase ship, create a checkpoint with `checkpoint-compact`.
+Archive only when spec, plan, implementation, verification, and state gates are
+clear. DevFlow separates archive readiness from approval:
+
+```bash
+python3 scripts/archive_status.py --repo <repo> --change <change> --json
+```
+
+Default policy is `confirm-on-risk`. If the user explicitly asked to archive and
+the status report is ready with no risks, proceed with `openspec-archive-change`.
+If the report lists risks such as incomplete tasks, dirty unrelated paths,
+missing artifacts, failed gates, or spec sync uncertainty, summarize them and
+ask for confirmation before archive.
+
+After verification, archive, or phase ship, create a checkpoint with
+`checkpoint-compact`.

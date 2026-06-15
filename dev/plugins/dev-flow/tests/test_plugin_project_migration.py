@@ -27,9 +27,9 @@ class PluginProjectMigrationTests(unittest.TestCase):
         (repo / ".planning" / "STATE.md").write_text("# State\n")
         return repo
 
-    def make_plugin_root(self, version="1.0.0"):
-        plugin = Path(tempfile.mkdtemp(prefix="plugin-migration-plugin-"))
-        (plugin / ".codex-plugin").mkdir()
+    def make_plugin_root(self, version="1.0.0", root=None):
+        plugin = Path(root) if root is not None else Path(tempfile.mkdtemp(prefix="plugin-migration-plugin-"))
+        (plugin / ".codex-plugin").mkdir(parents=True)
         (plugin / ".codex-plugin" / "plugin.json").write_text(
             json.dumps({"name": "dev-flow", "version": version}) + "\n"
         )
@@ -102,7 +102,7 @@ class PluginProjectMigrationTests(unittest.TestCase):
         repo = self.make_repo()
         old_plugin = self.make_plugin_root(version="1.0.0")
         new_plugin = self.make_plugin_root(version="1.1.0")
-        target = repo / ".codex" / "skills" / "project-orchestrator"
+        target = repo / ".agents" / "skills" / "project-orchestrator"
         target.parent.mkdir(parents=True)
         target.symlink_to(old_plugin / "skills" / "project-orchestrator", target_is_directory=True)
 
@@ -115,11 +115,42 @@ class PluginProjectMigrationTests(unittest.TestCase):
         self.assertEqual(stale[0]["source"], str((new_plugin / "skills" / "project-orchestrator").resolve()))
         self.assertEqual(target.resolve(), (old_plugin / "skills" / "project-orchestrator").resolve())
 
+    def test_sync_reports_legacy_skill_layout_and_dry_run_command(self):
+        repo = self.make_repo()
+        plugin = self.make_plugin_root(version="1.1.0")
+        legacy = repo / ".codex" / "skills" / "project-orchestrator" / "SKILL.md"
+        legacy.parent.mkdir(parents=True)
+        legacy.write_text("---\nname: project-orchestrator\ndescription: legacy\n---\n")
+
+        report = sync_project_migrations(repo=repo, plugin_root=plugin, codex_home=self.make_codex_home())
+
+        skill_layout = report["plugins"][0]["skillLayout"]
+        project_orchestrator = next(item for item in skill_layout["items"] if item["skill"] == "project-orchestrator")
+        self.assertEqual(skill_layout["status"], "legacy_detected")
+        self.assertEqual(project_orchestrator["status"], "legacy_detected")
+        self.assertIn("--migrate-official-skill-layout", " ".join(skill_layout["dryRunCommand"]))
+        self.assertIn("--dry-run", skill_layout["dryRunCommand"])
+
+    def test_sync_reports_legacy_skill_layout_for_dependency_managed_skills(self):
+        repo = self.make_repo()
+        plugin = self.make_plugin_root(version="1.1.0")
+        legacy = repo / ".codex" / "skills" / "gsd-progress" / "SKILL.md"
+        legacy.parent.mkdir(parents=True)
+        legacy.write_text("---\nname: gsd-progress\ndescription: legacy\n---\n")
+
+        report = sync_project_migrations(repo=repo, plugin_root=plugin, codex_home=self.make_codex_home())
+
+        skill_layout = report["plugins"][0]["skillLayout"]
+        gsd_progress = next(item for item in skill_layout["items"] if item["skill"] == "gsd-progress")
+        self.assertEqual(skill_layout["status"], "legacy_detected")
+        self.assertEqual(gsd_progress["status"], "legacy_detected")
+        self.assertIn("--migrate-official-skill-layout", " ".join(skill_layout["dryRunCommand"]))
+
     def test_apply_refreshes_safe_skill_links_and_writes_audit_files(self):
         repo = self.make_repo()
         old_plugin = self.make_plugin_root(version="1.0.0")
         new_plugin = self.make_plugin_root(version="1.1.0")
-        target = repo / ".codex" / "skills" / "project-orchestrator"
+        target = repo / ".agents" / "skills" / "project-orchestrator"
         target.parent.mkdir(parents=True)
         target.symlink_to(old_plugin / "skills" / "project-orchestrator", target_is_directory=True)
 
@@ -138,7 +169,7 @@ class PluginProjectMigrationTests(unittest.TestCase):
     def test_apply_refuses_to_replace_non_symlink_skill_target(self):
         repo = self.make_repo()
         plugin = self.make_plugin_root(version="1.1.0")
-        self.write_skill(repo / ".codex" / "skills" / "project-orchestrator" / "SKILL.md")
+        self.write_skill(repo / ".agents" / "skills" / "project-orchestrator" / "SKILL.md")
 
         report = apply_project_migrations(repo=repo, plugin_root=plugin, codex_home=self.make_codex_home())
 
@@ -169,6 +200,40 @@ class PluginProjectMigrationTests(unittest.TestCase):
 
         self.assertEqual(message, "")
 
+    def test_source_repo_accepts_dev_skill_links_with_release_marketplace_source(self):
+        repo = self.make_repo()
+        release_plugin = self.make_plugin_root(version="1.2.0", root=repo / "plugins" / "dev-flow")
+        dev_plugin = self.make_plugin_root(version="1.2.0", root=repo / "dev" / "plugins" / "dev-flow")
+        self.write_marketplace(repo, release_plugin)
+        apply_project_migrations(repo=repo, plugin_root=release_plugin, codex_home=self.make_codex_home())
+        target = repo / ".agents" / "skills" / "project-orchestrator"
+        target.unlink()
+        target.symlink_to(dev_plugin / "skills" / "project-orchestrator", target_is_directory=True)
+
+        report = sync_project_migrations(repo=repo, plugin_root=release_plugin, codex_home=self.make_codex_home())
+
+        self.assertEqual(report["status"], "current", report)
+        self.assertEqual(report["plugins"][0]["staleProjectSkills"], [])
+        self.assertEqual(target.resolve(), (dev_plugin / "skills" / "project-orchestrator").resolve())
+
+    def test_consumer_repo_reports_dev_skill_links_as_stale(self):
+        repo = self.make_repo()
+        release_plugin = self.make_plugin_root(version="1.2.0")
+        dev_plugin = self.make_plugin_root(version="1.2.0")
+        self.write_marketplace(repo, release_plugin)
+        apply_project_migrations(repo=repo, plugin_root=release_plugin, codex_home=self.make_codex_home())
+        target = repo / ".agents" / "skills" / "project-orchestrator"
+        target.unlink()
+        target.symlink_to(dev_plugin / "skills" / "project-orchestrator", target_is_directory=True)
+
+        report = sync_project_migrations(repo=repo, plugin_root=release_plugin, codex_home=self.make_codex_home())
+
+        stale = report["plugins"][0]["staleProjectSkills"]
+        self.assertEqual(report["status"], "migration_pending")
+        self.assertEqual(len(stale), 1, report)
+        self.assertEqual(stale[0]["skill"], "project-orchestrator")
+        self.assertEqual(stale[0]["source"], str((release_plugin / "skills" / "project-orchestrator").resolve()))
+
     def test_updater_result_uses_project_migration_sync_kind(self):
         repo = self.make_repo()
         plugin = self.make_plugin_root(version="1.2.0")
@@ -179,6 +244,19 @@ class PluginProjectMigrationTests(unittest.TestCase):
         self.assertEqual(result["name"], "dev-flow")
         self.assertEqual(result["status"], "migration-pending")
         self.assertIn("plugin-project-migration", result["detail"])
+
+    def test_updater_result_reports_legacy_layout_dry_run_command(self):
+        repo = self.make_repo()
+        plugin = self.make_plugin_root(version="1.2.0")
+        legacy = repo / ".codex" / "skills" / "project-orchestrator" / "SKILL.md"
+        legacy.parent.mkdir(parents=True)
+        legacy.write_text("---\nname: project-orchestrator\ndescription: legacy\n---\n")
+
+        result = project_migration_sync_result(repo=repo, plugin_root=plugin, codex_home=self.make_codex_home())
+
+        self.assertEqual(result["skillLayoutStatus"], "legacy_detected")
+        self.assertIn("--migrate-official-skill-layout", result["detail"])
+        self.assertIn("--dry-run", result["skillLayoutDryRunCommand"])
 
 
 if __name__ == "__main__":

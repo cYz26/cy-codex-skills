@@ -2,10 +2,12 @@ import json
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
+RELEASE_PLUGIN_ROOT = PLUGIN_ROOT.parents[2] / "plugins" / "dev-flow"
 SCRIPTS = PLUGIN_ROOT / "scripts"
 HOOK_SCRIPT_PREFIX = (
     'python3 "${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/'
@@ -122,6 +124,7 @@ context_health:
     def make_dependency_ready_repo(self):
         repo = self.make_repo()
         required_skills = [
+            "ai-native-tech-plan",
             "capability-research",
             "claude-code-delegate",
             "project-orchestrator",
@@ -132,7 +135,9 @@ context_health:
             "verify-and-archive",
             "workflow-doctor",
             "checkpoint-compact",
+            "context-health-check",
             "context-tool-audit",
+            "codex-updater",
             "plugin-project-migration",
             "brainstorming",
             "writing-plans",
@@ -146,11 +151,17 @@ context_health:
             "gsd-verify-work",
         ]
         for skill in required_skills:
-            self.write_skill(repo / ".codex" / "skills" / skill / "SKILL.md")
+            self.write_skill(repo / ".agents" / "skills" / skill / "SKILL.md")
         for agent in ["gsd-phase-researcher", "gsd-planner", "gsd-plan-checker", "gsd-executor"]:
             path = repo / ".codex" / "agents" / f"{agent}.toml"
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(f"name = \"{agent}\"\n")
+        runtime = repo / ".codex" / "gsd-core"
+        (runtime / "bin").mkdir(parents=True)
+        (runtime / "VERSION").write_text("1.4.5\n")
+        tools = runtime / "bin" / "gsd-tools.cjs"
+        tools.write_text("#!/usr/bin/env node\nconsole.log('2026-06-14T00:00:00Z')\n")
+        tools.chmod(0o755)
         (repo / "openspec").mkdir(exist_ok=True)
         (repo / "openspec" / "config.yaml").write_text("schema: spec-driven\n")
         return repo
@@ -194,19 +205,9 @@ context_health:
         self.assertIn("claude-code-delegate", PROJECT_ORCHESTRATOR_SKILLS)
         self.assertEqual(ClaudeDelegateOptions(repo=Path("/tmp/example")).mode, "plan")
 
-    def test_low_frequency_skills_are_explicit_only(self):
+    def test_delegation_skill_remains_explicit_only(self):
         explicit_only = {
-            "ai-native-tech-plan",
-            "checkpoint-compact",
             "claude-code-delegate",
-            "codex-updater",
-            "context-health-check",
-            "context-tool-audit",
-            "execute-task",
-            "plugin-project-migration",
-            "project-setup",
-            "verify-and-archive",
-            "workflow-doctor",
         }
         for skill in explicit_only:
             policy = PLUGIN_ROOT / "skills" / skill / "agents" / "openai.yaml"
@@ -215,7 +216,22 @@ context_health:
                 self.assertIn("allow_implicit_invocation: false", policy.read_text())
 
     def test_core_routing_skills_remain_implicit(self):
-        implicit = {"project-orchestrator", "feature-intake", "change-plan", "capability-research"}
+        implicit = {
+            "project-orchestrator",
+            "feature-intake",
+            "change-plan",
+            "capability-research",
+            "ai-native-tech-plan",
+            "project-setup",
+            "execute-task",
+            "verify-and-archive",
+            "workflow-doctor",
+            "checkpoint-compact",
+            "context-health-check",
+            "context-tool-audit",
+            "codex-updater",
+            "plugin-project-migration",
+        }
         for skill in implicit:
             policy = PLUGIN_ROOT / "skills" / skill / "agents" / "openai.yaml"
             with self.subTest(skill=skill):
@@ -309,6 +325,28 @@ context_health:
         results = run_external_updaters(codex_home, apply=False)
 
         self.assertNotIn("agent-reach", {item["name"] for item in results})
+
+    def test_release_runtime_uses_opengsd_core_not_legacy_gsd(self):
+        runtime_archive = RELEASE_PLUGIN_ROOT / "scripts" / "devflow_runtime.pyz"
+        with zipfile.ZipFile(runtime_archive) as archive:
+            data = "\n".join(
+                archive.read(name).decode("utf-8", "ignore")
+                for name in archive.namelist()
+                if name.endswith(".py")
+            )
+
+        self.assertIn("@opengsd/gsd-core", data)
+        self.assertIn("gsd-tools.cjs", data)
+        self.assertNotIn("get-shit-done-cc", data)
+        self.assertNotIn("gsd-sdk", data)
+
+    def test_readme_documents_release_runtime_audit_command(self):
+        readme = (PLUGIN_ROOT / "README.md").read_text()
+
+        self.assertIn("devflow_runtime.MANIFEST.json", readme)
+        self.assertIn("devflow_runtime.sha256", readme)
+        self.assertIn("devflow_runtime.SOURCE_COMMIT", readme)
+        self.assertIn("verify_release_runtime.py --plugin-root plugins/dev-flow --json", readme)
 
     def test_release_updater_plans_installed_plugin_refresh(self):
         marketplace_root = Path(tempfile.mkdtemp(prefix="devflow-release-marketplace-"))

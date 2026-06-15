@@ -34,6 +34,7 @@ from workflow_context_tools import apply_context_tool_actions, audit_context_too
 from workflow_dependencies import dependency_report
 from workflow_project_activation import activate_project_dependencies
 from workflow_inspect import inspect_repo
+from workflow_mode_routing import read_workflow_mode_config, route_workflow_mode
 from workflow_scaffold import scaffold_workflow
 from workflow_state import (
     default_state_values,
@@ -87,6 +88,8 @@ __all__ = [
     "render_state",
     "render_template",
     "repo_path",
+    "read_workflow_mode_config",
+    "route_workflow_mode",
     "sanitize_filename",
     "scaffold_workflow",
     "source_areas",

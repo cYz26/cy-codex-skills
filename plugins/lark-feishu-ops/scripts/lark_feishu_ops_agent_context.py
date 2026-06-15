@@ -20,6 +20,65 @@ SNAPSHOT_DIR = "snapshots"
 SCHEMA_VERSION = "1.0"
 DEFAULT_TTL_SECONDS = 86400
 MAX_STRING_LENGTH = 1200
+DEFAULT_OFFICIAL_SKILL_ROOTS = (
+    Path.home() / ".agents" / "skills",
+    Path.home() / ".codex" / "skills",
+    Path.home() / ".codex" / "skills" / ".system",
+)
+DOMAIN_ALIASES = {
+    "doc": "docs",
+    "document": "docs",
+    "docx": "docs",
+    "wiki-node": "wiki",
+    "spreadsheet": "sheets",
+    "sheet": "sheets",
+    "bitable": "base",
+    "table": "base",
+    "file": "drive",
+    "folder": "drive",
+    "meetings": "vc",
+    "meeting": "vc",
+    "minutes": "minutes",
+    "transcript": "minutes",
+    "message": "im",
+    "chat": "im",
+    "contacts": "contact",
+    "calendar-event": "calendar",
+    "event": "calendar",
+    "open-api": "openapi",
+    "api": "openapi",
+}
+DOMAIN_GUIDANCE = {
+    "docs": {"skills": ["lark-doc"], "cli_help": [["lark-cli", "docs", "--help"]]},
+    "wiki": {
+        "skills": ["lark-wiki", "lark-doc"],
+        "cli_help": [["lark-cli", "wiki", "--help"], ["lark-cli", "docs", "--help"]],
+    },
+    "sheets": {"skills": ["lark-sheets"], "cli_help": [["lark-cli", "sheets", "--help"]]},
+    "base": {"skills": ["lark-base"], "cli_help": [["lark-cli", "base", "--help"]]},
+    "drive": {"skills": ["lark-drive"], "cli_help": [["lark-cli", "drive", "--help"]]},
+    "im": {"skills": ["lark-im"], "cli_help": [["lark-cli", "im", "--help"]]},
+    "contact": {"skills": ["lark-contact"], "cli_help": [["lark-cli", "contact", "--help"]]},
+    "calendar": {"skills": ["lark-calendar"], "cli_help": [["lark-cli", "calendar", "--help"]]},
+    "vc": {"skills": ["lark-vc", "lark-minutes"], "cli_help": [["lark-cli", "vc", "--help"]]},
+    "minutes": {
+        "skills": ["lark-minutes", "lark-vc"],
+        "cli_help": [["lark-cli", "minutes", "--help"], ["lark-cli", "vc", "--help"]],
+    },
+    "whiteboard": {"skills": ["lark-whiteboard"], "cli_help": [["lark-cli", "whiteboard", "--help"]]},
+    "approval": {"skills": ["lark-approval"], "cli_help": [["lark-cli", "approval", "--help"]]},
+    "attendance": {"skills": ["lark-attendance"], "cli_help": [["lark-cli", "attendance", "--help"]]},
+    "mail": {"skills": ["lark-mail"], "cli_help": [["lark-cli", "mail", "--help"]]},
+    "okr": {"skills": ["lark-okr"], "cli_help": [["lark-cli", "okr", "--help"]]},
+    "slides": {"skills": ["lark-slides"], "cli_help": [["lark-cli", "slides", "--help"]]},
+    "task": {"skills": ["lark-task"], "cli_help": [["lark-cli", "task", "--help"]]},
+    "auth": {"skills": ["lark-shared"], "cli_help": [["lark-cli", "auth", "--help"]]},
+    "openapi": {
+        "skills": ["lark-openapi-explorer"],
+        "cli_help": [["lark-cli", "schema", "--help"], ["lark-cli", "api", "--help"]],
+    },
+    "markdown": {"skills": ["lark-markdown"], "cli_help": [["lark-cli", "markdown", "--help"]]},
+}
 
 SAFE_RESOURCE_KEYS = {
     "type",
@@ -170,6 +229,185 @@ def as_dict(value: Any) -> dict[str, Any]:
     return copy.deepcopy(value) if isinstance(value, dict) else {}
 
 
+def canonical_domain(value: str | None) -> str:
+    if not value:
+        return "unknown"
+    normalized = str(value).strip().lower().replace("_", "-")
+    if normalized.startswith("lark-"):
+        normalized = normalized.removeprefix("lark-")
+    return DOMAIN_ALIASES.get(normalized, normalized)
+
+
+def guidance_dedupe_key(source: dict[str, Any]) -> str:
+    return json.dumps(
+        {
+            "source_type": source.get("source_type"),
+            "domain": source.get("domain"),
+            "name": source.get("name"),
+            "command": source.get("command"),
+            "path": source.get("path"),
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+    )
+
+
+def normalize_guidance_sources(value: Any) -> list[dict[str, Any]]:
+    normalized: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in as_list(value):
+        if not isinstance(item, dict):
+            continue
+        source: dict[str, Any] = {}
+        for key in ("source_type", "domain", "name", "status", "path", "inject_as", "reason"):
+            if item.get(key) is not None:
+                source[key] = str(item[key])
+        if "domain" in source:
+            source["domain"] = canonical_domain(source["domain"])
+        command = item.get("command")
+        if command is not None:
+            source["command"] = [str(part) for part in as_list(command)]
+        if not source.get("source_type") or not source.get("name"):
+            continue
+        key = guidance_dedupe_key(source)
+        if key in seen:
+            continue
+        seen.add(key)
+        normalized.append(source)
+    return normalized
+
+
+def find_official_skill(skill_name: str, skill_roots: list[Path] | tuple[Path, ...]) -> Path | None:
+    for root in skill_roots:
+        candidate = Path(root).expanduser() / skill_name / "SKILL.md"
+        if candidate.is_file():
+            return candidate.resolve()
+    return None
+
+
+def string_tokens(value: Any) -> list[str]:
+    if isinstance(value, dict):
+        tokens: list[str] = []
+        for key, item in value.items():
+            if item:
+                tokens.append(str(key))
+                tokens.extend(string_tokens(item))
+        return tokens
+    if isinstance(value, list):
+        tokens = []
+        for item in value:
+            tokens.extend(string_tokens(item))
+        return tokens
+    if isinstance(value, str):
+        return [part for part in re.split(r"[\s,]+", value) if part]
+    if value is None:
+        return []
+    return [str(value)]
+
+
+def expansion_domains(request_payload: dict[str, Any]) -> list[str]:
+    domains: list[str] = []
+    payload_sections = [
+        as_dict(request_payload.get("dispatch_hints")),
+        as_dict(request_payload.get("target")),
+        as_dict(request_payload.get("evidence_request")),
+    ]
+    expansion_keys = (
+        "expand",
+        "expand_resources",
+        "expansion_domains",
+        "include_domains",
+        "resource_types",
+        "follow_up_domains",
+    )
+    for section in payload_sections:
+        for key in expansion_keys:
+            for token in string_tokens(section.get(key)):
+                domain = canonical_domain(token)
+                if domain in DOMAIN_GUIDANCE:
+                    domains.append(domain)
+    return domains
+
+
+def guidance_domains(action: str, request_payload: dict[str, Any] | None = None) -> list[str]:
+    payload = request_payload or {}
+    hints = as_dict(payload.get("dispatch_hints"))
+    target = as_dict(payload.get("target"))
+    primary = canonical_domain(action.split(".", 1)[0] if action else None)
+    if primary == "domain":
+        primary = canonical_domain(hints.get("domain") or target.get("domain") or primary)
+    domains = [primary]
+    for key in ("domains", "guidance_domains"):
+        for token in string_tokens(hints.get(key)):
+            domain = canonical_domain(token)
+            if domain in DOMAIN_GUIDANCE or domain != "unknown":
+                domains.append(domain)
+    domains.extend(expansion_domains(payload))
+
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for domain in domains:
+        if domain not in seen:
+            seen.add(domain)
+            ordered.append(domain)
+    return ordered or ["unknown"]
+
+
+def resolve_guidance_sources(
+    action: str,
+    request_payload: dict[str, Any] | None = None,
+    *,
+    skill_roots: list[Path | str] | tuple[Path | str, ...] | None = None,
+) -> list[dict[str, Any]]:
+    requested_roots = skill_roots if skill_roots is not None else DEFAULT_OFFICIAL_SKILL_ROOTS
+    roots = tuple(Path(root).expanduser() for root in requested_roots)
+    sources: list[dict[str, Any]] = []
+
+    for domain in guidance_domains(action, request_payload):
+        config = DOMAIN_GUIDANCE.get(domain)
+        if config is None:
+            sources.append(
+                {
+                    "source_type": "blocker",
+                    "domain": domain,
+                    "name": f"{domain}.guidance",
+                    "status": "blocked",
+                    "reason": (
+                        "no official lark-* skill or lark-cli help mapping is known; "
+                        "require explicit raw OpenAPI fallback"
+                    ),
+                }
+            )
+            continue
+
+        for skill_name in config.get("skills", []):
+            skill_path = find_official_skill(str(skill_name), roots)
+            source = {
+                "source_type": "skill",
+                "domain": domain,
+                "name": str(skill_name),
+                "status": "available" if skill_path else "missing",
+            }
+            if skill_path:
+                source["path"] = str(skill_path)
+                source["inject_as"] = "skill_file"
+            sources.append(source)
+
+        for command in config.get("cli_help", []):
+            command_parts = [str(part) for part in command]
+            sources.append(
+                {
+                    "source_type": "cli_help",
+                    "domain": domain,
+                    "name": " ".join(command_parts),
+                    "status": "fallback",
+                    "command": command_parts,
+                }
+            )
+
+    return normalize_guidance_sources(sources)
+
+
 def is_write_action(action: str, hints: dict[str, Any] | None = None) -> bool:
     hints = hints or {}
     if hints.get("side_effects") or hints.get("read_only") is False:
@@ -194,7 +432,7 @@ def is_write_action(action: str, hints: dict[str, Any] | None = None) -> bool:
 
 
 def action_domain(action: str) -> str:
-    return action.split(".", 1)[0] if action else "unknown"
+    return canonical_domain(action.split(".", 1)[0] if action else None)
 
 
 def extract_resource_refs(payload: Any) -> list[str]:
@@ -306,6 +544,9 @@ def normalize_delegation_request(payload: dict[str, Any]) -> dict[str, Any]:
     request["risk_class"] = "write" if write else "read"
     request["resource_refs"] = resource_refs
     request["affinity_key"] = affinity_key(action, resource_refs)
+    request["guidance_sources"] = normalize_guidance_sources(
+        as_list(request.get("guidance_sources")) + resolve_guidance_sources(action, request)
+    )
     return request
 
 
@@ -338,6 +579,7 @@ def normalize_agent_result(payload: dict[str, Any]) -> dict[str, Any]:
     result["artifacts"] = as_list(result.get("artifacts"))
     result["blockers"] = as_list(result.get("blockers"))
     result["residual_risk"] = as_list(result.get("residual_risk"))
+    result["guidance_sources"] = normalize_guidance_sources(result.get("guidance_sources"))
 
     update = as_dict(result.get("context_cache_update"))
     update["resource_refs"] = compact_resource_objects(update.get("resource_refs"))
@@ -444,6 +686,7 @@ def write_context_snapshot(
         "result_status": normalized_result["status"],
         "evidence_pack": normalized_result["result"]["evidence_pack"],
         "next_resources": normalized_result["result"]["next_resources"],
+        "guidance_sources": normalized_result["guidance_sources"] or normalized_request["guidance_sources"],
         "context_cache_update": normalized_result["context_cache_update"],
         "validation": normalized_result["validation"],
         "blockers": normalized_result["blockers"],
@@ -545,6 +788,9 @@ def runtime_boundary() -> dict[str, Any]:
     return {
         "subagent_primitives": "parent_agent_runtime",
         "helper_does_not_call": ["spawn_agent", "send_input", "wait_agent", "close_agent"],
+        "guidance_injection": (
+            "parent may pass guidance_sources into FeishuOps without globally activating lark-* skills"
+        ),
     }
 
 
@@ -580,6 +826,7 @@ def prepare_dispatch_report(
                     ),
                     "agent_id": agent.get("agent_id"),
                     "follow_up_request": request,
+                    "guidance_sources": request["guidance_sources"],
                     "rejected_candidates": rejected,
                 },
                 "runtime_boundary": runtime_boundary(),
@@ -598,6 +845,7 @@ def prepare_dispatch_report(
                     "reason": "fresh related snapshot can seed a new FeishuOps handoff",
                     "snapshot_id": snapshot.get("snapshot_id"),
                     "reconstructed_request": reconstruct_request_from_snapshot(request, snapshot),
+                    "guidance_sources": request["guidance_sources"],
                     "rejected_candidates": rejected,
                 },
                 "runtime_boundary": runtime_boundary(),
@@ -609,12 +857,14 @@ def prepare_dispatch_report(
         decision = {
             "decision": "direct",
             "reason": "bounded low-risk read can run in the main agent without subagent continuity",
+            "guidance_sources": request["guidance_sources"],
             "rejected_candidates": rejected,
         }
     else:
         decision = {
             "decision": "fresh_subagent",
             "reason": "FeishuOps is required and no safe continuity candidate exists",
+            "guidance_sources": request["guidance_sources"],
             "rejected_candidates": rejected,
         }
     return {

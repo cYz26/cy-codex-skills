@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from workflow_dependency_catalog import PROJECT_ORCHESTRATOR_SKILLS, REQUIRED_SUPERPOWERS_PROJECT_SKILLS
+from workflow_project_skill_paths import OFFICIAL_PROJECT_SKILL_PATH_KIND, official_project_skill_dir
 
 
 def ensure_project_local_skills(
@@ -23,7 +24,8 @@ def ensure_project_local_skills(
         installed.append(install_project_skill(repo, "superpowers", skill, source, dry_run, refresh_existing))
     return {
         "ok": all(item["ok"] for item in installed),
-        "strategy": "project-local .codex/skills",
+        "strategy": "project-local .agents/skills",
+        "path_kind": OFFICIAL_PROJECT_SKILL_PATH_KIND,
         "items": installed,
     }
 
@@ -49,7 +51,7 @@ def install_project_skill(
     dry_run: bool = False,
     refresh_existing: bool = False,
 ) -> dict[str, Any]:
-    target = repo / ".codex" / "skills" / skill
+    target = official_project_skill_dir(repo, skill)
     if source is None or not (source / "SKILL.md").exists():
         return install_result(provider, skill, source, target, False, "missing-source")
     if target.is_symlink():
@@ -96,5 +98,6 @@ def install_result(
         "skill": skill,
         "source": str(source) if source else None,
         "target": str(target),
+        "path_kind": OFFICIAL_PROJECT_SKILL_PATH_KIND,
         "status": status,
     }

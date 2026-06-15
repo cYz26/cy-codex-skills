@@ -20,6 +20,13 @@ from workflow_dependency_plugin_checks import (
     check_plugin_activation,
     check_plugin_installed,
 )
+from workflow_project_skill_paths import (
+    LEGACY_PROJECT_SKILL_PATH_KIND,
+    OFFICIAL_PROJECT_SKILL_PATH_KIND,
+    legacy_project_skill_file,
+    official_project_skill_file,
+    scan_project_skill_layout,
+)
 
 
 def check_external_dependencies(
@@ -36,6 +43,7 @@ def check_external_dependencies(
         check_project_skills(checks, repo, PROJECT_ORCHESTRATOR_SKILLS, True)
         check_project_skills(checks, repo, REQUIRED_SUPERPOWERS_PROJECT_SKILLS, True)
         check_project_skills(checks, repo, REQUIRED_GSD_SKILLS, True)
+        check_project_gsd_core_runtime(checks, repo, True)
         check_project_gsd_agents(checks, repo, True)
         check_project_openspec_setup(checks, repo, True)
         check_legacy_project_skills(checks, repo, LEGACY_OPENSPEC_SKILLS, False)
@@ -60,8 +68,42 @@ def check_project_skills(
     required: bool,
 ) -> None:
     for skill in skills:
-        path = repo / ".codex" / "skills" / skill / "SKILL.md"
-        add_check(checks, f"project skill active: {skill}", path.exists(), required, str(path))
+        path = official_project_skill_file(repo, skill)
+        add_check(
+            checks,
+            f"project skill active: {skill}",
+            path.exists(),
+            required,
+            str(path),
+            path_kind=OFFICIAL_PROJECT_SKILL_PATH_KIND,
+        )
+        add_project_skill_layout_check(checks, repo, skill)
+
+
+def add_project_skill_layout_check(checks: list[dict[str, Any]], repo: Path, skill: str) -> None:
+    layout = scan_project_skill_layout(
+        repo,
+        [skill],
+        script_path=Path(__file__).with_name("activate_project_dependencies.py"),
+    )
+    for item in layout["items"]:
+        status = item["status"]
+        required = status == "skill_layout_conflict"
+        ok = False
+        add_check(
+            checks,
+            f"project skill layout: {skill}",
+            ok,
+            required,
+            item["next_action"],
+            status=status,
+            path_kind=item["path_kind"],
+            legacy_path_kind=item["legacy_path_kind"],
+            official_path=item["official_skill_path"],
+            legacy_path=item["legacy_skill_path"],
+            migration_command=layout["dryRunCommand"],
+            next_action=item["next_action"],
+        )
 
 
 def check_legacy_project_skills(
@@ -71,8 +113,15 @@ def check_legacy_project_skills(
     required: bool,
 ) -> None:
     for skill in skills:
-        path = repo / ".codex" / "skills" / skill / "SKILL.md"
-        add_check(checks, f"legacy project skill active: {skill}", path.exists(), required, str(path))
+        path = legacy_project_skill_file(repo, skill)
+        add_check(
+            checks,
+            f"legacy project skill active: {skill}",
+            path.exists(),
+            required,
+            str(path),
+            path_kind=LEGACY_PROJECT_SKILL_PATH_KIND,
+        )
 
 
 def check_project_openspec_setup(checks: list[dict[str, Any]], repo: Path, required: bool) -> None:
@@ -93,6 +142,11 @@ def check_project_gsd_agents(checks: list[dict[str, Any]], repo: Path, required:
     for agent in REQUIRED_GSD_AGENTS:
         path = repo / ".codex" / "agents" / agent
         add_check(checks, f"project gsd agent active: {agent}", path.exists(), required, str(path))
+
+
+def check_project_gsd_core_runtime(checks: list[dict[str, Any]], repo: Path, required: bool) -> None:
+    tools = repo / ".codex" / "gsd-core" / "bin" / "gsd-tools.cjs"
+    add_check(checks, "project gsd core runtime active", tools.exists(), required, str(tools))
 
 
 def check_global_skills_inactive(
@@ -123,5 +177,14 @@ def skill_detail(path: Path, config: dict[str, Any]) -> str:
     return str(path)
 
 
-def add_check(checks: list[dict[str, Any]], name: str, ok: bool, required: bool, detail: str = "") -> None:
-    checks.append({"name": name, "ok": bool(ok), "required": bool(required), "detail": detail})
+def add_check(
+    checks: list[dict[str, Any]],
+    name: str,
+    ok: bool,
+    required: bool,
+    detail: str = "",
+    **extra: Any,
+) -> None:
+    payload = {"name": name, "ok": bool(ok), "required": bool(required), "detail": detail}
+    payload.update(extra)
+    checks.append(payload)

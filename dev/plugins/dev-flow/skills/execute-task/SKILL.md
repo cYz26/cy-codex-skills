@@ -19,6 +19,22 @@ Use only after the active change has proposal, specs, design when needed, and ta
 
 Use `gsd-execute-phase` only for an approved phase plan.
 
+## Workflow Modes
+
+Full OpenSpec tasks require ready proposal, design, specs, and tasks before
+implementation. If workflow routing reports a mandatory Full OpenSpec blocker,
+stop and use `openspec-propose` or `openspec-apply-change` as directed.
+
+Lightweight Ledger execution is allowed only for configured low-risk work. Keep
+the ledger complete with Target State, Scope / Non-Goals, Validation Commands,
+Execution Log, and Completion Claim, and do not claim completion until evidence
+exists.
+
+Prototype Mode output is non-production. Keep cleanup or promotion criteria in
+the task record, and promote through Full OpenSpec before production behavior,
+API, data, integration, migration, permission, error-handling, or compatibility
+changes.
+
 ## Delegated Execution
 
 Use subAgents only when the user or active workflow explicitly authorized
