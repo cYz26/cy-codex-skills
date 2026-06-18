@@ -13,6 +13,16 @@ Do not implement non-trivial changes directly from chat memory.
 - Engineering discipline governs clarification, brainstorming, planning, TDD, review, and finishing.
 - Codex planning behavior is required before major design or implementation boundaries.
 
+## Superpowers Artifact Mapping
+
+Superpowers provides process discipline for brainstorming, planning, TDD, and verification gates. OpenSpec, GSD, and DevFlow planning files are the canonical artifacts for this workflow.
+
+- If `superpowers:brainstorming` produces design notes for behavior, API, data, integration, compatibility, or error-handling work, map the approved content into `openspec/changes/<change-id>/proposal.md`, `design.md`, and `specs/`.
+- If `superpowers:writing-plans` produces task guidance for an OpenSpec change, map it into `openspec/changes/<change-id>/tasks.md`, including Capability Slices, Execution Ledger, Acceptance Criteria, and Validation Commands.
+- If `superpowers:writing-plans` supports GSD phase or milestone work, map it into `.planning/phases/.../PLAN.md` or a DevFlow-approved ledger.
+- Treat `docs/superpowers/specs/...` and `docs/superpowers/plans/...` as drafts, review notes, or inputs unless their content has been copied into the canonical artifacts above.
+- If Superpowers notes conflict with OpenSpec, GSD, or DevFlow files, update or discard the notes; do not let them become a second source of truth.
+
 ## GSD/OpenSpec Skills
 
 GSD and OpenSpec are activated project-locally through `.agents/skills/`; do not enable them globally for this workflow. Legacy `.codex/skills/` entries should be treated as migration inputs, not as the normal target layout.
@@ -27,6 +37,15 @@ GSD and OpenSpec are activated project-locally through `.agents/skills/`; do not
 ## Brainstorm and Planning Flow
 
 - Use `superpowers:brainstorming` before committing to a solution when goals, constraints, tradeoffs, or implementation shape are still open.
+- Use `capability-research` when a solution depends on current, external, platform, plugin, API, hook, CLI, installed-cache, or local-vs-platform capability evidence; the detailed evidence workflow lives in that skill.
+- For design, research, architecture, product-shape, or technical-plan requests,
+  create a `Skill Routing Ledger` before writing the final design or plan. Record
+  `kind`, workflow mode, `capability-research: required/used/skipped`,
+  `brainstorming: required/used/skipped`, `writing-plans`, OpenSpec/GSD routing,
+  and the concrete reason for any skip.
+- If an artifact has unresolved `Open Questions`, Brainstorming cannot be marked
+  skipped. Mark the artifact as draft, not final, and return to
+  `superpowers:brainstorming` or record `brainstorming: required` in the ledger.
 - Use `openspec-explore` during brainstorming when the uncertainty is about user-visible behavior, compatibility, requirements, or acceptance criteria.
 - Use `gsd-discuss-phase` during brainstorming when the uncertainty is about milestones, sequencing, scope boundaries, or phase structure.
 - Use `superpowers:writing-plans` before writing a non-trivial implementation plan, phase plan, migration plan, or refactor plan.
@@ -34,6 +53,28 @@ GSD and OpenSpec are activated project-locally through `.agents/skills/`; do not
 - Use `openspec-propose` after brainstorming when behavior-level artifacts need to become proposal, design, specs, and tasks.
 - Use `gsd-plan-phase` after brainstorming when the work should become an approved phase plan.
 - Do not move from brainstorming/planning into implementation until the chosen plan, scope, verification approach, and open risks are recorded.
+
+## Goal Workflow
+
+- Apply the Goal Suitability Gate during intake or planning, before
+  context-health drift appears. Use `define-goal` when the user asks to create,
+  set, refine, or use a goal, asks for goal-backed work, or when the
+  development task is long-running, multi-slice, migration or release oriented,
+  broad-refactor oriented, cross-context, subagent/delegation backed, or
+  otherwise likely to lose its definition of done.
+- `define-goal` owns active goal checks, goal-tool calls, objective wording,
+  verification evidence, scope boundaries, non-goals, and stop conditions.
+- After `define-goal` shapes the objective, set it in a Codex app, IDE, or CLI
+  composer with `/goal <objective>`. Use `/goal`, `/goal pause`,
+  `/goal resume`, and `/goal clear` to inspect or control the active goal.
+- If `/goal` is unavailable, enable `features.goals` in Codex config or run
+  `codex features enable goals`. Do not rely on a top-level CLI `goal`
+  subcommand.
+- Do not require a Codex goal for ordinary narrow implementation work solely
+  because it has multiple steps. Treat context-health goal drift as a repair
+  signal after drift is discovered, not the primary trigger.
+- DevFlow hooks and scripts may generate Goal Mode Prompts and route to
+  `define-goal`, but they do not call goal tools automatically.
 
 ## AI Coding Planning Rules
 
@@ -111,6 +152,26 @@ Project mode: brownfield
 
 Create or update `openspec/changes/<change-id>/` before implementation if work changes user-visible behavior, public APIs, data models, permissions, persistence, integrations, migrations, error handling, or compatibility behavior.
 
+## Workflow Mode Routing
+
+DevFlow routes work before execution:
+
+- `Full OpenSpec` is mandatory for user-visible behavior, public API, data model,
+  persistence, migration, integration, permission, error-handling, or
+  compatibility changes. `.dev-flow.json` configuration cannot bypass this gate.
+- `Lightweight Ledger` may be used only when `.dev-flow.json` enables it and the
+  work is docs-only, test-only, internal maintenance, or a low-risk bugfix. The
+  ledger must include Target State, Scope / Non-Goals, Validation Commands,
+  Execution Log, and Completion Claim.
+- `Prototype Mode` requires an explicit user request for a spike, prototype,
+  proof of concept, or demo. Record non-production status and cleanup or
+  promotion criteria before relying on the output.
+
+DevFlow hooks support `off`, `warn`, and `block` modes through `.dev-flow.json`.
+When hooks warn or block, diagnostics should preserve the Codex hook schema and
+include current stage, failed gates, next action, and recommended skill or
+command.
+
 ## Superpowers Discipline
 
 Superpowers is activated project-locally through `.agents/skills/`; do not enable it globally for this workflow. Legacy `.codex/skills/` entries should be scanned and migrated through DevFlow rather than edited manually.
@@ -123,11 +184,22 @@ Superpowers is activated project-locally through `.agents/skills/`; do not enabl
 
 ## Plugin Eval Gate
 
-- When creating or updating Codex plugins or skills, proactively run Plugin Eval on the changed skill or plugin path: `plugin-eval analyze <path> --format markdown`. If `plugin-eval` is not on PATH, use the installed Plugin Eval plugin's `scripts/plugin-eval.js` with `node`.
+- When creating or updating Codex plugins or skills, resolve the release target first: `sync_release_assets.py --eval-target <path> --json`. If a release counterpart exists, run Plugin Eval against the release path, for example `plugin-eval analyze plugins/<name> --format markdown` or `plugin-eval analyze <skill-name> --format markdown`.
+- Use direct dev-path Plugin Eval only as a diagnostic source-quality check; it is not the primary release readiness signal when a release package exists.
+- If `plugin-eval` is not on PATH, use the installed Plugin Eval plugin's `scripts/plugin-eval.js` with `node`.
 - When Plugin Eval reports failures, warnings, or fix-first recommendations, default to fixing or optimizing them before completion.
 - Deferral is an exception: only defer findings that are out of scope, destructive or risky, require dependency or architecture decisions, or need explicit user approval.
 - Deferred findings must record the reason, residual risk and follow-up path.
 - Verification evidence must record the score, findings, and optimization decisions, plus the evaluated target.
+
+## Local Reference Update Reminder
+
+After major Codex plugin or skill changes, remind the user to update local Codex
+references before relying on the changed behavior locally. Start dry-run:
+`python3 dev/scripts/codex_auto_update_plugins_skills.py --json`. Report release
+asset sync, installed plugin cache refresh needs, and project-local skill links
+migration. Apply mode requires explicit update intent or confirmation; record any
+skipped local reference update with reason and residual risk.
 
 ## Execution Rules
 
@@ -149,10 +221,11 @@ Major boundaries include project setup completed, codebase mapping completed, de
 
 Before compaction, persist `.planning/STATE.md`, relevant `.planning/phases/` files, relevant `openspec/changes/` files, changed files summary, validation commands and results, unresolved risks, and next action.
 
-Compaction is not a source of truth. Repository files remain authoritative. When a checkpoint is complete,
-recommend `/compact` in Codex CLI before moving to the next major stage. If an external harness runs API
-compaction, record the compact result under `.planning/compact-results/`. If compaction is unavailable,
-start a new session from the checkpoint file.
+Compaction is not a source of truth. Repository files remain authoritative. When a checkpoint is a
+continuation gate for the current thread, recommend `/compact` in Codex CLI before moving to the next major
+stage. When the task is complete or at a handoff/review boundary, update state immediately and treat compact
+as optional. If an external harness runs API compaction for a pending gate, record the compact result under
+`.planning/compact-results/`. If compaction is unavailable, start a new session from the checkpoint file.
 
 ## Forbidden Without Explicit Approval
 

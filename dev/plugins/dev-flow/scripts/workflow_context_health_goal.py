@@ -16,6 +16,8 @@ def goal_report(
     ).strip()
     if summary in {"", "none", "unknown"}:
         status = "missing" if options.get("current_objective") else "unknown"
+    elif weak_goal_summary(summary):
+        status = "weak"
     elif options.get("current_objective") and summary not in str(options.get("current_objective")):
         status = "stale"
     else:
@@ -27,6 +29,21 @@ def goal_report(
         "summary": summary or "none",
         "prompt": goal_prompt(options, repo_truth, status),
     }
+
+
+def weak_goal_summary(summary: str) -> bool:
+    normalized = " ".join(summary.strip().lower().split())
+    if normalized in {
+        "make progress",
+        "keep investigating",
+        "improve things",
+        "continue work",
+        "continue working",
+        "work on it",
+        "work on this",
+    }:
+        return True
+    return normalized.startswith("work on ") and len(normalized.split()) <= 4
 
 
 def goal_prompt(
@@ -44,15 +61,57 @@ def goal_prompt(
         "Stop and reconcile if repo state conflicts with the goal.",
     ]
     changed_files = ", ".join(repo_truth.get("changed_files", [])) or "none"
+    scope = options.get("scope") or [
+        "Use DevFlow artifacts for workflow state, ledgers, checkpoints, and verification evidence.",
+        "Use define-goal for goal creation, goal refinement, and active goal checks.",
+        "Apply the Goal Suitability Gate before context-health drift appears.",
+    ]
+    non_goals = options.get("non_goals") or [
+        "Do not create duplicate goals.",
+        "Do not force a goal for ordinary narrow implementation solely because it has multiple steps.",
+        "Do not claim hooks or scripts create goals automatically.",
+    ]
+    goal_handoff = [
+        "Apply the Goal Suitability Gate before context-health drift appears.",
+        (
+            "Use a goal for long-running, multi-slice, migration, release, broad-refactor, "
+            "cross-context, subagent/delegation, or high definition-of-done drift risk."
+        ),
+        "Use `define-goal` before goal-backed execution.",
+        "Let `define-goal` inspect the active goal before creating a new goal.",
+        "The objective must include verification evidence, scope boundaries, and stop conditions.",
+    ]
+    goal_command_flow = [
+        "After `define-goal` shapes the objective, set it with `/goal <objective>`.",
+        "Use `/goal` to view the active goal.",
+        "Use `/goal pause`, `/goal resume`, or `/goal clear` to control the active goal.",
+        "If `/goal` is unavailable, enable `features.goals` or run `codex features enable goals`.",
+        "Do not use a top-level CLI `goal` subcommand; Goal Mode is an interactive slash command.",
+    ]
+    if status == "weak":
+        goal_handoff.append("Use `define-goal` to repair the weak activity goal before treating it as complete.")
     return "\n".join(
         [
             "# Goal Mode Prompt",
+            "",
+            "Define-Goal Handoff:",
+            *[f"- {item}" for item in goal_handoff],
+            "",
+            "Goal Slash Command:",
+            *[f"- {item}" for item in goal_command_flow],
             "",
             f"Objective: {objective}",
             "",
             "Completion Contract:",
             "- Context health checks run and produce a grounded report.",
             "- High or Critical risks route to reconciliation, checkpoint, compact, or new-thread handoff.",
+            "- Goal-backed work has a concrete objective with verification evidence.",
+            "",
+            "Scope:",
+            *[f"- {item}" for item in scope],
+            "",
+            "Non-Goals:",
+            *[f"- {item}" for item in non_goals],
             "",
             "Constraints:",
             *[f"- {item}" for item in constraints],

@@ -173,6 +173,39 @@ Continue fixture work.
         self.assertEqual(report["goal"]["status"], "missing")
         self.assertIn("Goal Mode Prompt", report["goal"]["prompt"])
         self.assertIn("Add context health checks", report["goal"]["prompt"])
+        self.assertIn("define-goal", report["goal"]["prompt"])
+        self.assertIn("active goal", report["goal"]["prompt"])
+        self.assertIn("Goal Suitability Gate", report["goal"]["prompt"])
+        self.assertIn("before context-health drift", report["goal"]["prompt"])
+        self.assertIn("/goal <objective>", report["goal"]["prompt"])
+        self.assertIn("/goal pause", report["goal"]["prompt"])
+        self.assertIn("/goal resume", report["goal"]["prompt"])
+        self.assertIn("/goal clear", report["goal"]["prompt"])
+        self.assertIn("features.goals", report["goal"]["prompt"])
+        self.assertIn("codex features enable goals", report["goal"]["prompt"])
+        self.assertNotIn("`codex goal`", report["goal"]["prompt"].lower())
+        self.assertNotIn("codex goal --help", report["goal"]["prompt"].lower())
+        self.assertIn("Scope", report["goal"]["prompt"])
+        self.assertIn("Non-Goals", report["goal"]["prompt"])
+        self.assertIn("Stop Conditions", report["goal"]["prompt"])
+
+    def test_weak_goal_routes_to_define_goal_for_repair(self):
+        repo = self.make_repo()
+        (repo / ".planning" / "STATE.md").write_text(self.state_text(goal_summary="make progress"))
+
+        report = context_health_check(
+            repo,
+            {
+                "current_objective": "Integrate define-goal into DevFlow",
+                "validation_commands": ["python3 -m unittest dev/plugins/dev-flow/tests/test_context_health.py"],
+            },
+        )
+
+        self.assertEqual(report["goal"]["status"], "weak")
+        self.assertIn("define-goal", report["goal"]["prompt"])
+        self.assertIn("repair", report["goal"]["prompt"])
+        self.assertIn("verification evidence", report["goal"]["prompt"])
+        self.assertIn("scope boundaries", report["goal"]["prompt"])
 
     def test_repeated_file_reads_recommend_explorer_subagent(self):
         repo = self.make_repo()

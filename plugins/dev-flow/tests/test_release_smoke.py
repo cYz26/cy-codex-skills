@@ -9,6 +9,10 @@ PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_ARCHIVE = PLUGIN_ROOT / "scripts" / "devflow_runtime.pyz"
 
 
+def normalized_text(text):
+    return " ".join(text.split())
+
+
 class ReleaseSmokeTests(unittest.TestCase):
     def test_manifest_uses_packaged_entrypoints(self):
         manifest = json.loads((PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text())
@@ -78,6 +82,48 @@ class ReleaseSmokeTests(unittest.TestCase):
         self.assertIn("policy/router layer", readme)
         self.assertIn("does not spawn subagents from scripts or hooks", readme)
         self.assertIn("explicit user authorization", readme)
+
+    def test_goal_slash_command_guidance_is_packaged(self):
+        readme = (PLUGIN_ROOT / "README.md").read_text()
+        normalized_readme = normalized_text(readme)
+        for phrase in [
+            "define-goal",
+            "Goal Suitability Gate",
+            "before context-health drift",
+            "long-running",
+            "multi-slice",
+            "migration",
+            "release",
+            "cross-context",
+            "/goal <objective>",
+            "/goal pause",
+            "/goal resume",
+            "/goal clear",
+            "features.goals",
+            "codex features enable goals",
+            "does not call goal tools from hooks or scripts",
+        ]:
+            self.assertIn(normalized_text(phrase), normalized_readme)
+
+        for rel_path in [
+            "assets/templates/AGENTS.md.template",
+            "skills/ai-native-tech-plan/references/goal-prompt-template.md",
+            "skills/context-health-check/SKILL.md",
+        ]:
+            text = (PLUGIN_ROOT / rel_path).read_text()
+            normalized = normalized_text(text)
+            with self.subTest(path=rel_path):
+                self.assertIn("define-goal", normalized)
+                self.assertIn("Goal Suitability Gate", normalized)
+                self.assertIn("before context-health drift", normalized)
+                self.assertIn("/goal <objective>", normalized)
+                self.assertIn("/goal pause", normalized)
+                self.assertIn("/goal resume", normalized)
+                self.assertIn("/goal clear", normalized)
+                self.assertIn("features.goals", normalized)
+                self.assertIn("codex features enable goals", normalized)
+                self.assertNotIn("`codex goal`", normalized.lower())
+                self.assertNotIn("codex goal --help", normalized.lower())
 
 
 if __name__ == "__main__":

@@ -38,6 +38,14 @@ GSD and OpenSpec are activated project-locally through `.agents/skills/`; do not
 
 - Use `superpowers:brainstorming` before committing to a solution when goals, constraints, tradeoffs, or implementation shape are still open.
 - Use `capability-research` when a solution depends on current, external, platform, plugin, API, hook, CLI, installed-cache, or local-vs-platform capability evidence; the detailed evidence workflow lives in that skill.
+- For design, research, architecture, product-shape, or technical-plan requests,
+  create a `Skill Routing Ledger` before writing the final design or plan. Record
+  `kind`, workflow mode, `capability-research: required/used/skipped`,
+  `brainstorming: required/used/skipped`, `writing-plans`, OpenSpec/GSD routing,
+  and the concrete reason for any skip.
+- If an artifact has unresolved `Open Questions`, Brainstorming cannot be marked
+  skipped. Mark the artifact as draft, not final, and return to
+  `superpowers:brainstorming` or record `brainstorming: required` in the ledger.
 - Use `openspec-explore` during brainstorming when the uncertainty is about user-visible behavior, compatibility, requirements, or acceptance criteria.
 - Use `gsd-discuss-phase` during brainstorming when the uncertainty is about milestones, sequencing, scope boundaries, or phase structure.
 - Use `superpowers:writing-plans` before writing a non-trivial implementation plan, phase plan, migration plan, or refactor plan.
@@ -45,6 +53,28 @@ GSD and OpenSpec are activated project-locally through `.agents/skills/`; do not
 - Use `openspec-propose` after brainstorming when behavior-level artifacts need to become proposal, design, specs, and tasks.
 - Use `gsd-plan-phase` after brainstorming when the work should become an approved phase plan.
 - Do not move from brainstorming/planning into implementation until the chosen plan, scope, verification approach, and open risks are recorded.
+
+## Goal Workflow
+
+- Apply the Goal Suitability Gate during intake or planning, before
+  context-health drift appears. Use `define-goal` when the user asks to create,
+  set, refine, or use a goal, asks for goal-backed work, or when the
+  development task is long-running, multi-slice, migration or release oriented,
+  broad-refactor oriented, cross-context, subagent/delegation backed, or
+  otherwise likely to lose its definition of done.
+- `define-goal` owns active goal checks, goal-tool calls, objective wording,
+  verification evidence, scope boundaries, non-goals, and stop conditions.
+- After `define-goal` shapes the objective, set it in a Codex app, IDE, or CLI
+  composer with `/goal <objective>`. Use `/goal`, `/goal pause`,
+  `/goal resume`, and `/goal clear` to inspect or control the active goal.
+- If `/goal` is unavailable, enable `features.goals` in Codex config or run
+  `codex features enable goals`. Do not rely on a top-level CLI `goal`
+  subcommand.
+- Do not require a Codex goal for ordinary narrow implementation work solely
+  because it has multiple steps. Treat context-health goal drift as a repair
+  signal after drift is discovered, not the primary trigger.
+- DevFlow hooks and scripts may generate Goal Mode Prompts and route to
+  `define-goal`, but they do not call goal tools automatically.
 
 ## AI Coding Planning Rules
 
@@ -161,6 +191,15 @@ Superpowers is activated project-locally through `.agents/skills/`; do not enabl
 - Deferral is an exception: only defer findings that are out of scope, destructive or risky, require dependency or architecture decisions, or need explicit user approval.
 - Deferred findings must record the reason, residual risk and follow-up path.
 - Verification evidence must record the score, findings, and optimization decisions, plus the evaluated target.
+
+## Local Reference Update Reminder
+
+After major Codex plugin or skill changes, remind the user to update local Codex
+references before relying on the changed behavior locally. Start dry-run:
+`python3 dev/scripts/codex_auto_update_plugins_skills.py --json`. Report release
+asset sync, installed plugin cache refresh needs, and project-local skill links
+migration. Apply mode requires explicit update intent or confirmation; record any
+skipped local reference update with reason and residual risk.
 
 ## Execution Rules
 

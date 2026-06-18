@@ -389,6 +389,32 @@ class ProjectOrchestratorTests(unittest.TestCase):
                 self.assertIn("Deferral is an exception", text)
                 self.assertIn("residual risk and follow-up path", text)
 
+    def test_plugin_skill_changes_remind_local_reference_update(self):
+        paths = {
+            "root": REPO_ROOT / "AGENTS.md",
+            "dev-template": PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template",
+            "release-template": RELEASE_PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template",
+            "dev-task-ledger": PLUGIN_ROOT
+            / "skills"
+            / "ai-native-tech-plan"
+            / "assets"
+            / "task-ledger-template.md",
+            "release-task-ledger": RELEASE_PLUGIN_ROOT
+            / "skills"
+            / "ai-native-tech-plan"
+            / "assets"
+            / "task-ledger-template.md",
+        }
+        for label, path in paths.items():
+            text = path.read_text()
+            normalized = " ".join(text.split())
+            with self.subTest(path=label):
+                self.assertIn("Local Reference Update Reminder", text)
+                self.assertIn("local Codex references", normalized)
+                self.assertIn("codex_auto_update_plugins_skills.py --json", text)
+                self.assertIn("installed plugin cache", normalized)
+                self.assertIn("project-local skill links", normalized)
+
     def test_repair_guidance_is_systemic_first_before_minimal_fix(self):
         paths = {
             "root": REPO_ROOT / "AGENTS.md",
@@ -413,6 +439,46 @@ class ProjectOrchestratorTests(unittest.TestCase):
             text = (PLUGIN_ROOT / "skills" / skill_name / "SKILL.md").read_text()
             for phrase in phrases:
                 self.assertIn(phrase, text, skill_name)
+
+    def test_skill_routing_ledger_guards_brainstorming_gate(self):
+        paths = {
+            "root": REPO_ROOT / "AGENTS.md",
+            "dev-template": PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template",
+            "release-template": RELEASE_PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template",
+            "task-ledger": PLUGIN_ROOT
+            / "skills"
+            / "ai-native-tech-plan"
+            / "assets"
+            / "task-ledger-template.md",
+        }
+        for label, path in paths.items():
+            text = path.read_text()
+            with self.subTest(path=label):
+                self.assertIn("Skill Routing Ledger", text)
+                self.assertIn("brainstorming: required/used/skipped", text)
+                self.assertIn("Open Questions", text)
+
+        skill_expectations = {
+            "project-orchestrator": [
+                "design, research, architecture, or product-shape requests",
+                "feature-intake before ai-native-tech-plan",
+            ],
+            "feature-intake": [
+                "Skill Routing Ledger",
+                "brainstorming: required/used/skipped",
+                "Open Questions",
+            ],
+            "ai-native-tech-plan": [
+                "Skill Routing Ledger",
+                "Open Questions remain",
+                "draft, not final",
+            ],
+        }
+        for skill_name, phrases in skill_expectations.items():
+            text = (PLUGIN_ROOT / "skills" / skill_name / "SKILL.md").read_text()
+            with self.subTest(skill=skill_name):
+                for phrase in phrases:
+                    self.assertIn(phrase, text)
 
     def test_subagent_strategy_is_routed_with_explicit_authorization(self):
         project_orchestrator = (PLUGIN_ROOT / "skills" / "project-orchestrator" / "SKILL.md").read_text()
@@ -473,7 +539,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
                     self.assertIn(phrase, text)
 
     def test_devflow_hooks_and_scripts_do_not_spawn_subagents(self):
-        forbidden = ["spawn_agent", "Task(", "/goal"]
+        forbidden = ["spawn_agent", "Task("]
         scan_roots = [
             PLUGIN_ROOT / "hooks.json",
             *sorted((PLUGIN_ROOT / "scripts").glob("*.py")),
@@ -483,6 +549,29 @@ class ProjectOrchestratorTests(unittest.TestCase):
         violations = []
         for path in scan_roots:
             text = path.read_text()
+            for token in forbidden:
+                if token in text:
+                    violations.append(f"{path.relative_to(REPO_ROOT)} contains {token}")
+
+        self.assertEqual(violations, [])
+
+    def test_devflow_hooks_and_scripts_do_not_execute_goal_tools(self):
+        forbidden = [
+            "create_goal(",
+            "get_goal(",
+            "update_goal(",
+            "`codex goal`",
+            "codex goal --help",
+        ]
+        scan_roots = [
+            PLUGIN_ROOT / "hooks.json",
+            *sorted((PLUGIN_ROOT / "scripts").glob("*.py")),
+            RELEASE_PLUGIN_ROOT / "hooks.json",
+            *sorted((RELEASE_PLUGIN_ROOT / "scripts").glob("*.py")),
+        ]
+        violations = []
+        for path in scan_roots:
+            text = path.read_text().lower()
             for token in forbidden:
                 if token in text:
                     violations.append(f"{path.relative_to(REPO_ROOT)} contains {token}")
@@ -591,6 +680,43 @@ class ProjectOrchestratorTests(unittest.TestCase):
         )
         allowed = run_script_allow_failure("lint_ai_plan.py", str(policy_doc))
         self.assertEqual(allowed.returncode, 0, allowed.stdout + allowed.stderr)
+
+    def test_lint_ai_plan_flags_open_questions_without_brainstorming_route(self):
+        repo = self.make_repo()
+        missing_route = repo / "missing-route.md"
+        write_ai_plan(
+            missing_route,
+            "Slice 1: validated capability.",
+            target="Design the complete feature.",
+            contract="- [ ] Open choices are explicit",
+        )
+        missing_route.write_text(
+            missing_route.read_text()
+            + "\n## Open Questions\n\n- Which deployment shape should be selected?\n"
+        )
+
+        bad = run_script_allow_failure("lint_ai_plan.py", str(missing_route))
+        self.assertEqual(bad.returncode, 1)
+        self.assertIn("unresolved Open Questions require brainstorming", bad.stdout)
+
+        routed = repo / "routed.md"
+        write_ai_plan(
+            routed,
+            "Slice 1: validated capability.",
+            preface=(
+                "## Skill Routing Ledger\n\n"
+                "- kind: new-feature\n"
+                "- brainstorming: required - product tradeoffs remain.\n"
+            ),
+            target="Design the complete feature.",
+            contract="- [ ] Open choices are explicit",
+        )
+        routed.write_text(
+            routed.read_text() + "\n## Open Questions\n\n- Which deployment shape should be selected?\n"
+        )
+
+        good = run_script_allow_failure("lint_ai_plan.py", str(routed))
+        self.assertEqual(good.returncode, 0, good.stdout + good.stderr)
 
     def test_create_change_updates_state_and_validate_reports_missing_artifacts(self):
         repo = self.make_repo("greenfield-empty")

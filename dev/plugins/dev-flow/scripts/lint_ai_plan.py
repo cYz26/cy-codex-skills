@@ -30,6 +30,13 @@ REQUIRED_HEADINGS = [
     "Validation Commands",
 ]
 
+OPEN_QUESTIONS_HEADING = re.compile(r"^##\s+Open Questions(?!\s*\(RESOLVED\))", re.IGNORECASE | re.MULTILINE)
+ACTIVE_BRAINSTORMING_ROUTE = re.compile(
+    r"(superpowers:brainstorming|brainstorming\s*:\s*(required|used|pending))",
+    re.IGNORECASE,
+)
+SKIPPED_BRAINSTORMING_ROUTE = re.compile(r"brainstorming\s*:\s*skipp?ed", re.IGNORECASE)
+
 
 def lint_ai_plan(path: Path, *, skip_required_headings: bool = False) -> dict[str, object]:
     text = path.read_text(encoding="utf-8")
@@ -44,6 +51,14 @@ def lint_ai_plan(path: Path, *, skip_required_headings: bool = False) -> dict[st
     missing: list[str] = []
     if not skip_required_headings:
         missing = [heading for heading in REQUIRED_HEADINGS if heading not in text]
+
+    open_questions = OPEN_QUESTIONS_HEADING.search(text)
+    if open_questions:
+        line = text[: open_questions.start()].count("\n") + 1
+        if SKIPPED_BRAINSTORMING_ROUTE.search(text) or not ACTIVE_BRAINSTORMING_ROUTE.search(text):
+            findings.append(
+                f"line {line}: unresolved Open Questions require brainstorming in the Skill Routing Ledger"
+            )
 
     return {
         "ok": not findings and not missing,

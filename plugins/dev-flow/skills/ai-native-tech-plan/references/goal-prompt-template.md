@@ -7,6 +7,21 @@
 
 Goal: fully implement <task-name> Target State, not a prototype or partial implementation.
 
+Define-goal handoff:
+- Apply the Goal Suitability Gate before context-health drift appears.
+- Use a goal for long-running, multi-slice, migration, release, broad-refactor,
+  cross-context, subagent/delegation, or high definition-of-done drift risk.
+- Use `define-goal` to create or refine this goal before goal-backed execution.
+- Let `define-goal` check the active goal before creating a new goal.
+- Include verification evidence, scope boundaries, non-goals, and stop conditions.
+
+Goal Slash Command:
+- After `define-goal` shapes the objective, set it with `/goal <objective>`.
+- Use `/goal` to view the active goal.
+- Use `/goal pause`, `/goal resume`, or `/goal clear` to control the active goal.
+- If `/goal` is unavailable, enable `features.goals` or run `codex features enable goals`.
+- Do not use a top-level CLI `goal` subcommand; Goal Mode is an interactive slash command.
+
 Rules:
 - Read and maintain <ledger-file> first.
 - Start from the next unfinished Capability Slice.
@@ -24,6 +39,10 @@ Validation evidence:
 - <command 1>
 - <command 2>
 - <manual check if needed>
+
+Stop conditions:
+- Stop when the Completion Contract and Acceptance Criteria are satisfied.
+- Stop early if the active goal conflicts with repo state or validation evidence.
 ```
 
 ## Continue Prompt

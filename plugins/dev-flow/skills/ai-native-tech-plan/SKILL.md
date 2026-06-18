@@ -37,17 +37,35 @@ Use instead:
 ## Workflow
 
 1. Read project context: `AGENTS.md`, `.planning/STATE.md`, active OpenSpec change, and relevant source files.
-2. If behavior, API, persistence, integration, compatibility, or error handling changes are involved, route through OpenSpec before implementation.
-3. If the plan depends on current documentation, external/platform behavior, plugin or hook semantics, local installed cache, or unstable platform assumptions, use `capability-research` before choosing the implementation path.
-4. If goals or tradeoffs are still open, use `superpowers:brainstorming`.
-5. Before committing to a non-trivial implementation plan, use `superpowers:writing-plans`.
-6. Add a SubAgent Strategy section when independent Capability Slices can run in
+2. Add a Skill Routing Ledger before the final plan or design. Record request
+   kind, workflow mode, `capability-research: required/used/skipped`,
+   `brainstorming: required/used/skipped`, `writing-plans:
+   required/used/skipped/pending`, OpenSpec/GSD routing, and the reason for any
+   skipped gate.
+3. If behavior, API, persistence, integration, compatibility, or error handling changes are involved, route through OpenSpec before implementation.
+4. If the plan depends on current documentation, external/platform behavior, plugin or hook semantics, local installed cache, or unstable platform assumptions, use `capability-research` before choosing the implementation path.
+5. If goals, constraints, tradeoffs, implementation shape, or Open Questions remain, use `superpowers:brainstorming`; if Brainstorming has not happened yet, mark the artifact as draft, not final.
+6. Apply the Goal Suitability Gate before writing the final plan, before
+   context-health drift appears. Route goal creation/refinement through
+   `define-goal` when the user asks for a goal or when the task is
+   long-running, multi-slice, migration or release oriented, broad-refactor
+   oriented, cross-context, subagent/delegation backed, or otherwise likely to
+   lose its definition of done. The Goal Mode Prompt should include
+   verification evidence, scope boundaries, non-goals, and stop conditions, but
+   this skill does not call goal tools directly. After `define-goal` shapes the
+   objective, use `/goal <objective>` in a Codex app, IDE, or CLI composer; use
+   `/goal`, `/goal pause`, `/goal resume`, and `/goal clear` to inspect or
+   control it. If unavailable, enable `features.goals` or run
+   `codex features enable goals`. Treat context-health goal drift as a repair
+   signal, not the primary trigger.
+7. Before committing to a non-trivial implementation plan, use `superpowers:writing-plans`.
+8. Add a SubAgent Strategy section when independent Capability Slices can run in
    parallel or when context-health/review risk suggests delegation. Record the
    authorization state, proposed worker ownership, disjoint write sets,
    main-agent-owned artifacts, and fallback when subAgents are unavailable.
-7. For medium or large tasks, write the Execution Ledger to a repo file such as `.ai/tasks/<yyyy-mm-dd>-<task-name>.md`, or the repo's established planning location.
-8. During implementation, use `superpowers:test-driven-development` where applicable and update ledger statuses only after validation.
-9. Before completion, use `superpowers:verification-before-completion` and verify the Completion Contract.
+9. For medium or large tasks, write the Execution Ledger to a repo file such as `.ai/tasks/<yyyy-mm-dd>-<task-name>.md`, or the repo's established planning location.
+10. During implementation, use `superpowers:test-driven-development` where applicable and update ledger statuses only after validation.
+11. Before completion, use `superpowers:verification-before-completion` and verify the Completion Contract.
 
 ## Superpowers, GSD, and OpenSpec Fit
 
@@ -64,19 +82,20 @@ Use Superpowers outputs as planning discipline, then persist the approved result
 
 When generating a plan, include:
 
-1. Target State
-2. Scope / Non-Goals
-3. Architecture Decisions
-4. SubAgent Strategy
-5. Completion Contract
-6. Capability Slices
-7. Execution Ledger
-8. Acceptance Criteria
-9. Validation Commands
-10. Risks / Rollback
-11. Goal Mode Prompt
-12. Continue Prompt
-13. Review Checklist
+1. Skill Routing Ledger
+2. Target State
+3. Scope / Non-Goals
+4. Architecture Decisions
+5. SubAgent Strategy
+6. Completion Contract
+7. Capability Slices
+8. Execution Ledger
+9. Acceptance Criteria
+10. Validation Commands
+11. Risks / Rollback
+12. Goal Mode Prompt
+13. Continue Prompt
+14. Review Checklist
 
 For detailed templates, read only the relevant bundled file:
 

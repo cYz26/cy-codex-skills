@@ -48,6 +48,26 @@ validation before marking ledger items complete.
 ## Routing
 
 - No workflow files: use `project-setup`.
+- Apply the Goal Suitability Gate during routing, before context-health drift
+  appears. Use `define-goal` when the user asks to create, set, refine, or use a
+  goal, asks for goal-backed execution, or when the development task is
+  long-running, multi-slice, migration or release oriented, broad-refactor
+  oriented, cross-context,
+  subagent/delegation backed, or otherwise likely to lose its definition of
+  done. `define-goal` owns the active goal check and goal-tool calls.
+- After `define-goal` shapes the objective, use `/goal <objective>` in a Codex
+  app, IDE, or CLI composer. Use `/goal`, `/goal pause`, `/goal resume`, and
+  `/goal clear` to inspect or control it; if unavailable, enable
+  `features.goals` or run `codex features enable goals`.
+- For ordinary implementation work that is narrow, do not force goal creation
+  only because the task has multiple steps; route through the normal DevFlow
+  gates below. Treat context-health goal drift as a repair signal, not the
+  primary trigger.
+- For design, research, architecture, or product-shape requests with open goals,
+  constraints, tradeoffs, or implementation shape, use `feature-intake before ai-native-tech-plan`.
+  Intake must decide whether `capability-research`,
+  `superpowers:brainstorming`, OpenSpec, GSD, or `ai-native-tech-plan` owns the
+  next gate.
 - Technical plan, implementation plan, architecture plan, Codex execution plan, workflow plan, or anti-partial-delivery request: use `ai-native-tech-plan`.
 - Current, external, platform, plugin, API, hook, CLI, installed-cache, or local-vs-platform capability uncertainty: use `capability-research` for the Capability Evidence Gate before choosing a solution.
 - New feature, bug, behavior/API change, migration, or integration: use `feature-intake`.
@@ -68,4 +88,4 @@ Superpowers provides process discipline; OpenSpec, GSD, and DevFlow planning fil
 
 ## Safety
 
-Do not edit production code during setup/intake/planning. Do not archive without verification evidence. Ask before dependencies, migrations, API breaks, or broad rewrites. Treat GSD phases as workflow governance; technical completion is governed by Target State, Completion Contract, Capability Slices, Execution Ledger, and Validation Commands.
+Do not edit production code during setup/intake/planning. Do not archive without verification evidence. Ask before dependencies, migrations, API breaks, or broad rewrites. Treat GSD phases as workflow governance; technical completion is governed by Target State, Completion Contract, Capability Slices, Execution Ledger, and Validation Commands. DevFlow hooks and scripts do not call goal tools; they can only route users back to `define-goal` in a Codex surface that supports goals.

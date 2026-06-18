@@ -22,6 +22,10 @@ from workflow_dependencies import dependency_report
 from codex_auto_update_plugins_skills import plugin_install_results, run_external_updaters
 
 
+def normalized_text(text):
+    return " ".join(text.split())
+
+
 class ReleaseSmokeTests(unittest.TestCase):
     def write_skill(self, path, name=None):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -431,8 +435,108 @@ context_health:
         ]:
             self.assertIn(phrase, readme)
 
+    def test_release_skill_routing_ledger_guards_brainstorming_gate(self):
+        expectations = {
+            "project-orchestrator": [
+                "design, research, architecture, or product-shape requests",
+                "feature-intake before ai-native-tech-plan",
+            ],
+            "feature-intake": [
+                "Skill Routing Ledger",
+                "brainstorming: required/used/skipped",
+                "Open Questions",
+            ],
+            "ai-native-tech-plan": [
+                "Skill Routing Ledger",
+                "Open Questions remain",
+                "draft, not final",
+            ],
+        }
+        for skill, phrases in expectations.items():
+            text = (PLUGIN_ROOT / "skills" / skill / "SKILL.md").read_text()
+            with self.subTest(skill=skill):
+                for phrase in phrases:
+                    self.assertIn(phrase, text)
+
+        for rel_path in [
+            "assets/templates/AGENTS.md.template",
+            "skills/ai-native-tech-plan/assets/task-ledger-template.md",
+        ]:
+            text = (PLUGIN_ROOT / rel_path).read_text()
+            with self.subTest(path=rel_path):
+                self.assertIn("Skill Routing Ledger", text)
+                self.assertIn("brainstorming: required/used/skipped", text)
+
+    def test_release_goal_workflow_routes_to_define_goal(self):
+        readme = (PLUGIN_ROOT / "README.md").read_text()
+        skill_expectations = {
+            "project-orchestrator": [
+                "define-goal",
+                "goal-backed",
+                "Goal Suitability Gate",
+                "ordinary implementation",
+            ],
+            "feature-intake": [
+                "define-goal",
+                "active goal",
+                "Goal Suitability Gate",
+                "verification evidence",
+            ],
+            "ai-native-tech-plan": [
+                "define-goal",
+                "Goal Mode Prompt",
+                "Goal Suitability Gate",
+                "stop conditions",
+            ],
+        }
+        for skill, phrases in skill_expectations.items():
+            text = (PLUGIN_ROOT / "skills" / skill / "SKILL.md").read_text()
+            with self.subTest(skill=skill):
+                normalized = normalized_text(text)
+                for phrase in phrases:
+                    self.assertIn(normalized_text(phrase), normalized)
+
+        normalized_readme = normalized_text(readme)
+        for phrase in [
+            "define-goal",
+            "goal-backed",
+            "Goal Suitability Gate",
+            "before context-health drift",
+            "long-running",
+            "multi-slice",
+            "migration",
+            "release",
+            "cross-context",
+            "/goal <objective>",
+            "codex features enable goals",
+            "does not call goal tools from hooks or scripts",
+        ]:
+            self.assertIn(normalized_text(phrase), normalized_readme)
+
+        for rel_path in [
+            "assets/templates/AGENTS.md.template",
+            "skills/ai-native-tech-plan/references/goal-prompt-template.md",
+            "skills/context-health-check/SKILL.md",
+        ]:
+            text = (PLUGIN_ROOT / rel_path).read_text()
+            normalized = normalized_text(text)
+            with self.subTest(path=rel_path):
+                self.assertIn("define-goal", normalized)
+                self.assertIn("verification evidence", normalized)
+                self.assertIn("Goal Suitability Gate", normalized)
+                self.assertIn("before context-health drift", normalized)
+                self.assertIn("stop conditions", normalized)
+                self.assertIn("/goal <objective>", normalized)
+                self.assertIn("/goal pause", normalized)
+                self.assertIn("/goal resume", normalized)
+                self.assertIn("/goal clear", normalized)
+                self.assertIn("features.goals", normalized)
+                self.assertIn("codex features enable goals", normalized)
+                self.assertNotIn("`codex goal`", normalized.lower())
+                self.assertNotIn("codex goal --help", normalized.lower())
+
     def test_release_hooks_and_scripts_do_not_spawn_subagents(self):
-        forbidden = ["spawn_agent", "Task(", "/goal"]
+        forbidden = ["spawn_agent", "Task("]
         scan_roots = [
             PLUGIN_ROOT / "hooks.json",
             *sorted((PLUGIN_ROOT / "scripts").glob("*.py")),
@@ -440,6 +544,27 @@ context_health:
         violations = []
         for path in scan_roots:
             text = path.read_text()
+            for token in forbidden:
+                if token in text:
+                    violations.append(f"{path.relative_to(PLUGIN_ROOT)} contains {token}")
+
+        self.assertEqual(violations, [])
+
+    def test_release_hooks_and_scripts_do_not_execute_goal_tools(self):
+        forbidden = [
+            "create_goal(",
+            "get_goal(",
+            "update_goal(",
+            "`codex goal`",
+            "codex goal --help",
+        ]
+        scan_roots = [
+            PLUGIN_ROOT / "hooks.json",
+            *sorted((PLUGIN_ROOT / "scripts").glob("*.py")),
+        ]
+        violations = []
+        for path in scan_roots:
+            text = path.read_text().lower()
             for token in forbidden:
                 if token in text:
                     violations.append(f"{path.relative_to(PLUGIN_ROOT)} contains {token}")

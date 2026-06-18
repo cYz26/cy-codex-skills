@@ -29,7 +29,24 @@ python3 scripts/context_health_check.py --repo <repo> --write-report --json
 
 ## Goal Handling
 
-If the report says `goal.status` is `missing`, `stale`, or `conflicting`, do not assume memory is sufficient. Use the generated Goal Mode Prompt in a Codex surface that supports `/goal`, or persist the prompt in the next checkpoint when `/goal` cannot be executed directly.
+Context-health is not the primary trigger for goal-backed execution. DevFlow
+should apply the Goal Suitability Gate during intake or planning, before
+context-health drift appears. Long-running, multi-slice, migration, release,
+broad-refactor, cross-context, and subagent/delegation-backed work should route
+to `define-goal` before execution when the definition of done is likely to
+drift.
+
+If the report says `goal.status` is `missing`, `stale`, `conflicting`, or
+`weak`, do not assume memory is sufficient. Use `define-goal` to create or
+repair a measurable objective with verification evidence, scope boundaries,
+non-goals, and stop conditions.
+
+After `define-goal` shapes the objective, set it in a Codex app, IDE, or CLI
+composer with `/goal <objective>`. Use `/goal` to view the current goal and
+`/goal pause`, `/goal resume`, or `/goal clear` to control it. If `/goal` is
+not available, enable `features.goals` in Codex config or run
+`codex features enable goals`. When `/goal` cannot be executed directly,
+persist the generated Goal Mode Prompt in the next checkpoint.
 
 ## Subagent Handling
 

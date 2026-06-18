@@ -7,6 +7,16 @@
 - Status: todo
 - Source Request: <short summary>
 
+## Skill Routing Ledger
+
+- kind: <new-feature | bug-fix | workflow-repair | docs-only | tooling | other>
+- workflow mode: <Full OpenSpec | Lightweight Ledger | Prototype Mode>
+- capability-research: required/used/skipped - <reason>
+- brainstorming: required/used/skipped - <reason>
+- writing-plans: required/used/skipped/pending - <reason>
+- openspec/gsd: required/used/skipped - <reason>
+- Open Questions: <none | unresolved questions require brainstorming or explicit draft status>
+
 ## Target State
 
 <Describe the complete final state.>
@@ -93,6 +103,16 @@
 - [ ] smoke test
 - [ ] docs updated
 - [ ] review completed
+
+## Local Reference Update Reminder
+
+- [ ] If this task changed major Codex plugins or skills, remind the user to
+  update local Codex references before relying on the changed behavior locally.
+- [ ] Start dry-run: `python3 dev/scripts/codex_auto_update_plugins_skills.py --json`.
+- [ ] Report release asset sync, installed plugin cache refresh needs, and
+  project-local skill links migration.
+- [ ] Apply only after explicit update intent or confirmation; record skipped
+  local reference update reason and residual risk.
 
 ## Final Result
 

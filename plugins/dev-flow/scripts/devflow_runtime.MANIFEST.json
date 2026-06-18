@@ -1,15 +1,15 @@
 {
   "archive": {
-    "bytes": 110379,
+    "bytes": 111497,
     "path": "scripts/devflow_runtime.pyz",
-    "sha256": "9362f1270d52af65f89b1ead2987f8cbbc98c55ab2765c989510b1e1d821f255"
+    "sha256": "c013bc45d00c7f6dea07e31bf7edc922ac6f6d70238f63cfdf26673570d5f47e"
   },
   "buildCommand": [
     "python3",
     "dev/scripts/package_devflow_release_runtime.py"
   ],
   "schemaVersion": 1,
-  "sourceCommit": "a6b498756d121342f3ff88980a6e64807c5ca3de",
+  "sourceCommit": "e09e3bf77e4873ae02bfbd2b9f3d643a3c33f196",
   "sources": [
     {
       "bytes": 1866,
@@ -107,9 +107,9 @@
       "sha256": "b94c3d7afd9b8ce8d2844bb55395be2ff23db8e356baf43c0c2a24127234c3fe"
     },
     {
-      "bytes": 2205,
+      "bytes": 2941,
       "path": "dev/plugins/dev-flow/scripts/lint_ai_plan.py",
-      "sha256": "8585d1c2ed68bb509a241e8db211762e885937c9de5dac953388bd166dde3a31"
+      "sha256": "a4c47bd4b122aa93fc28aebc4b674e6091ba7943e21e725ac27dbfc353778972"
     },
     {
       "bytes": 655,
@@ -322,9 +322,9 @@
       "sha256": "957ff68db95dc106e1d19b9be54d0ab4442eade7723a3ca31d1ecb3b7eecfcc6"
     },
     {
-      "bytes": 3086,
+      "bytes": 5764,
       "path": "dev/plugins/dev-flow/scripts/workflow_context_health_goal.py",
-      "sha256": "1564a79ef0773c27effc923e6edb3f9ad8c514437850e9372594059515d215cb"
+      "sha256": "43cc41cd1b2b677c88d557570b5978af4ed11316046bd3b9c428009a6b1851f5"
     },
     {
       "bytes": 2999,

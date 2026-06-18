@@ -45,6 +45,40 @@ or `block`. Warn mode exits successfully while still emitting diagnostics; block
 mode exits non-zero for blocking diagnostics; off mode emits no model-visible
 diagnostic.
 
+## Skill Routing Ledger
+
+Design, research, architecture, product-shape, and technical-plan requests must
+record a Skill Routing Ledger before the final artifact. The ledger records the
+request kind, workflow mode, capability-research decision, `brainstorming:
+required/used/skipped`, writing-plans decision, OpenSpec/GSD route, and the
+reason for every skipped gate. If unresolved Open Questions remain,
+Brainstorming cannot be skipped; keep the artifact as draft or record
+`brainstorming: required`.
+
+## Goal Workflow
+
+DevFlow routes goal-backed work to `define-goal`. Apply the Goal Suitability
+Gate during intake or planning, before context-health drift appears. Route to
+`define-goal` when the user asks to create, set, refine, or use a goal, or when
+the development task is long-running, multi-slice, migration or release
+oriented, broad-refactor oriented, cross-context, subagent/delegation backed, or
+otherwise likely to lose its definition of done. `define-goal` owns the active
+goal check, objective quality bar, verification evidence, scope boundaries, and
+stop conditions before goal creation.
+
+After `define-goal` shapes the objective, set it in a Codex app, IDE, or CLI
+composer with `/goal <objective>`. Use `/goal` to view the current goal and
+`/goal pause`, `/goal resume`, or `/goal clear` to control it. If `/goal` is
+not available, enable `features.goals` in Codex config or run
+`codex features enable goals`.
+
+Ordinary narrow implementation work does not require a Codex goal just because
+it has multiple steps. Context-health goal statuses are a repair path after
+drift is discovered, not the primary trigger for goal-backed execution. DevFlow
+owns OpenSpec changes, ledgers, checkpoints, context-health reports, and
+verification evidence. DevFlow does not call goal tools from hooks or scripts,
+and it does not rely on a top-level CLI `goal` subcommand.
+
 ## Archive Automation
 
 Archive policy lives under `archive.policy` in `.dev-flow.json` and defaults to
