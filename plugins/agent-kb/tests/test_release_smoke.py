@@ -25,6 +25,15 @@ class AgentKBReleaseSmokeTests(unittest.TestCase):
         self.assertEqual(manifest["interface"]["displayName"], "AgentKB")
         self.assertEqual(manifest["skills"], "./skills/")
         self.assertEqual(manifest["hooks"], "./hooks.json")
+        self.assertEqual(manifest["author"]["url"], "https://github.com/cYz26")
+        self.assertEqual(manifest["repository"], "https://github.com/cYz26/cy-codex-skills")
+        self.assertEqual(
+            manifest["homepage"],
+            "https://github.com/cYz26/cy-codex-skills/tree/main/plugins/agent-kb",
+        )
+        self.assertEqual(manifest["interface"]["developerName"], "cY")
+        self.assertEqual(manifest["interface"]["websiteURL"], manifest["homepage"])
+        self.assertNotIn("github.com/local", json.dumps(manifest))
         self.assertTrue((PLUGIN_ROOT / "hooks.json").exists())
         self.assertTrue((PLUGIN_ROOT / "scripts" / "kb_event_hook.py").exists())
         hooks = json.loads((PLUGIN_ROOT / "hooks.json").read_text())["hooks"]

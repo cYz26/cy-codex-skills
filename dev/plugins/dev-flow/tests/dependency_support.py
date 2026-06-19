@@ -162,7 +162,7 @@ class DependencyFixtureMixin:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(f"name = \"{agent}\"\n")
 
-    def write_gsd_core_runtime(self, repo, version="1.4.5"):
+    def write_gsd_core_runtime(self, repo, version="1.5.0"):
         runtime = repo / ".codex" / "gsd-core"
         (runtime / "bin").mkdir(parents=True, exist_ok=True)
         (runtime / "VERSION").write_text(f"{version}\n")

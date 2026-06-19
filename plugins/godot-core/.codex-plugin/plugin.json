@@ -4,10 +4,10 @@
   "description": "Research-grounded Codex workflows for Godot 4.6 engineering, Web delivery, and WeChat/Douyin mini-game adaptation.",
   "author": {
     "name": "cY",
-    "url": "https://github.com/changyiZ"
+    "url": "https://github.com/cYz26"
   },
-  "homepage": "https://github.com/changyiZ/cy-codex-skills/tree/main/plugins/godot-core",
-  "repository": "https://github.com/changyiZ/cy-codex-skills",
+  "homepage": "https://github.com/cYz26/cy-codex-skills/tree/main/plugins/godot-core",
+  "repository": "https://github.com/cYz26/cy-codex-skills",
   "license": "UNLICENSED",
   "keywords": [
     "godot",
@@ -29,9 +29,9 @@
       "Read",
       "Write"
     ],
-    "websiteURL": "https://github.com/changyiZ/cy-codex-skills/tree/main/plugins/godot-core",
-    "privacyPolicyURL": "https://github.com/changyiZ/cy-codex-skills/blob/main/plugins/godot-core/README.md",
-    "termsOfServiceURL": "https://github.com/changyiZ/cy-codex-skills/blob/main/plugins/godot-core/README.md",
+    "websiteURL": "https://github.com/cYz26/cy-codex-skills/tree/main/plugins/godot-core",
+    "privacyPolicyURL": "https://github.com/cYz26/cy-codex-skills/blob/main/plugins/godot-core/README.md",
+    "termsOfServiceURL": "https://github.com/cYz26/cy-codex-skills/blob/main/plugins/godot-core/README.md",
     "defaultPrompt": [
       "Use Godot Core to diagnose this Godot runtime error and propose a minimal fix.",
       "Use Godot Core to prepare this Godot Web export and call out platform-specific risks.",

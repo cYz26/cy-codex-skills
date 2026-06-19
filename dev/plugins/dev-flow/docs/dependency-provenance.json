@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lastVerified": "2026-06-14",
+  "lastVerified": "2026-06-19",
   "dependencies": [
     {
       "name": "openspec-cli",
@@ -20,7 +20,7 @@
       "name": "gsd-core",
       "required": true,
       "purpose": "Project-local GSD runtime used by DevFlow planning, verification, and state commands.",
-      "expectedVersion": "1.4.5",
+      "expectedVersion": "1.5.0",
       "binaryPath": "{repo}/.codex/gsd-core/bin/gsd-tools.cjs",
       "versionFile": "{repo}/.codex/gsd-core/VERSION",
       "installCommand": ["npx", "-y", "@opengsd/gsd-core@latest", "--codex", "--local", "--profile=standard"],

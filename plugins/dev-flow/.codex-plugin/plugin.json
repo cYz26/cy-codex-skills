@@ -3,11 +3,11 @@
   "version": "0.3.0+codex.20260529145038",
   "description": "Codex dev workflow.",
   "author": {
-    "name": "Codex Local",
-    "url": "https://github.com/local/dev-flow"
+    "name": "cY",
+    "url": "https://github.com/cYz26"
   },
-  "homepage": "https://github.com/local/dev-flow",
-  "repository": "https://github.com/local/dev-flow",
+  "homepage": "https://github.com/cYz26/cy-codex-skills/tree/main/plugins/dev-flow",
+  "repository": "https://github.com/cYz26/cy-codex-skills",
   "license": "MIT",
   "keywords": [
     "codex",
@@ -22,16 +22,16 @@
     "displayName": "DevFlow",
     "shortDescription": "Plan-first project workflow setup and gates",
     "longDescription": "Initializes Codex-first setup, AI-native target-state planning, OpenSpec planning, verification, checkpoints, and repair.",
-    "developerName": "Codex Local",
+    "developerName": "cY",
     "category": "Coding",
     "capabilities": [
       "Interactive",
       "Read",
       "Write"
     ],
-    "websiteURL": "https://github.com/local/dev-flow",
-    "privacyPolicyURL": "https://openai.com/policies/privacy-policy/",
-    "termsOfServiceURL": "https://openai.com/policies/terms-of-use/",
+    "websiteURL": "https://github.com/cYz26/cy-codex-skills/tree/main/plugins/dev-flow",
+    "privacyPolicyURL": "https://github.com/cYz26/cy-codex-skills/blob/main/plugins/dev-flow/README.md",
+    "termsOfServiceURL": "https://github.com/cYz26/cy-codex-skills/blob/main/plugins/dev-flow/README.md",
     "defaultPrompt": [
       "Plan work",
       "Setup workflow",

@@ -116,12 +116,12 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertTrue(openspec["smokeResult"]["ok"], openspec)
         self.assertEqual(openspec["smokeResult"]["summary"], "1.4.1")
         self.assertIn("@fission-ai/openspec", openspec["source"])
-        self.assertEqual(openspec["lastVerified"], "2026-06-14")
+        self.assertEqual(openspec["lastVerified"], "2026-06-19")
 
         gsd = dependencies["gsd-core"]
         self.assertEqual(gsd["status"], "verified")
-        self.assertEqual(gsd["expectedVersion"], "1.4.5")
-        self.assertEqual(gsd["installedVersion"], "1.4.5")
+        self.assertEqual(gsd["expectedVersion"], "1.5.0")
+        self.assertEqual(gsd["installedVersion"], "1.5.0")
         self.assertTrue(gsd["binaryPath"].endswith("/.codex/gsd-core/bin/gsd-tools.cjs"))
         self.assertEqual(
             gsd["installCommand"],
@@ -129,7 +129,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         )
         self.assertEqual(gsd["smokeCommand"][-1], "current-timestamp")
         self.assertTrue(gsd["smokeResult"]["ok"], gsd)
-        self.assertEqual(gsd["lastVerified"], "2026-06-14")
+        self.assertEqual(gsd["lastVerified"], "2026-06-19")
 
     def test_dependency_report_marks_drift_missing_and_smoke_failed(self):
         codex_home = self.make_codex_home()
@@ -141,7 +141,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         drift_gsd = next(item for item in drift_report["dependencies"] if item["name"] == "gsd-core")
         self.assertFalse(drift_report["ok"], drift_report)
         self.assertEqual(drift_gsd["status"], "dependency_drift")
-        self.assertEqual(drift_gsd["expectedVersion"], "1.4.5")
+        self.assertEqual(drift_gsd["expectedVersion"], "1.5.0")
         self.assertEqual(drift_gsd["installedVersion"], "1.4.4")
         self.assertEqual(
             drift_gsd["recommendedCommand"],
@@ -155,7 +155,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         missing_gsd = next(item for item in missing_report["dependencies"] if item["name"] == "gsd-core")
         self.assertFalse(missing_report["ok"], missing_report)
         self.assertEqual(missing_gsd["status"], "missing")
-        self.assertEqual(missing_gsd["installedVersion"], "1.4.5")
+        self.assertEqual(missing_gsd["installedVersion"], "1.5.0")
 
         smoke_repo = self.make_dependency_ready_project_repo()
         smoke_tool = smoke_repo / ".codex" / "gsd-core" / "bin" / "gsd-tools.cjs"
@@ -678,7 +678,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
 
         def fake_run(command, cwd=None, timeout=300):
             if command[:3] == ["npm", "view", "@opengsd/gsd-core"]:
-                return {"ok": True, "returncode": 0, "stdout": json.dumps({"version": "1.4.6"}), "stderr": ""}
+                return {"ok": True, "returncode": 0, "stdout": json.dumps({"version": "1.5.1"}), "stderr": ""}
             if command[:3] == ["npm", "view", "@fission-ai/openspec"]:
                 return {"ok": True, "returncode": 0, "stdout": json.dumps({"version": "1.3.2"}), "stderr": ""}
             raise AssertionError(f"unexpected command: {command}")
@@ -690,10 +690,10 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
 
         by_name = {item["name"]: item for item in results}
         self.assertEqual(by_name["gsd-core"]["status"], "update-available")
-        self.assertEqual(by_name["gsd-core"]["current"], "1.4.5")
-        self.assertEqual(by_name["gsd-core"]["latest"], "1.4.6")
+        self.assertEqual(by_name["gsd-core"]["current"], "1.5.0")
+        self.assertEqual(by_name["gsd-core"]["latest"], "1.5.1")
         self.assertIn("expectedVersion", by_name["gsd-core"])
-        self.assertEqual(by_name["gsd-core"]["expectedVersion"], "1.4.5")
+        self.assertEqual(by_name["gsd-core"]["expectedVersion"], "1.5.0")
         self.assertIn("provenanceSource", by_name["gsd-core"])
         self.assertTrue(by_name["gsd-core"]["provenanceSource"].endswith("dependency-provenance.json"))
         self.assertIn("installCommand", by_name["gsd-core"])

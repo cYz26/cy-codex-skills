@@ -162,7 +162,7 @@ context_health:
             path.write_text(f"name = \"{agent}\"\n")
         runtime = repo / ".codex" / "gsd-core"
         (runtime / "bin").mkdir(parents=True)
-        (runtime / "VERSION").write_text("1.4.5\n")
+        (runtime / "VERSION").write_text("1.5.0\n")
         tools = runtime / "bin" / "gsd-tools.cjs"
         tools.write_text("#!/usr/bin/env node\nconsole.log('2026-06-14T00:00:00Z')\n")
         tools.chmod(0o755)
@@ -175,6 +175,15 @@ context_health:
 
         self.assertEqual(manifest["name"], "dev-flow")
         self.assertEqual(manifest["interface"]["displayName"], "DevFlow")
+        self.assertEqual(manifest["author"]["url"], "https://github.com/cYz26")
+        self.assertEqual(manifest["repository"], "https://github.com/cYz26/cy-codex-skills")
+        self.assertEqual(
+            manifest["homepage"],
+            "https://github.com/cYz26/cy-codex-skills/tree/main/plugins/dev-flow",
+        )
+        self.assertEqual(manifest["interface"]["developerName"], "cY")
+        self.assertEqual(manifest["interface"]["websiteURL"], manifest["homepage"])
+        self.assertNotIn("github.com/local", json.dumps(manifest))
         self.assertLessEqual(len(manifest["interface"]["defaultPrompt"]), 3)
 
     def test_capability_research_skill_is_packaged(self):

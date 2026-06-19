@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "description": "Markdown-first knowledge-base workflows for agents.",
   "author": {
-    "name": "Codex Local",
-    "url": "https://github.com/local/agent-kb"
+    "name": "cY",
+    "url": "https://github.com/cYz26"
   },
-  "homepage": "https://github.com/local/agent-kb",
-  "repository": "https://github.com/local/agent-kb",
+  "homepage": "https://github.com/cYz26/cy-codex-skills/tree/main/plugins/agent-kb",
+  "repository": "https://github.com/cYz26/cy-codex-skills",
   "license": "MIT",
   "keywords": [
     "agent",
@@ -22,16 +22,16 @@
     "displayName": "AgentKB",
     "shortDescription": "Markdown-first knowledge base for agents",
     "longDescription": "Scaffold, lint, query, compact, and maintain a Git-reviewable Markdown knowledge base. Obsidian is supported as an editor profile and Codex is one packaged agent adapter.",
-    "developerName": "Codex Local",
+    "developerName": "cY",
     "category": "Coding",
     "capabilities": [
       "Interactive",
       "Read",
       "Write"
     ],
-    "websiteURL": "https://github.com/local/agent-kb",
-    "privacyPolicyURL": "https://openai.com/policies/privacy-policy/",
-    "termsOfServiceURL": "https://openai.com/policies/terms-of-use/",
+    "websiteURL": "https://github.com/cYz26/cy-codex-skills/tree/main/plugins/agent-kb",
+    "privacyPolicyURL": "https://github.com/cYz26/cy-codex-skills/blob/main/plugins/agent-kb/README.md",
+    "termsOfServiceURL": "https://github.com/cYz26/cy-codex-skills/blob/main/plugins/agent-kb/README.md",
     "defaultPrompt": [
       "Scaffold AgentKB",
       "Query AgentKB",

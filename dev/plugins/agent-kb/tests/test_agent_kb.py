@@ -91,6 +91,15 @@ class AgentKBTests(unittest.TestCase):
         self.assertEqual(manifest["hooks"], "./hooks.json")
         self.assertEqual(manifest["interface"]["displayName"], "AgentKB")
         self.assertEqual(manifest["interface"]["category"], "Coding")
+        self.assertEqual(manifest["author"]["url"], "https://github.com/cYz26")
+        self.assertEqual(manifest["repository"], "https://github.com/cYz26/cy-codex-skills")
+        self.assertEqual(
+            manifest["homepage"],
+            "https://github.com/cYz26/cy-codex-skills/tree/main/plugins/agent-kb",
+        )
+        self.assertEqual(manifest["interface"]["developerName"], "cY")
+        self.assertEqual(manifest["interface"]["websiteURL"], manifest["homepage"])
+        self.assertNotIn("github.com/local", json.dumps(manifest))
         self.assertTrue((PLUGIN_ROOT / manifest["interface"]["logo"]).exists())
         self.assertTrue((PLUGIN_ROOT / manifest["interface"]["composerIcon"]).exists())
         self.assertTrue((PLUGIN_ROOT / "hooks.json").exists())

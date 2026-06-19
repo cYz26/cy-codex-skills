@@ -4,10 +4,10 @@
   "description": "Use one Lark Feishu Ops entry point for direct lark-cli reads and FeishuOps subagent escalation.",
   "author": {
     "name": "cY",
-    "url": "https://github.com/changyiZ"
+    "url": "https://github.com/cYz26"
   },
-  "homepage": "https://github.com/changyiZ/cy-codex-skills/tree/main/plugins/lark-feishu-ops",
-  "repository": "https://github.com/changyiZ/cy-codex-skills",
+  "homepage": "https://github.com/cYz26/cy-codex-skills/tree/main/plugins/lark-feishu-ops",
+  "repository": "https://github.com/cYz26/cy-codex-skills",
   "license": "UNLICENSED",
   "keywords": [
     "codex",
@@ -36,9 +36,9 @@
     "brandColor": "#2563EB",
     "composerIcon": "./assets/lark-feishu-ops.png",
     "logo": "./assets/lark-feishu-ops.png",
-    "websiteURL": "https://github.com/changyiZ/cy-codex-skills/tree/main/plugins/lark-feishu-ops",
-    "privacyPolicyURL": "https://github.com/changyiZ/cy-codex-skills/blob/main/plugins/lark-feishu-ops/README.md",
-    "termsOfServiceURL": "https://github.com/changyiZ/cy-codex-skills/blob/main/plugins/lark-feishu-ops/README.md",
+    "websiteURL": "https://github.com/cYz26/cy-codex-skills/tree/main/plugins/lark-feishu-ops",
+    "privacyPolicyURL": "https://github.com/cYz26/cy-codex-skills/blob/main/plugins/lark-feishu-ops/README.md",
+    "termsOfServiceURL": "https://github.com/cYz26/cy-codex-skills/blob/main/plugins/lark-feishu-ops/README.md",
     "screenshots": []
   }
 }

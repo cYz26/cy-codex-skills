@@ -2,14 +2,14 @@
   "archive": {
     "bytes": 111497,
     "path": "scripts/devflow_runtime.pyz",
-    "sha256": "c013bc45d00c7f6dea07e31bf7edc922ac6f6d70238f63cfdf26673570d5f47e"
+    "sha256": "8853df3e1e3170538c5d87b25a450350dd2d001f859f49f770c6d4594d7e0759"
   },
   "buildCommand": [
     "python3",
     "dev/scripts/package_devflow_release_runtime.py"
   ],
   "schemaVersion": 1,
-  "sourceCommit": "e09e3bf77e4873ae02bfbd2b9f3d643a3c33f196",
+  "sourceCommit": "ad0b14d3a98818be1261117e95da5e076fcbda04",
   "sources": [
     {
       "bytes": 1866,
