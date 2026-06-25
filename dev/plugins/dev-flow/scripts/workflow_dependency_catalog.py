@@ -27,10 +27,21 @@ REQUIRED_SUPERPOWERS_PROJECT_SKILLS = [
 ]
 
 REQUIRED_SKILLS = {
-    "superpowers": REQUIRED_SUPERPOWERS_PROJECT_SKILLS,
+    "superpowers": [
+        "using-superpowers",
+        *REQUIRED_SUPERPOWERS_PROJECT_SKILLS,
+    ],
 }
 
 DEVELOPER_SKILLS = {"plugin-eval": ["evaluate-plugin"]}
+
+STRICT_RECOMMENDED_SUPERPOWERS_SKILLS = [
+    "using-git-worktrees",
+    "executing-plans",
+    "subagent-driven-development",
+    "requesting-code-review",
+    "finishing-a-development-branch",
+]
 
 REQUIRED_CLI_TOOLS = ["openspec"]
 

@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from workflow_routing_matrix import full_openspec_kinds, load_routing_matrix, low_risk_kinds
+
 
 FULL_OPENSPEC_KINDS = {
     "new-feature",
@@ -117,6 +119,7 @@ def route_workflow_mode(
     openspec_ready: bool = False,
 ) -> dict[str, Any]:
     config = read_workflow_mode_config(repo)
+    matrix = load_routing_matrix()
     normalized_kind = (kind or "unspecified").strip().lower()
     request_text = request.strip()
     lowered = request_text.lower()
@@ -127,6 +130,8 @@ def route_workflow_mode(
     if high_risk:
         failed_gates = [] if openspec_ready else ["mandatory_full_openspec", "openspec_artifacts_ready"]
         return {
+            "route_id": "mandatory-full-openspec",
+            "routing_matrix": matrix["sourcePath"],
             "mode": "full-openspec",
             "label": "Full OpenSpec",
             "reason": "High-risk work requires canonical OpenSpec artifacts.",
@@ -151,6 +156,8 @@ def route_workflow_mode(
 
     if prototype_requested and config["prototype_mode_enabled"]:
         return {
+            "route_id": "prototype-explicit-only",
+            "routing_matrix": matrix["sourcePath"],
             "mode": "prototype-mode",
             "label": "Prototype Mode",
             "reason": "The user explicitly requested non-production prototype work.",
@@ -172,6 +179,8 @@ def route_workflow_mode(
 
     if config["lightweight_ledger_enabled"] and low_risk:
         return {
+            "route_id": "lightweight-ledger-low-risk",
+            "routing_matrix": matrix["sourcePath"],
             "mode": "lightweight-ledger",
             "label": "Lightweight Ledger",
             "reason": "Configured lightweight mode is allowed for low-risk work.",
@@ -189,6 +198,8 @@ def route_workflow_mode(
         }
 
     return {
+        "route_id": "default-full-openspec",
+        "routing_matrix": matrix["sourcePath"],
         "mode": "full-openspec",
         "label": "Full OpenSpec",
         "reason": "Default route is Full OpenSpec unless low-risk lightweight routing is configured.",
@@ -209,13 +220,13 @@ def route_workflow_mode(
 
 
 def is_high_risk(kind: str, request_text: str) -> bool:
-    if kind in FULL_OPENSPEC_KINDS:
+    if kind in full_openspec_kinds() or kind in FULL_OPENSPEC_KINDS:
         return True
     return any(term in request_text for term in HIGH_RISK_TERMS)
 
 
 def is_low_risk(kind: str, request_text: str) -> bool:
-    if kind in LOW_RISK_KINDS:
+    if kind in low_risk_kinds() or kind in LOW_RISK_KINDS:
         return not is_high_risk(kind, request_text)
     return False
 

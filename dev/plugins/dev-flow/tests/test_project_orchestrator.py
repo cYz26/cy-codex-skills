@@ -293,6 +293,13 @@ class ProjectOrchestratorTests(unittest.TestCase):
         self.assertTrue((repo / ".planning" / "STATE.md").exists())
         self.assertTrue((repo / ".planning" / "phases" / "01-foundation" / "PLAN.md").exists())
         self.assertTrue((repo / "openspec" / "changes" / "initial-target-state" / "tasks.md").exists())
+        for filename in [
+            "ENGINEERING_POLICY.md",
+            "TASK_LEDGER.md",
+            "EVIDENCE_TEMPLATE.md",
+            "REVIEW_CHECKLIST.md",
+        ]:
+            self.assertTrue((repo / filename).exists(), filename)
         self.assertFalse((repo / "openspec" / "changes" / "initial-mvp").exists())
         self.assertTrue((repo / "setup-report.md").exists())
         state = (repo / ".planning" / "STATE.md").read_text()
@@ -318,10 +325,46 @@ class ProjectOrchestratorTests(unittest.TestCase):
         self.assertIn("## Superpowers Discipline", agents)
         self.assertIn("superpowers:test-driven-development", agents)
         self.assertIn("superpowers:verification-before-completion", agents)
+        self.assertIn("ENGINEERING_POLICY.md", agents)
+        self.assertIn("TASK_LEDGER.md", agents)
+        self.assertIn("EVIDENCE_TEMPLATE.md", agents)
+        self.assertIn("REVIEW_CHECKLIST.md", agents)
 
         valid = run_json("validate_workflow_state.py", "--repo", str(repo), "--json")
         self.assertTrue(valid["ok"])
         self.assertFalse(valid["gates"]["archive_allowed"])
+
+    def test_contract_control_plane_validators_report_goal_task_evidence_review(self):
+        repo = self.make_repo("greenfield-empty")
+        run_json("scaffold_workflow.py", "--repo", str(repo), "--json")
+        ledger = repo / "TASK_LEDGER.md"
+        ledger.write_text(
+            """# Task Ledger
+
+## Goal Contract
+- goal_id: optimize-devflow-v040-contract-first
+- objective: Complete DevFlow v0.4.0 target state.
+- scope_in: dependency governance, hooks, evidence, review
+- scope_out: automatic hook trust
+- acceptance_criteria: tests and release verification pass
+- validation_commands: python3 -m unittest discover -s dev/plugins/dev-flow/tests
+- knowledge_update_target: ENGINEERING_POLICY.md
+
+## Tasks
+| task_id | summary | owner | write_set | required_evidence | review_gate | status |
+|---|---|---|---|---|---|---|
+| T1 | Dependency governance | main | dev/plugins/dev-flow/scripts/*.py | red/green | review | planned |
+"""
+        )
+
+        goal = run_json("validate_goal_contract.py", "--repo", str(repo), "--json")
+        task = run_json("validate_task_ledger.py", "--repo", str(repo), "--json")
+
+        self.assertTrue(goal["ok"], goal)
+        self.assertEqual(goal["goal"]["goal_id"], "optimize-devflow-v040-contract-first")
+        self.assertTrue(task["ok"], task)
+        self.assertEqual(task["tasks"][0]["task_id"], "T1")
+        self.assertIn("write_set", task["tasks"][0])
 
     def test_templates_use_ai_native_plan_sections(self):
         for template in ["OPENSPEC_DESIGN.md.template", "OPENSPEC_TASKS.md.template"]:

@@ -30,14 +30,28 @@ def run_json(name, *args):
 
 
 class DependencyFixtureMixin:
-    def make_codex_home(self, *, enable_plugin_eval=True, enable_superpowers_plugin=False):
+    def make_codex_home(
+        self,
+        *,
+        enable_plugin_eval=True,
+        enable_superpowers_plugin=False,
+        superpowers_version="5.1.3",
+        superpowers_channel="openai-curated",
+        superpowers_hooks=None,
+    ):
         home = Path(tempfile.mkdtemp(prefix="cpo-codex-home-"))
         config_lines = ['model = "gpt-5"']
         self.add_plugin_config(config_lines, PLUGIN_ID, False)
         self.add_plugin_config(config_lines, "superpowers", enable_superpowers_plugin)
         self.add_plugin_config(config_lines, "plugin-eval", enable_plugin_eval)
         (home / "config.toml").write_text("\n".join(config_lines) + "\n")
-        self.write_required_skills(home, enable_plugin_eval)
+        self.write_required_skills(
+            home,
+            enable_plugin_eval,
+            superpowers_version=superpowers_version,
+            superpowers_channel=superpowers_channel,
+            superpowers_hooks=superpowers_hooks,
+        )
         return home
 
     def add_plugin_config(self, config_lines, plugin, enabled):
@@ -46,16 +60,53 @@ class DependencyFixtureMixin:
         if plugin == PLUGIN_ID and enabled:
             config_lines[-2] = f'[plugins."{PLUGIN_ID}@agents-dev-local"]'
 
-    def write_required_skills(self, home, enable_plugin_eval):
-        for skill in ["brainstorming", "writing-plans", "test-driven-development", "verification-before-completion"]:
-            self.write_skill(home, "superpowers", skill)
+    def write_required_skills(
+        self,
+        home,
+        enable_plugin_eval,
+        *,
+        superpowers_version="5.1.3",
+        superpowers_channel="openai-curated",
+        superpowers_hooks=None,
+    ):
+        for skill in [
+            "using-superpowers",
+            "brainstorming",
+            "writing-plans",
+            "test-driven-development",
+            "verification-before-completion",
+        ]:
+            self.write_skill(home, "superpowers", skill, channel=superpowers_channel)
+        self.write_plugin_manifest(
+            home,
+            "superpowers",
+            version=superpowers_version,
+            channel=superpowers_channel,
+            hooks=superpowers_hooks,
+        )
         if enable_plugin_eval:
             self.write_skill(home, "plugin-eval", "evaluate-plugin")
+            self.write_plugin_manifest(home, "plugin-eval", version="0.1.0")
 
-    def write_skill(self, home, plugin, skill):
-        path = home / "plugins" / "cache" / "openai-curated" / plugin / "local" / "skills" / skill / "SKILL.md"
+    def write_skill(self, home, plugin, skill, *, channel="openai-curated"):
+        path = home / "plugins" / "cache" / channel / plugin / "local" / "skills" / skill / "SKILL.md"
         path.parent.mkdir(parents=True)
         path.write_text(f"---\nname: {skill}\ndescription: fixture\n---\n")
+
+    def write_plugin_manifest(self, home, plugin, *, version, channel="openai-curated", hooks=None):
+        root = home / "plugins" / "cache" / channel / plugin / "local"
+        manifest = root / ".codex-plugin" / "plugin.json"
+        manifest.parent.mkdir(parents=True, exist_ok=True)
+        payload = {"name": plugin, "version": version, "skills": "./skills/"}
+        if hooks:
+            payload["hooks"] = hooks
+            hooks_path = root / hooks
+            hooks_path.parent.mkdir(parents=True, exist_ok=True)
+            hooks_path.write_text(
+                '{"hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"echo bootstrap"}]}]}}\n'
+            )
+        manifest.write_text(json.dumps(payload))
+        return root
 
     def make_project_repo(
         self,
@@ -162,7 +213,7 @@ class DependencyFixtureMixin:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(f"name = \"{agent}\"\n")
 
-    def write_gsd_core_runtime(self, repo, version="1.5.0"):
+    def write_gsd_core_runtime(self, repo, version="1.6.0"):
         runtime = repo / ".codex" / "gsd-core"
         (runtime / "bin").mkdir(parents=True, exist_ok=True)
         (runtime / "VERSION").write_text(f"{version}\n")

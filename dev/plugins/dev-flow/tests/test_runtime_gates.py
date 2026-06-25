@@ -8,6 +8,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
@@ -231,6 +232,62 @@ Keep this durable next action.
         self.assertIn("context-health-check", diagnostic["next_action"])
         self.assertNotIn("hookSpecificOutput", payload)
 
+    def test_hooks_use_plugin_root_paths_windows_commands_and_single_stop_entrypoint(self):
+        hooks = json.loads((PLUGIN_ROOT / "hooks.json").read_text())["hooks"]
+        commands = []
+        for entries in hooks.values():
+            for entry in entries:
+                for hook in entry.get("hooks", []):
+                    if hook.get("type") == "command":
+                        commands.append(hook)
+
+        self.assertTrue(commands)
+        for hook in commands:
+            command = hook["command"]
+            self.assertIn("$PLUGIN_ROOT", command)
+            self.assertNotIn("plugins/cache", command)
+            self.assertIn("commandWindows", hook)
+            self.assertIn("%PLUGIN_ROOT%", hook["commandWindows"])
+
+        stop_hooks = hooks["Stop"][0]["hooks"]
+        self.assertEqual(len(stop_hooks), 1)
+        self.assertIn("devflow_stop_hook.py", stop_hooks[0]["command"])
+
+    def test_hook_response_adapter_exposes_event_specific_payloads(self):
+        adapter = importlib.import_module("hook_response_adapter")
+
+        pre = adapter.deny_pre_tool_use("blocked", {"failed_gates": ["spec_approved"]})
+        self.assertEqual(pre["decision"], "deny")
+        self.assertEqual(pre["reason"], "blocked")
+        self.assertEqual(pre["hookSpecificOutput"]["hookEventName"], "PreToolUse")
+
+        stop = adapter.block_stop_continue("continue", {"failed_gates": ["verification_passed"]})
+        self.assertEqual(stop["decision"], "block")
+        self.assertEqual(stop["reason"], "continue")
+        self.assertNotIn("hookSpecificOutput", stop)
+
+        advisory = adapter.advisory("PostToolUse", "note", {"status": "warn"})
+        self.assertEqual(advisory["hookSpecificOutput"]["hookEventName"], "PostToolUse")
+
+    def test_devflow_stop_hook_aggregates_read_only_checks_without_release_apply(self):
+        module = importlib.import_module("devflow_stop_hook")
+        repo = self.make_repo()
+        self.write_state(repo)
+
+        with mock.patch.object(
+            module, "context_health_check", return_value={"risk": "low", "decision": "continue"}
+        ), mock.patch.object(
+            module, "release_promotion_run_gate", return_value={"status": "pending", "message": "pending"}
+        ) as gate, mock.patch.object(
+            module, "release_sync_assets"
+        ) as sync:
+            report = module.run_stop_checks(repo)
+
+        self.assertEqual(report["status"], "blocked")
+        self.assertIn("release_promotion", report["failedChecks"])
+        gate.assert_called_once_with(repo.resolve(), apply=False)
+        sync.assert_not_called()
+
     def test_hook_response_keeps_additional_context_for_non_stop_warnings(self):
         repo = self.make_repo()
         self.write_state(repo)
@@ -328,6 +385,21 @@ Keep this durable next action.
         self.assertFalse(route["execution_allowed"])
         self.assertIn("mandatory_full_openspec", route["failed_gates"])
         self.assertIn("proposal, design, specs, and tasks", route["blocker"])
+        self.assertIn("routing.matrix.json", route["routing_matrix"])
+        self.assertIn("mandatory-full-openspec", route["route_id"])
+
+    def test_routing_and_superpowers_gate_matrices_are_loaded(self):
+        routing = importlib.import_module("workflow_routing_matrix")
+        gates = importlib.import_module("workflow_superpowers_gates")
+
+        matrix = routing.load_routing_matrix(PLUGIN_ROOT)
+        self.assertEqual(matrix["schemaVersion"], 1)
+        self.assertIn("behavior-change", routing.full_openspec_kinds(PLUGIN_ROOT))
+        self.assertIn("routing.matrix.json", matrix["sourcePath"])
+
+        gate_matrix = gates.load_superpowers_gate_matrix(PLUGIN_ROOT)
+        self.assertEqual(gate_matrix["targetSuperpowersVersion"], "6.0.3")
+        self.assertIn("verification-before-completion", gates.required_gate_ids(PLUGIN_ROOT))
 
     def test_workflow_mode_routes_explicit_prototype_with_non_production_guardrails(self):
         repo = self.make_repo()

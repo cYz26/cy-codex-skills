@@ -36,6 +36,10 @@ class ReleaseSyncTests(unittest.TestCase):
         (dev_root / "skills" / "demo" / "SKILL.md").write_text("---\nname: demo\ndescription: dev\n---\n")
         (dev_root / "scripts").mkdir()
         (dev_root / "scripts" / "tool.py").write_text("print('dev')\n")
+        (dev_root / "docs").mkdir()
+        (dev_root / "docs" / "dependency-provenance.json").write_text('{"schemaVersion":2}\n')
+        (dev_root / "docs" / "superpowers" / "plans").mkdir(parents=True)
+        (dev_root / "docs" / "superpowers" / "plans" / "draft.md").write_text("draft\n")
         (dev_root / "tests").mkdir()
         (dev_root / "tests" / "test_dev_only.py").write_text("SHOULD_NOT_RELEASE = True\n")
         (dev_root / "log").mkdir()
@@ -201,6 +205,8 @@ context_management:
         asset = dry_run["assets"][0]
         self.assertEqual(asset["kind"], "plugin")
         self.assertIn("skills/demo/SKILL.md", asset["changedFiles"])
+        self.assertIn("docs/dependency-provenance.json", asset["changedFiles"])
+        self.assertNotIn("docs/superpowers/plans/draft.md", asset["changedFiles"])
         self.assertNotIn("tests/test_dev_only.py", asset["changedFiles"])
         self.assertNotIn("log/debug.log", asset["changedFiles"])
 
@@ -211,6 +217,11 @@ context_management:
             (release_root / "skills" / "demo" / "SKILL.md").read_text(),
             "---\nname: demo\ndescription: dev\n---\n",
         )
+        self.assertEqual(
+            (release_root / "docs" / "dependency-provenance.json").read_text(),
+            '{"schemaVersion":2}\n',
+        )
+        self.assertFalse((release_root / "docs" / "superpowers" / "plans" / "draft.md").exists())
         self.assertFalse((release_root / "tests" / "test_dev_only.py").exists())
         self.assertFalse((release_root / "log" / "debug.log").exists())
 
@@ -260,6 +271,8 @@ context_management:
             release_root / ".codex-plugin",
         )
         (release_root / "skills" / "demo" / "SKILL.md").write_text("---\nname: demo\ndescription: dev\n---\n")
+        (release_root / "docs").mkdir()
+        (release_root / "docs" / "dependency-provenance.json").write_text('{"schemaVersion":2}\n')
         (release_root / "scripts").mkdir(exist_ok=True)
         (release_root / "scripts" / "generated.py").write_text("generated\n")
         self.write_state(repo, verification_passed=True)
@@ -320,7 +333,7 @@ context_management:
         self.assertIn("scripts/devflow_runtime.SOURCE_COMMIT", metadata["managedOutputs"])
         self.assertIn("scripts/verify_release_runtime.py", metadata["managedOutputs"])
 
-    def test_devflow_stop_hook_runs_release_promotion_after_verification_gate(self):
+    def test_devflow_stop_hook_uses_single_read_only_stop_entrypoint(self):
         hooks = json.loads((PLUGIN_ROOT / "hooks.json").read_text())["hooks"]
         stop_commands = [
             hook["command"]
@@ -328,12 +341,9 @@ context_management:
             for hook in entry.get("hooks", [])
         ]
 
-        verification_index = hook_index(stop_commands, "stop_verification_policy.py")
-        promotion_index = hook_index(stop_commands, "release_promotion_gate.py")
-        checkpoint_index = hook_index(stop_commands, "stop_checkpoint_policy.py")
-
-        self.assertLess(verification_index, promotion_index)
-        self.assertLess(promotion_index, checkpoint_index)
+        self.assertEqual(len(stop_commands), 1)
+        self.assertIn("devflow_stop_hook.py", stop_commands[0])
+        self.assertNotIn("release_promotion_gate.py", stop_commands[0])
 
 
 def hook_index(commands, name):

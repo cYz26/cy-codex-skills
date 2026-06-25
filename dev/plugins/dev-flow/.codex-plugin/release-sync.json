@@ -14,6 +14,8 @@
     "scripts/devflow_runtime.sha256",
     "scripts/devflow_runtime.SOURCE_COMMIT",
     "scripts/devflow_launcher.py",
+    "scripts/devflow_stop_hook.py",
+    "scripts/superpowers_artifact_mapping.py",
     "scripts/verify_release_runtime.py"
   ]
 }

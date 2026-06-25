@@ -15,6 +15,7 @@ from workflow_dependency_catalog import (
     REQUIRED_SUPERPOWERS_PROJECT_SKILLS,
 )
 from workflow_dependency_plugin_checks import (
+    add_superpowers_governance_checks,
     add_skill_checks,
     check_global_plugin_inactive,
     check_plugin_activation,
@@ -50,9 +51,11 @@ def check_external_dependencies(
     for plugin, skills in REQUIRED_SKILLS.items():
         check_plugin_installed(checks, codex_home, plugin, "external plugin installed", True)
         add_skill_checks(checks, codex_home, plugin, skills, True)
+    superpowers = add_superpowers_governance_checks(checks, codex_home, strict)
     for plugin, skills in DEVELOPER_SKILLS.items():
         check_plugin_activation(checks, global_config, plugin, "developer plugin enabled", strict)
         add_skill_checks(checks, codex_home, plugin, skills, strict)
+    return superpowers
 
 
 def check_required_cli_tools(checks: list[dict[str, Any]]) -> None:

@@ -1,15 +1,15 @@
 {
   "archive": {
-    "bytes": 111497,
+    "bytes": 123083,
     "path": "scripts/devflow_runtime.pyz",
-    "sha256": "8853df3e1e3170538c5d87b25a450350dd2d001f859f49f770c6d4594d7e0759"
+    "sha256": "1b74b5b1b4e9f631ca5cd333087468d11fc50bce945e67176d29c6178c47354c"
   },
   "buildCommand": [
     "python3",
     "dev/scripts/package_devflow_release_runtime.py"
   ],
   "schemaVersion": 1,
-  "sourceCommit": "ad0b14d3a98818be1261117e95da5e076fcbda04",
+  "sourceCommit": "dacdee6e7c8fe18fa879494edf31a6acde601a5a",
   "sources": [
     {
       "bytes": 1866,
@@ -35,6 +35,11 @@
       "bytes": 1537,
       "path": "dev/plugins/dev-flow/scripts/check_dependencies.py",
       "sha256": "0e0de51f798142335954c0fb0d321c8c173a0e8ae7ff1cfcd9c42c903602ec0c"
+    },
+    {
+      "bytes": 824,
+      "path": "dev/plugins/dev-flow/scripts/check_review_gate.py",
+      "sha256": "8f5be928691ea614455b5e27ee3350b590924a1ff37800be7d7356fc93af5b36"
     },
     {
       "bytes": 2699,
@@ -97,9 +102,19 @@
       "sha256": "62d56259442dae2dacf982bc31efed080904edb8340dab6b0e8ce40c319b62e3"
     },
     {
+      "bytes": 4231,
+      "path": "dev/plugins/dev-flow/scripts/devflow_stop_hook.py",
+      "sha256": "9143e594bc20b4ab40e6a905edfc8d3a05a4a00bd80a431b0d0a1899eea7b81d"
+    },
+    {
       "bytes": 1074,
       "path": "dev/plugins/dev-flow/scripts/doctor_workflow.py",
       "sha256": "f76b2b24f3614700ca7b84bd9c5966197113ff0d05ed3e8053f187c172871d8e"
+    },
+    {
+      "bytes": 1040,
+      "path": "dev/plugins/dev-flow/scripts/hook_response_adapter.py",
+      "sha256": "a15fab456ac340797e0cbdab79337534de4dc01d5430c97360acc48f3b847f11"
     },
     {
       "bytes": 775,
@@ -132,9 +147,9 @@
       "sha256": "0058d0850049279f94fe6353ea197f567d5f97792f88168e5bb8c2025c4bc867"
     },
     {
-      "bytes": 17477,
+      "bytes": 17761,
       "path": "dev/plugins/dev-flow/scripts/plugin_project_migration.py",
-      "sha256": "b4a973c959979d4cdb0c49c9157cbed41ee89ccb489ea5fa1775ad04f4cb7ed8"
+      "sha256": "9c88fafff509b2a2186d2384db43390d3fd1791b491657d493ea36cb6374afc3"
     },
     {
       "bytes": 1285,
@@ -157,9 +172,19 @@
       "sha256": "9290191bffb7e04060adf44c52c46b5727d31c6f1f0b049de6b54063cb5bb5af"
     },
     {
+      "bytes": 975,
+      "path": "dev/plugins/dev-flow/scripts/propose_knowledge_update.py",
+      "sha256": "d951837052ad83e803921a61396f81240362e02d7d0da8639021d6752d9f04d4"
+    },
+    {
       "bytes": 1165,
       "path": "dev/plugins/dev-flow/scripts/record_compact_result.py",
       "sha256": "058c5fae79040bd8e7c1df5a37b0570fb9f8f708a5475d64485a519ae9cbac60"
+    },
+    {
+      "bytes": 1355,
+      "path": "dev/plugins/dev-flow/scripts/record_task_evidence.py",
+      "sha256": "2208b2b379037984d0b79576c9e2675dfd78e6bb82fb0b6cad98c860a52f9d4c"
     },
     {
       "bytes": 793,
@@ -192,6 +217,11 @@
       "sha256": "e9603baf6ab48e9bb329c5221ae7f240cbd33d03cb463251b9276f53d8c3228d"
     },
     {
+      "bytes": 1647,
+      "path": "dev/plugins/dev-flow/scripts/superpowers_artifact_mapping.py",
+      "sha256": "76941dd4d0ca8d58f0f3789eebcd0ceb4d978b4c5b457391698e5c2bf8e44293"
+    },
+    {
       "bytes": 1703,
       "path": "dev/plugins/dev-flow/scripts/sync_release_assets.py",
       "sha256": "f4df25db71bb76128420016bc5426564b72da7a862fc3b7984a34c45a64c70bf"
@@ -200,6 +230,16 @@
       "bytes": 670,
       "path": "dev/plugins/dev-flow/scripts/validate_checkpoint.py",
       "sha256": "14bfc9fc5089e0097820dbb744149b4073f1293daca168eb99dde70f3c943350"
+    },
+    {
+      "bytes": 740,
+      "path": "dev/plugins/dev-flow/scripts/validate_goal_contract.py",
+      "sha256": "c9c286525562f08f525fab590055e8442221ff3c64f2b845ba5d25daf44fe892"
+    },
+    {
+      "bytes": 721,
+      "path": "dev/plugins/dev-flow/scripts/validate_task_ledger.py",
+      "sha256": "ddd46cd06eed62c80a115c2528739d7769de600fef605aa0dc9dc927cced6327"
     },
     {
       "bytes": 569,
@@ -422,29 +462,34 @@
       "sha256": "0af77312dd5faf70962093a4198d8665e0053551b1f3c0881c3fcf45a3397616"
     },
     {
-      "bytes": 2429,
+      "bytes": 3789,
+      "path": "dev/plugins/dev-flow/scripts/workflow_contract_control_plane.py",
+      "sha256": "62b2ab01c2d21518cc8630fd43ddbc865889f9f670be5677dd737bfe2adcf60e"
+    },
+    {
+      "bytes": 2479,
       "path": "dev/plugins/dev-flow/scripts/workflow_dependencies.py",
-      "sha256": "827e004de6acede394c9884ea4e5c8daff07b27daf82c45e98ef95fa949e43af"
+      "sha256": "da5fbad99af4b2d72971bda8d124618e52a592801ecb084b193f14c52a72b5a7"
     },
     {
-      "bytes": 1211,
+      "bytes": 1456,
       "path": "dev/plugins/dev-flow/scripts/workflow_dependency_catalog.py",
-      "sha256": "73d2ee457ac2e4e5cae688af8b5dbc5c0b774ef8086bac2cc333be843b7cbf4c"
+      "sha256": "5e520e3727811428c7fdd8e5c380f4d9b5db569496786832b297b1bb5504decc"
     },
     {
-      "bytes": 6677,
+      "bytes": 6819,
       "path": "dev/plugins/dev-flow/scripts/workflow_dependency_checks.py",
-      "sha256": "c8e464d462908362c52cdf7d73f4f409a087629a81eb109138b6f0ce866b62e7"
+      "sha256": "a78bab442bd1ce52746b0c63851fc48fae7b82b69bb6f108edf97936991f9283"
     },
     {
-      "bytes": 2691,
+      "bytes": 14803,
       "path": "dev/plugins/dev-flow/scripts/workflow_dependency_plugin_checks.py",
-      "sha256": "1a67aa253326110016718b4fd6aac51042db5403b0d6a71865155e818a11467e"
+      "sha256": "27ae1250b544e9472483ecc10ccf34f8f8232a292d4c320a34d8b285bd91485b"
     },
     {
-      "bytes": 9725,
+      "bytes": 11510,
       "path": "dev/plugins/dev-flow/scripts/workflow_dependency_provenance.py",
-      "sha256": "40cbb5fda3160c7971d4e2044c1bc0882427b04c36096ec7df3b4c63bed4da19"
+      "sha256": "18ab4bf4fc01e9075e4e6dcca37a897d9e5bb0815c168359b1b2afc50a7077bc"
     },
     {
       "bytes": 2646,
@@ -462,9 +507,9 @@
       "sha256": "399fa74aeab31bb54be7d6e062fdeec3be92f1be6a2926b2f102449a40963f6f"
     },
     {
-      "bytes": 6618,
+      "bytes": 6403,
       "path": "dev/plugins/dev-flow/scripts/workflow_hooks.py",
-      "sha256": "609fbf60a9028e8dd0933a4908f0187b5df4dba6b382e950c36aeb7b0257662c"
+      "sha256": "8e0f5dca9a984d72f1af08e026da67fe6e579ccf3d5a0f8c22cdf32aef8928b7"
     },
     {
       "bytes": 911,
@@ -477,9 +522,9 @@
       "sha256": "0cdf017eafc8f7cb8fc43e26230a9b978a0bd907bfa9bc5c1bfdb269e890d676"
     },
     {
-      "bytes": 7360,
+      "bytes": 7956,
       "path": "dev/plugins/dev-flow/scripts/workflow_mode_routing.py",
-      "sha256": "4a407b3a776a94f5db501b71fd028c784a954aa1ff6abfba060d3fea77aeed34"
+      "sha256": "020e803583f9b06cba1e299b7643ac2406fa8a5e29affab16141a004b5aee3ca"
     },
     {
       "bytes": 1526,
@@ -502,9 +547,9 @@
       "sha256": "599becaa980fcb4b6f9481960d7806bc618b118d8d4e5f13c1c9fbaab826ee5e"
     },
     {
-      "bytes": 9712,
+      "bytes": 9754,
       "path": "dev/plugins/dev-flow/scripts/workflow_release_sync.py",
-      "sha256": "b82c1fce802bbfdd997925e662ae320d89c6e2f70b1311a746838e67b5df68d7"
+      "sha256": "04ca3b865ab815e01e85528409a547e2c3b542ea53a2f23a0010f4bfa1b2e9ef"
     },
     {
       "bytes": 1921,
@@ -517,14 +562,24 @@
       "sha256": "0a1e6912d2abb4042de691c61e8304e5e1ebfb7143b93c208d7d986e7130d99b"
     },
     {
-      "bytes": 5500,
+      "bytes": 1121,
+      "path": "dev/plugins/dev-flow/scripts/workflow_routing_matrix.py",
+      "sha256": "129a483956512a77e44caf86ad4505cf5930bcc222867ed8508573975fd14032"
+    },
+    {
+      "bytes": 5718,
       "path": "dev/plugins/dev-flow/scripts/workflow_scaffold.py",
-      "sha256": "39acc294d28d99d1835ee35d0f2ba38dcf4eb672a5b1cf958b97cbcd7e1222f7"
+      "sha256": "b1460cbeeb8caed9518ad3c41b81f8bf8e00b814573d0e5b34db9f709f2fb74d"
     },
     {
       "bytes": 9104,
       "path": "dev/plugins/dev-flow/scripts/workflow_state.py",
       "sha256": "5419903cac503ea12b074ca01ba73d402d58c475d43b8a1b196e5e50f0305ec2"
+    },
+    {
+      "bytes": 862,
+      "path": "dev/plugins/dev-flow/scripts/workflow_superpowers_gates.py",
+      "sha256": "658274548eb86c026474adbe9b7d7bd4e6f4dbd0d4fc8f41199d076899d61f29"
     },
     {
       "bytes": 3609,

@@ -12,6 +12,7 @@ from workflow_detect import (
 from workflow_paths import normalize_project_name, render_template, repo_path
 from workflow_state import default_state_values, render_state
 from workflow_change import write_change_files
+from workflow_contract_control_plane import write_missing_control_plane
 
 
 class WritePlan:
@@ -69,6 +70,8 @@ def write_base_files(writer: WritePlan, project_mode: str, force_agents: bool) -
     agents = render_template("AGENTS.md.template", {"project_mode": project_mode})
     target = "AGENTS.md.generated" if (writer.repo / "AGENTS.md").exists() and not force_agents else "AGENTS.md"
     writer.write(target, agents, force=force_agents)
+    for item in write_missing_control_plane(writer.repo, dry_run=True):
+        writer.write(item["path"], render_template(item["template"], {}))
     writer.write(
         ".planning/ROADMAP.md",
         render_template("ROADMAP.md.template", {"project_mode": project_mode}),

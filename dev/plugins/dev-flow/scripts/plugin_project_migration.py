@@ -10,6 +10,7 @@ from typing import Any
 
 from workflow_project_activation import managed_project_skills
 from workflow_project_skill_paths import official_project_skill_dir, scan_project_skill_layout
+from workflow_contract_control_plane import control_plane_status, write_missing_control_plane
 
 
 RUNTIME_DIR = ".dev-flow/plugin-project-migration"
@@ -92,6 +93,7 @@ def apply_project_migrations(
                 "pathKind": "official_repo_skill_path",
             }
         )
+    changes.extend(write_missing_control_plane(repo, dry_run=False))
 
     plugin["conflicts"] = conflicts
     plugin["changes"] = changes
@@ -190,6 +192,7 @@ def inspect_plugin(repo: Path, plugin_root: Path, adapter: dict[str, Any]) -> di
             script_path=Path(__file__).with_name("activate_project_dependencies.py"),
         ),
         "changes": [],
+        "controlPlane": control_plane_status(repo),
     }
 
 
@@ -246,6 +249,7 @@ def plugin_report_status(plugin: dict[str, Any]) -> str:
         or plugin["staleProjectSkills"]
         or plugin["missingProjectSkills"]
         or plugin["conflicts"]
+        or plugin.get("controlPlane", {}).get("status") != "current"
         or plugin.get("skillLayout", {}).get("status") != "current"
     ):
         return "migration_pending"

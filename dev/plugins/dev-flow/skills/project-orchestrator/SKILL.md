@@ -11,6 +11,10 @@ Router for Codex-first project work.
 
 Read `AGENTS.md`, `.planning/STATE.md`, and `openspec/config.yaml`. Run dependency check; activate missing project-local dependencies.
 
+Also check the contract-first control plane when execution or delegation is in
+scope: `ENGINEERING_POLICY.md`, `TASK_LEDGER.md`,
+`EVIDENCE_TEMPLATE.md`, and `REVIEW_CHECKLIST.md`.
+
 ## Repair Framing
 
 For bugs, broken workflows, state drift, or failed mechanisms, apply systemic repair framing
@@ -48,6 +52,10 @@ validation before marking ledger items complete.
 ## Routing
 
 - No workflow files: use `project-setup`.
+- Use `docs/routing.matrix.json` as the machine-readable workflow routing
+  source. Full OpenSpec remains mandatory for behavior, API, data model,
+  persistence, migration, integration, permission, error-handling, or
+  compatibility changes.
 - Apply the Goal Suitability Gate during routing, before context-health drift
   appears. Use `define-goal` when the user asks to create, set, refine, or use a
   goal, asks for goal-backed execution, or when the development task is
@@ -85,6 +93,10 @@ Routes: `capability-research`; `ai-native-tech-plan`; `superpowers:brainstorming
 ## Superpowers Artifact Mapping
 
 Superpowers provides process discipline; OpenSpec, GSD, and DevFlow planning files are the canonical artifacts. Map `docs/superpowers/specs/...` into `openspec/changes/<change-id>/proposal.md`, `design.md`, or `specs/` for behavior work. Map `docs/superpowers/plans/...` into `openspec/changes/<change-id>/tasks.md`, `.planning/phases/.../PLAN.md`, or a DevFlow-approved Execution Ledger before implementation.
+
+Use `docs/superpowers_gate_matrix.json` as the machine-readable method gate
+source. Superpowers docs, SDD reports, and review notes must be promoted through
+the artifact mapping rules before they satisfy DevFlow canonical gates.
 
 ## Safety
 

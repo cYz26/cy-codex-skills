@@ -97,6 +97,10 @@ class PluginProjectMigrationTests(unittest.TestCase):
         self.assertEqual(report["plugins"][0]["runtimeVersion"], "1.2.0")
         self.assertEqual(self.snapshot_project_files(repo), before)
         self.assertFalse((repo / ".dev-flow" / "plugin-project-migration" / "state.json").exists())
+        control = report["plugins"][0]["controlPlane"]
+        self.assertEqual(control["status"], "missing")
+        self.assertIn("TASK_LEDGER.md", control["missingFiles"])
+        self.assertIn("REVIEW_CHECKLIST.md", control["missingFiles"])
 
     def test_sync_reports_stale_project_local_skill_links(self):
         repo = self.make_repo()
@@ -165,6 +169,20 @@ class PluginProjectMigrationTests(unittest.TestCase):
         self.assertTrue((runtime / "reports" / "latest.json").exists())
         state = json.loads((runtime / "state.json").read_text())
         self.assertEqual(state["plugins"]["dev-flow"]["version"], "1.1.0")
+        for filename in [
+            "ENGINEERING_POLICY.md",
+            "TASK_LEDGER.md",
+            "EVIDENCE_TEMPLATE.md",
+            "REVIEW_CHECKLIST.md",
+        ]:
+            self.assertTrue((repo / filename).exists(), filename)
+        control_changes = [item for item in report["plugins"][0]["changes"] if item["kind"] == "control-plane-file"]
+        self.assertEqual({item["path"] for item in control_changes}, {
+            "ENGINEERING_POLICY.md",
+            "TASK_LEDGER.md",
+            "EVIDENCE_TEMPLATE.md",
+            "REVIEW_CHECKLIST.md",
+        })
 
     def test_apply_refuses_to_replace_non_symlink_skill_target(self):
         repo = self.make_repo()

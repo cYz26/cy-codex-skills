@@ -9,10 +9,7 @@ from pathlib import Path
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 RELEASE_PLUGIN_ROOT = PLUGIN_ROOT.parents[2] / "plugins" / "dev-flow"
 SCRIPTS = PLUGIN_ROOT / "scripts"
-HOOK_SCRIPT_PREFIX = (
-    'python3 "${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/'
-    'dev-flow/0.3.0+codex.20260529145038/scripts/'
-)
+HOOK_SCRIPT_PREFIX = 'python3 "$PLUGIN_ROOT/scripts/'
 sys.path.insert(0, str(SCRIPTS))
 
 from workflow_context_health import context_health_check, record_context_health_event
@@ -59,6 +56,7 @@ class ReleaseSmokeTests(unittest.TestCase):
             + "\n"
         )
         for skill in [
+            "using-superpowers",
             "brainstorming",
             "writing-plans",
             "test-driven-development",
@@ -75,6 +73,18 @@ class ReleaseSmokeTests(unittest.TestCase):
                 / skill
                 / "SKILL.md"
             )
+        manifest = (
+            home
+            / "plugins"
+            / "cache"
+            / "openai-curated"
+            / "superpowers"
+            / "local"
+            / ".codex-plugin"
+            / "plugin.json"
+        )
+        manifest.parent.mkdir(parents=True, exist_ok=True)
+        manifest.write_text('{"name":"superpowers","version":"5.1.3","skills":"./skills/"}\n')
         return home
 
     def make_repo(self):
@@ -162,7 +172,7 @@ context_health:
             path.write_text(f"name = \"{agent}\"\n")
         runtime = repo / ".codex" / "gsd-core"
         (runtime / "bin").mkdir(parents=True)
-        (runtime / "VERSION").write_text("1.5.0\n")
+        (runtime / "VERSION").write_text("1.6.0\n")
         tools = runtime / "bin" / "gsd-tools.cjs"
         tools.write_text("#!/usr/bin/env node\nconsole.log('2026-06-14T00:00:00Z')\n")
         tools.chmod(0o755)

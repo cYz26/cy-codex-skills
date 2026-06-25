@@ -21,7 +21,8 @@ based on current state, risk, approval, and validation cost.
 ## Routes
 
 - Before execution, route the request through DevFlow workflow modes:
-  `Full OpenSpec`, `Lightweight Ledger`, or `Prototype Mode`.
+  `Full OpenSpec`, `Lightweight Ledger`, or `Prototype Mode`. Use
+  `docs/routing.matrix.json` as the machine-readable route source.
 - Apply the Goal Suitability Gate before execution, before context-health drift
   appears. Use `define-goal` when the user asks to create, set, refine, or use a
   goal, or when the development task is long-running, multi-slice, migration or
@@ -76,9 +77,16 @@ Execution Log, and Completion Claim.
 proof of concept, or demo. Record that the output is non-production and include
 cleanup or promotion criteria before any production use.
 
+Contract-first work must record or validate `TASK_LEDGER.md`,
+`EVIDENCE_TEMPLATE.md`, and `REVIEW_CHECKLIST.md` before execution or
+verification claims.
+
 ## Superpowers Artifact Mapping
 
 When Superpowers produces `docs/superpowers/specs/...` or `docs/superpowers/plans/...`, treat those files as drafts or review notes. For behavior work, copy the approved design and task content into canonical OpenSpec artifacts under `openspec/changes/<change-id>/`. For phase or milestone work, copy the approved plan content into `.planning/phases/.../PLAN.md` or a DevFlow-approved ledger.
+
+Use `docs/superpowers_gate_matrix.json` to explain required method gates, and
+use artifact promotion checks before accepting Superpowers outputs as canonical.
 
 ## Output
 

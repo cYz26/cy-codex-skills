@@ -6,7 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/dev-flow/0.3.0+codex.20260529145038/scripts/compact_recovery_hook.py\" --event post_compact",
+            "command": "python3 \"$PLUGIN_ROOT/scripts/compact_recovery_hook.py\" --event post_compact",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\compact_recovery_hook.py\" --event post_compact",
             "timeout": 10
           }
         ]
@@ -18,12 +19,14 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/dev-flow/0.3.0+codex.20260529145038/scripts/context_health_hook.py\" --event pre_tool_use",
+            "command": "python3 \"$PLUGIN_ROOT/scripts/context_health_hook.py\" --event pre_tool_use",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\context_health_hook.py\" --event pre_tool_use",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/dev-flow/0.3.0+codex.20260529145038/scripts/pre_edit_policy.py\"",
+            "command": "python3 \"$PLUGIN_ROOT/scripts/pre_edit_policy.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\pre_edit_policy.py\"",
             "timeout": 10
           }
         ]
@@ -33,17 +36,20 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/dev-flow/0.3.0+codex.20260529145038/scripts/context_health_hook.py\" --event pre_tool_use",
+            "command": "python3 \"$PLUGIN_ROOT/scripts/context_health_hook.py\" --event pre_tool_use",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\context_health_hook.py\" --event pre_tool_use",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/dev-flow/0.3.0+codex.20260529145038/scripts/pre_next_phase_checkpoint_policy.py\"",
+            "command": "python3 \"$PLUGIN_ROOT/scripts/pre_next_phase_checkpoint_policy.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\pre_next_phase_checkpoint_policy.py\"",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/dev-flow/0.3.0+codex.20260529145038/scripts/pre_archive_policy.py\"",
+            "command": "python3 \"$PLUGIN_ROOT/scripts/pre_archive_policy.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\pre_archive_policy.py\"",
             "timeout": 10
           }
         ]
@@ -55,7 +61,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/dev-flow/0.3.0+codex.20260529145038/scripts/context_health_hook.py\" --event post_tool_use",
+            "command": "python3 \"$PLUGIN_ROOT/scripts/context_health_hook.py\" --event post_tool_use",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\context_health_hook.py\" --event post_tool_use",
             "timeout": 10
           }
         ]
@@ -66,12 +73,14 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/dev-flow/0.3.0+codex.20260529145038/scripts/context_health_hook.py\" --event user_prompt_submit",
+            "command": "python3 \"$PLUGIN_ROOT/scripts/context_health_hook.py\" --event user_prompt_submit",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\context_health_hook.py\" --event user_prompt_submit",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/dev-flow/0.3.0+codex.20260529145038/scripts/plugin_project_migration_check.py\" --event user_prompt_submit",
+            "command": "python3 \"$PLUGIN_ROOT/scripts/plugin_project_migration_check.py\" --event user_prompt_submit",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\plugin_project_migration_check.py\" --event user_prompt_submit",
             "timeout": 10
           }
         ]
@@ -82,7 +91,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/dev-flow/0.3.0+codex.20260529145038/scripts/context_health_hook.py\" --event subagent_start",
+            "command": "python3 \"$PLUGIN_ROOT/scripts/context_health_hook.py\" --event subagent_start",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\context_health_hook.py\" --event subagent_start",
             "timeout": 10
           }
         ]
@@ -93,7 +103,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/dev-flow/0.3.0+codex.20260529145038/scripts/context_health_hook.py\" --event subagent_stop",
+            "command": "python3 \"$PLUGIN_ROOT/scripts/context_health_hook.py\" --event subagent_stop",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\context_health_hook.py\" --event subagent_stop",
             "timeout": 10
           }
         ]
@@ -104,23 +115,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/dev-flow/0.3.0+codex.20260529145038/scripts/context_health_hook.py\" --event stop --check",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/dev-flow/0.3.0+codex.20260529145038/scripts/stop_verification_policy.py\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/dev-flow/0.3.0+codex.20260529145038/scripts/release_promotion_gate.py\"",
+            "command": "python3 \"$PLUGIN_ROOT/scripts/devflow_stop_hook.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\devflow_stop_hook.py\"",
             "timeout": 30
-          },
-          {
-            "type": "command",
-            "command": "python3 \"${CODEX_HOME:-$HOME/.codex}/plugins/cache/cy-codex-skills/dev-flow/0.3.0+codex.20260529145038/scripts/stop_checkpoint_policy.py\"",
-            "timeout": 10
           }
         ]
       }

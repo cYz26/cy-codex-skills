@@ -16,10 +16,31 @@ under `scripts/`; detailed procedure stays in individual skills.
   data, migration, integration, permission, error-handling, and compatibility
   changes; `.dev-flow.json` can enable Lightweight Ledger only for low-risk
   work.
-- Hooks use installed cache paths and support `off`, `warn`, and `block` modes.
-  Diagnostics preserve the Codex hook event schema while reporting the current
-  stage, failed gates, next action, and recommended skill or command.
+- Hooks use `$PLUGIN_ROOT` / `%PLUGIN_ROOT%` instead of versioned installed
+  cache paths and support `off`, `warn`, and `block` modes. Diagnostics
+  preserve the Codex hook event schema while reporting the current stage,
+  failed gates, next action, and recommended skill or command. Stop uses a
+  single read-only `devflow_stop_hook.py` entrypoint.
 - Agent Reach is deprecated and not recommended for DevFlow automation.
+
+## Contract-First Control Plane
+
+DevFlow setup and migration validate these root files:
+
+- `AGENTS.md` routes Codex to the workflow and required skills.
+- `ENGINEERING_POLICY.md` records durable engineering, dependency, testing,
+  evidence, review, and release policy.
+- `TASK_LEDGER.md` records the Goal Contract, task decomposition, owner,
+  write set, evidence requirements, review gate, status, and execution log.
+- `EVIDENCE_TEMPLATE.md` defines evidence records for TDD, verification,
+  changed files, risks, and reviewer notes.
+- `REVIEW_CHECKLIST.md` defines correctness, verification, scope, release, and
+  archive readiness checks.
+
+Non-trivial execution needs a Goal Contract and task ledger entry before worker
+or subagent execution. Verification and archive readiness need evidence and
+review results plus a knowledge-update decision: `none`, `AGENTS.md`,
+`ENGINEERING_POLICY.md`, or a checked-in docs path.
 
 ## Workflow Modes
 
@@ -124,6 +145,28 @@ and status (`verified`, `dependency_drift`, `missing`, or `smoke_failed`).
 Read-only checks report drift without running installers; mutating install and
 update commands remain behind explicit apply mode.
 
+The provenance schema also records Superpowers as a methodology dependency.
+DevFlow recommends upstream Superpowers `6.0.3`, accepts OpenAI curated
+`5.1.3` as a compatibility fallback, and reports upgrade, SessionStart hook,
+and hook-trust status. DevFlow never installs, upgrades, trusts, or bypasses
+Superpowers hooks automatically.
+
+## Routing And Method Gates
+
+Workflow routing is machine-readable in `docs/routing.matrix.json`.
+Superpowers methodology gates are machine-readable in
+`docs/superpowers_gate_matrix.json`. Skills and hooks may cite these matrices,
+but OpenSpec, GSD, `.planning/STATE.md`, `TASK_LEDGER.md`, and
+`.planning/verification/*` remain canonical state.
+
+## Superpowers Artifact Promotion
+
+Superpowers outputs under `docs/superpowers/specs/*`,
+`docs/superpowers/plans/*`, SDD reports, and review notes are drafts or method
+evidence. Use `superpowers_artifact_mapping.py` rules to promote the approved
+content into OpenSpec proposal/design/specs/tasks, GSD phase plans,
+`TASK_LEDGER.md`, or verification evidence before archive or release readiness.
+
 ## Plugin Project Migration
 
 `plugin-project-migration` detects drift after plugin or skill runtime updates.
@@ -136,8 +179,9 @@ targets are missing or already symlinks.
 ## Release Promotion
 
 Develop plugins and standalone skills under `dev/`. At verified workflow
-boundaries, `release_promotion_gate.py` promotes allowlisted runtime assets to
-their release counterparts and then asks for release validation. Use
+boundaries, run explicit release promotion to copy allowlisted runtime assets to
+their release counterparts and then perform release validation. Stop hooks only
+run read-only release-promotion checks. Use
 `sync_release_assets.py --apply --json` for an explicit sync, or
 `sync_release_assets.py --eval-target <path> --json` to resolve the
 release-first Plugin Eval target.

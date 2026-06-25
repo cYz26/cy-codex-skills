@@ -98,6 +98,8 @@ def evaluate_dependency(
     default_last_verified: str | None,
     repo: Path | None,
 ) -> dict[str, Any]:
+    if is_policy_only_record(record):
+        return policy_only_dependency(record, source_path, default_last_verified)
     binary_path = resolve_binary_path(record, repo)
     installed_version = installed_dependency_version(record, repo)
     smoke_command = resolve_command(record.get("smokeCommand", []), repo, binary_path)
@@ -121,6 +123,52 @@ def evaluate_dependency(
         "lastVerified": record.get("lastVerified") or default_last_verified,
         "provenanceSource": str(source_path),
     }
+
+
+def is_policy_only_record(record: dict[str, Any]) -> bool:
+    kind = str(record.get("kind") or "")
+    return kind in {"codex-plugin", "codex-plugin-dev-tool"} and not (
+        record.get("binary") or record.get("binaryPath")
+    )
+
+
+def policy_only_dependency(
+    record: dict[str, Any],
+    source_path: Path,
+    default_last_verified: str | None,
+) -> dict[str, Any]:
+    output = {
+        "name": record["name"],
+        "kind": record.get("kind"),
+        "purpose": record.get("purpose"),
+        "required": bool(record.get("required", True)),
+        "status": "policy_recorded",
+        "expectedVersion": record.get("expectedVersion"),
+        "installedVersion": None,
+        "binaryPath": None,
+        "installCommand": list(record.get("installCommand", [])),
+        "recommendedCommand": list(record.get("updateCommand") or record.get("installCommand") or []),
+        "smokeCommand": [],
+        "smokeResult": {"ok": True, "returncode": None, "summary": "policy-only dependency"},
+        "source": record.get("source"),
+        "failureMode": record.get("failureMode"),
+        "fallbackOrBlocker": record.get("fallbackOrBlocker"),
+        "lastVerified": record.get("lastVerified") or default_last_verified,
+        "provenanceSource": str(source_path),
+    }
+    for key in [
+        "minimumCompatibleVersion",
+        "recommendedVersion",
+        "strictProfileRequires",
+        "compatibilityPolicy",
+        "sources",
+        "requiredSkills",
+        "strictRecommendedSkills",
+        "requiredHooksWhenVersionAtLeast",
+    ]:
+        if key in record:
+            output[key] = record[key]
+    return output
 
 
 def resolve_binary_path(record: dict[str, Any], repo: Path | None) -> Path | None:
@@ -249,7 +297,7 @@ def dependency_status(
 
 def dependency_check_item(dependency: dict[str, Any]) -> dict[str, Any]:
     status = dependency["status"]
-    ok = status in {"verified", "not_applicable"}
+    ok = status in {"verified", "not_applicable", "policy_recorded"}
     required = bool(dependency.get("required")) and status != "not_applicable"
     detail = (
         f"{status}: expected {dependency.get('expectedVersion') or 'unknown'}, "

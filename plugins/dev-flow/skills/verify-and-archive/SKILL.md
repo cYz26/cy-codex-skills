@@ -18,6 +18,11 @@ Before completion claims, verify:
 - Capability Slices are done or blocked with reasons.
 - Execution Ledger is updated.
 - Acceptance Criteria and Validation Commands have recorded evidence.
+- `TASK_LEDGER.md`, `EVIDENCE_TEMPLATE.md`, and `REVIEW_CHECKLIST.md` have
+  evidence, review, and knowledge-update decisions for contract-first work.
+- Superpowers specs, plans, SDD reports, and review notes have been promoted to
+  canonical OpenSpec, GSD, DevFlow ledger, or verification artifacts when they
+  are used as completion evidence.
 
 Record commands with:
 

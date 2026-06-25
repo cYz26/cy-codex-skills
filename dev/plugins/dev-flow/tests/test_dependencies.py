@@ -61,7 +61,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
             "--json",
         )
         self.assertTrue(report["ok"], report)
-        self.assertEqual(report["status"], "ready")
+        self.assertEqual(report["status"], "ready_with_recommendations")
         checks = {item["name"]: item for item in report["checks"]}
         self.assertTrue(checks["global plugin inactive: superpowers"]["ok"])
         self.assertTrue(checks["global skill inactive: brainstorming"]["ok"])
@@ -116,20 +116,90 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertTrue(openspec["smokeResult"]["ok"], openspec)
         self.assertEqual(openspec["smokeResult"]["summary"], "1.4.1")
         self.assertIn("@fission-ai/openspec", openspec["source"])
-        self.assertEqual(openspec["lastVerified"], "2026-06-19")
+        self.assertEqual(report["provenance"]["schemaVersion"], 2)
+        self.assertEqual(openspec["lastVerified"], "2026-06-25")
 
         gsd = dependencies["gsd-core"]
         self.assertEqual(gsd["status"], "verified")
-        self.assertEqual(gsd["expectedVersion"], "1.5.0")
-        self.assertEqual(gsd["installedVersion"], "1.5.0")
+        self.assertEqual(gsd["expectedVersion"], "1.6.0")
+        self.assertEqual(gsd["installedVersion"], "1.6.0")
         self.assertTrue(gsd["binaryPath"].endswith("/.codex/gsd-core/bin/gsd-tools.cjs"))
         self.assertEqual(
             gsd["installCommand"],
-            ["npx", "-y", "@opengsd/gsd-core@latest", "--codex", "--local", "--profile=standard"],
+            ["npx", "-y", "@opengsd/gsd-core@1.6.0", "--codex", "--local", "--profile=standard"],
         )
         self.assertEqual(gsd["smokeCommand"][-1], "current-timestamp")
         self.assertTrue(gsd["smokeResult"]["ok"], gsd)
-        self.assertEqual(gsd["lastVerified"], "2026-06-19")
+        self.assertEqual(gsd["lastVerified"], "2026-06-25")
+
+        superpowers = dependencies["superpowers"]
+        self.assertEqual(superpowers["status"], "policy_recorded")
+        self.assertEqual(superpowers["minimumCompatibleVersion"], "5.1.3")
+        self.assertEqual(superpowers["recommendedVersion"], "6.0.3")
+        self.assertEqual(superpowers["strictProfileRequires"], "6.0.3")
+        self.assertIn("using-superpowers", superpowers["requiredSkills"])
+
+    def test_dependency_check_reports_superpowers_fallback_and_upgrade_recommendation(self):
+        codex_home = self.make_codex_home(superpowers_version="5.1.3", superpowers_channel="openai-curated")
+        repo = self.make_dependency_ready_project_repo()
+
+        report = self.dependency_report_with_fake_path(codex_home, repo)
+
+        self.assertTrue(report["ok"], report)
+        superpowers = report["superpowers"]
+        self.assertEqual(superpowers["status"], "superpowers_upgrade_recommended")
+        self.assertEqual(superpowers["version"], "5.1.3")
+        self.assertEqual(superpowers["sourceChannel"], "openai-curated")
+        self.assertEqual(superpowers["compatibility"], "fallback")
+        self.assertIn("6.0.3", superpowers["nextAction"])
+        checks = {item["name"]: item for item in report["checks"]}
+        self.assertFalse(checks["superpowers dependency status"]["ok"])
+        self.assertFalse(checks["superpowers dependency status"]["required"])
+        self.assertEqual(checks["superpowers dependency status"]["status"], "superpowers_upgrade_recommended")
+
+    def test_dependency_check_blocks_strict_when_superpowers_v6_hook_is_untrusted(self):
+        codex_home = self.make_codex_home(
+            superpowers_version="6.0.3",
+            superpowers_channel="upstream-official",
+            superpowers_hooks="hooks/hooks-codex.json",
+        )
+        repo = self.make_dependency_ready_project_repo()
+
+        report = dependency_report(PLUGIN_ROOT, codex_home, codex_home / "config.toml", True, repo)
+
+        self.assertFalse(report["ok"], report)
+        superpowers = report["superpowers"]
+        self.assertEqual(superpowers["status"], "superpowers_hook_untrusted")
+        self.assertEqual(superpowers["version"], "6.0.3")
+        self.assertEqual(superpowers["compatibility"], "recommended")
+        checks = {item["name"]: item for item in report["checks"]}
+        self.assertTrue(checks["superpowers latest ready"]["ok"])
+        self.assertFalse(checks["superpowers session-start hook trusted"]["ok"])
+        self.assertTrue(checks["superpowers session-start hook trusted"]["required"])
+
+    def test_dependency_check_accepts_superpowers_v6_hook_trust_from_codex_config(self):
+        codex_home = self.make_codex_home(
+            superpowers_version="6.0.3",
+            superpowers_channel="superpowers-upstream-v6-0-3",
+            superpowers_hooks="hooks/hooks-codex.json",
+        )
+        config = codex_home / "config.toml"
+        config.write_text(
+            config.read_text()
+            + '\n[hooks.state."superpowers@superpowers-upstream-v6-0-3:hooks/hooks-codex.json:session_start:0:0"]\n'
+            + 'trusted_hash = "sha256:fixture"\n'
+        )
+        repo = self.make_dependency_ready_project_repo()
+
+        report = dependency_report(PLUGIN_ROOT, codex_home, config, True, repo)
+
+        self.assertTrue(report["ok"], report)
+        superpowers = report["superpowers"]
+        self.assertEqual(superpowers["status"], "superpowers_ok")
+        self.assertTrue(superpowers["sessionStartHookTrusted"])
+        checks = {item["name"]: item for item in report["checks"]}
+        self.assertTrue(checks["superpowers session-start hook trusted"]["ok"])
+        self.assertTrue(checks["superpowers session-start hook trusted"]["required"])
 
     def test_dependency_report_marks_drift_missing_and_smoke_failed(self):
         codex_home = self.make_codex_home()
@@ -141,11 +211,11 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         drift_gsd = next(item for item in drift_report["dependencies"] if item["name"] == "gsd-core")
         self.assertFalse(drift_report["ok"], drift_report)
         self.assertEqual(drift_gsd["status"], "dependency_drift")
-        self.assertEqual(drift_gsd["expectedVersion"], "1.5.0")
+        self.assertEqual(drift_gsd["expectedVersion"], "1.6.0")
         self.assertEqual(drift_gsd["installedVersion"], "1.4.4")
         self.assertEqual(
             drift_gsd["recommendedCommand"],
-            ["npx", "-y", "@opengsd/gsd-core@latest", "--codex", "--local", "--profile=standard"],
+            ["npx", "-y", "@opengsd/gsd-core@1.6.0", "--codex", "--local", "--profile=standard"],
         )
 
         missing_repo = self.make_dependency_ready_project_repo()
@@ -155,7 +225,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         missing_gsd = next(item for item in missing_report["dependencies"] if item["name"] == "gsd-core")
         self.assertFalse(missing_report["ok"], missing_report)
         self.assertEqual(missing_gsd["status"], "missing")
-        self.assertEqual(missing_gsd["installedVersion"], "1.5.0")
+        self.assertEqual(missing_gsd["installedVersion"], "1.6.0")
 
         smoke_repo = self.make_dependency_ready_project_repo()
         smoke_tool = smoke_repo / ".codex" / "gsd-core" / "bin" / "gsd-tools.cjs"
@@ -182,7 +252,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
 
         gsd_install = next(item for item in report["commands"] if item["command"][0:2] == ["npx", "-y"])
         self.assertIn(
-            ["npx", "-y", "@opengsd/gsd-core@latest", "--codex", "--local", "--profile=standard"],
+            ["npx", "-y", "@opengsd/gsd-core@1.6.0", "--codex", "--local", "--profile=standard"],
             [item["command"] for item in report["commands"]],
         )
         self.assertIn("provenanceSource", gsd_install)
@@ -678,7 +748,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
 
         def fake_run(command, cwd=None, timeout=300):
             if command[:3] == ["npm", "view", "@opengsd/gsd-core"]:
-                return {"ok": True, "returncode": 0, "stdout": json.dumps({"version": "1.5.1"}), "stderr": ""}
+                return {"ok": True, "returncode": 0, "stdout": json.dumps({"version": "1.6.1"}), "stderr": ""}
             if command[:3] == ["npm", "view", "@fission-ai/openspec"]:
                 return {"ok": True, "returncode": 0, "stdout": json.dumps({"version": "1.3.2"}), "stderr": ""}
             raise AssertionError(f"unexpected command: {command}")
@@ -690,16 +760,16 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
 
         by_name = {item["name"]: item for item in results}
         self.assertEqual(by_name["gsd-core"]["status"], "update-available")
-        self.assertEqual(by_name["gsd-core"]["current"], "1.5.0")
-        self.assertEqual(by_name["gsd-core"]["latest"], "1.5.1")
+        self.assertEqual(by_name["gsd-core"]["current"], "1.6.0")
+        self.assertEqual(by_name["gsd-core"]["latest"], "1.6.1")
         self.assertIn("expectedVersion", by_name["gsd-core"])
-        self.assertEqual(by_name["gsd-core"]["expectedVersion"], "1.5.0")
+        self.assertEqual(by_name["gsd-core"]["expectedVersion"], "1.6.0")
         self.assertIn("provenanceSource", by_name["gsd-core"])
         self.assertTrue(by_name["gsd-core"]["provenanceSource"].endswith("dependency-provenance.json"))
         self.assertIn("installCommand", by_name["gsd-core"])
         self.assertEqual(
             by_name["gsd-core"]["installCommand"],
-            ["npx", "-y", "@opengsd/gsd-core@latest", "--codex", "--local", "--profile=standard"],
+            ["npx", "-y", "@opengsd/gsd-core@1.6.0", "--codex", "--local", "--profile=standard"],
         )
         self.assertIn("@opengsd/gsd-core", by_name["gsd-core"]["detail"])
         self.assertNotIn("get-shit-done-cc", by_name["gsd-core"]["detail"])

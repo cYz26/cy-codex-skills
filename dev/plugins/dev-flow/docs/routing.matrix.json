@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "routes": [
+    {
+      "id": "mandatory-full-openspec",
+      "label": "Full OpenSpec",
+      "kinds": [
+        "new-feature",
+        "behavior-change",
+        "api-change",
+        "data-model-change",
+        "migration",
+        "integration",
+        "permission-change",
+        "error-handling-change",
+        "compatibility-change"
+      ],
+      "requiredArtifacts": ["proposal.md", "design.md", "specs", "tasks.md"],
+      "recommendedSkillWhenReady": "openspec-apply-change",
+      "recommendedSkillWhenBlocked": "openspec-propose"
+    },
+    {
+      "id": "lightweight-ledger-low-risk",
+      "label": "Lightweight Ledger",
+      "kinds": ["docs-only", "test-only", "internal-maintenance", "low-risk-bugfix", "tooling"],
+      "requiredArtifacts": ["TASK_LEDGER.md", "EVIDENCE_TEMPLATE.md", "REVIEW_CHECKLIST.md"],
+      "recommendedSkillWhenReady": "execute-task"
+    },
+    {
+      "id": "prototype-explicit-only",
+      "label": "Prototype Mode",
+      "kinds": ["prototype", "spike", "proof-of-concept"],
+      "requiredArtifacts": ["TASK_LEDGER.md"],
+      "recommendedSkillWhenReady": "feature-intake"
+    }
+  ]
+}

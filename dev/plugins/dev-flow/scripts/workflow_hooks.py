@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from workflow_constants import CODE_EXTENSIONS, SOURCE_DIRS
+from hook_response_adapter import advisory, block_stop_continue
 from workflow_state import parse_state
 
 
@@ -67,19 +68,9 @@ def hook_response(
     decision = "block" if force_block or mode == "block" or event_name == "Stop" else "warn"
     payload_diagnostic = hook_diagnostic(repo, event_name, decision, message, diagnostic)
     if event_name == "Stop":
-        print(json.dumps({"decision": "block", "reason": message, "diagnostic": payload_diagnostic}))
+        print(json.dumps(block_stop_continue(message, payload_diagnostic)))
     else:
-        print(
-            json.dumps(
-                {
-                    "hookSpecificOutput": {
-                        "hookEventName": event_name,
-                        "additionalContext": message,
-                        "diagnostic": payload_diagnostic,
-                    }
-                }
-            )
-        )
+        print(json.dumps(advisory(event_name, message, payload_diagnostic)))
     return 1 if force_block or mode == "block" else 0
 
 

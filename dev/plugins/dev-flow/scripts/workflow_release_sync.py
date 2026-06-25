@@ -11,6 +11,7 @@ from typing import Any
 
 PLUGIN_INCLUDE = [
     ".codex-plugin/**",
+    "docs/**",
     "skills/**",
     "hooks.json",
     "scripts/**",
@@ -42,6 +43,7 @@ DEFAULT_EXCLUDE = [
     "reports/**",
     ".reports/**",
     ".eval/**",
+    "docs/superpowers/**",
     "__pycache__/**",
     ".pytest_cache/**",
     ".mypy_cache/**",
