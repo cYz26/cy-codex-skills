@@ -53,6 +53,13 @@ Keep OpenSpec artifacts, `.planning/STATE.md`, verification evidence, shared
 README/docs, and final integration under main-agent ownership unless the plan
 serializes those edits.
 
+Before dispatch, create an Agent Task Contract and validate it with
+`python3 scripts/validate_agent_task_contract.py --contract <path> --json`.
+Record the contract in the task ledger as `contract_path`. The contract must
+define Goal, Scope, Constraints, Verification, Evidence, and Human Gate. Use
+`not-delegated` only for ordinary main-agent tasks that are not handed to
+another agent, subagent, worker, or parallel execution slice.
+
 Each delegated result must report status (`DONE`, `DONE_WITH_CONCERNS`,
 `NEEDS_CONTEXT`, or `BLOCKED`), files changed or inspected, commands or tests
 run, residual risks, and review needs. Review those results before updating the

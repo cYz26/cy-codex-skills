@@ -13,9 +13,10 @@
 - workflow mode: <Full OpenSpec | Lightweight Ledger | Prototype Mode>
 - capability-research: required/used/skipped - <reason>
 - brainstorming: required/used/skipped - <reason>
+- decision-grilling: required/used/skipped - <reason>
 - writing-plans: required/used/skipped/pending - <reason>
 - openspec/gsd: required/used/skipped - <reason>
-- Open Questions: <none | unresolved questions require brainstorming or explicit draft status>
+- Open Questions: <none | unresolved questions require brainstorming plus decision-grilling or explicit draft status>
 
 ## Target State
 

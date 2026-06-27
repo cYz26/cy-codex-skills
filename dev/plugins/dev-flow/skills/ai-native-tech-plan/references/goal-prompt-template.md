@@ -14,6 +14,9 @@ Define-goal handoff:
 - Use `define-goal` to create or refine this goal before goal-backed execution.
 - Let `define-goal` check the active goal before creating a new goal.
 - Include verification evidence, scope boundaries, non-goals, and stop conditions.
+- Apply the Goal Quality Gate before goal creation: the candidate objective must
+  name outcome, verification evidence, scope boundaries, non-goals, success
+  threshold, and stop conditions.
 
 Goal Slash Command:
 - After `define-goal` shapes the objective, set it with `/goal <objective>`.

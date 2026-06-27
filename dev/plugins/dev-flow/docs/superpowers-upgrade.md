@@ -17,7 +17,11 @@ marketplace can pin the upstream tag or audited commit.
 
 - DevFlow may diagnose missing, unsupported, fallback, upgrade-recommended,
   hook-missing, hook-untrusted, and ok states.
-- DevFlow does not install or upgrade Superpowers from hooks.
+- DevFlow updater apply mode may install or upgrade Superpowers from the pinned
+  upstream marketplace: `codex plugin marketplace add
+  https://github.com/obra/superpowers --ref v6.0.3 --json`, followed by
+  `codex plugin add superpowers@superpowers-dev --json`.
+- DevFlow hooks do not install or upgrade Superpowers.
 - DevFlow does not trust or bypass Superpowers hooks.
 - Users must review bundled hooks through `/hooks`.
 

@@ -71,10 +71,17 @@ diagnostic.
 Design, research, architecture, product-shape, and technical-plan requests must
 record a Skill Routing Ledger before the final artifact. The ledger records the
 request kind, workflow mode, capability-research decision, `brainstorming:
-required/used/skipped`, writing-plans decision, OpenSpec/GSD route, and the
-reason for every skipped gate. If unresolved Open Questions remain,
-Brainstorming cannot be skipped; keep the artifact as draft or record
-`brainstorming: required`.
+required/used/skipped`, `decision-grilling: required/used/skipped`,
+writing-plans decision, OpenSpec/GSD route, and the reason for every skipped
+gate. If unresolved Open Questions remain, Brainstorming and decision grilling
+cannot be skipped; keep the artifact as draft or record both gates as required.
+
+Decision grilling is the narrow ambiguity-resolution protocol inside
+brainstorming. Use `scripts/workflow_decision_grilling.py --json` to classify
+the gate when needed. The protocol is: inspect local evidence first, ask one
+question at a time, provide a recommended answer, walk dependent decision
+branches, and record resolved decisions in OpenSpec, GSD, or DevFlow ledger
+artifacts.
 
 ## Goal Workflow
 
@@ -86,6 +93,12 @@ oriented, broad-refactor oriented, cross-context, subagent/delegation backed, or
 otherwise likely to lose its definition of done. `define-goal` owns the active
 goal check, objective quality bar, verification evidence, scope boundaries, and
 stop conditions before goal creation.
+
+Before a goal is created, apply the Goal Quality Gate: the candidate objective
+must name the outcome, verification evidence, scope boundaries, non-goals,
+success threshold, and stop conditions. Use
+`scripts/validate_goal_quality.py --objective "<objective>" --json` when a
+machine-readable check is useful.
 
 After `define-goal` shapes the objective, set it in a Codex app, IDE, or CLI
 composer with `/goal <objective>`. Use `/goal` to view the current goal and
@@ -148,8 +161,9 @@ update commands remain behind explicit apply mode.
 The provenance schema also records Superpowers as a methodology dependency.
 DevFlow recommends upstream Superpowers `6.0.3`, accepts OpenAI curated
 `5.1.3` as a compatibility fallback, and reports upgrade, SessionStart hook,
-and hook-trust status. DevFlow never installs, upgrades, trusts, or bypasses
-Superpowers hooks automatically.
+and hook-trust status. DevFlow updater apply mode can register the pinned
+upstream marketplace and install `superpowers@superpowers-dev`; DevFlow never
+trusts or bypasses Superpowers hooks automatically.
 
 ## Routing And Method Gates
 
@@ -207,6 +221,14 @@ DevFlow is the policy/router layer for SubAgents. It recommends delegation for
 independent domains, disjoint write sets, repeated investigation pressure,
 repeated command failures, or bounded review needs. DevFlow does not spawn subagents from scripts or hooks, and Codex should not spawn them without
 explicit user authorization or an approved delegated workflow.
+
+Before delegated agent, subagent, worker, or parallel execution starts, create
+and validate an Agent Task Contract. The contract records Goal, Scope,
+Constraints, Verification, Evidence, and Human Gate sections so the main agent
+can review the handoff before dispatch. Use
+`scripts/validate_agent_task_contract.py --contract <path> --json` to check the
+contract. Ordinary narrow main-agent work does not need this gate solely
+because it has multiple steps.
 
 When authorized, route to `gsd-execute-phase`, `subagent-driven-development`,
 `dispatching-parallel-agents`, or `executing-plans`. The main agent owns OpenSpec artifacts, `.planning/STATE.md`, verification evidence, shared docs,

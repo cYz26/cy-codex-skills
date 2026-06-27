@@ -23,6 +23,8 @@ def should_prompt_context_health(repo: Path, report: dict[str, Any]) -> bool:
 
 
 def medium_report_can_be_advisory(repo: Path, report: dict[str, Any]) -> bool:
+    if pending_subagent_recommendation(report):
+        return False
     return has_acknowledged_medium_report(repo, report)
 
 
@@ -43,6 +45,7 @@ def has_acknowledged_medium_report(repo: Path, report: dict[str, Any]) -> bool:
 
 def context_health_signature(report: dict[str, Any]) -> dict[str, Any]:
     repo_truth = report.get("repo_truth", {})
+    subagents = report.get("subagents", {})
     return {
         "risk": report.get("risk"),
         "decision": report.get("decision"),
@@ -51,7 +54,16 @@ def context_health_signature(report: dict[str, Any]) -> dict[str, Any]:
             for signal in report.get("signals", [])
         ),
         "changed_files": sorted(repo_truth.get("changed_files", [])),
+        "subagent_recommendation": subagents.get("recommendationId"),
+        "subagent_disposition": subagents.get("disposition"),
     }
+
+
+def pending_subagent_recommendation(report: dict[str, Any]) -> bool:
+    subagents = report.get("subagents", {})
+    if not isinstance(subagents, dict):
+        return False
+    return bool(subagents.get("dispositionRequired")) and subagents.get("disposition") == "pending"
 
 
 def main() -> int:

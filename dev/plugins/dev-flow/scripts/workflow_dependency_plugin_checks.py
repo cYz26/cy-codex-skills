@@ -84,7 +84,12 @@ def add_skill_check(
 
 
 def find_skill(codex_home: Path, plugin: str, skill: str) -> Path | None:
-    for root in find_plugin_roots(codex_home, plugin):
+    roots = sorted(
+        find_plugin_roots(codex_home, plugin),
+        key=lambda path: (manifest_version(path), str(path)),
+        reverse=True,
+    )
+    for root in roots:
         path = root / "skills" / skill / "SKILL.md"
         if path.exists():
             return path

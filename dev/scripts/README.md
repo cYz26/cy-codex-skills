@@ -31,9 +31,11 @@ clean Git mirrors against their upstream remotes in dry-run mode, refreshes
 configured plugin marketplaces, plans or applies installed plugin cache refreshes
 with `codex plugin add`, verifies installed plugin caches against marketplace
 sources when possible, refreshes OpenAI curated plugin caches and skills, and
-maintains known external tooling such as Lark, GSD, and OpenSpec. It skips local
-copies that differ from their previous upstream mirror instead of overwriting
-them.
+maintains known external tooling such as Superpowers, Lark, GSD, and OpenSpec.
+For Superpowers, apply mode registers the upstream `obra/superpowers` marketplace
+at `v6.0.3` and installs `superpowers@superpowers-dev`; hook trust still requires
+manual review with `/hooks`. It skips local copies that differ from their
+previous upstream mirror instead of overwriting them.
 
 Agent Reach is deprecated in this repository and is not recommended for new use;
 it is intentionally excluded from automatic update planning.

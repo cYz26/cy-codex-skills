@@ -90,12 +90,31 @@ def goal_prompt(
     ]
     if status == "weak":
         goal_handoff.append("Use `define-goal` to repair the weak activity goal before treating it as complete.")
+    goal_quality_gate = [
+        "Before creating a goal, apply the Goal Quality Gate.",
+        (
+            "The objective must name outcome, verification evidence, scope boundaries, "
+            "non-goals, success threshold, and stop conditions."
+        ),
+        (
+            "Use this template: Achieve <outcome>, limited to <scope-in>, "
+            "excluding <scope-out>, verified by <commands/evidence>, and stop "
+            "before <human-gate conditions>."
+        ),
+        (
+            "When useful, run `python3 scripts/validate_goal_quality.py --objective "
+            "\"<objective>\" --json` before setting the goal."
+        ),
+    ]
     return "\n".join(
         [
             "# Goal Mode Prompt",
             "",
             "Define-Goal Handoff:",
             *[f"- {item}" for item in goal_handoff],
+            "",
+            "Goal Quality Gate:",
+            *[f"- {item}" for item in goal_quality_gate],
             "",
             "Goal Slash Command:",
             *[f"- {item}" for item in goal_command_flow],

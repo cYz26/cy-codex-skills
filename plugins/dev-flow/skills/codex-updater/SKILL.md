@@ -64,6 +64,10 @@ results. Also report project migration sync findings, but do not apply project
 migrations from the updater path. Do not claim an installed plugin is refreshed
 unless cache verification or apply output supports it.
 
+For Superpowers, apply mode may register the pinned upstream marketplace and
+install `superpowers@superpowers-dev`. Report any remaining SessionStart hook
+trust action separately; do not write hook trust state from the updater path.
+
 ## Safety
 
 - Agent Reach is deprecated and not recommended for new use; do not check, update, or run Agent Reach as part of this workflow.

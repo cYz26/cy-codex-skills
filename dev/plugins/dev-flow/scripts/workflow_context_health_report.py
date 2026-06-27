@@ -79,7 +79,11 @@ def render_markdown_report(report: dict[str, Any]) -> str:
 ## Subagents
 
 - recommendation: {subagents.get('recommendation')}
+- recommendation_id: {subagents.get('recommendationId')}
+- disposition: {subagents.get('disposition')}
+- disposition_note: {subagents.get('dispositionNote', 'none')}
 - reason: {subagents.get('reason')}
+- next_action: {subagents.get('nextAction')}
 
 ## Unknown Metrics
 

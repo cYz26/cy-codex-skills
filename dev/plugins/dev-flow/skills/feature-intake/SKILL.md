@@ -29,7 +29,9 @@ based on current state, risk, approval, and validation cost.
   release oriented, broad-refactor oriented, cross-context,
   subagent/delegation backed, or otherwise likely to lose its definition of
   done. `define-goal` owns active goal checks and requires verification
-  evidence, scope boundaries, and stop conditions before goal creation.
+  evidence, scope boundaries, and stop conditions before goal creation. Apply
+  the Goal Quality Gate before goal creation: the candidate objective must also
+  include outcome, non-goals, and a pass/fail success threshold.
 - After `define-goal` shapes the objective, use `/goal <objective>` in a Codex
   app, IDE, or CLI composer. Use `/goal`, `/goal pause`, `/goal resume`, and
   `/goal clear` to inspect or control it; if unavailable, enable
@@ -40,10 +42,19 @@ based on current state, risk, approval, and validation cost.
 - Use `ai-native-tech-plan` for technical plans, implementation plans, architecture plans, Codex execution plans, workflow plans, or requests to avoid partial delivery.
 - Use `capability-research` when the requirement depends on a current or external capability, platform behavior, plugin/runtime behavior, hook/API support, CLI support, installed-cache state, or local-vs-platform ambiguity.
 - Use `superpowers:brainstorming` for open goals, constraints, tradeoffs, or implementation shape.
+- Use decision grilling inside brainstorming when plan/design ambiguity remains:
+  inspect local evidence first, ask one question at a time, provide a
+  recommended answer, and map resolved decisions into canonical OpenSpec, GSD,
+  or DevFlow ledger artifacts. Use `scripts/workflow_decision_grilling.py
+  --json` when a machine-readable routing check is useful.
 - Use `openspec-explore` for unclear behavior, compatibility, requirements, or acceptance criteria.
 - Use `openspec-propose` before behavior/API/data/integration changes.
 - Use `gsd-discuss-phase` and `gsd-plan-phase` for stages, refactors, or milestones.
 - Use `superpowers:writing-plans` before committing to a non-trivial plan.
+- Before delegated agent, subagent, worker, or parallel execution, require an
+  Agent Task Contract with Goal, Scope, Constraints, Verification, Evidence,
+  and Human Gate sections. Ordinary narrow main-agent work does not need this
+  gate solely because it has multiple steps.
 
 ## Skill Routing Ledger
 
@@ -54,13 +65,16 @@ record the routing decision before writing the final artifact:
 - workflow mode: Full OpenSpec, Lightweight Ledger, or Prototype Mode.
 - capability-research: required/used/skipped, with reason.
 - brainstorming: required/used/skipped, with reason.
+- decision-grilling: required/used/skipped, with reason.
 - writing-plans: required/used/skipped/pending, with reason.
 - openspec/gsd: required/used/skipped, with reason.
 
 If goals, constraints, tradeoffs, implementation shape, or `Open Questions`
 remain, `brainstorming` cannot be skipped. Mark any generated design as draft
 until `superpowers:brainstorming` resolves the choice or the ledger records
-`brainstorming: required`.
+`brainstorming: required`. If `Open Questions` remain, decision grilling also
+cannot be skipped unless the questions are already answerable from local code,
+runtime, cache, tool-output, or authoritative documentation evidence.
 
 ## Workflow Mode Routing
 

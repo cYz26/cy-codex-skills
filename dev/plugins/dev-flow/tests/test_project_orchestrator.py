@@ -26,6 +26,10 @@ def registered_plugin_path(marketplace_path, plugin_name):
     return (marketplace_path.parents[2] / entry["source"]["path"]).resolve(), entry
 
 
+def normalized_text(text):
+    return " ".join(text.split())
+
+
 def run_script(name, *args, input_text=None, cwd=PLUGIN_ROOT):
     script = PLUGIN_ROOT / "scripts" / name
     result = subprocess.run(
@@ -209,6 +213,51 @@ class ProjectOrchestratorTests(unittest.TestCase):
         self.assertIn("capability-research", PROJECT_ORCHESTRATOR_SKILLS)
         self.assertIn("ai-native-tech-plan", PROJECT_ORCHESTRATOR_SKILLS)
         self.assertIn("claude-code-delegate", PROJECT_ORCHESTRATOR_SKILLS)
+
+    def test_decision_grilling_helper_routes_ambiguity_and_skips_approved_work(self):
+        scripts = PLUGIN_ROOT / "scripts"
+        sys.path.insert(0, str(scripts))
+        try:
+            from workflow_decision_grilling import decision_grilling_guidance, load_decision_grilling_matrix
+        finally:
+            sys.path.remove(str(scripts))
+
+        matrix = load_decision_grilling_matrix(PLUGIN_ROOT)
+        self.assertEqual(matrix["schemaVersion"], 1)
+        self.assertEqual(matrix["sourcePath"], str(PLUGIN_ROOT / "docs" / "decision_grilling_matrix.json"))
+        self.assertIn("one-question-at-a-time", matrix["protocol"])
+
+        required = decision_grilling_guidance(
+            kind="new-feature",
+            request="Design a behavior change with compatibility tradeoffs.",
+            open_questions=["Which compatibility policy should this use?"],
+            plugin_root=PLUGIN_ROOT,
+        )
+        self.assertEqual(required["status"], "required")
+        self.assertEqual(required["method_gate"], "superpowers:brainstorming")
+        self.assertTrue(required["local_evidence_first"])
+        self.assertIn("decision-grilling: required", required["ledger_entry"])
+        self.assertIn("OpenSpec", " ".join(required["canonical_artifacts"]))
+        self.assertIn("ask one question at a time", required["protocol_summary"])
+
+        local = decision_grilling_guidance(
+            kind="technical-plan",
+            request="Which local skill path is active?",
+            open_questions=["Which local skill path is active?"],
+            locally_answerable=True,
+            plugin_root=PLUGIN_ROOT,
+        )
+        self.assertEqual(local["status"], "required")
+        self.assertEqual(local["next_action"], "inspect-local-evidence-before-asking")
+
+        skipped = decision_grilling_guidance(
+            kind="approved-task",
+            request="Execute the already approved OpenSpec task.",
+            open_questions=[],
+            plugin_root=PLUGIN_ROOT,
+        )
+        self.assertEqual(skipped["status"], "skipped")
+        self.assertIn("approved", skipped["reason"])
 
     def test_devflow_no_longer_owns_agent_kb_hooks_or_core_behavior(self):
         forbidden_skills = {
@@ -499,22 +548,26 @@ class ProjectOrchestratorTests(unittest.TestCase):
             with self.subTest(path=label):
                 self.assertIn("Skill Routing Ledger", text)
                 self.assertIn("brainstorming: required/used/skipped", text)
+                self.assertIn("decision-grilling: required/used/skipped", text)
                 self.assertIn("Open Questions", text)
 
         skill_expectations = {
             "project-orchestrator": [
                 "design, research, architecture, or product-shape requests",
                 "feature-intake before ai-native-tech-plan",
+                "decision grilling",
             ],
             "feature-intake": [
                 "Skill Routing Ledger",
                 "brainstorming: required/used/skipped",
+                "decision-grilling: required/used/skipped",
                 "Open Questions",
             ],
             "ai-native-tech-plan": [
                 "Skill Routing Ledger",
                 "Open Questions remain",
                 "draft, not final",
+                "decision-grilling",
             ],
         }
         for skill_name, phrases in skill_expectations.items():
@@ -562,6 +615,44 @@ class ProjectOrchestratorTests(unittest.TestCase):
             "bounded review or delegation need",
         ]:
             self.assertIn(phrase, context_health)
+
+    def test_agent_task_contract_gate_is_routed_for_delegated_work(self):
+        expectations = {
+            "project-orchestrator": [
+                "Agent Task Contract",
+                "validated Agent Task Contract",
+                "Goal, Scope, Constraints, Verification, Evidence, and Human Gate",
+            ],
+            "execute-task": [
+                "Agent Task Contract",
+                "validate_agent_task_contract.py",
+                "contract_path",
+            ],
+            "context-health-check": [
+                "Agent Task Contract",
+                "read-only explorer",
+                "Human Gate",
+            ],
+            "feature-intake": [
+                "Agent Task Contract",
+                "delegated agent, subagent, worker, or parallel execution",
+            ],
+            "ai-native-tech-plan": [
+                "Agent Task Contract",
+                "SubAgent Strategy",
+                "authorization state",
+            ],
+        }
+        for skill_name, phrases in expectations.items():
+            text = (PLUGIN_ROOT / "skills" / skill_name / "SKILL.md").read_text()
+            normalized = normalized_text(text)
+            with self.subTest(skill=skill_name):
+                for phrase in phrases:
+                    self.assertIn(normalized_text(phrase), normalized)
+
+        ledger = (PLUGIN_ROOT / "assets" / "templates" / "TASK_LEDGER.md.template").read_text()
+        self.assertIn("contract_path", ledger)
+        self.assertIn("AGENT_TASK_CONTRACT.md", ledger)
 
     def test_subagent_strategy_is_documented_in_dev_and_release_readmes(self):
         expectations = [
@@ -750,6 +841,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
                 "## Skill Routing Ledger\n\n"
                 "- kind: new-feature\n"
                 "- brainstorming: required - product tradeoffs remain.\n"
+                "- decision-grilling: required - Open Questions remain.\n"
             ),
             target="Design the complete feature.",
             contract="- [ ] Open choices are explicit",

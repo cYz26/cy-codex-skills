@@ -13,7 +13,8 @@ Read `AGENTS.md`, `.planning/STATE.md`, and `openspec/config.yaml`. Run dependen
 
 Also check the contract-first control plane when execution or delegation is in
 scope: `ENGINEERING_POLICY.md`, `TASK_LEDGER.md`,
-`EVIDENCE_TEMPLATE.md`, and `REVIEW_CHECKLIST.md`.
+`AGENT_TASK_CONTRACT.md`, `EVIDENCE_TEMPLATE.md`, and
+`REVIEW_CHECKLIST.md`.
 
 ## Repair Framing
 
@@ -44,6 +45,12 @@ artifacts, `.planning/STATE.md`, verification evidence, shared README/docs
 coordination, and final integration unless those shared files are explicitly
 serialized.
 
+Before dispatching delegated agent, subagent, worker, or parallel execution,
+create and validate an Agent Task Contract. The contract must include Goal,
+Scope, Constraints, Verification, Evidence, and Human Gate sections. Use the
+validated Agent Task Contract to define allowed and forbidden scope, validation
+commands or read-only rationale, required evidence, and review triggers.
+
 Require each subAgent result to report status (`DONE`, `DONE_WITH_CONCERNS`,
 `NEEDS_CONTEXT`, or `BLOCKED`), files changed or inspected, commands or tests
 run, residual risks, and review needs. The main agent reviews diffs and reruns
@@ -62,7 +69,10 @@ validation before marking ledger items complete.
   long-running, multi-slice, migration or release oriented, broad-refactor
   oriented, cross-context,
   subagent/delegation backed, or otherwise likely to lose its definition of
-  done. `define-goal` owns the active goal check and goal-tool calls.
+  done. `define-goal` owns the active goal check and goal-tool calls. Before
+  creating a goal, apply the Goal Quality Gate: the candidate objective must
+  include outcome, verification evidence, scope boundaries, non-goals, success
+  threshold, and stop conditions.
 - After `define-goal` shapes the objective, use `/goal <objective>` in a Codex
   app, IDE, or CLI composer. Use `/goal`, `/goal pause`, `/goal resume`, and
   `/goal clear` to inspect or control it; if unavailable, enable
@@ -74,8 +84,11 @@ validation before marking ledger items complete.
 - For design, research, architecture, or product-shape requests with open goals,
   constraints, tradeoffs, or implementation shape, use `feature-intake before ai-native-tech-plan`.
   Intake must decide whether `capability-research`,
-  `superpowers:brainstorming`, OpenSpec, GSD, or `ai-native-tech-plan` owns the
-  next gate.
+  `superpowers:brainstorming`, decision grilling, OpenSpec, GSD, or
+  `ai-native-tech-plan` owns the next gate. Decision grilling resolves
+  remaining plan/design ambiguity by inspecting local evidence first, asking one
+  question at a time, providing a recommended answer, and recording outcomes in
+  canonical artifacts.
 - Technical plan, implementation plan, architecture plan, Codex execution plan, workflow plan, or anti-partial-delivery request: use `ai-native-tech-plan`.
 - Current, external, platform, plugin, API, hook, CLI, installed-cache, or local-vs-platform capability uncertainty: use `capability-research` for the Capability Evidence Gate before choosing a solution.
 - New feature, bug, behavior/API change, migration, or integration: use `feature-intake`.
@@ -88,7 +101,13 @@ validation before marking ledger items complete.
 
 ## Dependency Skills
 
-Routes: `capability-research`; `ai-native-tech-plan`; `superpowers:brainstorming`, `superpowers:writing-plans`, `superpowers:test-driven-development`, `superpowers:verification-before-completion`; `openspec-explore`, `openspec-propose`, `openspec-apply-change`, `openspec-archive-change`; `gsd-discuss-phase`, `gsd-plan-phase`, `gsd-execute-phase`, `gsd-verify-work`.
+Routes: `capability-research`; `ai-native-tech-plan`; decision grilling through
+`scripts/workflow_decision_grilling.py`; `superpowers:brainstorming`,
+`superpowers:writing-plans`, `superpowers:test-driven-development`,
+`superpowers:verification-before-completion`; `openspec-explore`,
+`openspec-propose`, `openspec-apply-change`, `openspec-archive-change`;
+`gsd-discuss-phase`, `gsd-plan-phase`, `gsd-execute-phase`,
+`gsd-verify-work`.
 
 ## Superpowers Artifact Mapping
 

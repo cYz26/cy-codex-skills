@@ -17,6 +17,7 @@ from workflow_context_tools import apply_context_tool_actions, audit_context_too
 from workflow_compact_recovery import handle_compact_recovery_event
 from workflow_dependencies import dependency_report
 from codex_auto_update_plugins_skills import plugin_install_results, run_external_updaters
+from workflow_decision_grilling import decision_grilling_guidance, load_decision_grilling_matrix
 
 
 def normalized_text(text):
@@ -206,6 +207,22 @@ context_health:
         templates_root = PLUGIN_ROOT / "assets" / "templates"
         self.assertIn("Capability Evidence", (templates_root / "OPENSPEC_DESIGN.md.template").read_text())
         self.assertIn("capability-research", (templates_root / "AGENTS.md.template").read_text())
+
+    def test_decision_grilling_contract_is_packaged(self):
+        matrix = load_decision_grilling_matrix(PLUGIN_ROOT)
+        self.assertEqual(matrix["schemaVersion"], 1)
+        self.assertIn("one-question-at-a-time", matrix["protocol"])
+        self.assertIn("OpenSpec", " ".join(matrix["canonicalArtifacts"]))
+
+        guidance = decision_grilling_guidance(
+            kind="new-feature",
+            request="Design behavior with open compatibility questions.",
+            open_questions=["Which compatibility policy applies?"],
+            plugin_root=PLUGIN_ROOT,
+        )
+        self.assertEqual(guidance["status"], "required")
+        self.assertIn("decision-grilling: required", guidance["ledger_entry"])
+        self.assertTrue(guidance["local_evidence_first"])
 
     def test_claude_code_delegation_is_packaged(self):
         skill = (PLUGIN_ROOT / "skills" / "claude-code-delegate" / "SKILL.md").read_text()
@@ -493,18 +510,21 @@ context_health:
                 "define-goal",
                 "goal-backed",
                 "Goal Suitability Gate",
+                "Goal Quality Gate",
                 "ordinary implementation",
             ],
             "feature-intake": [
                 "define-goal",
                 "active goal",
                 "Goal Suitability Gate",
+                "Goal Quality Gate",
                 "verification evidence",
             ],
             "ai-native-tech-plan": [
                 "define-goal",
                 "Goal Mode Prompt",
                 "Goal Suitability Gate",
+                "Goal Quality Gate",
                 "stop conditions",
             ],
         }
@@ -520,6 +540,7 @@ context_health:
             "define-goal",
             "goal-backed",
             "Goal Suitability Gate",
+            "Goal Quality Gate",
             "before context-health drift",
             "long-running",
             "multi-slice",
@@ -532,6 +553,12 @@ context_health:
         ]:
             self.assertIn(normalized_text(phrase), normalized_readme)
 
+        self.assertTrue((PLUGIN_ROOT / "scripts" / "validate_goal_quality.py").exists())
+        with zipfile.ZipFile(RELEASE_PLUGIN_ROOT / "scripts" / "devflow_runtime.pyz") as archive:
+            names = set(archive.namelist())
+        self.assertIn("workflow_goal_quality.py", names)
+        self.assertIn("validate_goal_quality.py", names)
+
         for rel_path in [
             "assets/templates/AGENTS.md.template",
             "skills/ai-native-tech-plan/references/goal-prompt-template.md",
@@ -543,6 +570,7 @@ context_health:
                 self.assertIn("define-goal", normalized)
                 self.assertIn("verification evidence", normalized)
                 self.assertIn("Goal Suitability Gate", normalized)
+                self.assertIn("Goal Quality Gate", normalized)
                 self.assertIn("before context-health drift", normalized)
                 self.assertIn("stop conditions", normalized)
                 self.assertIn("/goal <objective>", normalized)
@@ -589,6 +617,41 @@ context_health:
                     violations.append(f"{path.relative_to(PLUGIN_ROOT)} contains {token}")
 
         self.assertEqual(violations, [])
+
+    def test_agent_task_contract_gate_is_packaged(self):
+        template = RELEASE_PLUGIN_ROOT / "assets" / "templates" / "AGENT_TASK_CONTRACT.md.template"
+        self.assertTrue(template.exists())
+        text = template.read_text()
+        for phrase in [
+            "# Agent Task Contract",
+            "## Goal",
+            "## Scope",
+            "## Constraints",
+            "## Verification",
+            "## Evidence",
+            "## Human Gate",
+        ]:
+            self.assertIn(phrase, text)
+
+        cli = RELEASE_PLUGIN_ROOT / "scripts" / "validate_agent_task_contract.py"
+        self.assertTrue(cli.exists())
+
+        with zipfile.ZipFile(RELEASE_PLUGIN_ROOT / "scripts" / "devflow_runtime.pyz") as archive:
+            names = set(archive.namelist())
+        self.assertIn("workflow_agent_task_contract.py", names)
+        self.assertIn("validate_agent_task_contract.py", names)
+
+    def test_context_health_disposition_cli_is_packaged(self):
+        skill = RELEASE_PLUGIN_ROOT / "skills" / "context-health-check" / "SKILL.md"
+        self.assertIn("record_context_health_disposition.py", skill.read_text())
+
+        cli = RELEASE_PLUGIN_ROOT / "scripts" / "record_context_health_disposition.py"
+        self.assertTrue(cli.exists())
+
+        with zipfile.ZipFile(RELEASE_PLUGIN_ROOT / "scripts" / "devflow_runtime.pyz") as archive:
+            names = set(archive.namelist())
+        self.assertIn("record_context_health_disposition.py", names)
+        self.assertIn("workflow_context_health_subagents.py", names)
 
     def test_plugin_project_migration_skill_is_packaged(self):
         skill_path = PLUGIN_ROOT / "skills" / "plugin-project-migration" / "SKILL.md"

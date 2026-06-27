@@ -201,6 +201,34 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertTrue(checks["superpowers session-start hook trusted"]["ok"])
         self.assertTrue(checks["superpowers session-start hook trusted"]["required"])
 
+    def test_dependency_check_prefers_latest_superpowers_skill_root(self):
+        codex_home = self.make_codex_home(superpowers_version="5.1.3", superpowers_channel="openai-curated")
+        for skill in [
+            "using-superpowers",
+            "brainstorming",
+            "writing-plans",
+            "test-driven-development",
+            "verification-before-completion",
+        ]:
+            self.write_skill(codex_home, "superpowers", skill, channel="superpowers-dev")
+        self.write_plugin_manifest(
+            codex_home,
+            "superpowers",
+            version="6.0.3",
+            channel="superpowers-dev",
+            hooks="hooks/hooks-codex.json",
+        )
+        repo = self.make_dependency_ready_project_repo()
+
+        report = self.dependency_report_with_fake_path(codex_home, repo)
+
+        self.assertEqual(report["superpowers"]["version"], "6.0.3")
+        checks = {item["name"]: item for item in report["checks"]}
+        self.assertIn(
+            "superpowers-dev",
+            checks["external skill available: superpowers:brainstorming"]["detail"],
+        )
+
     def test_dependency_report_marks_drift_missing_and_smoke_failed(self):
         codex_home = self.make_codex_home()
 
@@ -783,6 +811,101 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         )
         self.assertEqual(by_name["openspec-cli"]["latest"], "1.3.2")
 
+    def test_update_dry_run_reports_superpowers_upgrade_available(self):
+        codex_home = self.make_codex_home(superpowers_version="5.1.3", superpowers_channel="openai-curated")
+
+        with mock.patch.object(auto_update, "executable_exists", return_value=False):
+            results = auto_update.run_external_updaters(codex_home, apply=False)
+
+        by_name = {item["name"]: item for item in results}
+        self.assertIn("superpowers", by_name)
+        superpowers = by_name["superpowers"]
+        self.assertEqual(superpowers["status"], "update-available")
+        self.assertEqual(superpowers["current"], "5.1.3")
+        self.assertEqual(superpowers["latest"], "6.0.3")
+        self.assertEqual(superpowers["recommendedVersion"], "6.0.3")
+        expected_marketplace_command = [
+            "codex",
+            "plugin",
+            "marketplace",
+            "add",
+            "https://github.com/obra/superpowers",
+            "--ref",
+            "v6.0.3",
+            "--json",
+        ]
+        self.assertEqual(
+            superpowers["marketplaceCommand"],
+            expected_marketplace_command,
+        )
+        self.assertEqual(
+            superpowers["installCommand"],
+            ["codex", "plugin", "add", "superpowers@superpowers-dev", "--json"],
+        )
+
+    def test_update_apply_installs_superpowers_from_upstream_marketplace(self):
+        codex_home = self.make_codex_home(superpowers_version="5.1.3", superpowers_channel="openai-curated")
+        commands = []
+        before_config = (codex_home / "config.toml").read_text()
+
+        def fake_run(command, cwd=None, timeout=300):
+            commands.append(command)
+            if command[:4] == ["codex", "plugin", "marketplace", "add"]:
+                return {
+                    "ok": True,
+                    "returncode": 0,
+                    "stdout": json.dumps({"marketplaceName": "superpowers-dev", "alreadyAdded": False}),
+                    "stderr": "",
+                }
+            if command[:3] == ["codex", "plugin", "add"]:
+                return {
+                    "ok": True,
+                    "returncode": 0,
+                    "stdout": json.dumps({"pluginId": "superpowers@superpowers-dev", "version": "6.0.3"}),
+                    "stderr": "",
+                }
+            raise AssertionError(f"unexpected command: {command}")
+
+        with mock.patch.object(
+            auto_update,
+            "executable_exists",
+            side_effect=lambda name: name == "codex",
+        ), mock.patch.object(
+            auto_update,
+            "run_command",
+            side_effect=fake_run,
+        ):
+            results = auto_update.run_external_updaters(codex_home, apply=True)
+
+        by_name = {item["name"]: item for item in results}
+        self.assertEqual(by_name["superpowers"]["status"], "updated-or-unchanged")
+        expected_marketplace_command = [
+            "codex",
+            "plugin",
+            "marketplace",
+            "add",
+            "https://github.com/obra/superpowers",
+            "--ref",
+            "v6.0.3",
+            "--json",
+        ]
+        self.assertIn(
+            expected_marketplace_command,
+            commands,
+        )
+        self.assertIn(["codex", "plugin", "add", "superpowers@superpowers-dev", "--json"], commands)
+        self.assertEqual((codex_home / "config.toml").read_text(), before_config)
+
+    def test_update_dry_run_reports_current_superpowers_unchanged(self):
+        codex_home = self.make_codex_home(superpowers_version="6.0.3", superpowers_channel="superpowers-dev")
+
+        with mock.patch.object(auto_update, "executable_exists", return_value=False):
+            results = auto_update.run_external_updaters(codex_home, apply=False)
+
+        superpowers = {item["name"]: item for item in results}["superpowers"]
+        self.assertEqual(superpowers["status"], "unchanged")
+        self.assertEqual(superpowers["current"], "6.0.3")
+
     def test_gsd_apply_uses_opengsd_core_local_installer(self):
         codex_home = self.make_codex_home()
         repo = self.make_project_repo()
@@ -881,6 +1004,82 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
 
         self.assertEqual(applied[0]["status"], "updated-or-unchanged")
         run_command.assert_called_once_with(["codex", "plugin", "add", "dev-flow@local"], timeout=600)
+
+    def test_git_marketplace_plugin_source_uses_local_snapshot(self):
+        codex_home = self.make_codex_home()
+        marketplace_root = codex_home / ".tmp" / "marketplaces" / "cy-codex-skills"
+        source = marketplace_root / "plugins" / "dev-flow"
+        cache = codex_home / "plugins" / "cache" / "cy-codex-skills" / "dev-flow" / "1.0.0"
+        source.mkdir(parents=True)
+        cache.mkdir(parents=True)
+        (source / ".codex-plugin").mkdir()
+        (cache / ".codex-plugin").mkdir()
+        (source / ".codex-plugin" / "plugin.json").write_text('{"name":"dev-flow"}\n')
+        (cache / ".codex-plugin" / "plugin.json").write_text('{"name":"dev-flow"}\n')
+        (source / "payload.txt").write_text("same\n")
+        (cache / "payload.txt").write_text("same\n")
+        catalog = marketplace_root / ".agents" / "plugins"
+        catalog.mkdir(parents=True)
+        (catalog / "marketplace.json").write_text(
+            json.dumps({"plugins": [{"name": "dev-flow", "source": {"path": "./plugins/dev-flow"}}]})
+        )
+        config = {
+            "marketplaces": {
+                "cy-codex-skills": {
+                    "source_type": "git",
+                    "source": "https://github.com/cYz26/cy-codex-skills.git",
+                    "ref": "main",
+                }
+            },
+            "plugins": {"dev-flow@cy-codex-skills": {"enabled": True}},
+        }
+
+        dry_run = auto_update.plugin_install_results(config, apply=False, codex_home=codex_home)
+
+        self.assertEqual(dry_run[0]["name"], "dev-flow@cy-codex-skills")
+        self.assertEqual(dry_run[0]["status"], "would-refresh")
+        self.assertEqual(dry_run[0]["source"], str(source.resolve()))
+
+        verify = auto_update.plugin_cache_verification_results(codex_home, config)
+
+        self.assertEqual(verify[0]["name"], "dev-flow@cy-codex-skills")
+        self.assertEqual(verify[0]["status"], "matches-source")
+        self.assertEqual(verify[0]["source"], str(source.resolve()))
+
+    def test_git_marketplace_plugin_source_accepts_single_plugin_snapshot_root(self):
+        codex_home = self.make_codex_home()
+        source = codex_home / ".tmp" / "marketplaces" / "superpowers-dev"
+        cache = codex_home / "plugins" / "cache" / "superpowers-dev" / "superpowers" / "6.0.3"
+        source.mkdir(parents=True)
+        cache.mkdir(parents=True)
+        (source / ".codex-plugin").mkdir()
+        (cache / ".codex-plugin").mkdir()
+        (source / ".codex-plugin" / "plugin.json").write_text('{"name":"superpowers"}\n')
+        (cache / ".codex-plugin" / "plugin.json").write_text('{"name":"superpowers"}\n')
+        (source / "payload.txt").write_text("same\n")
+        (cache / "payload.txt").write_text("same\n")
+        config = {
+            "marketplaces": {
+                "superpowers-dev": {
+                    "source_type": "git",
+                    "source": "https://github.com/obra/superpowers.git",
+                    "ref": "main",
+                }
+            },
+            "plugins": {"superpowers@superpowers-dev": {"enabled": True}},
+        }
+
+        dry_run = auto_update.plugin_install_results(config, apply=False, codex_home=codex_home)
+
+        self.assertEqual(dry_run[0]["name"], "superpowers@superpowers-dev")
+        self.assertEqual(dry_run[0]["status"], "would-refresh")
+        self.assertEqual(dry_run[0]["source"], str(source.resolve()))
+
+        verify = auto_update.plugin_cache_verification_results(codex_home, config)
+
+        self.assertEqual(verify[0]["name"], "superpowers@superpowers-dev")
+        self.assertEqual(verify[0]["status"], "matches-source")
+        self.assertEqual(verify[0]["source"], str(source.resolve()))
 
     def test_plugin_cache_verification_compares_source_and_installed_cache(self):
         codex_home = self.make_codex_home()

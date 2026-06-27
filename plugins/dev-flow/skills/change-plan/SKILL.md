@@ -26,6 +26,10 @@ approval boundary, risk, and validation cost.
 - Use `openspec-explore` if design tradeoffs, compatibility, or acceptance criteria remain unclear.
 - Use `openspec-propose` when intent is ready for canonical proposal, design, specs, and tasks.
 - Use `superpowers:brainstorming` while solution shape is open.
+- Use decision grilling when Open Questions, behavior boundaries, compatibility
+  concerns, integration shape, acceptance criteria, or implementation shape are
+  still unresolved: inspect local evidence first, ask one question at a time,
+  provide a recommended answer, and record the result in OpenSpec artifacts.
 - Use `superpowers:writing-plans` before committing to `tasks.md`, `design.md`, or a GSD phase plan.
 
 ## Superpowers Artifact Mapping

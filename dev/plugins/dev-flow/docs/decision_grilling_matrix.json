@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "gateId": "decision-grilling",
+  "methodGate": "superpowers:brainstorming",
+  "protocol": [
+    "inspect-local-evidence-first",
+    "one-question-at-a-time",
+    "provide-recommended-answer",
+    "walk-dependent-decision-branches",
+    "record-resolved-decisions-in-canonical-artifacts"
+  ],
+  "requiredWhen": [
+    "open-questions-remain",
+    "behavior-boundary-unclear",
+    "compatibility-boundary-unclear",
+    "integration-shape-unclear",
+    "acceptance-criteria-unclear",
+    "implementation-shape-unclear",
+    "user-asks-to-grill-or-stress-test"
+  ],
+  "skipKinds": [
+    "approved-task",
+    "verification",
+    "archive",
+    "docs-only-micro-change",
+    "test-only-validation"
+  ],
+  "canonicalArtifacts": [
+    "OpenSpec proposal.md",
+    "OpenSpec design.md",
+    "OpenSpec specs/**/*.md",
+    "OpenSpec tasks.md",
+    ".planning phase plan",
+    "DevFlow task ledger"
+  ],
+  "ledgerField": "decision-grilling: required/used/skipped",
+  "localEvidenceRule": "If repository files, local runtime state, installed cache state, current tool output, or official/current documentation can answer a question, gather that evidence before asking the user."
+}

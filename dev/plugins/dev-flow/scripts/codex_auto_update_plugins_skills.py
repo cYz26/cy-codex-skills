@@ -16,6 +16,17 @@ from workflow_context_config import read_config as read_toml_config
 from plugin_project_migration import project_migration_sync_result
 from workflow_constants import resolve_plugin_root
 from workflow_dependency_provenance import dependency_provenance_fields
+from workflow_dependency_plugin_checks import (
+    SUPERPOWERS_RECOMMENDED,
+    compare_versions,
+    superpowers_governance_report,
+)
+
+
+SUPERPOWERS_MARKETPLACE_SOURCE = "https://github.com/obra/superpowers"
+SUPERPOWERS_MARKETPLACE_NAME = "superpowers-dev"
+SUPERPOWERS_SELECTOR = f"superpowers@{SUPERPOWERS_MARKETPLACE_NAME}"
+SUPERPOWERS_MARKETPLACE_REF = f"v{SUPERPOWERS_RECOMMENDED}"
 
 
 def parse_args() -> argparse.Namespace:
@@ -426,29 +437,66 @@ def configured_plugin_selectors(config: dict[str, Any]) -> list[str]:
     return selectors
 
 
-def marketplace_plugin_source(config: dict[str, Any], selector: str) -> Path | None:
-    plugin_name, marketplace = selector.rsplit("@", 1)
+def is_url_like(value: str) -> bool:
+    return "://" in value
+
+
+def marketplace_source_roots(config: dict[str, Any], marketplace: str, codex_home: Path | None = None) -> list[Path]:
     marketplace_config = config.get("marketplaces", {}).get(marketplace, {})
-    source_root_value = marketplace_config.get("source") if isinstance(marketplace_config, dict) else None
-    if not source_root_value:
-        return None
-    source_root = Path(str(source_root_value)).expanduser()
-    catalog = source_root / ".agents" / "plugins" / "marketplace.json"
-    if catalog.exists():
-        try:
-            data = json.loads(catalog.read_text())
-        except json.JSONDecodeError:
-            data = {}
-        for record in data.get("plugins", []):
-            if record.get("name") != plugin_name:
-                continue
-            source = record.get("source", {})
-            path_value = source.get("path") if isinstance(source, dict) else None
-            if path_value:
-                return (source_root / path_value).resolve()
-    for candidate in [source_root / "plugins" / plugin_name, source_root / plugin_name]:
-        if candidate.exists():
-            return candidate.resolve()
+    if not isinstance(marketplace_config, dict):
+        return []
+    source_root_value = marketplace_config.get("source")
+    source_type = marketplace_config.get("source_type")
+    roots: list[Path] = []
+    if source_type == "git" and codex_home is not None:
+        roots.append(codex_home / ".tmp" / "marketplaces" / marketplace)
+    if source_root_value:
+        source_root_text = str(source_root_value)
+        if not is_url_like(source_root_text):
+            roots.append(Path(source_root_text).expanduser())
+    unique_roots: list[Path] = []
+    seen: set[str] = set()
+    for root in roots:
+        key = str(root)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique_roots.append(root)
+    return unique_roots
+
+
+def plugin_root_matches_name(root: Path, plugin_name: str) -> bool:
+    manifest = root / ".codex-plugin" / "plugin.json"
+    if not manifest.exists():
+        return False
+    try:
+        data = json.loads(manifest.read_text())
+    except json.JSONDecodeError:
+        return False
+    return data.get("name") == plugin_name
+
+
+def marketplace_plugin_source(config: dict[str, Any], selector: str, codex_home: Path | None = None) -> Path | None:
+    plugin_name, marketplace = selector.rsplit("@", 1)
+    for source_root in marketplace_source_roots(config, marketplace, codex_home):
+        if plugin_root_matches_name(source_root, plugin_name):
+            return source_root.resolve()
+        catalog = source_root / ".agents" / "plugins" / "marketplace.json"
+        if catalog.exists():
+            try:
+                data = json.loads(catalog.read_text())
+            except json.JSONDecodeError:
+                data = {}
+            for record in data.get("plugins", []):
+                if record.get("name") != plugin_name:
+                    continue
+                source = record.get("source", {})
+                path_value = source.get("path") if isinstance(source, dict) else None
+                if path_value:
+                    return (source_root / path_value).resolve()
+        for candidate in [source_root / "plugins" / plugin_name, source_root / plugin_name]:
+            if candidate.exists():
+                return candidate.resolve()
     return None
 
 
@@ -463,7 +511,7 @@ def installed_plugin_cache_dirs(codex_home: Path, selector: str) -> list[Path]:
 def plugin_cache_verification_results(codex_home: Path, config: dict[str, Any]) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
     for selector in configured_plugin_selectors(config):
-        source = marketplace_plugin_source(config, selector)
+        source = marketplace_plugin_source(config, selector, codex_home)
         caches = installed_plugin_cache_dirs(codex_home, selector)
         if source is None:
             results.append(item("plugin-cache-verify", selector, "source-unavailable", "marketplace source not found"))
@@ -490,10 +538,10 @@ def plugin_cache_verification_results(codex_home: Path, config: dict[str, Any]) 
     return results
 
 
-def plugin_install_results(config: dict[str, Any], apply: bool) -> list[dict[str, Any]]:
+def plugin_install_results(config: dict[str, Any], apply: bool, codex_home: Path | None = None) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
     for selector in configured_plugin_selectors(config):
-        source = marketplace_plugin_source(config, selector)
+        source = marketplace_plugin_source(config, selector, codex_home)
         if source is None:
             results.append(item("plugin-install", selector, "source-unavailable", "marketplace source not found"))
             continue
@@ -543,6 +591,90 @@ def migration_sync_repo(value: str | None) -> Path | None:
     return None
 
 
+def superpowers_marketplace_command() -> list[str]:
+    return [
+        "codex",
+        "plugin",
+        "marketplace",
+        "add",
+        SUPERPOWERS_MARKETPLACE_SOURCE,
+        "--ref",
+        SUPERPOWERS_MARKETPLACE_REF,
+        "--json",
+    ]
+
+
+def superpowers_install_command() -> list[str]:
+    return ["codex", "plugin", "add", SUPERPOWERS_SELECTOR, "--json"]
+
+
+def superpowers_needs_update(report: dict[str, Any]) -> bool:
+    return compare_versions(str(report.get("version") or "0"), SUPERPOWERS_RECOMMENDED) < 0
+
+
+def superpowers_update_result(codex_home: Path, apply: bool) -> dict[str, Any]:
+    report = superpowers_governance_report(codex_home, strict=False)
+    marketplace_command = superpowers_marketplace_command()
+    install_command = superpowers_install_command()
+    needs_update = superpowers_needs_update(report)
+    provenance = dependency_provenance_fields("superpowers", command_name="updateCommand")
+    fields = {
+        **provenance,
+        "current": report.get("version"),
+        "latest": SUPERPOWERS_RECOMMENDED,
+        "recommendedVersion": SUPERPOWERS_RECOMMENDED,
+        "source": SUPERPOWERS_MARKETPLACE_SOURCE,
+        "sourceChannel": report.get("sourceChannel"),
+        "compatibility": report.get("compatibility"),
+        "pluginRoot": report.get("pluginRoot"),
+        "marketplaceCommand": marketplace_command,
+        "installCommand": install_command,
+        "updateAvailable": needs_update,
+    }
+
+    if not apply:
+        status = "update-available" if needs_update else "unchanged"
+        if needs_update:
+            detail = (
+                "read-only check; apply would run "
+                f"{' '.join(marketplace_command)} and {' '.join(install_command)}"
+            )
+        else:
+            detail = f"Superpowers is at recommended version {SUPERPOWERS_RECOMMENDED}"
+        return item("external-updater", "superpowers", status, detail, **fields)
+
+    if not needs_update:
+        return item(
+            "external-updater",
+            "superpowers",
+            "unchanged",
+            f"Superpowers is at recommended version {SUPERPOWERS_RECOMMENDED}",
+            **fields,
+        )
+
+    if not executable_exists("codex"):
+        return item(
+            "external-updater",
+            "superpowers",
+            "skipped",
+            "codex executable not available",
+            **fields,
+        )
+
+    first = run_command(marketplace_command, timeout=600)
+    second = run_command(install_command, timeout=600) if first["ok"] else None
+    status = "updated-or-unchanged" if first["ok"] and second and second["ok"] else "failed"
+    detail = "; ".join(
+        part
+        for part in [
+            short_output(first),
+            short_output(second) if second else None,
+        ]
+        if part
+    )
+    return item("external-updater", "superpowers", status, detail, **fields)
+
+
 def run_external_updaters(codex_home: Path, apply: bool, repo: Path | None = None) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
 
@@ -564,6 +696,8 @@ def run_external_updaters(codex_home: Path, apply: bool, repo: Path | None = Non
             results.append(item("external-updater", "lark-cli-and-skills", status, detail))
         else:
             results.append(item("external-updater", "lark-cli-and-skills", "skipped", "npm or npx not available"))
+
+    results.append(superpowers_update_result(codex_home, apply))
 
     if has_gsd_core(codex_home, repo):
         command = gsd_core_update_command(repo)
@@ -687,7 +821,7 @@ def main() -> int:
     if not args.skip_openai_curated_cache:
         results.extend(sync_openai_curated_plugin_cache(plugin_cache_safety, backup_root, args.apply))
     results.extend(marketplace_upgrade_results(config, args.apply))
-    results.extend(plugin_install_results(config, args.apply))
+    results.extend(plugin_install_results(config, args.apply, codex_home))
     results.extend(plugin_cache_verification_results(codex_home, config))
     if target_repo is not None:
         plugin_root = resolve_plugin_root()

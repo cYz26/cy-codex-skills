@@ -35,13 +35,39 @@ def run_stop_checks(repo: Path) -> dict[str, Any]:
 
 def context_health_stop_check(repo: Path) -> dict[str, Any]:
     report = context_health_check(repo, {"write_report": False})
+    pending = pending_subagent_recommendations(report)
     ok = report.get("risk") not in {"high", "critical"}
     return {
         "id": "context_health",
         "ok": ok,
         "status": report.get("risk", "unknown"),
-        "detail": f"context health {report.get('risk', 'unknown')}",
+        "detail": context_health_detail(report, pending),
+        "pendingRecommendations": pending,
     }
+
+
+def context_health_detail(report: dict[str, Any], pending: list[dict[str, Any]]) -> str:
+    detail = f"context health {report.get('risk', 'unknown')}"
+    if not pending:
+        return detail
+    ids = ", ".join(item["id"] for item in pending)
+    return f"{detail}; pending subagent recommendation disposition: {ids}"
+
+
+def pending_subagent_recommendations(report: dict[str, Any]) -> list[dict[str, Any]]:
+    subagents = report.get("subagents", {})
+    if not isinstance(subagents, dict):
+        return []
+    if not subagents.get("dispositionRequired") or subagents.get("disposition") != "pending":
+        return []
+    return [
+        {
+            "id": str(subagents.get("recommendationId", "unknown")),
+            "recommendation": str(subagents.get("recommendation", "unknown")),
+            "disposition": "pending",
+            "nextAction": str(subagents.get("nextAction", "")),
+        }
+    ]
 
 
 def verification_stop_check(repo: Path) -> dict[str, Any]:

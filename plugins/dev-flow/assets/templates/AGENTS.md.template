@@ -54,11 +54,19 @@ GSD and OpenSpec are activated project-locally through `.agents/skills/`; do not
 - For design, research, architecture, product-shape, or technical-plan requests,
   create a `Skill Routing Ledger` before writing the final design or plan. Record
   `kind`, workflow mode, `capability-research: required/used/skipped`,
-  `brainstorming: required/used/skipped`, `writing-plans`, OpenSpec/GSD routing,
-  and the concrete reason for any skip.
+  `brainstorming: required/used/skipped`, `decision-grilling:
+  required/used/skipped`, `writing-plans`, OpenSpec/GSD routing, and the
+  concrete reason for any skip.
 - If an artifact has unresolved `Open Questions`, Brainstorming cannot be marked
   skipped. Mark the artifact as draft, not final, and return to
   `superpowers:brainstorming` or record `brainstorming: required` in the ledger.
+- If unresolved `Open Questions` remain after local evidence gathering, use
+  decision grilling: ask one question at a time, provide a recommended answer,
+  walk dependent decision branches, and record resolved decisions in canonical
+  OpenSpec, GSD, or DevFlow ledger artifacts. Decision grilling cannot be
+  marked skipped while unresolved questions remain unless the artifact remains
+  draft.
+- Ledger field: `decision-grilling: required/used/skipped`.
 - Use `openspec-explore` during brainstorming when the uncertainty is about user-visible behavior, compatibility, requirements, or acceptance criteria.
 - Use `gsd-discuss-phase` during brainstorming when the uncertainty is about milestones, sequencing, scope boundaries, or phase structure.
 - Use `superpowers:writing-plans` before writing a non-trivial implementation plan, phase plan, migration plan, or refactor plan.
@@ -77,6 +85,9 @@ GSD and OpenSpec are activated project-locally through `.agents/skills/`; do not
   otherwise likely to lose its definition of done.
 - `define-goal` owns active goal checks, goal-tool calls, objective wording,
   verification evidence, scope boundaries, non-goals, and stop conditions.
+- Apply the Goal Quality Gate before goal creation: the candidate objective
+  must name outcome, verification evidence, scope boundaries, non-goals, success
+  threshold, and stop conditions.
 - After `define-goal` shapes the objective, set it in a Codex app, IDE, or CLI
   composer with `/goal <objective>`. Use `/goal`, `/goal pause`,
   `/goal resume`, and `/goal clear` to inspect or control the active goal.

@@ -36,6 +36,11 @@ ACTIVE_BRAINSTORMING_ROUTE = re.compile(
     re.IGNORECASE,
 )
 SKIPPED_BRAINSTORMING_ROUTE = re.compile(r"brainstorming\s*:\s*skipp?ed", re.IGNORECASE)
+ACTIVE_DECISION_GRILLING_ROUTE = re.compile(
+    r"(decision-grilling\s*:\s*(required|used|pending)|decision grilling)",
+    re.IGNORECASE,
+)
+SKIPPED_DECISION_GRILLING_ROUTE = re.compile(r"decision-grilling\s*:\s*skipp?ed", re.IGNORECASE)
 
 
 def lint_ai_plan(path: Path, *, skip_required_headings: bool = False) -> dict[str, object]:
@@ -58,6 +63,10 @@ def lint_ai_plan(path: Path, *, skip_required_headings: bool = False) -> dict[st
         if SKIPPED_BRAINSTORMING_ROUTE.search(text) or not ACTIVE_BRAINSTORMING_ROUTE.search(text):
             findings.append(
                 f"line {line}: unresolved Open Questions require brainstorming in the Skill Routing Ledger"
+            )
+        if SKIPPED_DECISION_GRILLING_ROUTE.search(text) or not ACTIVE_DECISION_GRILLING_ROUTE.search(text):
+            findings.append(
+                f"line {line}: unresolved Open Questions require decision-grilling in the Skill Routing Ledger"
             )
 
     return {

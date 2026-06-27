@@ -1,15 +1,15 @@
 {
   "archive": {
-    "bytes": 123083,
+    "bytes": 134449,
     "path": "scripts/devflow_runtime.pyz",
-    "sha256": "1b74b5b1b4e9f631ca5cd333087468d11fc50bce945e67176d29c6178c47354c"
+    "sha256": "34916a9908b25b3f3c21ff6824289e8ac6cbfb4142623ee532e2ca7b0ba8b780"
   },
   "buildCommand": [
     "python3",
     "dev/scripts/package_devflow_release_runtime.py"
   ],
   "schemaVersion": 1,
-  "sourceCommit": "dacdee6e7c8fe18fa879494edf31a6acde601a5a",
+  "sourceCommit": "2f8e9a521fb88516562410722fe419217224c388",
   "sources": [
     {
       "bytes": 1866,
@@ -47,9 +47,9 @@
       "sha256": "990d6dc2c347e1db73a199f0bc583f5f3400d0f25db1e88b3af063962609acf7"
     },
     {
-      "bytes": 27339,
+      "bytes": 32075,
       "path": "dev/plugins/dev-flow/scripts/codex_auto_update_plugins_skills.py",
-      "sha256": "1bd19a0c0fa7254cfdd55ead15c41e5958dcfd188fe006e1a9524fafb6714dd0"
+      "sha256": "215655c5424fecc5ea3cd92e078c36483aecffffa53f0bd70533a2a212dbab21"
     },
     {
       "bytes": 1566,
@@ -77,9 +77,9 @@
       "sha256": "f8248f0d4d2f60e39e935cfeff34915e2ab7b7f54520666561ce04efb47820fb"
     },
     {
-      "bytes": 2769,
+      "bytes": 3290,
       "path": "dev/plugins/dev-flow/scripts/context_health_hook.py",
-      "sha256": "72d1a82a28781d5affd57525a7858bcea7ac97dea628398f55544a768575ec52"
+      "sha256": "e9aff1ac7ef0b3a7d22bb726fe361a88aa9c1344362049ac8cd3f851a1080f0e"
     },
     {
       "bytes": 900,
@@ -102,9 +102,9 @@
       "sha256": "62d56259442dae2dacf982bc31efed080904edb8340dab6b0e8ce40c319b62e3"
     },
     {
-      "bytes": 4231,
+      "bytes": 5232,
       "path": "dev/plugins/dev-flow/scripts/devflow_stop_hook.py",
-      "sha256": "9143e594bc20b4ab40e6a905edfc8d3a05a4a00bd80a431b0d0a1899eea7b81d"
+      "sha256": "56d95a4ca6c711bbc52b0e11c1ce0a6e9cbfd1b64c6bcc70b25b165406885732"
     },
     {
       "bytes": 1074,
@@ -122,9 +122,9 @@
       "sha256": "b94c3d7afd9b8ce8d2844bb55395be2ff23db8e356baf43c0c2a24127234c3fe"
     },
     {
-      "bytes": 2941,
+      "bytes": 3443,
       "path": "dev/plugins/dev-flow/scripts/lint_ai_plan.py",
-      "sha256": "a4c47bd4b122aa93fc28aebc4b674e6091ba7943e21e725ac27dbfc353778972"
+      "sha256": "6bf7121c4a87f52265fae7b7260b769a2071f86e0f0082ed644fb9c9cb12ac0a"
     },
     {
       "bytes": 655,
@@ -182,6 +182,11 @@
       "sha256": "058c5fae79040bd8e7c1df5a37b0570fb9f8f708a5475d64485a519ae9cbac60"
     },
     {
+      "bytes": 5516,
+      "path": "dev/plugins/dev-flow/scripts/record_context_health_disposition.py",
+      "sha256": "ad92e4409b95c4d6a2ed7676a5cd54b320330ecc976ecb2a357c42c59dc2f390"
+    },
+    {
       "bytes": 1355,
       "path": "dev/plugins/dev-flow/scripts/record_task_evidence.py",
       "sha256": "2208b2b379037984d0b79576c9e2675dfd78e6bb82fb0b6cad98c860a52f9d4c"
@@ -227,6 +232,11 @@
       "sha256": "f4df25db71bb76128420016bc5426564b72da7a862fc3b7984a34c45a64c70bf"
     },
     {
+      "bytes": 840,
+      "path": "dev/plugins/dev-flow/scripts/validate_agent_task_contract.py",
+      "sha256": "40a9658ac075edbde801ac589da3b71cc1b6d6c64c6d5e6d0a3812c0b30ed77a"
+    },
+    {
       "bytes": 670,
       "path": "dev/plugins/dev-flow/scripts/validate_checkpoint.py",
       "sha256": "14bfc9fc5089e0097820dbb744149b4073f1293daca168eb99dde70f3c943350"
@@ -235,6 +245,11 @@
       "bytes": 740,
       "path": "dev/plugins/dev-flow/scripts/validate_goal_contract.py",
       "sha256": "c9c286525562f08f525fab590055e8442221ff3c64f2b845ba5d25daf44fe892"
+    },
+    {
+      "bytes": 772,
+      "path": "dev/plugins/dev-flow/scripts/validate_goal_quality.py",
+      "sha256": "13ac11d64ee43754bf805a4cd58ee0f7cf2cac84c8f620a87d58bf98593d843f"
     },
     {
       "bytes": 721,
@@ -250,6 +265,11 @@
       "bytes": 7173,
       "path": "dev/plugins/dev-flow/scripts/verify_release_runtime.py",
       "sha256": "d5834e76bf174375c3c30fdf5b0acdcde325b55be690df68bc49f685726f9c83"
+    },
+    {
+      "bytes": 6578,
+      "path": "dev/plugins/dev-flow/scripts/workflow_agent_task_contract.py",
+      "sha256": "952b2f9287e7eb610c90a360492c20dd5fd83beb82a8a8127e241cc66f8c327a"
     },
     {
       "bytes": 9091,
@@ -362,9 +382,9 @@
       "sha256": "957ff68db95dc106e1d19b9be54d0ab4442eade7723a3ca31d1ecb3b7eecfcc6"
     },
     {
-      "bytes": 5764,
+      "bytes": 6536,
       "path": "dev/plugins/dev-flow/scripts/workflow_context_health_goal.py",
-      "sha256": "43cc41cd1b2b677c88d557570b5978af4ed11316046bd3b9c428009a6b1851f5"
+      "sha256": "57ee86f349999cfd422b0a60600340564c94ce0e447a2c6957a33e0bfeeb3d76"
     },
     {
       "bytes": 2999,
@@ -372,14 +392,14 @@
       "sha256": "b68535a536f2f97514141ee3218e371a534ecaf3ab96dd557c5fce76b70ae5d4"
     },
     {
-      "bytes": 2711,
+      "bytes": 2922,
       "path": "dev/plugins/dev-flow/scripts/workflow_context_health_report.py",
-      "sha256": "e609067434d8adb184d5fa9847e7aed5cfc77ecdd07b90cda7b209c7047a0501"
+      "sha256": "548effd95b10fb835247edd2e1f75612e0963ff8767199dd92deadfc455830fb"
     },
     {
-      "bytes": 1975,
+      "bytes": 3952,
       "path": "dev/plugins/dev-flow/scripts/workflow_context_health_runtime.py",
-      "sha256": "ac67534ee9db5b727699c6e5ea1ddc48eeae8b12d52df0f5db954d7d5b7efa43"
+      "sha256": "916a4cc2da4b15eee5e69ff609c755e76473039bb666c8d7e08fef837630563d"
     },
     {
       "bytes": 3216,
@@ -392,9 +412,9 @@
       "sha256": "1829992bd9db30d82d22c923628f6bee0a6059171e84f959799f53cdfbf334d0"
     },
     {
-      "bytes": 2016,
+      "bytes": 6545,
       "path": "dev/plugins/dev-flow/scripts/workflow_context_health_subagents.py",
-      "sha256": "c6a3f5fed0f2dc039e5c9a2c5bbfc58aaab67b0200d71eafcbc83ff2950436ac"
+      "sha256": "edc1e3390456fc30fd97d99a78e05bd46d1f75f135cc81f2c6f3e5980d945608"
     },
     {
       "bytes": 633,
@@ -467,6 +487,11 @@
       "sha256": "62b2ab01c2d21518cc8630fd43ddbc865889f9f670be5677dd737bfe2adcf60e"
     },
     {
+      "bytes": 5427,
+      "path": "dev/plugins/dev-flow/scripts/workflow_decision_grilling.py",
+      "sha256": "f8a0574c60470d4b245dca8e95da470b29ee72e7a24064289c4f93e366687136"
+    },
+    {
       "bytes": 2479,
       "path": "dev/plugins/dev-flow/scripts/workflow_dependencies.py",
       "sha256": "da5fbad99af4b2d72971bda8d124618e52a592801ecb084b193f14c52a72b5a7"
@@ -482,9 +507,9 @@
       "sha256": "a78bab442bd1ce52746b0c63851fc48fae7b82b69bb6f108edf97936991f9283"
     },
     {
-      "bytes": 14803,
+      "bytes": 14928,
       "path": "dev/plugins/dev-flow/scripts/workflow_dependency_plugin_checks.py",
-      "sha256": "27ae1250b544e9472483ecc10ccf34f8f8232a292d4c320a34d8b285bd91485b"
+      "sha256": "4a44afd7380c9c69922c4fe459b0cf9c73942e3461687ce61aaec5449b60137a"
     },
     {
       "bytes": 11510,
@@ -505,6 +530,11 @@
       "bytes": 760,
       "path": "dev/plugins/dev-flow/scripts/workflow_git.py",
       "sha256": "399fa74aeab31bb54be7d6e062fdeec3be92f1be6a2926b2f102449a40963f6f"
+    },
+    {
+      "bytes": 3171,
+      "path": "dev/plugins/dev-flow/scripts/workflow_goal_quality.py",
+      "sha256": "bdc2639dfe679ed2a4178effd777aeddb0de5b54637540f5db86c2ebe6d05065"
     },
     {
       "bytes": 6403,

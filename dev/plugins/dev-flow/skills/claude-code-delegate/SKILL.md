@@ -9,6 +9,14 @@ Use this skill when Codex should ask Claude Code to analyze, review, plan, or ex
 
 Claude Code owns the complete bounded task after Codex delegates it. Codex verifies scope, process evidence, diffs, tests, Git state, and workflow records after Claude returns.
 
+## Position In DevFlow
+
+This is a low-frequency, optional execution adapter for Claude Code. It is not
+the core DevFlow delegation model, and it is not the general Agent Task
+Contract flow. Do not route ordinary DevFlow planning, subagent strategy,
+worker contracts, or task-contract discussions here unless the user explicitly
+asks to run a bounded task through Claude Code.
+
 ## Rules
 
 - Keep OpenSpec, GSD, Superpowers, and DevFlow verification gates authoritative.

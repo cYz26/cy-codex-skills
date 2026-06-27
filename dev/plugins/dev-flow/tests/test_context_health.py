@@ -18,6 +18,7 @@ from workflow_context_health import (
     record_context_health_event,
 )
 from context_health_hook import context_health_signature, should_prompt_context_health
+from devflow_stop_hook import context_health_stop_check
 from workflow_state import parse_state
 
 
@@ -176,6 +177,8 @@ Continue fixture work.
         self.assertIn("define-goal", report["goal"]["prompt"])
         self.assertIn("active goal", report["goal"]["prompt"])
         self.assertIn("Goal Suitability Gate", report["goal"]["prompt"])
+        self.assertIn("Goal Quality Gate", report["goal"]["prompt"])
+        self.assertIn("Achieve <outcome>", report["goal"]["prompt"])
         self.assertIn("before context-health drift", report["goal"]["prompt"])
         self.assertIn("/goal <objective>", report["goal"]["prompt"])
         self.assertIn("/goal pause", report["goal"]["prompt"])
@@ -206,6 +209,7 @@ Continue fixture work.
         self.assertIn("repair", report["goal"]["prompt"])
         self.assertIn("verification evidence", report["goal"]["prompt"])
         self.assertIn("scope boundaries", report["goal"]["prompt"])
+        self.assertIn("Goal Quality Gate", report["goal"]["prompt"])
 
     def test_repeated_file_reads_recommend_explorer_subagent(self):
         repo = self.make_repo()
@@ -223,9 +227,20 @@ Continue fixture work.
         report = context_health_check(repo, {"current_objective": "Diagnose workflow state drift"})
 
         self.assertEqual(report["subagents"]["recommendation"], "explorer")
+        self.assertTrue(report["subagents"]["dispositionRequired"])
+        self.assertEqual(report["subagents"]["disposition"], "pending")
+        self.assertIn("accepted", report["subagents"]["allowedDispositions"])
+        self.assertIn("recommendationId", report["subagents"])
         self.assertIn("workflow_state.py", " ".join(report["subagents"]["scoped_files"]))
+        self.assertIn("Agent Task Contract", report["subagents"]["prompt"])
         self.assertIn("Do not edit files", report["subagents"]["prompt"])
         for phrase in [
+            "## Goal",
+            "## Scope",
+            "## Constraints",
+            "## Verification",
+            "## Evidence",
+            "## Human Gate",
             "DONE",
             "DONE_WITH_CONCERNS",
             "NEEDS_CONTEXT",
@@ -236,6 +251,150 @@ Continue fixture work.
             "review needs",
         ]:
             self.assertIn(phrase, report["subagents"]["prompt"])
+
+    def test_pending_subagent_recommendation_requires_disposition_before_acknowledgement(self):
+        repo = self.make_repo()
+        for _ in range(4):
+            record_context_health_event(
+                repo,
+                "pre_tool_use",
+                {
+                    "cwd": str(repo),
+                    "tool_name": "Read",
+                    "tool_input": {"file_path": str(repo / "AGENTS.md")},
+                },
+            )
+
+        first_report = context_health_check(
+            repo,
+            {
+                "current_objective": "Resolve repeated context-health reads",
+                "write_report": True,
+            },
+        )
+        self.assertEqual(first_report["subagents"]["disposition"], "pending")
+
+        current_report = context_health_check(repo)
+
+        self.assertTrue(should_prompt_context_health(repo, current_report))
+        stop_check = context_health_stop_check(repo)
+        self.assertEqual(stop_check["pendingRecommendations"][0]["id"], current_report["subagents"]["recommendationId"])
+        self.assertEqual(stop_check["pendingRecommendations"][0]["disposition"], "pending")
+
+    def test_resolved_subagent_recommendation_is_reused_from_last_report(self):
+        repo = self.make_repo()
+        for _ in range(4):
+            record_context_health_event(
+                repo,
+                "pre_tool_use",
+                {
+                    "cwd": str(repo),
+                    "tool_name": "Read",
+                    "tool_input": {"file_path": str(repo / "AGENTS.md")},
+                },
+            )
+        report = context_health_check(
+            repo,
+            {
+                "current_objective": "Resolve repeated context-health reads",
+                "write_report": True,
+            },
+        )
+        report_path = repo / report["report_file"]
+        report["subagents"]["disposition"] = "accepted"
+        report["subagents"]["dispositionNote"] = "Accepted for read-only investigation."
+        report_path.write_text(json.dumps(report, indent=2))
+
+        current_report = context_health_check(repo)
+
+        self.assertEqual(current_report["subagents"]["disposition"], "accepted")
+        self.assertFalse(should_prompt_context_health(repo, current_report))
+
+    def test_record_context_health_disposition_cli_marks_report_accepted(self):
+        repo = self.make_repo()
+        for _ in range(4):
+            record_context_health_event(
+                repo,
+                "pre_tool_use",
+                {
+                    "cwd": str(repo),
+                    "tool_name": "Read",
+                    "tool_input": {"file_path": str(repo / "AGENTS.md")},
+                },
+            )
+        report = context_health_check(
+            repo,
+            {
+                "current_objective": "Resolve repeated context-health reads",
+                "write_report": True,
+            },
+        )
+        recommendation_id = report["subagents"]["recommendationId"]
+
+        result = run_script(
+            "record_context_health_disposition.py",
+            "--repo",
+            str(repo),
+            "--recommendation-id",
+            recommendation_id,
+            "--disposition",
+            "accepted",
+            "--note",
+            "Accepted for read-only investigation.",
+            "--json",
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertTrue(payload["ok"], payload)
+        self.assertEqual(payload["recommendationId"], recommendation_id)
+        self.assertEqual(payload["disposition"], "accepted")
+        report_path = repo / report["report_file"]
+        updated = json.loads(report_path.read_text())
+        self.assertEqual(updated["subagents"]["disposition"], "accepted")
+        self.assertEqual(
+            updated["subagents"]["dispositionNote"],
+            "Accepted for read-only investigation.",
+        )
+        self.assertIn("dispositionRecordedAt", updated["subagents"])
+
+        current_report = context_health_check(repo)
+        self.assertEqual(current_report["subagents"]["disposition"], "accepted")
+        self.assertFalse(should_prompt_context_health(repo, current_report))
+
+    def test_record_context_health_disposition_cli_requires_note(self):
+        repo = self.make_repo()
+        for _ in range(4):
+            record_context_health_event(
+                repo,
+                "pre_tool_use",
+                {
+                    "cwd": str(repo),
+                    "tool_name": "Read",
+                    "tool_input": {"file_path": str(repo / "AGENTS.md")},
+                },
+            )
+        report = context_health_check(
+            repo,
+            {
+                "current_objective": "Resolve repeated context-health reads",
+                "write_report": True,
+            },
+        )
+
+        result = run_script(
+            "record_context_health_disposition.py",
+            "--repo",
+            str(repo),
+            "--recommendation-id",
+            report["subagents"]["recommendationId"],
+            "--disposition",
+            "accepted",
+            "--json",
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("--note is required", result.stderr)
 
     def test_stop_hook_does_not_repeat_medium_prompt_for_acknowledged_report(self):
         repo = self.make_repo()
@@ -260,6 +419,9 @@ Continue fixture work.
 
         self.assertEqual(first_report["risk"], "medium")
         self.assertEqual(first_report["goal"]["status"], "stale")
+        first_report["subagents"]["disposition"] = "accepted"
+        first_report["subagents"]["dispositionNote"] = "Handled by the main agent."
+        (repo / first_report["report_file"]).write_text(json.dumps(first_report, indent=2))
         self.assertFalse(should_prompt_context_health(repo, context_health_check(repo)))
 
         (repo / "new_production_file.py").write_text("print('changed')\n")
@@ -278,6 +440,16 @@ Continue fixture work.
                     "tool_input": {"file_path": str(repo / "AGENTS.md")},
                 },
             )
+        acknowledged = context_health_check(
+            repo,
+            {
+                "current_objective": "Resolve repeated DevFlow Stop hook prompts",
+                "write_report": True,
+            },
+        )
+        acknowledged["subagents"]["disposition"] = "accepted"
+        acknowledged["subagents"]["dispositionNote"] = "Handled by the main agent."
+        (repo / acknowledged["report_file"]).write_text(json.dumps(acknowledged, indent=2))
 
         result = run_script(
             "context_health_hook.py",

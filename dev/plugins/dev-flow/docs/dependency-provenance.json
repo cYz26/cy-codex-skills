@@ -40,6 +40,10 @@
       "recommendedVersion": "6.0.3",
       "strictProfileRequires": "6.0.3",
       "compatibilityPolicy": "upgrade-to-upstream-latest-with-explicit-trust-review; fallback-to-openai-curated-5.1.3",
+      "source": "https://github.com/obra/superpowers",
+      "marketplaceCommand": ["codex", "plugin", "marketplace", "add", "https://github.com/obra/superpowers", "--ref", "v6.0.3", "--json"],
+      "installCommand": ["codex", "plugin", "add", "superpowers@superpowers-dev", "--json"],
+      "updateCommand": ["codex", "plugin", "add", "superpowers@superpowers-dev", "--json"],
       "sources": {
         "openaiCuratedMarketplace": {
           "repository": "openai/plugins",
