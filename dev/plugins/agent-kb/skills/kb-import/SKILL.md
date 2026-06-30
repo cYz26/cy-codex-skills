@@ -26,8 +26,8 @@ Do not read `personal/` or `archive/` unless the user explicitly authorizes it.
    request before importing.
 2. Run dry-run first:
    `python3 scripts/kb_import.py --vault <vault> --project <project> --source <source> --dry-run --json`.
-3. Review imports, skips, duplicates, MarkItDown status, and Feishu/Lark read
-   commands.
+3. Review imports, skips, duplicates, Crawl4AI URL-fetch status, MarkItDown
+   status, and Feishu/Lark read commands.
 4. Apply only after the plan is scoped:
    `python3 scripts/kb_import.py --vault <vault> --project <project> --source <source> --apply --json`.
 5. Hand source summaries and extracted Markdown under `_agent/source-intake/`
@@ -47,6 +47,29 @@ AgentKB auto-detects that venv's `markitdown` command, PATH `markitdown`, or
 
 Do not pass untrusted paths or URLs directly to conversion tools; source intake
 must enforce path, protocol, and size boundaries.
+
+## Crawl4AI
+
+Crawl4AI is optional and used only for generic HTTP(S) URL sources. The
+standalone `crawl4ai` skill owns general Crawl4AI workflows; AgentKB consumes
+the same runtime convention when the crawled result should enter a vault. It
+turns web pages into reviewable Markdown before AgentKB writes raw URL
+metadata, extracted Markdown, receipts, registry records, and source summaries.
+Install a dedicated runtime when URL apply mode should fetch pages:
+`/opt/homebrew/bin/python3.12 -m venv ~/.codex/crawl4ai-venv`
+then
+`~/.codex/crawl4ai-venv/bin/python -m pip install -U crawl4ai`
+and run
+`~/.codex/crawl4ai-venv/bin/crawl4ai-setup`
+plus
+`~/.codex/crawl4ai-venv/bin/crawl4ai-doctor`.
+AgentKB auto-detects `CRAWL4AI_CMD`, `AGENT_KB_CRAWL4AI_CMD`,
+`~/.codex/crawl4ai-venv/bin/crwl`,
+`~/.codex/agent-kb/crawl4ai-venv/bin/crwl`, or PATH `crwl`.
+
+Crawl4AI is not a replacement for MarkItDown. Use Crawl4AI for live web pages;
+use MarkItDown for local files, downloaded documents, archives, Office files,
+PDFs, and attachments.
 
 ## Feishu/Lark
 

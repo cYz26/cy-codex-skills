@@ -6,6 +6,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from xml.etree import ElementTree
 
+from agent_kb_crawl4ai import capability as crawl4ai_capability
 from agent_kb_markitdown import capability as markitdown_capability
 from agent_kb_markitdown import convert as try_markitdown
 
@@ -23,7 +24,7 @@ class TextHTMLParser(HTMLParser):
 
 
 def extractor_capabilities():
-    return {"markitdown": markitdown_capability()}
+    return {"markitdown": markitdown_capability(), "crawl4ai": crawl4ai_capability()}
 
 
 def extract_markdown(path: Path):

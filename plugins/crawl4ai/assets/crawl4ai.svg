@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Crawl4AI">
+  <rect width="512" height="512" rx="96" fill="#0f766e"/>
+  <path d="M128 312c0-57 46-103 103-103h61c51 0 92-41 92-92" fill="none" stroke="#ccfbf1" stroke-width="34" stroke-linecap="round"/>
+  <path d="M384 117l-44 44m44-44l44 44" fill="none" stroke="#ccfbf1" stroke-width="34" stroke-linecap="round"/>
+  <rect x="104" y="310" width="304" height="84" rx="28" fill="#f8fafc"/>
+  <path d="M152 352h104m48 0h56" fill="none" stroke="#0f172a" stroke-width="24" stroke-linecap="round"/>
+</svg>

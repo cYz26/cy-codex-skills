@@ -3,6 +3,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
+from agent_kb_crawl4ai import fetch_markdown
 from agent_kb_extractors import extract_markdown, extractor_capabilities
 from agent_kb_scaffold import sanitize_project
 from agent_kb_source_common import (
@@ -14,6 +15,8 @@ from agent_kb_source_common import (
     now_stamp,
     source_record_id,
     source_slug,
+    text_sha256,
+    write_json_text,
 )
 from agent_kb_source_plan import plan_sources
 from workflow_paths import rel, repo_path
@@ -61,12 +64,14 @@ def intake_result(vault: Path, project: str, source: str, apply: bool, plan: dic
 def apply_planned_items(vault: Path, project: str, result: dict):
     ensure_intake_dirs(vault)
     for item in result["planned"]:
-        if item["kind"] != "local-file":
-            result["skipped"].append({"source_id": item["source_id"], "reason": "remote-apply-deferred"})
-        elif item["duplicate"]:
+        if item["kind"] == "local-file" and item["duplicate"]:
             result["skipped"].append({"source_id": item["source_id"], "reason": "duplicate"})
-        else:
+        elif item["kind"] == "local-file":
             result["imported"].append(import_local_file(vault, project, item))
+        elif item["kind"] == "url":
+            apply_url_item(vault, project, item, result)
+        else:
+            result["skipped"].append({"source_id": item["source_id"], "reason": "remote-apply-deferred"})
 
 
 def import_local_file(vault: Path, project: str, item: dict):
@@ -83,6 +88,58 @@ def import_local_file(vault: Path, project: str, item: dict):
     return record
 
 
+def apply_url_item(vault: Path, project: str, item: dict, result: dict):
+    extraction = fetch_markdown(item["url"])
+    skip_reason = url_skip_reason(extraction)
+    if skip_reason:
+        result["skipped"].append({"source_id": item["source_id"], "reason": skip_reason})
+        return
+    item["content_hash"] = text_sha256(extraction["text"])
+    if already_imported(vault, item["source_id"], item["content_hash"]):
+        result["skipped"].append({"source_id": item["source_id"], "reason": "duplicate"})
+        return
+    result["imported"].append(import_url(vault, project, item, extraction))
+
+
+def url_skip_reason(extraction: dict):
+    if not extraction["available"]:
+        return "crawl4ai-unavailable"
+    if not extraction["ok"]:
+        return "crawl4ai-fetch-failed"
+    return ""
+
+
+def import_url(vault: Path, project: str, item: dict, extraction: dict):
+    slug = source_slug(item["url"])
+    item["extractor"] = extraction["extractor"]
+    item["extraction_ok"] = extraction["ok"]
+    item["needs_review"] = True
+    raw_path = write_url_raw(vault, slug, item)
+    extracted = write_extracted_text(vault, slug, item, extraction["text"])
+    summary = write_summary(vault, project, slug, item, raw_path, extracted)
+    receipt = write_receipt(vault, slug, item, raw_path, extracted, summary)
+    record = registry_record(vault, item, raw_path, extracted, summary, receipt)
+    append_registry(vault, record)
+    append_log(vault, item, summary)
+    return record
+
+
+def write_url_raw(vault: Path, slug: str, item: dict):
+    raw_path = raw_destination(vault, slug, item["content_hash"], ".url.json")
+    write_json_text(
+        raw_path,
+        {
+            "kind": item["kind"],
+            "source_id": item["source_id"],
+            "title": item["title"],
+            "url": item["url"],
+            "content_hash": item["content_hash"],
+            "extractor": item["extractor"],
+        },
+    )
+    return raw_path
+
+
 def raw_destination(vault: Path, slug: str, content_hash: str, suffix: str):
     target = vault / "raw" / "source-documents" / f"{slug}-{content_hash[:12]}{suffix}"
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -91,12 +148,16 @@ def raw_destination(vault: Path, slug: str, content_hash: str, suffix: str):
 
 def write_extracted(vault: Path, slug: str, item: dict, path: Path):
     extraction = extract_markdown(path)
-    target = intake_dirs(vault)["extracted"] / f"{slug}-{item['content_hash'][:12]}.md"
-    header = f"---\nextractor: {extraction['extractor']}\nsource_id: {item['source_id']}\n---\n\n"
-    target.write_text(header + extraction.get("text", ""), encoding="utf-8")
     item["extractor"] = extraction["extractor"]
     item["extraction_ok"] = extraction["ok"]
     item["needs_review"] = True
+    return write_extracted_text(vault, slug, item, extraction.get("text", ""))
+
+
+def write_extracted_text(vault: Path, slug: str, item: dict, text: str):
+    target = intake_dirs(vault)["extracted"] / f"{slug}-{item['content_hash'][:12]}.md"
+    header = f"---\nextractor: {item['extractor']}\nsource_id: {item['source_id']}\n---\n\n"
+    target.write_text(header + text, encoding="utf-8")
     return target
 
 
@@ -109,6 +170,7 @@ def write_summary(vault: Path, project: str, slug: str, item: dict, raw_path: Pa
 
 
 def summary_body(project: str, item: dict, raw_path: Path, extracted_path: Path):
+    source_url = f"- Source URL: `{item['url']}`\n" if item.get("url") else ""
     return (
         "---\n"
         f"id: source-{item['source_id']}\n"
@@ -123,6 +185,7 @@ def summary_body(project: str, item: dict, raw_path: Path, extracted_path: Path)
         "---\n\n"
         f"# {item['title']} Source Summary\n\n"
         f"- Source ID: `{item['source_id']}`\n"
+        f"{source_url}"
         f"- Raw source: `{raw_path.as_posix()}`\n"
         f"- Extracted Markdown: `{extracted_path.as_posix()}`\n"
         f"- Extractor: `{item['extractor']}`\n\n"
@@ -137,9 +200,11 @@ def write_receipt(vault: Path, slug: str, item: dict, raw_path: Path, extracted_
 
 
 def receipt_body(item: dict, raw_path: Path, extracted_path: Path, summary_path: Path):
+    source_url = f"- source_url: `{item['url']}`\n" if item.get("url") else ""
     return (
         f"# Source Intake Receipt: {item['title']}\n\n"
         f"- source_id: `{item['source_id']}`\n"
+        f"{source_url}"
         f"- status: imported\n"
         f"- raw_path: `{raw_path.as_posix()}`\n"
         f"- extracted_path: `{extracted_path.as_posix()}`\n"

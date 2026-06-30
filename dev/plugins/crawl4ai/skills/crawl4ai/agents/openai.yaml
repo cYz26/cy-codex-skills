@@ -1,0 +1,10 @@
+interface:
+  display_name: "Crawl4AI"
+  short_description: "Crawl web pages into Markdown"
+  icon_small: "./assets/crawl4ai.svg"
+  icon_large: "./assets/crawl4ai.svg"
+  brand_color: "#0F766E"
+  default_prompt: "Use $crawl4ai to crawl this URL into Markdown."
+
+policy:
+  allow_implicit_invocation: true

@@ -101,6 +101,26 @@ inspection plus native Markdown fetch/export paths. MarkItDown is used for
 downloaded or exported files and attachments, not as the first path for live
 cloud docs.
 
+Crawl4AI is the optional URL fetcher for generic HTTP(S) sources. The reusable
+`crawl4ai` plugin owns general Crawl4AI workflows; AgentKB consumes the same
+runtime convention when URL imports should enter a vault. Install it in a
+dedicated runtime when web pages should be crawled into reviewable Markdown:
+
+```bash
+/opt/homebrew/bin/python3.12 -m venv ~/.codex/crawl4ai-venv
+~/.codex/crawl4ai-venv/bin/python -m pip install -U crawl4ai
+~/.codex/crawl4ai-venv/bin/crawl4ai-setup
+~/.codex/crawl4ai-venv/bin/crawl4ai-doctor
+```
+
+AgentKB auto-detects
+`CRAWL4AI_CMD`, `AGENT_KB_CRAWL4AI_CMD`,
+`~/.codex/crawl4ai-venv/bin/crwl`,
+`~/.codex/agent-kb/crawl4ai-venv/bin/crwl`, or a `crwl` command on PATH.
+Generic URL apply mode imports Crawl4AI Markdown when available; otherwise it
+records an explicit skipped reason. Crawl4AI is not required for local file
+imports, Feishu/Lark native fetches, or MarkItDown document conversion.
+
 ## Capture And Promotion
 
 Use `kb-capture` for free-form personal, work, project, or reusable knowledge input. It preserves raw input under `inbox/codex-captures/`, routes structured notes through `_system/routing-rules.md`, and writes routing receipts under `_agent/routing-receipts/`. Use `kb-import` when the capture is a file path, document, URL, Feishu/Lark doc, or Drive folder that needs source intake before durable knowledge extraction.

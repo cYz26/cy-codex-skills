@@ -1,0 +1,44 @@
+{
+  "name": "crawl4ai",
+  "version": "0.1.0",
+  "description": "Reusable Crawl4AI workflows for crawling live web pages into Markdown.",
+  "author": {
+    "name": "cY",
+    "url": "https://github.com/cYz26"
+  },
+  "homepage": "https://github.com/cYz26/cy-codex-skills/tree/main/plugins/crawl4ai",
+  "repository": "https://github.com/cYz26/cy-codex-skills",
+  "license": "MIT",
+  "keywords": [
+    "crawl4ai",
+    "web-crawling",
+    "markdown",
+    "codex",
+    "skill"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Crawl4AI",
+    "shortDescription": "Crawl web pages into Markdown",
+    "longDescription": "Use Crawl4AI from Codex to fetch, render, and convert live web pages into reviewable Markdown while keeping document conversion boundaries clear.",
+    "developerName": "cY",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/cYz26/cy-codex-skills/tree/main/plugins/crawl4ai",
+    "privacyPolicyURL": "https://github.com/cYz26/cy-codex-skills/blob/main/plugins/crawl4ai/README.md",
+    "termsOfServiceURL": "https://github.com/cYz26/cy-codex-skills/blob/main/plugins/crawl4ai/README.md",
+    "defaultPrompt": [
+      "Crawl this URL into Markdown",
+      "Check Crawl4AI availability",
+      "Compare Crawl4AI and MarkItDown"
+    ],
+    "brandColor": "#0F766E",
+    "composerIcon": "./assets/crawl4ai.svg",
+    "logo": "./assets/crawl4ai.svg",
+    "screenshots": []
+  }
+}

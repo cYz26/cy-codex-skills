@@ -59,7 +59,7 @@ def plan_url(source: str):
         "url": source,
         "source_id": source_record_id("url", source),
         "title": source_slug(source),
-        "fetch": "deferred",
+        "fetch": "crawl4ai-optional",
     }
 
 

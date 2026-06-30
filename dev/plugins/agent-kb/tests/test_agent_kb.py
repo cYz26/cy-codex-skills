@@ -509,6 +509,129 @@ class AgentKBTests(unittest.TestCase):
         self.assertIn("extractor: markitdown", extracted)
         self.assertIn("Converted through configured MarkItDown.", extracted)
 
+    def test_source_intake_dry_run_reports_optional_crawl4ai_url_fetch(self):
+        repo, vault = self.make_repo_and_vault()
+        self.scaffold(repo, vault)
+
+        dry = run_json(
+            "kb_import.py",
+            "--vault",
+            str(vault),
+            "--project",
+            PROJECT,
+            "--source",
+            "https://example.com/research",
+            "--dry-run",
+            "--json",
+        )
+
+        self.assertTrue(dry["ok"], dry)
+        self.assertEqual("optional-url-fetcher", dry["extractor_capabilities"]["crawl4ai"]["importance"])
+        self.assertEqual("url", dry["planned"][0]["kind"])
+        self.assertEqual("crawl4ai-optional", dry["planned"][0]["fetch"])
+
+    def test_source_intake_applies_url_with_configured_crawl4ai_command(self):
+        repo, vault = self.make_repo_and_vault()
+        self.scaffold(repo, vault)
+        crawler = repo / "fake-crwl"
+        crawler.write_text(
+            "#!/bin/sh\n"
+            "printf '# Crawled Page\\n\\nFetched through Crawl4AI.\\n'\n",
+            encoding="utf-8",
+        )
+        crawler.chmod(0o755)
+
+        previous = os.environ.get("AGENT_KB_CRAWL4AI_CMD")
+        os.environ["AGENT_KB_CRAWL4AI_CMD"] = str(crawler)
+        try:
+            applied = run_json(
+                "kb_import.py",
+                "--vault",
+                str(vault),
+                "--project",
+                PROJECT,
+                "--source",
+                "https://example.com/research",
+                "--apply",
+                "--json",
+            )
+        finally:
+            if previous is None:
+                os.environ.pop("AGENT_KB_CRAWL4AI_CMD", None)
+            else:
+                os.environ["AGENT_KB_CRAWL4AI_CMD"] = previous
+
+        self.assertTrue(applied["ok"], applied)
+        self.assertEqual([], applied["skipped"])
+        self.assertEqual(1, len(applied["imported"]))
+        imported = applied["imported"][0]
+        self.assertEqual("crawl4ai", imported["extractor"])
+        self.assertEqual("url", imported["kind"])
+        self.assertTrue((vault / imported["raw_path"]).exists(), imported)
+        extracted = (vault / imported["extracted_path"]).read_text(encoding="utf-8")
+        self.assertIn("extractor: crawl4ai", extracted)
+        self.assertIn("Fetched through Crawl4AI.", extracted)
+        self.assertIn("https://example.com/research", (vault / imported["receipt_path"]).read_text())
+
+    def test_source_intake_skips_url_when_crawl4ai_is_unavailable_or_fails(self):
+        repo, vault = self.make_repo_and_vault()
+        self.scaffold(repo, vault)
+        empty_home = repo / "empty-home"
+        empty_path = repo / "empty-path"
+        empty_home.mkdir()
+        empty_path.mkdir()
+        previous = {key: os.environ.get(key) for key in ["AGENT_KB_CRAWL4AI_CMD", "HOME", "PATH"]}
+        os.environ.pop("AGENT_KB_CRAWL4AI_CMD", None)
+        os.environ["HOME"] = str(empty_home)
+        os.environ["PATH"] = str(empty_path)
+        try:
+            unavailable = run_json(
+                "kb_import.py",
+                "--vault",
+                str(vault),
+                "--project",
+                PROJECT,
+                "--source",
+                "https://example.com/unavailable",
+                "--apply",
+                "--json",
+            )
+        finally:
+            for key, value in previous.items():
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value
+
+        self.assertEqual([], unavailable["imported"], unavailable)
+        self.assertEqual("crawl4ai-unavailable", unavailable["skipped"][0]["reason"])
+
+        failing = repo / "failing-crwl"
+        failing.write_text("#!/bin/sh\nprintf 'failed' >&2\nexit 2\n", encoding="utf-8")
+        failing.chmod(0o755)
+        previous_cmd = os.environ.get("AGENT_KB_CRAWL4AI_CMD")
+        os.environ["AGENT_KB_CRAWL4AI_CMD"] = str(failing)
+        try:
+            failed = run_json(
+                "kb_import.py",
+                "--vault",
+                str(vault),
+                "--project",
+                PROJECT,
+                "--source",
+                "https://example.com/fail",
+                "--apply",
+                "--json",
+            )
+        finally:
+            if previous_cmd is None:
+                os.environ.pop("AGENT_KB_CRAWL4AI_CMD", None)
+            else:
+                os.environ["AGENT_KB_CRAWL4AI_CMD"] = previous_cmd
+
+        self.assertEqual([], failed["imported"], failed)
+        self.assertEqual("crawl4ai-fetch-failed", failed["skipped"][0]["reason"])
+
     def test_source_intake_optional_binary_extractors_report_unsupported_when_missing(self):
         import agent_kb_extractors
 

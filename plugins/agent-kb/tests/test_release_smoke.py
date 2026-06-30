@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -15,6 +16,7 @@ HOOK_SCRIPT_PREFIX = (
 sys.path.insert(0, str(SCRIPTS))
 
 import agent_kb_extractors
+from agent_kb_source_intake import import_sources
 from workflow_agent_kb import lint_agent_kb, record_agent_kb_event, scaffold_agent_kb
 
 
@@ -81,6 +83,39 @@ class AgentKBReleaseSmokeTests(unittest.TestCase):
         self.assertFalse((vault / "20-projects").exists())
         self.assertTrue(lint["ok"], lint)
         self.assert_release_events(repo, vault)
+
+    def test_packaged_url_intake_uses_configured_crawl4ai_command(self):
+        root = Path(tempfile.mkdtemp(prefix="agent-kb-release-crawl4ai-"))
+        repo = root / "repo"
+        vault = root / "vault"
+        repo.mkdir()
+        crawler = repo / "fake-crwl"
+        crawler.write_text(
+            "#!/bin/sh\n"
+            "printf '# Release Crawled Page\\n\\nPackaged Crawl4AI intake works.\\n'\n",
+            encoding="utf-8",
+        )
+        crawler.chmod(0o755)
+        scaffold_agent_kb(repo=repo, vault=vault, project="release-kb", owner="chanYu")
+
+        previous = os.environ.get("AGENT_KB_CRAWL4AI_CMD")
+        os.environ["AGENT_KB_CRAWL4AI_CMD"] = str(crawler)
+        try:
+            result = import_sources(vault, "release-kb", "https://example.com/release", apply=True)
+        finally:
+            if previous is None:
+                os.environ.pop("AGENT_KB_CRAWL4AI_CMD", None)
+            else:
+                os.environ["AGENT_KB_CRAWL4AI_CMD"] = previous
+
+        self.assertTrue(result["ok"], result)
+        self.assertEqual([], result["skipped"])
+        imported = result["imported"][0]
+        self.assertEqual("crawl4ai", imported["extractor"])
+        self.assertTrue((vault / imported["raw_path"]).exists(), imported)
+        extracted = (vault / imported["extracted_path"]).read_text(encoding="utf-8")
+        self.assertIn("extractor: crawl4ai", extracted)
+        self.assertIn("Packaged Crawl4AI intake works.", extracted)
 
     def test_optional_binary_extractors_report_unsupported_when_dependencies_are_missing(self):
         root = Path(tempfile.mkdtemp(prefix="agent-kb-release-extractors-"))
