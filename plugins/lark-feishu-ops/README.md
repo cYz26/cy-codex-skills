@@ -180,6 +180,12 @@ state:
 python3 plugins/lark-feishu-ops/scripts/lark_feishu_ops_sync.py --apply-cli-update --json
 ```
 
+When the doctor returns `checks.lark_cli.skills_sync_action.requires_confirmation`, the `lark-cli`
+binary is already current but the official Lark skill guidance package is out of sync. Ask the user
+before running the listed `lark-cli update --json` command. This action refreshes official CLI
+guidance state; it does not change the plugin policy that official `lark-*` skills should stay out
+of Codex main-agent context unless an operator explicitly changes global skill exposure.
+
 Pass `--refresh-installed-plugin` only when you want the sync script to run
 `codex plugin add lark-feishu-ops@cy-codex-skills`. Lark CLI upgrades do not automatically rewrite
 this plugin's source; source updates are only needed when compatibility checks show command schema,

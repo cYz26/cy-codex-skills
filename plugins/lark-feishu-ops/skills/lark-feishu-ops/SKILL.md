@@ -1,6 +1,6 @@
 ---
 name: lark-feishu-ops
-description: Use when Feishu/Lark/lark-cli platform work is needed through one entry point: docs, IM, contacts, calendar, meetings, sheets, Base, Wiki, Drive, whiteboard, approvals, attendance, mail, OKR, slides, tasks, auth, and OpenAPI operations.
+description: "Use when Feishu/Lark/lark-cli platform work is needed through one entry point: docs, IM, contacts, calendar, meetings, sheets, Base, Wiki, Drive, whiteboard, approvals, attendance, mail, OKR, slides, tasks, auth, and OpenAPI operations."
 metadata:
   requires:
     bins: ["lark-cli", "npx"]
@@ -53,6 +53,12 @@ To let the sync script perform the confirmed update and then validate state:
 ```bash
 python3 ../../scripts/lark_feishu_ops_sync.py --apply-cli-update --json
 ```
+
+If the doctor reports `checks.lark_cli.skills_sync_action.requires_confirmation`, the `lark-cli`
+binary is current but official Lark skill guidance is out of sync. Surface the action to the user
+and wait for explicit confirmation before running `lark-cli update --json`. Do not treat this as
+permission to globally activate official `lark-*` skills for Codex; FeishuOps can still use focused
+CLI help, schema, and API fallback guidance when official skill files are intentionally absent.
 
 Use `--refresh-installed-plugin` only when the user authorized refreshing the installed Codex plugin
 cache. Lark CLI releases require source changes only when compatibility checks show command,

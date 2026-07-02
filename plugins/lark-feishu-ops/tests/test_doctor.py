@@ -253,6 +253,59 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
         self.assertEqual("1.0.47", result["update_action"]["latest_version"])
         self.assertIn("lark_feishu_ops_sync.py", " ".join(result["update_action"]["followup_command"]))
 
+    def test_skills_out_of_sync_returns_confirmation_action_without_binary_update(self):
+        cache_path = self.make_repo() / "update-check.json"
+
+        def fake_run_command(command, timeout=30):
+            stdout = ""
+            if command == ["lark-cli", "--version"]:
+                stdout = "lark-cli version 1.0.60"
+            elif command == ["lark-cli", "update", "--check", "--json"]:
+                stdout = json.dumps(
+                    {
+                        "action": "already_up_to_date",
+                        "ok": True,
+                        "current_version": "1.0.60",
+                        "latest_version": "1.0.60",
+                        "skills_status": {
+                            "current": "1.0.56",
+                            "target": "1.0.60",
+                            "in_sync": False,
+                            "official": 27,
+                            "updated": 1,
+                            "skipped_deleted": ["lark-doc", "lark-sheets"],
+                        },
+                    }
+                )
+            return {
+                "command": command,
+                "ok": True,
+                "exit_code": 0,
+                "stdout": stdout,
+                "stderr": "",
+            }
+
+        with (
+            mock.patch.object(lark_feishu_ops_doctor.shutil, "which", return_value="/usr/local/bin/lark-cli"),
+            mock.patch.object(lark_feishu_ops_doctor, "run_command", side_effect=fake_run_command),
+        ):
+            result = lark_feishu_ops_doctor.check_lark_cli(
+                skip_update_check=False,
+                offline=False,
+                cache_path=cache_path,
+            )
+
+        self.assertEqual("WARN", result["status"])
+        self.assertIsNone(result["update_action"])
+        self.assertTrue(result["skills_sync_action"]["requires_confirmation"])
+        self.assertEqual(["lark-cli", "update", "--json"], result["skills_sync_action"]["command"])
+        self.assertEqual("1.0.56", result["skills_sync_action"]["current_version"])
+        self.assertEqual("1.0.60", result["skills_sync_action"]["target_version"])
+        self.assertEqual(["lark-doc", "lark-sheets"], result["skills_sync_action"]["skipped_deleted"])
+        self.assertTrue(
+            any("official Lark skill guidance" in item for item in result["recommendations"])
+        )
+
     def test_global_audit_ignores_unmanaged_lark_directories_after_codex_unload(self):
         listing = {
             "status": "PASS",

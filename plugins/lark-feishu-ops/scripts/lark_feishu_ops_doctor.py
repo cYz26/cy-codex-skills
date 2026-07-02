@@ -134,6 +134,13 @@ def update_payload_requires_confirmation(payload: Any) -> bool:
     return isinstance(payload, dict) and payload.get("action") not in (None, "already_up_to_date")
 
 
+def update_payload_needs_skills_sync(payload: Any) -> bool:
+    if not isinstance(payload, dict):
+        return False
+    skills_status = payload.get("skills_status")
+    return isinstance(skills_status, dict) and skills_status.get("in_sync") is False
+
+
 def build_update_action(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "type": "lark_cli_update",
@@ -141,6 +148,31 @@ def build_update_action(payload: dict[str, Any]) -> dict[str, Any]:
         "command": ["lark-cli", "update", "--json"],
         "current_version": payload.get("current_version"),
         "latest_version": payload.get("latest_version"),
+        "followup_command": [
+            "python3",
+            "plugins/lark-feishu-ops/scripts/lark_feishu_ops_sync.py",
+            "--after-cli-update",
+            "--json",
+        ],
+    }
+
+
+def build_skills_sync_action(payload: dict[str, Any]) -> dict[str, Any]:
+    skills_status = payload.get("skills_status")
+    if not isinstance(skills_status, dict):
+        skills_status = {}
+    skipped_deleted = skills_status.get("skipped_deleted")
+    if not isinstance(skipped_deleted, list):
+        skipped_deleted = []
+    return {
+        "type": "lark_cli_skills_sync",
+        "requires_confirmation": True,
+        "command": ["lark-cli", "update", "--json"],
+        "current_version": skills_status.get("current"),
+        "target_version": skills_status.get("target"),
+        "official_count": skills_status.get("official"),
+        "updated_count": skills_status.get("updated"),
+        "skipped_deleted": skipped_deleted,
         "followup_command": [
             "python3",
             "plugins/lark-feishu-ops/scripts/lark_feishu_ops_sync.py",
@@ -319,6 +351,7 @@ def check_lark_cli(
         "auth_status": None,
         "update_check": None,
         "update_action": None,
+        "skills_sync_action": None,
         "recommendations": [],
     }
 
@@ -408,6 +441,17 @@ def run_lark_cli_update_check(
             "Run `lark-cli update` only after explicit confirmation; it is a high-risk-write command.",
         )
         check["update_action"] = build_update_action(update_payload)
+    elif update_payload_needs_skills_sync(update_payload):
+        warn_lark_cli_check(
+            check,
+            (
+                "official Lark skill guidance is out of sync with the lark-cli binary. "
+                "Run `lark-cli update --json` only after explicit confirmation if you "
+                "want FeishuOps lazy skill guidance refreshed; direct lark-cli operations "
+                "can still use CLI help and schema fallback."
+            ),
+        )
+        check["skills_sync_action"] = build_skills_sync_action(update_payload)
 
 
 def record_skipped_update_check(check: dict[str, Any], update_check_policy: str) -> None:
