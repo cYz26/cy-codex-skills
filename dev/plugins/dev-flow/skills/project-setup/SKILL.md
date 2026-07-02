@@ -16,7 +16,10 @@ Initialize project workflow files.
 5. Run `scripts/scaffold_workflow.py --repo <repo> --dry-run --json`.
 6. If the plan is safe, run `scripts/scaffold_workflow.py --repo <repo> --json`.
 7. Run `scripts/validate_workflow_state.py --repo <repo> --json`.
-8. Report generated files, skipped files, context tool recommendations, risks, and next action.
+8. If `AGENTS.md.generated` was produced, treat it as a merge-required setup
+   artifact: review and merge the DevFlow workflow rules into the active
+   `AGENTS.md`, then rerun validation.
+9. Report generated files, skipped files, context tool recommendations, risks, and next action.
 
 ## Notes
 
@@ -25,6 +28,10 @@ Initialize project workflow files.
 - Use `gsd-new-project` when the user wants full GSD project intake.
 - Use `context-tool-audit` before applying any context cleanup or tool installation actions from the audit report.
 - Generated workflow files include AI Coding Planning Rules; use `ai-native-tech-plan` for technical plan generation.
+- `validate_workflow_state.py` checks whether the active `AGENTS.md` contains
+  DevFlow planning rules, OpenSpec routing, and Superpowers artifact mapping.
+  Keep implementation-slice boundaries in the active OpenSpec change, not as
+  durable AGENTS rules.
 
 ## Constraints
 

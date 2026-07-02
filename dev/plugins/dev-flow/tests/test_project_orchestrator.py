@@ -726,6 +726,34 @@ class ProjectOrchestratorTests(unittest.TestCase):
             self.assertTrue((brownfield / ".planning" / "codebase" / name).exists(), name)
         self.assertTrue((brownfield / "openspec" / "specs" / "current-system" / "spec.md").exists())
 
+    def test_validate_reports_existing_agents_generated_merge_needed(self):
+        existing = self.make_repo("existing-agents")
+        run_json("scaffold_workflow.py", "--repo", str(existing), "--mode", "greenfield", "--json")
+
+        validation = run_json("validate_workflow_state.py", "--repo", str(existing), "--json")
+
+        self.assertFalse(validation["ok"], validation)
+        self.assertTrue(
+            any("AGENTS.md.generated" in issue and "merge" in issue for issue in validation["issues"]),
+            validation,
+        )
+
+    def test_validate_warns_when_agents_contains_slice_boundary(self):
+        repo = self.make_repo("greenfield-empty")
+        run_json("scaffold_workflow.py", "--repo", str(repo), "--json")
+        agents = repo / "AGENTS.md"
+        agents.write_text(
+            agents.read_text()
+            + "\n## First Slice Boundary\n\n- Use file storage only in this slice.\n"
+        )
+
+        validation = run_json("validate_workflow_state.py", "--repo", str(repo), "--json")
+
+        self.assertTrue(
+            any("First Slice Boundary" in warning for warning in validation["warnings"]),
+            validation,
+        )
+
     def test_orchestrator_skills_name_dependency_skills_explicitly(self):
         expectations = {
             "project-orchestrator": [

@@ -20,6 +20,7 @@ def validate_workflow_state(
     issues: list[str] = []
     warnings: list[str] = []
     check_required_roots(repo, issues)
+    check_agents_guidance(repo, issues, warnings)
     state = read_state_or_issue(repo, issues)
     check_phase(repo, state, issues)
     check_change(repo, state, issues, warnings)
@@ -40,6 +41,61 @@ def check_required_roots(repo: Path, issues: list[str]) -> None:
         issues.append("Missing AGENTS.md or AGENTS.md.generated")
     if not (repo / "openspec" / "config.yaml").exists():
         issues.append("Missing openspec/config.yaml")
+
+
+def check_agents_guidance(repo: Path, issues: list[str], warnings: list[str]) -> None:
+    agents_path = repo / "AGENTS.md"
+    generated_path = repo / "AGENTS.md.generated"
+    active_path = agents_path if agents_path.exists() else generated_path
+    if not active_path.exists():
+        return
+
+    text = active_path.read_text()
+    missing = missing_agents_guidance(text)
+    if missing:
+        detail = ", ".join(missing)
+        if active_path == agents_path and generated_path.exists():
+            issues.append(
+                "AGENTS.md.generated exists but active AGENTS.md is missing "
+                f"DevFlow workflow guidance ({detail}); merge AGENTS.md.generated "
+                "into AGENTS.md or rerun scaffold_workflow.py with --force-agents after review"
+            )
+        else:
+            warnings.append(f"{active_path.name} is missing DevFlow workflow guidance: {detail}")
+
+    if contains_slice_specific_agents_boundary(text):
+        warnings.append(
+            f"{active_path.name} contains a First Slice Boundary-style section; "
+            "move current implementation boundaries into the active OpenSpec change "
+            "and keep AGENTS.md focused on durable workflow rules"
+        )
+
+
+def missing_agents_guidance(text: str) -> list[str]:
+    required_markers = {
+        "AI Coding Planning Rules": "AI Coding Planning Rules",
+        "Target State": "Target State",
+        "Completion Contract": "Completion Contract",
+        "Capability Slices": "Capability Slices",
+        "Execution Ledger": "Execution Ledger",
+        "Acceptance Criteria": "Acceptance Criteria",
+        "Validation Commands": "Validation Commands",
+        "Final Verification": "Final Verification",
+        "OpenSpec change routing": "openspec/changes",
+        "Superpowers specs mapping": "docs/superpowers/specs",
+        "Superpowers plans mapping": "docs/superpowers/plans",
+        "canonical artifact guidance": "canonical",
+    }
+    return [label for label, marker in required_markers.items() if marker not in text]
+
+
+def contains_slice_specific_agents_boundary(text: str) -> bool:
+    boundary_headings = (
+        "## First Slice Boundary",
+        "## Current Slice Boundary",
+        "## Implementation Slice Boundary",
+    )
+    return any(heading in text for heading in boundary_headings)
 
 
 def read_state_or_issue(repo: Path, issues: list[str]) -> dict[str, Any]:

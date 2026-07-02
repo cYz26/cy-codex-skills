@@ -24,6 +24,17 @@ a deferred follow-up, and record why the selected path fits the current state.
 5. Inspect `workflow-diagnosis.md` and `repair-plan.md`.
 6. Repair workflow files before continuing implementation.
 
+## AGENTS and Artifact Drift
+
+Treat `AGENTS.md.generated` as a merge-required setup artifact, not as active
+project guidance. If validation reports missing DevFlow planning rules,
+OpenSpec routing, or Superpowers artifact mapping, repair the active
+`AGENTS.md` before continuing implementation.
+
+Move temporary implementation boundaries such as "First Slice Boundary" into the
+active OpenSpec change. `AGENTS.md` should keep durable project workflow rules,
+not the non-goals of one slice.
+
 ## Output
 
 Report diagnosis, repair steps, and blockers. Do not archive or edit production code during workflow repair.
