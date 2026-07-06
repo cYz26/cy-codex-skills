@@ -808,6 +808,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
                 "Execution Ledger",
                 "superpowers:verification-before-completion",
                 "gsd-verify-work",
+                "openspec-sync-specs",
                 "openspec-archive-change",
             ],
             "workflow-doctor": ["gsd-progress", "openspec-explore"],

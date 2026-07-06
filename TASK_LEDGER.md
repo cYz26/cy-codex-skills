@@ -12,8 +12,13 @@
 
 ## Tasks
 
-| task_id | summary | owner | write_set | required_evidence | review_gate | status |
-|---|---|---|---|---|---|---|
+Use `contract_path` for delegated agent, subagent, worker, or parallel
+execution. Use `not-delegated` for ordinary main-agent tasks.
+
+| task_id | summary | owner | write_set | contract_path | required_evidence | review_gate | status |
+|---|---|---|---|---|---|---|---|
+
+Agent Task Contract template: `AGENT_TASK_CONTRACT.md`.
 
 ## Execution Log
 

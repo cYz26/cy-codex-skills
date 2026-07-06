@@ -33,7 +33,13 @@ python3 scripts/record_verification.py --repo <repo> --command "<command>" --res
 ## Archive Gate
 
 Archive only when spec, plan, implementation, verification, and state gates are
-clear. DevFlow separates archive readiness from approval:
+clear. If the OpenSpec change has delta specs under `specs/`, run or invoke
+`openspec-sync-specs` before `openspec-archive-change` so main specs reflect the
+implemented behavior before the change is archived. Missing
+`openspec-sync-specs` is a spec sync uncertainty risk; refresh OpenSpec with the
+core profile before archiving instead of skipping sync silently.
+
+DevFlow separates archive readiness from approval:
 
 ```bash
 python3 scripts/archive_status.py --repo <repo> --change <change> --json

@@ -23,6 +23,7 @@ from dependency_support import (
 )
 
 import codex_auto_update_plugins_skills as auto_update
+from workflow_dependency_catalog import LEGACY_OPENSPEC_SKILLS
 from workflow_dependencies import dependency_report
 from workflow_project_activation import activate_project_dependencies
 from workflow_project_skill_install import ensure_project_local_skills
@@ -35,7 +36,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         path.chmod(0o755)
         return path
 
-    def dependency_report_with_fake_path(self, codex_home, repo, openspec_version="1.4.1"):
+    def dependency_report_with_fake_path(self, codex_home, repo, openspec_version="1.5.0"):
         bin_dir = Path(tempfile.mkdtemp(prefix="cpo-dependency-bin-"))
         self.write_executable(bin_dir, "codex", "#!/bin/sh\nprintf 'codex fixture\\n'\n")
         self.write_executable(bin_dir, "openspec", f"#!/bin/sh\nprintf '{openspec_version}\\n'\n")
@@ -93,6 +94,8 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertTrue(checks["project skill active: gsd-progress"]["ok"])
         self.assertTrue(checks["project gsd agent active: gsd-planner.toml"]["ok"])
         self.assertTrue(checks["project openspec setup active"]["ok"])
+        self.assertTrue(checks["project openspec sync workflow available"]["ok"])
+        self.assertFalse(checks["project openspec sync workflow available"]["required"])
         self.assertTrue(checks["developer plugin enabled: plugin-eval"]["ok"])
 
     def test_dependency_report_includes_provenance_and_verified_smoke_results(self):
@@ -108,29 +111,29 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         dependencies = {item["name"]: item for item in report["dependencies"]}
         openspec = dependencies["openspec-cli"]
         self.assertEqual(openspec["status"], "verified")
-        self.assertEqual(openspec["expectedVersion"], "1.4.1")
-        self.assertEqual(openspec["installedVersion"], "1.4.1")
+        self.assertEqual(openspec["expectedVersion"], "1.5.0")
+        self.assertEqual(openspec["installedVersion"], "1.5.0")
         self.assertTrue(openspec["binaryPath"].endswith("/openspec"))
-        self.assertEqual(openspec["installCommand"], ["npm", "install", "-g", "@fission-ai/openspec@1.4.1"])
+        self.assertEqual(openspec["installCommand"], ["npm", "install", "-g", "@fission-ai/openspec@1.5.0"])
         self.assertEqual(openspec["smokeCommand"], ["openspec", "--version"])
         self.assertTrue(openspec["smokeResult"]["ok"], openspec)
-        self.assertEqual(openspec["smokeResult"]["summary"], "1.4.1")
+        self.assertEqual(openspec["smokeResult"]["summary"], "1.5.0")
         self.assertIn("@fission-ai/openspec", openspec["source"])
         self.assertEqual(report["provenance"]["schemaVersion"], 2)
-        self.assertEqual(openspec["lastVerified"], "2026-06-25")
+        self.assertEqual(openspec["lastVerified"], "2026-07-06")
 
         gsd = dependencies["gsd-core"]
         self.assertEqual(gsd["status"], "verified")
-        self.assertEqual(gsd["expectedVersion"], "1.6.0")
-        self.assertEqual(gsd["installedVersion"], "1.6.0")
+        self.assertEqual(gsd["expectedVersion"], "1.6.1")
+        self.assertEqual(gsd["installedVersion"], "1.6.1")
         self.assertTrue(gsd["binaryPath"].endswith("/.codex/gsd-core/bin/gsd-tools.cjs"))
         self.assertEqual(
             gsd["installCommand"],
-            ["npx", "-y", "@opengsd/gsd-core@1.6.0", "--codex", "--local", "--profile=standard"],
+            ["npx", "-y", "@opengsd/gsd-core@1.6.1", "--codex", "--local", "--profile=standard"],
         )
         self.assertEqual(gsd["smokeCommand"][-1], "current-timestamp")
         self.assertTrue(gsd["smokeResult"]["ok"], gsd)
-        self.assertEqual(gsd["lastVerified"], "2026-06-25")
+        self.assertEqual(gsd["lastVerified"], "2026-07-06")
 
         superpowers = dependencies["superpowers"]
         self.assertEqual(superpowers["status"], "policy_recorded")
@@ -239,11 +242,11 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         drift_gsd = next(item for item in drift_report["dependencies"] if item["name"] == "gsd-core")
         self.assertFalse(drift_report["ok"], drift_report)
         self.assertEqual(drift_gsd["status"], "dependency_drift")
-        self.assertEqual(drift_gsd["expectedVersion"], "1.6.0")
+        self.assertEqual(drift_gsd["expectedVersion"], "1.6.1")
         self.assertEqual(drift_gsd["installedVersion"], "1.4.4")
         self.assertEqual(
             drift_gsd["recommendedCommand"],
-            ["npx", "-y", "@opengsd/gsd-core@1.6.0", "--codex", "--local", "--profile=standard"],
+            ["npx", "-y", "@opengsd/gsd-core@1.6.1", "--codex", "--local", "--profile=standard"],
         )
 
         missing_repo = self.make_dependency_ready_project_repo()
@@ -253,7 +256,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         missing_gsd = next(item for item in missing_report["dependencies"] if item["name"] == "gsd-core")
         self.assertFalse(missing_report["ok"], missing_report)
         self.assertEqual(missing_gsd["status"], "missing")
-        self.assertEqual(missing_gsd["installedVersion"], "1.6.0")
+        self.assertEqual(missing_gsd["installedVersion"], "1.6.1")
 
         smoke_repo = self.make_dependency_ready_project_repo()
         smoke_tool = smoke_repo / ".codex" / "gsd-core" / "bin" / "gsd-tools.cjs"
@@ -279,8 +282,13 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         )
 
         gsd_install = next(item for item in report["commands"] if item["command"][0:2] == ["npx", "-y"])
+        openspec_install = next(item for item in report["commands"] if item["command"][0:2] == ["openspec", "init"])
+        self.assertEqual(
+            openspec_install["command"],
+            ["openspec", "init", "--tools", "codex", "--profile", "core", str(repo.resolve()), "--force"],
+        )
         self.assertIn(
-            ["npx", "-y", "@opengsd/gsd-core@1.6.0", "--codex", "--local", "--profile=standard"],
+            ["npx", "-y", "@opengsd/gsd-core@1.6.1", "--codex", "--local", "--profile=standard"],
             [item["command"] for item in report["commands"]],
         )
         self.assertIn("provenanceSource", gsd_install)
@@ -331,6 +339,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         checks = {item["name"]: item for item in report["checks"]}
         self.assertTrue(report["ok"], report)
         self.assertTrue(checks["project openspec setup active"]["ok"])
+        self.assertFalse(checks["project openspec sync workflow available"]["required"])
         self.assertTrue(checks["legacy project skill active: openspec-propose"]["required"] is False)
         self.assertFalse(checks["legacy project skill active: openspec-propose"]["ok"])
 
@@ -767,18 +776,87 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertEqual(brainstorming["status"], "refreshed-link")
         self.assertEqual(target.resolve(), Path(brainstorming["source"]).resolve())
 
+    def test_openspec_sync_workflow_is_managed(self):
+        self.assertEqual(
+            LEGACY_OPENSPEC_SKILLS,
+            [
+                "openspec-propose",
+                "openspec-explore",
+                "openspec-apply-change",
+                "openspec-sync-specs",
+                "openspec-archive-change",
+            ],
+        )
+
+    def test_activation_bridges_generated_openspec_sync_skill_to_official_layout(self):
+        repo = Path(tempfile.mkdtemp(prefix="cpo-openspec-sync-repo-"))
+        codex_home = self.make_codex_home()
+        source = repo / ".codex" / "skills" / "openspec-sync-specs" / "SKILL.md"
+        source.parent.mkdir(parents=True)
+        source.write_text(
+            '---\nname: openspec-sync-specs\nmetadata:\n  author: openspec\n  generatedBy: "1.5.0"\n---\n'
+        )
+
+        report = ensure_project_local_skills(repo, PLUGIN_ROOT, codex_home, dry_run=False, refresh_existing=True)
+
+        item = next(item for item in report["items"] if item["skill"] == "openspec-sync-specs")
+        self.assertTrue(item["ok"], item)
+        self.assertEqual(item["provider"], "openspec")
+        self.assertIn(item["status"], {"linked", "copied"})
+        self.assertTrue((repo / ".agents" / "skills" / "openspec-sync-specs" / "SKILL.md").exists())
+
+    def test_activation_refreshes_generated_openspec_official_copy_when_requested(self):
+        repo = Path(tempfile.mkdtemp(prefix="cpo-openspec-refresh-repo-"))
+        codex_home = self.make_codex_home()
+        source = repo / ".codex" / "skills" / "openspec-propose" / "SKILL.md"
+        source.parent.mkdir(parents=True)
+        source.write_text(
+            '---\nname: openspec-propose\nmetadata:\n  author: openspec\n  generatedBy: "1.5.0"\n---\n'
+        )
+        target = repo / ".agents" / "skills" / "openspec-propose" / "SKILL.md"
+        target.parent.mkdir(parents=True)
+        target.write_text(
+            '---\nname: openspec-propose\nmetadata:\n  author: openspec\n  generatedBy: "1.4.1"\n---\n'
+        )
+
+        report = ensure_project_local_skills(repo, PLUGIN_ROOT, codex_home, dry_run=False, refresh_existing=True)
+
+        item = next(item for item in report["items"] if item["skill"] == "openspec-propose")
+        self.assertTrue(item["ok"], item)
+        self.assertIn(item["status"], {"refreshed-link", "refreshed-copy"})
+        self.assertIn('generatedBy: "1.5.0"', target.read_text())
+
+    def test_activation_preserves_user_authored_openspec_official_skill(self):
+        repo = Path(tempfile.mkdtemp(prefix="cpo-openspec-custom-repo-"))
+        codex_home = self.make_codex_home()
+        source = repo / ".codex" / "skills" / "openspec-propose" / "SKILL.md"
+        source.parent.mkdir(parents=True)
+        source.write_text(
+            '---\nname: openspec-propose\nmetadata:\n  author: openspec\n  generatedBy: "1.5.0"\n---\n'
+        )
+        target = repo / ".agents" / "skills" / "openspec-propose" / "SKILL.md"
+        target.parent.mkdir(parents=True)
+        target.write_text("---\nname: openspec-propose\ndescription: custom local wrapper\n---\n")
+
+        report = ensure_project_local_skills(repo, PLUGIN_ROOT, codex_home, dry_run=False, refresh_existing=True)
+
+        item = next(item for item in report["items"] if item["skill"] == "openspec-propose")
+        self.assertTrue(item["ok"], item)
+        self.assertEqual(item["status"], "already-present")
+        self.assertIn("custom local wrapper", target.read_text())
+
     def test_update_dry_run_reports_external_versions_without_mutating_updates(self):
         codex_home = self.make_codex_home()
         repo = self.make_project_repo()
         openspec_skill = codex_home / "skills" / "openspec-propose" / "SKILL.md"
         openspec_skill.parent.mkdir(parents=True)
-        openspec_skill.write_text('---\nname: openspec-propose\nmetadata:\n  generatedBy: "1.3.1"\n---\n')
+        openspec_skill.write_text('---\nname: openspec-propose\nmetadata:\n  generatedBy: "1.5.0"\n---\n')
 
         def fake_run(command, cwd=None, timeout=300):
             if command[:3] == ["npm", "view", "@opengsd/gsd-core"]:
                 return {"ok": True, "returncode": 0, "stdout": json.dumps({"version": "1.6.1"}), "stderr": ""}
             if command[:3] == ["npm", "view", "@fission-ai/openspec"]:
-                return {"ok": True, "returncode": 0, "stdout": json.dumps({"version": "1.3.2"}), "stderr": ""}
+                return {"ok": True, "returncode": 0, "stdout": json.dumps({"version": "1.5.0"}), "stderr": ""}
             raise AssertionError(f"unexpected command: {command}")
 
         with mock.patch.object(auto_update, "executable_exists", return_value=True), mock.patch.object(
@@ -787,29 +865,29 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
             results = auto_update.run_external_updaters(codex_home, apply=False, repo=repo)
 
         by_name = {item["name"]: item for item in results}
-        self.assertEqual(by_name["gsd-core"]["status"], "update-available")
-        self.assertEqual(by_name["gsd-core"]["current"], "1.6.0")
+        self.assertEqual(by_name["gsd-core"]["status"], "unchanged")
+        self.assertEqual(by_name["gsd-core"]["current"], "1.6.1")
         self.assertEqual(by_name["gsd-core"]["latest"], "1.6.1")
         self.assertIn("expectedVersion", by_name["gsd-core"])
-        self.assertEqual(by_name["gsd-core"]["expectedVersion"], "1.6.0")
+        self.assertEqual(by_name["gsd-core"]["expectedVersion"], "1.6.1")
         self.assertIn("provenanceSource", by_name["gsd-core"])
         self.assertTrue(by_name["gsd-core"]["provenanceSource"].endswith("dependency-provenance.json"))
         self.assertIn("installCommand", by_name["gsd-core"])
         self.assertEqual(
             by_name["gsd-core"]["installCommand"],
-            ["npx", "-y", "@opengsd/gsd-core@1.6.0", "--codex", "--local", "--profile=standard"],
+            ["npx", "-y", "@opengsd/gsd-core@1.6.1", "--codex", "--local", "--profile=standard"],
         )
         self.assertIn("@opengsd/gsd-core", by_name["gsd-core"]["detail"])
         self.assertNotIn("get-shit-done-cc", by_name["gsd-core"]["detail"])
-        self.assertEqual(by_name["openspec-cli"]["status"], "update-available")
+        self.assertEqual(by_name["openspec-cli"]["status"], "unchanged")
         self.assertIn("expectedVersion", by_name["openspec-cli"])
-        self.assertEqual(by_name["openspec-cli"]["expectedVersion"], "1.4.1")
+        self.assertEqual(by_name["openspec-cli"]["expectedVersion"], "1.5.0")
         self.assertIn("installCommand", by_name["openspec-cli"])
         self.assertEqual(
             by_name["openspec-cli"]["installCommand"],
-            ["npm", "install", "-g", "@fission-ai/openspec@1.4.1"],
+            ["npm", "install", "-g", "@fission-ai/openspec@1.5.0"],
         )
-        self.assertEqual(by_name["openspec-cli"]["latest"], "1.3.2")
+        self.assertEqual(by_name["openspec-cli"]["latest"], "1.5.0")
 
     def test_update_dry_run_reports_superpowers_upgrade_available(self):
         codex_home = self.make_codex_home(superpowers_version="5.1.3", superpowers_channel="openai-curated")

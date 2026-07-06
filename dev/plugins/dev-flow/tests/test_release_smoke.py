@@ -173,7 +173,7 @@ context_health:
             path.write_text(f"name = \"{agent}\"\n")
         runtime = repo / ".codex" / "gsd-core"
         (runtime / "bin").mkdir(parents=True)
-        (runtime / "VERSION").write_text("1.6.0\n")
+        (runtime / "VERSION").write_text("1.6.1\n")
         tools = runtime / "bin" / "gsd-tools.cjs"
         tools.write_text("#!/usr/bin/env node\nconsole.log('2026-06-14T00:00:00Z')\n")
         tools.chmod(0o755)

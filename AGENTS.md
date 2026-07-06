@@ -13,6 +13,19 @@ Do not implement non-trivial changes directly from chat memory.
 - Engineering discipline governs clarification, brainstorming, planning, TDD, review, and finishing.
 - Codex planning behavior is required before major design or implementation boundaries.
 
+## Project Control Plane
+
+Use these checked-in files as the durable execution control plane:
+
+- `AGENTS.md` routes Codex to the workflow and required skills.
+- `ENGINEERING_POLICY.md` records durable engineering, dependency, testing, evidence, review, and release policy.
+- `TASK_LEDGER.md` records the Goal Contract, task decomposition, owner, write set, required evidence, review gate, status, and execution log.
+- `EVIDENCE_TEMPLATE.md` defines the evidence format for TDD, validation commands, changed files, risks, and reviewer notes.
+- `REVIEW_CHECKLIST.md` defines correctness, verification, scope, release, and archive readiness checks.
+
+Do not treat chat context or Superpowers scratch files as the source of truth
+when a control-plane file is required.
+
 ## Superpowers Artifact Mapping
 
 Superpowers provides process discipline for brainstorming, planning, TDD, and verification gates. OpenSpec, GSD, and DevFlow planning files are the canonical artifacts for this workflow.

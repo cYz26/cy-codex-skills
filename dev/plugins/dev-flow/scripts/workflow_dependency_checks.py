@@ -47,6 +47,7 @@ def check_external_dependencies(
         check_project_gsd_core_runtime(checks, repo, True)
         check_project_gsd_agents(checks, repo, True)
         check_project_openspec_setup(checks, repo, True)
+        check_project_openspec_sync_workflow(checks, repo, False)
         check_legacy_project_skills(checks, repo, LEGACY_OPENSPEC_SKILLS, False)
     for plugin, skills in REQUIRED_SKILLS.items():
         check_plugin_installed(checks, codex_home, plugin, "external plugin installed", True)
@@ -139,6 +140,32 @@ def check_project_openspec_setup(checks: list[dict[str, Any]], repo: Path, requi
     else:
         detail = f"missing {config_path}"
     add_check(checks, "project openspec setup active", ok, required, detail)
+
+
+def check_project_openspec_sync_workflow(checks: list[dict[str, Any]], repo: Path, required: bool) -> None:
+    official = official_project_skill_file(repo, "openspec-sync-specs")
+    legacy = legacy_project_skill_file(repo, "openspec-sync-specs")
+    ok = official.exists() or legacy.exists()
+    if official.exists():
+        detail = str(official)
+        path_kind = OFFICIAL_PROJECT_SKILL_PATH_KIND
+    elif legacy.exists():
+        detail = str(legacy)
+        path_kind = LEGACY_PROJECT_SKILL_PATH_KIND
+    else:
+        detail = (
+            "missing openspec-sync-specs; refresh with "
+            f"`openspec init --tools codex --profile core {repo} --force`"
+        )
+        path_kind = OFFICIAL_PROJECT_SKILL_PATH_KIND
+    add_check(
+        checks,
+        "project openspec sync workflow available",
+        ok,
+        required,
+        detail,
+        path_kind=path_kind,
+    )
 
 
 def check_project_gsd_agents(checks: list[dict[str, Any]], repo: Path, required: bool) -> None:

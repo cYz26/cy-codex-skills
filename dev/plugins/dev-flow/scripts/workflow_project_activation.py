@@ -68,7 +68,7 @@ def official_install_commands(repo: Path) -> list[list[str]]:
 def official_install_command_records(repo: Path, plugin_root: Path | None = None) -> list[dict[str, Any]]:
     provenance_source = str(dependency_provenance_source_path(plugin_root))
     return [
-        {"command": ["openspec", "init", "--tools", "codex", str(repo), "--force"]},
+        {"command": ["openspec", "init", "--tools", "codex", "--profile", "core", str(repo), "--force"]},
         {
             "command": dependency_install_command("gsd-core", plugin_root),
             "provenanceSource": provenance_source,

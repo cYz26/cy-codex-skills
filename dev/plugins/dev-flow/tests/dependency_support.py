@@ -154,6 +154,7 @@ class DependencyFixtureMixin:
             "openspec-propose",
             "openspec-explore",
             "openspec-apply-change",
+            "openspec-sync-specs",
             "openspec-archive-change",
         ]
         if enable_legacy_openspec_skills and layout == "legacy":
@@ -213,7 +214,7 @@ class DependencyFixtureMixin:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(f"name = \"{agent}\"\n")
 
-    def write_gsd_core_runtime(self, repo, version="1.6.0"):
+    def write_gsd_core_runtime(self, repo, version="1.6.1"):
         runtime = repo / ".codex" / "gsd-core"
         (runtime / "bin").mkdir(parents=True, exist_ok=True)
         (runtime / "VERSION").write_text(f"{version}\n")

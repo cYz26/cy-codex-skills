@@ -4,7 +4,11 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from workflow_dependency_catalog import PROJECT_ORCHESTRATOR_SKILLS, REQUIRED_SUPERPOWERS_PROJECT_SKILLS
+from workflow_dependency_catalog import (
+    OPENSPEC_WORKFLOW_SKILLS,
+    PROJECT_ORCHESTRATOR_SKILLS,
+    REQUIRED_SUPERPOWERS_PROJECT_SKILLS,
+)
 from workflow_project_skill_paths import OFFICIAL_PROJECT_SKILL_PATH_KIND, official_project_skill_dir
 
 
@@ -22,6 +26,9 @@ def ensure_project_local_skills(
     for skill in REQUIRED_SUPERPOWERS_PROJECT_SKILLS:
         source = find_cached_plugin_skill(codex_home, "superpowers", skill)
         installed.append(install_project_skill(repo, "superpowers", skill, source, dry_run, refresh_existing))
+    for skill in OPENSPEC_WORKFLOW_SKILLS:
+        source = repo / ".codex" / "skills" / skill
+        installed.append(install_generated_project_skill(repo, "openspec", skill, source, dry_run, refresh_existing))
     return {
         "ok": all(item["ok"] for item in installed),
         "strategy": "project-local .agents/skills",
@@ -50,6 +57,7 @@ def install_project_skill(
     source: Path | None,
     dry_run: bool = False,
     refresh_existing: bool = False,
+    refresh_generated_copy: bool = False,
 ) -> dict[str, Any]:
     target = official_project_skill_dir(repo, skill)
     if source is None or not (source / "SKILL.md").exists():
@@ -67,12 +75,48 @@ def install_project_skill(
         status = "already-linked-existing-source"
         return install_result(provider, skill, source, target, (target / "SKILL.md").exists(), status)
     if target.exists():
+        if (
+            refresh_existing
+            and refresh_generated_copy
+            and target.is_dir()
+            and generated_skill_copy(target, provider)
+        ):
+            if dry_run:
+                return install_result(provider, skill, source, target, True, "would-refresh-copy")
+            shutil.rmtree(target)
+            status = write_skill_tree(source, target)
+            refresh_status = "refreshed-link" if status == "linked" else "refreshed-copy"
+            return install_result(provider, skill, source, target, (target / "SKILL.md").exists(), refresh_status)
         return install_result(provider, skill, source, target, (target / "SKILL.md").exists(), "already-present")
     if dry_run:
         return install_result(provider, skill, source, target, True, "would-link")
     target.parent.mkdir(parents=True, exist_ok=True)
     status = write_skill_tree(source, target)
     return install_result(provider, skill, source, target, (target / "SKILL.md").exists(), status)
+
+
+def install_generated_project_skill(
+    repo: Path,
+    provider: str,
+    skill: str,
+    source: Path,
+    dry_run: bool = False,
+    refresh_existing: bool = False,
+) -> dict[str, Any]:
+    target = official_project_skill_dir(repo, skill)
+    if not (source / "SKILL.md").exists():
+        if (target / "SKILL.md").exists():
+            return install_result(provider, skill, source, target, True, "already-present-without-generated-source")
+        return install_result(provider, skill, source, target, True, "missing-generated-source")
+    return install_project_skill(
+        repo,
+        provider,
+        skill,
+        source,
+        dry_run,
+        refresh_existing,
+        refresh_generated_copy=True,
+    )
 
 
 def write_skill_tree(source: Path, target: Path) -> str:
@@ -82,6 +126,19 @@ def write_skill_tree(source: Path, target: Path) -> str:
     except OSError:
         shutil.copytree(source, target)
         return "copied"
+
+
+def generated_skill_copy(target: Path, provider: str) -> bool:
+    if provider != "openspec":
+        return False
+    skill_file = target / "SKILL.md"
+    if not skill_file.exists():
+        return False
+    try:
+        text = skill_file.read_text()
+    except OSError:
+        return False
+    return "author: openspec" in text or "generatedBy:" in text
 
 
 def install_result(

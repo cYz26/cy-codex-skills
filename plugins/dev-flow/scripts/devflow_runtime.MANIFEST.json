@@ -1,15 +1,15 @@
 {
   "archive": {
-    "bytes": 135137,
+    "bytes": 135642,
     "path": "scripts/devflow_runtime.pyz",
-    "sha256": "1698dff15e0bddcb2f8e5872bfff2313e69a90f7f4ea05e030ac1ca242b1916e"
+    "sha256": "6b587ab22826d11d52f32d1e2b22d34e75b35e687bf8492598abd48b2ed91b2b"
   },
   "buildCommand": [
     "python3",
     "dev/scripts/package_devflow_release_runtime.py"
   ],
   "schemaVersion": 1,
-  "sourceCommit": "39f42081fcb3ef6f4352401a2f5e23acecb9b25a",
+  "sourceCommit": "a5f9fb26ff51abb789ed64cb3bdc4e19a7e1886a",
   "sources": [
     {
       "bytes": 1866,
@@ -497,14 +497,14 @@
       "sha256": "da5fbad99af4b2d72971bda8d124618e52a592801ecb084b193f14c52a72b5a7"
     },
     {
-      "bytes": 1456,
+      "bytes": 1536,
       "path": "dev/plugins/dev-flow/scripts/workflow_dependency_catalog.py",
-      "sha256": "5e520e3727811428c7fdd8e5c380f4d9b5db569496786832b297b1bb5504decc"
+      "sha256": "55bcbdfd2232ef599d274e56d7825bab57855660dd944c71539ab66d8ca831e7"
     },
     {
-      "bytes": 6819,
+      "bytes": 7785,
       "path": "dev/plugins/dev-flow/scripts/workflow_dependency_checks.py",
-      "sha256": "a78bab442bd1ce52746b0c63851fc48fae7b82b69bb6f108edf97936991f9283"
+      "sha256": "914f4e797316970d15768f2781e3835ca6911da3359c9aa15bc31ed88ba99e33"
     },
     {
       "bytes": 14928,
@@ -562,14 +562,14 @@
       "sha256": "0a6647d84621974ce79d584f81bd4a2b16bdaa5fc2e9b76ea91d893481fdad31"
     },
     {
-      "bytes": 4286,
+      "bytes": 4307,
       "path": "dev/plugins/dev-flow/scripts/workflow_project_activation.py",
-      "sha256": "da4b54d883b5ad56416f7056f925dbc833d2ac7750ca633f3bbdc60324962432"
+      "sha256": "88f3e95db13461b2d5947b2c7c201b9ee1db1f6375edce5a86ed55c5c72f00e2"
     },
     {
-      "bytes": 3829,
+      "bytes": 5809,
       "path": "dev/plugins/dev-flow/scripts/workflow_project_skill_install.py",
-      "sha256": "74f77d0b7952df10d00a427010b2013fda658a37b42edaa53e84911c24256b62"
+      "sha256": "59dbfbd36b08ee7f8332a5be202dabfe602d1a8844ea0f12be39458a1d3b033d"
     },
     {
       "bytes": 8384,

@@ -61,9 +61,12 @@ REQUIRED_GSD_AGENTS = [
     "gsd-executor.toml",
 ]
 
-LEGACY_OPENSPEC_SKILLS = [
+OPENSPEC_WORKFLOW_SKILLS = [
     "openspec-propose",
     "openspec-explore",
     "openspec-apply-change",
+    "openspec-sync-specs",
     "openspec-archive-change",
 ]
+
+LEGACY_OPENSPEC_SKILLS = OPENSPEC_WORKFLOW_SKILLS
