@@ -60,6 +60,14 @@ Use instead:
    control it. If unavailable, enable `features.goals` or run
    `codex features enable goals`. Treat context-health goal drift as a repair
    signal, not the primary trigger.
+   - Complexity gate: use project complexity and recovery cost as inputs. Add
+     +2 for multiple OpenSpec changes, +2 for multiple capability slices, +2
+     for prompts like "continue/依次/持续/until human/直到需要人工介入", +1 for
+     data model, persistence, integration, migration, AI/API, or platform
+     collection, +1 for archive/release gates, and +1 for expected interruption
+     or context compaction. Score >=3 means include a Goal Mode Prompt and stop
+     for `/goal <objective>` or explicit skip; score 1-2 means recommend a
+     goal; score 0 means no goal required.
 7. Before committing to a non-trivial implementation plan, use `superpowers:writing-plans`.
 8. Add a SubAgent Strategy section when independent Capability Slices can run in
    parallel or when context-health/review risk suggests delegation. Record the

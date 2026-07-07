@@ -77,6 +77,13 @@ validation before marking ledger items complete.
   app, IDE, or CLI composer. Use `/goal`, `/goal pause`, `/goal resume`, and
   `/goal clear` to inspect or control it; if unavailable, enable
   `features.goals` or run `codex features enable goals`.
+- Use the complexity gate during routing: +2 multiple OpenSpec changes, +2
+  multiple capability slices, +2 long-running language such as
+  "continue/依次/持续/until human/直到需要人工介入", +1 governed surfaces such as
+  data model, persistence, integration, migration, AI/API, or platform
+  collection, +1 archive/release gate, +1 expected interruption or compaction.
+  Score >=3 requires a Goal Mode Prompt and a pause for `/goal <objective>` or
+  explicit skip; score 1-2 recommends a goal; score 0 does not.
 - For ordinary implementation work that is narrow, do not force goal creation
   only because the task has multiple steps; route through the normal DevFlow
   gates below. Treat context-health goal drift as a repair signal, not the

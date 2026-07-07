@@ -46,6 +46,7 @@ from workflow_state import (
     write_state,
 )
 from workflow_doctor import doctor_workflow
+from workflow_goal_gate import goal_complexity_score, goal_gate_warning
 from workflow_validate import validate_workflow_state
 from workflow_verification import record_verification
 
@@ -69,6 +70,8 @@ __all__ = [
     "detect_project_mode",
     "doctor_workflow",
     "git_commit_count",
+    "goal_complexity_score",
+    "goal_gate_warning",
     "has_code_file",
     "hook_mode",
     "hook_response",

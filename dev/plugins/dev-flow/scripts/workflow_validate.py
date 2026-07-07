@@ -6,6 +6,7 @@ from typing import Any, Optional
 from plugin_preflight_hooks import hook_cache_drift_issues
 from workflow_compact_state import check_compact_state
 from workflow_constants import resolve_plugin_root
+from workflow_goal_gate import goal_gate_warning
 from workflow_paths import repo_path
 from workflow_state import parse_state
 
@@ -25,6 +26,7 @@ def validate_workflow_state(
     check_phase(repo, state, issues)
     check_change(repo, state, issues, warnings)
     check_compact_state(repo, state, issues, warnings)
+    check_goal_gate(state, warnings)
     check_hook_cache_drift(issues, plugin_root=plugin_root, codex_home=codex_home)
     check_archive_gate(state, issues)
     return {
@@ -148,6 +150,12 @@ def archive_requirements_met(gates: dict[str, Any]) -> bool:
         "state_updated",
     )
     return all(bool(gates.get(key)) for key in keys)
+
+
+def check_goal_gate(state: dict[str, Any], warnings: list[str]) -> None:
+    warning = goal_gate_warning(state)
+    if warning:
+        warnings.append(warning)
 
 
 def check_hook_cache_drift(

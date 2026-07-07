@@ -1,15 +1,15 @@
 {
   "archive": {
-    "bytes": 135642,
+    "bytes": 137347,
     "path": "scripts/devflow_runtime.pyz",
-    "sha256": "6b587ab22826d11d52f32d1e2b22d34e75b35e687bf8492598abd48b2ed91b2b"
+    "sha256": "a5418eb8965e5a94e241f99782b31efc93064033293f22cd975446088914dae3"
   },
   "buildCommand": [
     "python3",
     "dev/scripts/package_devflow_release_runtime.py"
   ],
   "schemaVersion": 1,
-  "sourceCommit": "a5f9fb26ff51abb789ed64cb3bdc4e19a7e1886a",
+  "sourceCommit": "1ce2e89e58761fd644d6365e7e43cd4ec64182f2",
   "sources": [
     {
       "bytes": 1866,
@@ -532,6 +532,11 @@
       "sha256": "399fa74aeab31bb54be7d6e062fdeec3be92f1be6a2926b2f102449a40963f6f"
     },
     {
+      "bytes": 3615,
+      "path": "dev/plugins/dev-flow/scripts/workflow_goal_gate.py",
+      "sha256": "33dffafef310b8b637e8c828c97a5afcf30a82928cc843d9e7d252fce43348d8"
+    },
+    {
       "bytes": 3171,
       "path": "dev/plugins/dev-flow/scripts/workflow_goal_quality.py",
       "sha256": "bdc2639dfe679ed2a4178effd777aeddb0de5b54637540f5db86c2ebe6d05065"
@@ -547,9 +552,9 @@
       "sha256": "775621c30dd6c2dad04bc84f03a39f05e0b2512ebbac5474a97b635935929f61"
     },
     {
-      "bytes": 2702,
+      "bytes": 2828,
       "path": "dev/plugins/dev-flow/scripts/workflow_lib.py",
-      "sha256": "0cdf017eafc8f7cb8fc43e26230a9b978a0bd907bfa9bc5c1bfdb269e890d676"
+      "sha256": "e5ef13e612e2b92eef701a84931b1fbe1cc7a2cbf1ec11efb199e06d0c1d2560"
     },
     {
       "bytes": 7956,
@@ -602,9 +607,9 @@
       "sha256": "b1460cbeeb8caed9518ad3c41b81f8bf8e00b814573d0e5b34db9f709f2fb74d"
     },
     {
-      "bytes": 9104,
+      "bytes": 9797,
       "path": "dev/plugins/dev-flow/scripts/workflow_state.py",
-      "sha256": "5419903cac503ea12b074ca01ba73d402d58c475d43b8a1b196e5e50f0305ec2"
+      "sha256": "5812fd1a347ca5be281f51c75a5101e8bb93c3f11743d81889280681b16c2715"
     },
     {
       "bytes": 862,
@@ -612,9 +617,9 @@
       "sha256": "658274548eb86c026474adbe9b7d7bd4e6f4dbd0d4fc8f41199d076899d61f29"
     },
     {
-      "bytes": 5993,
+      "bytes": 6242,
       "path": "dev/plugins/dev-flow/scripts/workflow_validate.py",
-      "sha256": "b4a84af7c466fbb8a19582bb23cb9da88ed6785ab79a5dd32fbdf83a8a7811c9"
+      "sha256": "643f9e368e687bdd27d664476edca6b600e399dfbc8907f8fcc39bb01a8f5988"
     },
     {
       "bytes": 1783,

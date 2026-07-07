@@ -83,6 +83,14 @@ GSD and OpenSpec are activated project-locally through `.agents/skills/`; do not
   development task is long-running, multi-slice, migration or release oriented,
   broad-refactor oriented, cross-context, subagent/delegation backed, or
   otherwise likely to lose its definition of done.
+- Use complexity and recovery cost to decide goal suitability. Score +2 for
+  multiple OpenSpec changes, +2 for multiple capability slices, +2 for phrases
+  like "continue/依次/持续/until human/直到需要人工介入", +1 for data model,
+  persistence, integration, migration, AI/API, or platform collection, +1 for
+  archive/release gates, and +1 for expected interruption or context
+  compaction. Score >=3 requires routing through `define-goal` and setting
+  `/goal <objective>` or explicitly recording a skip reason; score 1-2
+  recommends a goal.
 - `define-goal` owns active goal checks, goal-tool calls, objective wording,
   verification evidence, scope boundaries, non-goals, and stop conditions.
 - Apply the Goal Quality Gate before goal creation: the candidate objective

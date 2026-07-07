@@ -32,6 +32,15 @@ based on current state, risk, approval, and validation cost.
   evidence, scope boundaries, and stop conditions before goal creation. Apply
   the Goal Quality Gate before goal creation: the candidate objective must also
   include outcome, non-goals, and a pass/fail success threshold.
+- Treat implementation complexity and recovery cost as Goal Suitability inputs,
+  not calendar estimates. Require a goal when complexity score is 3 or higher:
+  +2 multiple OpenSpec changes, +2 multiple capability slices, +2 language such
+  as "continue/依次/持续/until human/直到需要人工介入", +1 data model,
+  persistence, integration, migration, AI/API, or platform collection, +1
+  archive/release gate, +1 expected interruption or context compaction. Score
+  1-2 recommends a goal; score 0 does not. Record required gates in
+  `.planning/STATE.md` under `goal_gate` and pause for `/goal <objective>` or
+  an explicit skip with reason.
 - After `define-goal` shapes the objective, use `/goal <objective>` in a Codex
   app, IDE, or CLI composer. Use `/goal`, `/goal pause`, `/goal resume`, and
   `/goal clear` to inspect or control it; if unavailable, enable

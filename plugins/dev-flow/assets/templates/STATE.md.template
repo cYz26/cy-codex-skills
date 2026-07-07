@@ -52,6 +52,12 @@ context_management:
     - risks_recorded
     - validation_recorded_if_applicable
 
+goal_gate:
+  required: {{goal_gate_required}}
+  status: {{goal_gate_status}}
+  reason: {{goal_gate_reason}}
+  suggested_goal: {{goal_gate_suggested_goal}}
+
 context_health:
   last_report: {{last_context_health_report}}
   last_risk: {{last_context_health_risk}}

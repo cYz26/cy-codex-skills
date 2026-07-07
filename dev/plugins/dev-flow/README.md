@@ -94,6 +94,15 @@ otherwise likely to lose its definition of done. `define-goal` owns the active
 goal check, objective quality bar, verification evidence, scope boundaries, and
 stop conditions before goal creation.
 
+Use implementation complexity and recovery cost as Goal Suitability inputs.
+Score +2 for multiple OpenSpec changes, +2 for multiple capability slices, +2
+for language such as "continue", "依次", "持续", "until human", or
+"直到需要人工介入", +1 for data model, persistence, integration, migration,
+AI/API, or platform collection surfaces, +1 for archive/release gates, and +1
+for expected interruption or context compaction. Score 3 or higher requires a
+Goal Mode Prompt and a pause for `/goal <objective>` or an explicit skip reason;
+score 1-2 recommends a goal; score 0 does not require one.
+
 Before a goal is created, apply the Goal Quality Gate: the candidate objective
 must name the outcome, verification evidence, scope boundaries, non-goals,
 success threshold, and stop conditions. Use

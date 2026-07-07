@@ -16,6 +16,7 @@ SCRIPTS = PLUGIN_ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 from workflow_doctor import doctor_workflow
+from workflow_goal_gate import goal_complexity_score
 from workflow_hooks import hook_response
 from workflow_state import parse_state, update_state
 from workflow_validate import validate_workflow_state
@@ -210,6 +211,52 @@ Keep this durable next action.
 
         self.assertTrue(validation["ok"], validation)
         self.assertFalse(any("source/cache hook drift" in issue for issue in validation["issues"]))
+
+    def test_goal_gate_warning_when_required_goal_is_missing(self):
+        repo = self.make_repo()
+        self.write_state(
+            repo,
+            """  compact_status: not_needed
+  compact_skip_reason: none
+  last_compact_result_file: none
+goal_gate:
+  required: true
+  status: missing
+  reason: long_running_multi_slice_execution
+  suggested_goal: "/goal Complete DevFlow work with validation evidence and stop for human gates."
+""",
+        )
+
+        validation = validate_workflow_state(repo)
+        doctor = doctor_workflow(repo)
+
+        self.assertTrue(validation["ok"], validation)
+        self.assertTrue(
+            any("Goal Suitability Gate requires an active goal" in warning for warning in validation["warnings"])
+        )
+        self.assertEqual(doctor["diagnosis"], "needs repair")
+        self.assertTrue(any("Goal Suitability Gate requires an active goal" in issue for issue in doctor["issues"]))
+
+    def test_goal_complexity_score_requires_goal_for_long_running_multi_slice_work(self):
+        report = goal_complexity_score(
+            open_spec_changes=2,
+            capability_slices=3,
+            prompt_text="依次进行接下来的开发和验证，直到需要人工介入或确认",
+            governed_surfaces=["data model", "AI"],
+            archive_or_release_gate=True,
+            resume_or_compaction=True,
+        )
+
+        self.assertTrue(report["required"], report)
+        self.assertEqual(report["status"], "required")
+        self.assertGreaterEqual(report["score"], report["threshold"])
+
+    def test_goal_complexity_score_does_not_require_goal_for_narrow_work(self):
+        report = goal_complexity_score(prompt_text="Run the focused test once.")
+
+        self.assertFalse(report["required"], report)
+        self.assertFalse(report["recommended"], report)
+        self.assertEqual(report["score"], 0)
 
     def test_hook_response_emits_codex_stop_schema_for_stop_warnings(self):
         repo = self.make_repo()

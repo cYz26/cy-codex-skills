@@ -114,6 +114,10 @@ def default_state_values(project_mode: str, change_id: str, change_status: str =
         "last_context_health_decision": "none",
         "last_goal_status": "unknown",
         "goal_summary": "none",
+        "goal_gate_required": False,
+        "goal_gate_status": "not_required",
+        "goal_gate_reason": "none",
+        "goal_gate_suggested_goal": "none",
     }
 
 
@@ -185,6 +189,15 @@ def merged_state_values(existing: dict[str, Any], overrides: dict[str, Any]) -> 
         overrides.get("compact_skip_reason", context.get("compact_skip_reason", "none"))
     )
     values["compact_error"] = str(overrides.get("compact_error", context.get("compact_error", "none")))
+    goal_gate = existing.get("goal_gate", {})
+    values["goal_gate_required"] = bool(
+        overrides.get("goal_gate_required", goal_gate.get("required", False))
+    )
+    values["goal_gate_status"] = str(overrides.get("goal_gate_status", goal_gate.get("status", "not_required")))
+    values["goal_gate_reason"] = str(overrides.get("goal_gate_reason", goal_gate.get("reason", "none")))
+    values["goal_gate_suggested_goal"] = str(
+        overrides.get("goal_gate_suggested_goal", goal_gate.get("suggested_goal", "none"))
+    )
     health = existing.get("context_health", {})
     values["last_context_health_report"] = str(
         overrides.get("last_context_health_report", health.get("last_report", "none"))
