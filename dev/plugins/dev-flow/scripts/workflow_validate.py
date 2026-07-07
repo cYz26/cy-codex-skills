@@ -75,6 +75,12 @@ def check_agents_guidance(repo: Path, issues: list[str], warnings: list[str]) ->
 
 def missing_agents_guidance(text: str) -> list[str]:
     required_markers = {
+        "Workflow Ownership": "## Workflow Ownership",
+        "Project Control Plane": "## Project Control Plane",
+        "Superpowers Artifact Mapping": "## Superpowers Artifact Mapping",
+        "GSD/OpenSpec Skills": "## GSD/OpenSpec Skills",
+        "Brainstorm and Planning Flow": "## Brainstorm and Planning Flow",
+        "Goal Workflow": "## Goal Workflow",
         "AI Coding Planning Rules": "AI Coding Planning Rules",
         "Target State": "Target State",
         "Completion Contract": "Completion Contract",
@@ -87,6 +93,10 @@ def missing_agents_guidance(text: str) -> list[str]:
         "Superpowers specs mapping": "docs/superpowers/specs",
         "Superpowers plans mapping": "docs/superpowers/plans",
         "canonical artifact guidance": "canonical",
+        "Workflow Mode Routing": "## Workflow Mode Routing",
+        "Plugin Eval Gate": "## Plugin Eval Gate",
+        "Local Reference Update Reminder": "## Local Reference Update Reminder",
+        "DevFlow Refresh Workflow": "## DevFlow Refresh Workflow",
     }
     return [label for label, marker in required_markers.items() if marker not in text]
 

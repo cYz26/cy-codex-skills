@@ -225,6 +225,30 @@ asset sync, installed plugin cache refresh needs, and project-local skill links
 migration. Apply mode requires explicit update intent or confirmation; record any
 skipped local reference update with reason and residual risk.
 
+## DevFlow Refresh Workflow
+
+Use `dev-flow-refresh` when DevFlow has upgraded, when the local/global DevFlow
+plugin installation or installed cache needs refresh, or when project-local
+DevFlow workflow configuration needs refresh.
+
+- Refresh global DevFlow first, then project-local workflow configuration.
+- Start with the targeted local plugin refresh
+  `codex plugin add dev-flow@cy-codex-skills --json` unless the user explicitly
+  asks for the full updater workflow.
+- Verify source/cache freshness with `doctor_workflow.py --check-cache-drift`
+  or `codex_auto_update_plugins_skills.py --json` before claiming local runtime
+  freshness.
+- Run project diagnostics before applying project changes:
+  `plugin_project_migration.py`, `validate_workflow_state.py`,
+  `doctor_workflow.py --check-cache-drift`, `scaffold_workflow.py --dry-run`,
+  and `git status`.
+- Treat `AGENTS.md.generated` as a merge-required candidate. Compare durable
+  workflow rules with active `AGENTS.md`; merge only durable routing or policy
+  changes and preserve project-specific guidance.
+- Ordinary skill-link refresh may use `activate_project_dependencies.py
+  --refresh-project-skills`; legacy `.codex/skills` cleanup and conflict
+  resolution require explicit approval.
+
 ## Execution Rules
 
 - Execute one task at a time unless explicitly instructed otherwise.

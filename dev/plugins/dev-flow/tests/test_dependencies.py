@@ -25,6 +25,7 @@ from dependency_support import (
 import codex_auto_update_plugins_skills as auto_update
 from workflow_dependency_catalog import LEGACY_OPENSPEC_SKILLS
 from workflow_dependencies import dependency_report
+from workflow_validate import missing_agents_guidance
 from workflow_project_activation import activate_project_dependencies
 from workflow_project_skill_install import ensure_project_local_skills
 
@@ -1258,6 +1259,11 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
             "validate_workflow_state.py",
             "AGENTS.md.generated",
             "AGENTS.md",
+            "AGENTS Drift Gate",
+            "required",
+            "durable workflow rules",
+            "AGENTS status",
+            "generated-deferred",
             ".codex/skills",
             "git status",
         ]:
@@ -1267,6 +1273,37 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertIn("before project", lowered)
         self.assertIn("do not overwrite", lowered)
         self.assertIn("explicit", lowered)
+
+    def test_missing_agents_guidance_reports_current_durable_devflow_sections(self):
+        text = "\n".join(
+            [
+                "## Purpose",
+                "## AI Coding Planning Rules",
+                "Target State",
+                "Completion Contract",
+                "Capability Slices",
+                "Execution Ledger",
+                "Acceptance Criteria",
+                "Validation Commands",
+                "Final Verification",
+                "openspec/changes",
+                "docs/superpowers/specs",
+                "docs/superpowers/plans",
+                "canonical",
+            ]
+        )
+
+        missing = missing_agents_guidance(text)
+
+        for label in [
+            "Goal Workflow",
+            "Workflow Mode Routing",
+            "Plugin Eval Gate",
+            "Local Reference Update Reminder",
+            "DevFlow Refresh Workflow",
+        ]:
+            with self.subTest(label=label):
+                self.assertIn(label, missing)
 
     def test_agent_reach_is_excluded_from_external_update_plan(self):
         codex_home = self.make_codex_home()

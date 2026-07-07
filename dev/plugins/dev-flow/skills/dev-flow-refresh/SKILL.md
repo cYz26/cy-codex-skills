@@ -94,6 +94,24 @@ cleanup or conflict resolution.
 
 Do not overwrite active `AGENTS.md` as part of ordinary skill-link refresh.
 
+## AGENTS Drift Gate
+
+AGENTS drift review is a required project refresh gate. Every DevFlow upgrade
+must evaluate whether durable workflow rules changed for each project. Do not
+rely only on `validate_workflow_state.py ok=true`;
+validation checks required markers, while `scaffold_workflow.py --dry-run`
+surfaces new template guidance that may need to be merged.
+
+Compare the dry-run `AGENTS.md.generated` candidate with the active
+`AGENTS.md` whenever it appears. Durable workflow rules include Workflow
+Ownership, Project Control Plane, Superpowers Artifact Mapping, GSD/OpenSpec
+routing, Brainstorm and Planning Flow, Goal Workflow, AI Coding Planning Rules,
+Workflow Mode Routing, Plugin Eval Gate, and Local Reference Update Reminder.
+
+Skill links, installed cache freshness, control-plane file creation, and
+official skill-layout migration do not by themselves require `AGENTS.md`
+changes.
+
 Treat `AGENTS.md.generated` as a merge-required candidate, not as active
 guidance. Update active `AGENTS.md` only when durable DevFlow workflow rules
 changed or `validate_workflow_state.py` reports missing guidance. Merge the
@@ -119,6 +137,11 @@ Report:
 - global DevFlow refresh command and cache/source result
 - projects refreshed, skipped, and why
 - files changed or generated
+- AGENTS status: unchanged, merged, generated-deferred, or conflict
+- AGENTS evidence: scaffold dry-run result, validation result, and whether
+  `AGENTS.md.generated` remains
 - validation and doctor results
 - remaining `migration_pending`, duplicate, conflict, or manual-review items
+- residual risk when AGENTS merge is deferred: the project may not inherit the
+  latest DevFlow durable workflow rules
 - whether Codex restart or a new session is needed to load project-local skills

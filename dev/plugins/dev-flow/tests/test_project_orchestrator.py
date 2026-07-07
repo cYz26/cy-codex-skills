@@ -509,6 +509,22 @@ class ProjectOrchestratorTests(unittest.TestCase):
                 self.assertIn("installed plugin cache", normalized)
                 self.assertIn("project-local skill links", normalized)
 
+    def test_devflow_refresh_workflow_is_durable_agents_guidance(self):
+        paths = {
+            "root": REPO_ROOT / "AGENTS.md",
+            "dev-template": PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template",
+            "release-template": RELEASE_PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template",
+        }
+        for label, path in paths.items():
+            text = path.read_text()
+            normalized = normalized_text(text)
+            with self.subTest(path=label):
+                self.assertIn("## DevFlow Refresh Workflow", text)
+                self.assertIn("dev-flow-refresh", text)
+                self.assertIn("AGENTS.md.generated", text)
+                self.assertIn("durable workflow rules", normalized)
+                self.assertIn("codex plugin add dev-flow@cy-codex-skills --json", text)
+
     def test_repair_guidance_is_systemic_first_before_minimal_fix(self):
         paths = {
             "root": REPO_ROOT / "AGENTS.md",

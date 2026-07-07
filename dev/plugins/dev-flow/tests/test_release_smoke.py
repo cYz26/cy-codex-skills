@@ -432,8 +432,21 @@ context_health:
         self.assertIn("plugin_project_migration.py", text)
         self.assertIn("activate_project_dependencies.py", text)
         self.assertIn("AGENTS.md.generated", text)
+        self.assertIn("AGENTS Drift Gate", text)
+        self.assertIn("durable workflow rules", text)
+        self.assertIn("AGENTS status", text)
         self.assertIn(".codex/skills", text)
         self.assertIn("git status", text)
+
+    def test_release_agents_template_includes_devflow_refresh_workflow(self):
+        text = (PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template").read_text()
+        normalized = normalized_text(text)
+
+        self.assertIn("## DevFlow Refresh Workflow", text)
+        self.assertIn("dev-flow-refresh", text)
+        self.assertIn("AGENTS.md.generated", text)
+        self.assertIn("durable workflow rules", normalized)
+        self.assertIn("codex plugin add dev-flow@cy-codex-skills --json", text)
 
     def test_release_subagent_strategy_is_packaged(self):
         project_orchestrator = (PLUGIN_ROOT / "skills" / "project-orchestrator" / "SKILL.md").read_text()
