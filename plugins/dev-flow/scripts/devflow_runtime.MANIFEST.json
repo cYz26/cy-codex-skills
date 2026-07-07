@@ -1,15 +1,15 @@
 {
   "archive": {
-    "bytes": 137347,
+    "bytes": 137358,
     "path": "scripts/devflow_runtime.pyz",
-    "sha256": "a5418eb8965e5a94e241f99782b31efc93064033293f22cd975446088914dae3"
+    "sha256": "73cfb9ffef2103a0c268da96baecf070e27392274f944c6e507ad10710ebe772"
   },
   "buildCommand": [
     "python3",
     "dev/scripts/package_devflow_release_runtime.py"
   ],
   "schemaVersion": 1,
-  "sourceCommit": "1ce2e89e58761fd644d6365e7e43cd4ec64182f2",
+  "sourceCommit": "fb42e3f67f4f90be71073bf3ee562bcde7c0a9e6",
   "sources": [
     {
       "bytes": 1866,
@@ -497,9 +497,9 @@
       "sha256": "da5fbad99af4b2d72971bda8d124618e52a592801ecb084b193f14c52a72b5a7"
     },
     {
-      "bytes": 1536,
+      "bytes": 1560,
       "path": "dev/plugins/dev-flow/scripts/workflow_dependency_catalog.py",
-      "sha256": "55bcbdfd2232ef599d274e56d7825bab57855660dd944c71539ab66d8ca831e7"
+      "sha256": "00f65a70a845ad09163d63011d6d54943be381926652ace0e75e5006cfff8659"
     },
     {
       "bytes": 7785,

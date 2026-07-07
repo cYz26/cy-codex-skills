@@ -154,6 +154,7 @@ context_health:
             "context-tool-audit",
             "codex-updater",
             "plugin-project-migration",
+            "dev-flow-refresh",
             "brainstorming",
             "writing-plans",
             "test-driven-development",
@@ -271,6 +272,7 @@ context_health:
             "context-tool-audit",
             "codex-updater",
             "plugin-project-migration",
+            "dev-flow-refresh",
         }
         for skill in implicit:
             policy = PLUGIN_ROOT / "skills" / skill / "agents" / "openai.yaml"
@@ -420,6 +422,18 @@ context_health:
         self.assertIn("plugin-install", text)
         self.assertIn("plugin-cache-verify", text)
         self.assertIn("do not check, update, or run Agent Reach", text)
+
+    def test_release_dev_flow_refresh_skill_is_packaged(self):
+        skill_path = PLUGIN_ROOT / "skills" / "dev-flow-refresh" / "SKILL.md"
+        text = skill_path.read_text()
+
+        self.assertIn("name: dev-flow-refresh", text)
+        self.assertIn("codex plugin add dev-flow@cy-codex-skills --json", text)
+        self.assertIn("plugin_project_migration.py", text)
+        self.assertIn("activate_project_dependencies.py", text)
+        self.assertIn("AGENTS.md.generated", text)
+        self.assertIn(".codex/skills", text)
+        self.assertIn("git status", text)
 
     def test_release_subagent_strategy_is_packaged(self):
         project_orchestrator = (PLUGIN_ROOT / "skills" / "project-orchestrator" / "SKILL.md").read_text()

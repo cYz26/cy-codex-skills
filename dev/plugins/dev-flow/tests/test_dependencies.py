@@ -553,6 +553,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertTrue((repo / ".agents" / "skills" / "context-tool-audit" / "SKILL.md").exists())
         self.assertTrue((repo / ".agents" / "skills" / "codex-updater" / "SKILL.md").exists())
         self.assertTrue((repo / ".agents" / "skills" / "plugin-project-migration" / "SKILL.md").exists())
+        self.assertTrue((repo / ".agents" / "skills" / "dev-flow-refresh" / "SKILL.md").exists())
         self.assertTrue((repo / ".agents" / "skills" / "brainstorming" / "SKILL.md").exists())
         self.assertTrue((repo / ".agents" / "skills" / "writing-plans" / "SKILL.md").exists())
         self.assertTrue((repo / ".agents" / "skills" / "test-driven-development" / "SKILL.md").exists())
@@ -1225,6 +1226,47 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertIn("plugin-cache-verify", text)
         self.assertIn("Agent Reach", text)
         self.assertIn("do not check, update, or run Agent Reach", text)
+
+    def test_dev_flow_refresh_skill_is_packaged_with_trigger_language(self):
+        skill_path = PLUGIN_ROOT / "skills" / "dev-flow-refresh" / "SKILL.md"
+        text = skill_path.read_text()
+        lowered = text.lower()
+
+        self.assertIn("name: dev-flow-refresh", text)
+        self.assertIn("Use when", text)
+        for phrase in [
+            "devflow",
+            "dev-flow",
+            "upgrade",
+            "local/global devflow",
+            "active projects",
+            "project-local",
+        ]:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, lowered)
+
+    def test_dev_flow_refresh_skill_encodes_global_first_project_second_sop(self):
+        text = (PLUGIN_ROOT / "skills" / "dev-flow-refresh" / "SKILL.md").read_text()
+        lowered = text.lower()
+
+        for phrase in [
+            "codex plugin add dev-flow@cy-codex-skills --json",
+            "doctor_workflow.py",
+            "plugin_project_migration.py",
+            "activate_project_dependencies.py",
+            "scaffold_workflow.py",
+            "validate_workflow_state.py",
+            "AGENTS.md.generated",
+            "AGENTS.md",
+            ".codex/skills",
+            "git status",
+        ]:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, text)
+        self.assertIn("global", lowered)
+        self.assertIn("before project", lowered)
+        self.assertIn("do not overwrite", lowered)
+        self.assertIn("explicit", lowered)
 
     def test_agent_reach_is_excluded_from_external_update_plan(self):
         codex_home = self.make_codex_home()

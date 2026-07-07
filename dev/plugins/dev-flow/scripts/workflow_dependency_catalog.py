@@ -17,6 +17,7 @@ PROJECT_ORCHESTRATOR_SKILLS = [
     "context-tool-audit",
     "codex-updater",
     "plugin-project-migration",
+    "dev-flow-refresh",
 ]
 
 REQUIRED_SUPERPOWERS_PROJECT_SKILLS = [

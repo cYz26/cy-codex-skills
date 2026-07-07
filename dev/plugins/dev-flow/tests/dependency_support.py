@@ -186,6 +186,7 @@ class DependencyFixtureMixin:
                     "context-tool-audit",
                     "codex-updater",
                     "plugin-project-migration",
+                    "dev-flow-refresh",
                 ]
             )
         for skill in skills:

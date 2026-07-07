@@ -171,6 +171,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
             "context-health-check",
             "codex-updater",
             "plugin-project-migration",
+            "dev-flow-refresh",
         }
         self.assertEqual({path.name for path in (PLUGIN_ROOT / "skills").iterdir() if path.is_dir()}, expected)
         for skill in expected:
@@ -213,6 +214,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
         self.assertIn("capability-research", PROJECT_ORCHESTRATOR_SKILLS)
         self.assertIn("ai-native-tech-plan", PROJECT_ORCHESTRATOR_SKILLS)
         self.assertIn("claude-code-delegate", PROJECT_ORCHESTRATOR_SKILLS)
+        self.assertIn("dev-flow-refresh", PROJECT_ORCHESTRATOR_SKILLS)
 
     def test_decision_grilling_helper_routes_ambiguity_and_skips_approved_work(self):
         scripts = PLUGIN_ROOT / "scripts"
