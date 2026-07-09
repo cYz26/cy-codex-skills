@@ -5,7 +5,9 @@ description: Use when checkpointing or preparing /compact at workflow boundaries
 
 # Checkpoint Compact Gate
 
-Use after durable context is written at a major boundary. Compact is blocking only when the work will continue in the current thread.
+Use after durable context is written at a major boundary. Compact protects
+recoverability; it should not interrupt otherwise-continuable work solely to ask
+for manual `/compact`.
 
 ## Procedure
 
@@ -13,12 +15,20 @@ Use after durable context is written at a major boundary. Compact is blocking on
 2. Run `scripts/create_checkpoint.py --repo <repo> --boundary <boundary> --next-stage <stage> --json`.
 3. Run `scripts/validate_checkpoint.py --repo <repo> --checkpoint <file> --json`.
 4. Run `scripts/compact_recommendation.py --repo <repo> --boundary <boundary> --next-stage <stage> --json`.
-5. If recommended, ask for `/compact`; otherwise continue with the updated state because compact is optional or not needed.
+5. If recommended, prefer `/compact` at a stable boundary. If the runtime can
+   auto-compact or the task can continue safely from the checkpoint, continue
+   and let PostCompact recovery record completion when it happens.
 
 ## Preconditions
 
-Checkpoint only when durable context, next action or stopping-point intent, risks, and verification are recorded. If validation fails, keep compaction blocked.
+Checkpoint only when durable context, next action or stopping-point intent,
+risks, and verification are recorded. If checkpoint validation fails, block
+continuation until the checkpoint is repaired.
 
 ## Status
 
-`pending` blocks continuation until compact completes or a skip reason is recorded. `not_needed` means the checkpoint is a stable stopping point and state is already updated. Skills cannot execute interactive `/compact`.
+`pending` means compact is recommended and recoverable; it is an advisory
+continuation signal, not a default human-interruption gate. `not_needed` means
+the checkpoint is a stable stopping point and state is already updated. `failed`
+or `blocked` means the compact/checkpoint gate needs action. Skills cannot
+execute interactive `/compact`.

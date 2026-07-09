@@ -85,6 +85,37 @@ class ReleaseSmokeTests(unittest.TestCase):
     def test_runtime_archive_is_packaged(self):
         self.assertTrue(RUNTIME_ARCHIVE.exists())
 
+    def test_pending_compact_stop_policy_is_advisory_in_packaged_runtime(self):
+        with tempfile.TemporaryDirectory(prefix="devflow-release-pending-compact-") as tmp:
+            repo = Path(tmp)
+            (repo / "AGENTS.md").write_text("Project rules\n")
+            (repo / ".planning").mkdir()
+            (repo / ".planning" / "STATE.md").write_text(
+                """---
+workflow_version: 0.3.0
+project_mode: brownfield
+current_stage: executing
+gates:
+  workflow_initialized: true
+context_management:
+  compact_policy: checkpoint_boundary
+  compact_status: pending
+---
+# Workflow State
+"""
+            )
+
+            result = subprocess.run(
+                ["python3", str(PLUGIN_ROOT / "scripts" / "stop_checkpoint_policy.py")],
+                input=json.dumps({"cwd": str(repo)}),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "", result.stdout)
+
     def test_subagent_and_repair_guidance_is_packaged(self):
         readme = (PLUGIN_ROOT / "README.md").read_text()
         self.assertIn("## Repair Solution Discipline", readme)

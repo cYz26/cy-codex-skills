@@ -1,4 +1,6 @@
+import json
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -10,6 +12,7 @@ SCRIPTS = PLUGIN_ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 from workflow_checkpoint_validate import validate_checkpoint
+from devflow_stop_hook import checkpoint_stop_check
 from workflow_doctor import doctor_workflow
 from workflow_validate import validate_workflow_state
 
@@ -125,6 +128,37 @@ Fixture state.
                         any("compact_status" in warning for warning in validation["warnings"]),
                         validation,
                     )
+
+    def test_pending_compact_does_not_emit_stop_block_response(self):
+        repo = self.make_repo(compact_status="pending")
+
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS / "stop_checkpoint_policy.py")],
+            input=json.dumps({"cwd": str(repo)}),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result)
+        self.assertEqual(result.stdout.strip(), "", result.stdout)
+        self.assertEqual(result.stderr.strip(), "", result.stderr)
+
+    def test_aggregate_stop_checkpoint_check_treats_pending_compact_as_advisory(self):
+        pending_repo = self.make_repo(compact_status="pending")
+
+        pending = checkpoint_stop_check(pending_repo)
+
+        self.assertTrue(pending["ok"], pending)
+        self.assertEqual(pending["status"], "pending")
+        self.assertIn("advisory", pending["detail"])
+
+        for status in ("failed", "blocked"):
+            with self.subTest(status=status):
+                broken = checkpoint_stop_check(self.make_repo(compact_status=status))
+                self.assertFalse(broken["ok"], broken)
+                self.assertEqual(broken["status"], status)
+                self.assertIn("requires action", broken["detail"])
 
     def test_hand_written_checkpoint_with_required_sections_still_requires_canonical_frontmatter(self):
         repo = self.make_repo()

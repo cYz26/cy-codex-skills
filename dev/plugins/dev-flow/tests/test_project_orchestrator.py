@@ -1119,7 +1119,9 @@ class ProjectOrchestratorTests(unittest.TestCase):
 
         self.assertTrue(checkpoint["compact_recommended"])
         self.assertEqual(checkpoint["compact_status"], "pending")
-        self.assertIn("Run `/compact` before continuing", (repo / checkpoint["checkpoint_file"]).read_text())
+        checkpoint_text = (repo / checkpoint["checkpoint_file"]).read_text()
+        self.assertIn("Compact is recommended", checkpoint_text)
+        self.assertNotIn("Run `/compact` before continuing", checkpoint_text)
 
     def test_validate_checkpoint_reports_missing_required_sections(self):
         repo = self.make_repo("greenfield-empty")
@@ -1170,14 +1172,14 @@ class ProjectOrchestratorTests(unittest.TestCase):
         legacy_off = run_script("pre_edit_policy.py", input_text=payload)
         self.assertEqual(legacy_off.stdout.strip(), "")
 
-    def test_checkpoint_hooks_warn_on_pending_compact(self):
+    def test_checkpoint_stop_policy_allows_pending_compact_advisory(self):
         repo = self.make_repo("greenfield-empty")
         run_json("scaffold_workflow.py", "--repo", str(repo), "--json")
         self.create_pending_checkpoint(repo)
         payload = json.dumps({"cwd": str(repo), "tool_name": "Stop", "tool_input": {}})
-        warning = run_script("stop_checkpoint_policy.py", input_text=payload)
-        self.assertEqual(warning.returncode, 0)
-        self.assertIn("/compact", warning.stdout)
+        advisory = run_script("stop_checkpoint_policy.py", input_text=payload)
+        self.assertEqual(advisory.returncode, 0)
+        self.assertEqual(advisory.stdout.strip(), "")
 
     def test_record_compact_result_preserves_raw_payload_and_clears_gate(self):
         repo = self.make_repo("greenfield-empty")

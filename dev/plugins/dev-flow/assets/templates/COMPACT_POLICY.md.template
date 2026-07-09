@@ -13,10 +13,13 @@ Compact only at major workflow boundaries after durable project context is writt
 
 ## Instruction
 
-When a checkpoint reports `compact_status: pending`, run `/compact` in Codex CLI before continuing in the
-current thread. When a checkpoint reports `compact_status: not_needed`, the task is at a stopping point and
-state is already updated; compact is optional before starting a new thread or using the checkpoint as handoff
-context.
+When a checkpoint reports `compact_status: pending`, compact is recommended for
+context hygiene and recoverability. Prefer `/compact` at a stable boundary, but
+do not interrupt otherwise-continuable work solely to ask for manual compact
+when automatic compaction/recovery is available and repository checkpoint files
+are durable. When a checkpoint reports `compact_status: not_needed`, the task is
+at a stopping point and state is already updated; compact is optional before
+starting a new thread or using the checkpoint as handoff context.
 
 When an external API or harness runs compaction for a pending gate, record the returned payload with `record_compact_result.py`.
 The compact record is evidence for the gate; repository files remain the source of truth.

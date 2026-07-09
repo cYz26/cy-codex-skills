@@ -90,7 +90,8 @@ def normalize_stage(next_stage: str | None) -> str:
 
 def recommendation(should_compact: bool, reason: str, next_stage: str, continuation_required: bool) -> dict[str, Any]:
     instruction = (
-        f"Run `/compact` before continuing to {next_stage}."
+        f"Compact is recommended before {next_stage}; run `/compact` at a stable boundary "
+        "or continue from the checkpoint if automatic compaction/recovery is available."
         if should_compact
         else "State is updated. Compact is optional before starting a new thread or handoff."
     )

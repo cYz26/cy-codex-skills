@@ -9,6 +9,7 @@ from typing import Any
 
 from release_promotion_gate import run_gate as release_promotion_run_gate
 from workflow_context_health import context_health_check
+from workflow_compact_state import SUPPORTED_COMPACT_STATUSES, supported_compact_statuses_text
 from workflow_hooks import hook_response
 from workflow_paths import repo_path
 from workflow_release_sync import sync_release_assets as release_sync_assets
@@ -85,12 +86,23 @@ def checkpoint_stop_check(repo: Path) -> dict[str, Any]:
     state = parse_state(repo)
     context = state.get("context_management", {})
     status = context.get("compact_status", "not_needed")
-    ok = status not in {"pending", "failed", "blocked"}
+    if status not in SUPPORTED_COMPACT_STATUSES:
+        return {
+            "id": "checkpoint",
+            "ok": False,
+            "status": status,
+            "detail": f"unsupported compact_status; must be one of: {supported_compact_statuses_text()}",
+        }
+    ok = status not in {"failed", "blocked"}
+    if status == "pending":
+        detail = "compact pending advisory; checkpoint state is acceptable"
+    else:
+        detail = "checkpoint state is acceptable" if ok else "checkpoint/compact gate requires action"
     return {
         "id": "checkpoint",
         "ok": ok,
         "status": status,
-        "detail": "checkpoint state is acceptable" if ok else "checkpoint/compact gate requires action",
+        "detail": detail,
     }
 
 

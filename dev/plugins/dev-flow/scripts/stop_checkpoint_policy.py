@@ -26,12 +26,7 @@ def main() -> int:
             event_name="Stop",
         )
     if status == "pending":
-        return hook_response(
-            repo,
-            "DevFlow: checkpoint is pending compact. "
-            "Run /compact before continuing to the next major stage.",
-            event_name="Stop",
-        )
+        return 0
     if status == "skipped" and context.get("compact_skip_reason") in (None, "", "none"):
         return hook_response(
             repo,
