@@ -60,7 +60,7 @@
       "taskOracleSha256": "1c95519ab2effc718d42fe16138499f4d498b1a938fd0a522275d93966de6288",
       "providerRef": "v1.1.0",
       "providerCommit": "d574778f94cf620fcc8ce741584093bc650a61d3",
-      "providerSha256": "3885640408ca689763753cfba58b5794e2b3f6d47fe53b74e68137de9b85e06c",
+      "providerSha256": "d37ae5e87cbd930e310b4674d75550a40c017588914fe98e9931015623768405",
       "skillSha256": {
         "code-review": "6a65cc61114f96db07ec41e3920e67c9c5bf70dd6e0901eb9460ebcb2bdc209f",
         "codebase-design": "a8d50abac5a4018f60e1d911d4b6f4e36454ca14d6c390c0695a578c7de65dad",

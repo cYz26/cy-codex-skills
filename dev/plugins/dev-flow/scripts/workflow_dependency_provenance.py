@@ -109,7 +109,7 @@ def catalog_only_dependency(
     source_path: Path,
     default_last_verified: str | None,
 ) -> dict[str, Any]:
-    return {
+    output = {
         "name": record["name"],
         "purpose": record.get("purpose"),
         "required": False,
@@ -117,8 +117,8 @@ def catalog_only_dependency(
         "expectedVersion": record.get("expectedVersion"),
         "installedVersion": None,
         "binaryPath": None,
-        "installCommand": list(record.get("installCommand", [])),
-        "recommendedCommand": list(record.get("updateCommand") or record.get("installCommand") or []),
+        "installCommand": [],
+        "recommendedCommand": [],
         "smokeCommand": [],
         "smokeResult": {
             "ok": True,
@@ -126,11 +126,24 @@ def catalog_only_dependency(
             "summary": "not selected; runtime was not inspected",
         },
         "source": record.get("source"),
-        "failureMode": record.get("failureMode"),
-        "fallbackOrBlocker": record.get("fallbackOrBlocker"),
+        "failureMode": None,
+        "fallbackOrBlocker": "",
         "lastVerified": record.get("lastVerified") or default_last_verified,
         "provenanceSource": str(source_path),
     }
+    for key in (
+        "minimumCompatibleVersion",
+        "recommendedVersion",
+        "strictProfileRequires",
+        "compatibilityPolicy",
+        "requiredSkills",
+        "strictRecommendedSkills",
+        "hookPolicy",
+        "requiredHooksWhenVersionAtLeast",
+    ):
+        if key in record:
+            output[key] = record[key]
+    return output
 
 
 def evaluate_dependency(

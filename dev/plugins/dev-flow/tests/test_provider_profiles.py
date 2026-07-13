@@ -68,9 +68,10 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
                 repo,
             )
 
-    def write_matching_matt_lock(self, repo, home):
+    def write_matching_matt_lock(self, repo):
+        root = repo / ".agents" / "skills"
         hashes = {
-            skill: hashlib.sha256((home / "skills" / skill / "SKILL.md").read_bytes()).hexdigest()
+            skill: hashlib.sha256((root / skill / "SKILL.md").read_bytes()).hexdigest()
             for skill in MATT_ALLOWED
         }
         return self.write_provider_lock(
@@ -80,10 +81,26 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
                     "repository": "mattpocock/skills",
                     "ref": "v1.1.0",
                     "commit": "d574778f94cf620fcc8ce741584093bc650a61d3",
+                    "sourceRoot": str(root.resolve()),
                     "skillHashes": hashes,
                 }
             },
         )
+
+    def write_project_matt_skills(self, repo, skills=MATT_ALLOWED):
+        root = repo / ".agents" / "skills"
+        for skill in skills:
+            source = (
+                PLUGIN_ROOT
+                / "fixtures"
+                / "provider-profiles"
+                / "lean-matt"
+                / ".agents"
+                / "skills"
+                / skill
+            )
+            shutil.copytree(source, root / skill, dirs_exist_ok=True)
+        return root
 
     def test_registry_declares_profiles_capabilities_and_side_effect_policy(self):
         module = self.provider_module()
@@ -211,6 +228,236 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertTrue(report["roadmapReady"], report)
         self.assertEqual(report["blockingReasons"], [])
         self.assertEqual(report["selectedProviders"], [])
+
+    def test_selected_lean_matt_rejects_global_only_pack(self):
+        module = self.provider_module()
+        home = self.make_codex_home(enable_plugin_eval=False, install_superpowers=False)
+        self.write_standalone_skills(home, MATT_ALLOWED)
+        repo = self.make_project_repo(
+            enable_superpowers=False,
+            enable_gsd=False,
+            methodology_profile="lean-matt",
+            roadmap_provider="none",
+        )
+
+        report = module.diagnose_provider_selection(
+            module.resolve_provider_selection(repo, home, {}), repo, home
+        )
+
+        matt = report["providers"]["mattpocock-skills"]
+        self.assertFalse(report["methodologyReady"], report)
+        self.assertEqual(matt["status"], "missing_capabilities")
+        self.assertEqual(matt["root"], str((repo / ".agents" / "skills").resolve()))
+        self.assertTrue(matt["globalPackPresent"])
+        self.assertEqual(matt["globalRoot"], str((home / "skills").resolve()))
+
+    def test_project_local_matt_pack_satisfies_selected_lean_profile(self):
+        module = self.provider_module()
+        home = self.make_codex_home(enable_plugin_eval=False, install_superpowers=False)
+        repo = self.make_project_repo(
+            enable_superpowers=False,
+            enable_gsd=False,
+            methodology_profile="lean-matt",
+            roadmap_provider="none",
+        )
+        project_root = self.write_project_matt_skills(repo)
+
+        report = module.diagnose_provider_selection(
+            module.resolve_provider_selection(repo, home, {}), repo, home
+        )
+
+        matt = report["providers"]["mattpocock-skills"]
+        self.assertTrue(report["methodologyReady"], report)
+        self.assertEqual(matt["status"], "ready")
+        self.assertEqual(matt["root"], str(project_root.resolve()))
+        self.assertFalse(matt["globalPackPresent"])
+
+    def test_selected_lean_matt_rejects_project_links_that_escape_to_global_pack(self):
+        module = self.provider_module()
+        home = self.make_codex_home(enable_plugin_eval=False, install_superpowers=False)
+        self.write_standalone_skills(home, MATT_ALLOWED)
+        repo = self.make_project_repo(
+            enable_superpowers=False,
+            enable_gsd=False,
+            methodology_profile="lean-matt",
+            roadmap_provider="none",
+        )
+        root = repo / ".agents" / "skills"
+        for skill in MATT_ALLOWED:
+            (root / skill).symlink_to(home / "skills" / skill, target_is_directory=True)
+
+        report = module.diagnose_provider_selection(
+            module.resolve_provider_selection(repo, home, {}), repo, home
+        )
+
+        matt = report["providers"]["mattpocock-skills"]
+        self.assertFalse(report["methodologyReady"], report)
+        self.assertEqual(matt["status"], "nonlocal_skill_route")
+        self.assertEqual(set(matt["nonLocalSkills"]), set(MATT_ALLOWED))
+
+    def test_selected_lean_matt_rejects_symlinked_project_skill_root(self):
+        module = self.provider_module()
+        home = self.make_codex_home(enable_plugin_eval=False, install_superpowers=False)
+        self.write_standalone_skills(home, MATT_ALLOWED)
+        repo = self.make_project_repo(
+            enable_superpowers=False,
+            enable_gsd=False,
+            methodology_profile="lean-matt",
+            roadmap_provider="none",
+        )
+        root = repo / ".agents" / "skills"
+        shutil.rmtree(root)
+        root.symlink_to(home / "skills", target_is_directory=True)
+
+        report = module.diagnose_provider_selection(
+            module.resolve_provider_selection(repo, home, {}), repo, home
+        )
+
+        matt = report["providers"]["mattpocock-skills"]
+        self.assertFalse(report["methodologyReady"], report)
+        self.assertEqual(matt["root"], str(repo.resolve() / ".agents" / "skills"))
+        self.assertEqual(matt["status"], "nonlocal_skill_route")
+        self.assertEqual(set(matt["nonLocalSkills"]), set(MATT_ALLOWED))
+
+    def test_lean_matt_nonlocal_route_never_plans_or_runs_installer(self):
+        home = self.make_codex_home(enable_plugin_eval=False, install_superpowers=False)
+        self.write_standalone_skills(home, MATT_ALLOWED)
+        repo = self.make_project_repo(
+            enable_superpowers=False,
+            enable_gsd=False,
+            methodology_profile="lean-matt",
+            roadmap_provider="none",
+            provider_selectors={
+                "mattpocock-skills": {"source_id": "mattpocock-skills-v1-1-0"}
+            },
+        )
+        root = repo / ".agents" / "skills"
+        shutil.rmtree(root)
+        root.symlink_to(home / "skills", target_is_directory=True)
+
+        report = activate_project_dependencies(
+            repo,
+            dry_run=True,
+            plugin_root=PLUGIN_ROOT,
+            codex_home=home,
+        )
+
+        self.assertEqual(
+            report["providers"]["mattpocock-skills"]["status"],
+            "nonlocal_skill_route",
+        )
+        self.assertFalse(
+            any("skills@1.5.9" in item["command"] for item in report["commands"]),
+            report["commands"],
+        )
+
+    def test_project_skill_install_uses_diagnosed_project_local_matt_root(self):
+        home = self.make_codex_home(enable_plugin_eval=False, install_superpowers=False)
+        repo = self.make_project_repo(
+            enable_superpowers=False,
+            enable_gsd=False,
+            methodology_profile="lean-matt",
+            roadmap_provider="none",
+        )
+        project_root = self.write_project_matt_skills(repo)
+        expected_hashes = {
+            skill: hashlib.sha256((project_root / skill / "SKILL.md").read_bytes()).hexdigest()
+            for skill in MATT_ALLOWED
+        }
+
+        report = ensure_project_local_skills(
+            repo,
+            PLUGIN_ROOT,
+            home,
+            dry_run=True,
+            selection={"effectiveMethodologyProfile": "lean-matt"},
+            provider_diagnosis={
+                "providers": {
+                    "mattpocock-skills": {
+                        "root": str(project_root),
+                        "implicitSkills": MATT_ALLOWED,
+                        "expectedSkillHashes": expected_hashes,
+                    }
+                }
+            },
+        )
+
+        items = [item for item in report["items"] if item["provider"] == "mattpocock-skills"]
+        self.assertEqual(len(items), len(MATT_ALLOWED))
+        self.assertTrue(all(item["status"] == "already-present" for item in items), items)
+        self.assertTrue(all(Path(item["source"]).is_relative_to(project_root) for item in items), items)
+
+    def test_standalone_superpowers_governance_uses_manifest_declared_hooks(self):
+        plugin_checks = importlib.import_module("workflow_dependency_plugin_checks")
+        home = self.make_codex_home(
+            enable_plugin_eval=False,
+            superpowers_version="6.1.1",
+            superpowers_channel="openai-curated-remote",
+        )
+
+        report = plugin_checks.superpowers_governance_report(home, strict=True)
+        checks = []
+        plugin_checks.add_superpowers_governance_checks(checks, home, strict=True)
+
+        self.assertEqual(report["recommendedVersion"], "6.1.1")
+        self.assertEqual(report["strictProfileRequires"], "5.1.3")
+        self.assertEqual(report["status"], "superpowers_ok")
+        self.assertFalse(report["sessionStartHookDeclared"])
+        self.assertFalse(any("session-start hook" in item["name"] for item in checks), checks)
+
+    def test_no_repo_dependency_check_treats_absent_superpowers_as_unselected(self):
+        home = self.make_codex_home(
+            enable_plugin_eval=False,
+            install_superpowers=False,
+        )
+
+        report = self.dependency_report_with_fake_path(home, None)
+
+        self.assertIsNone(report["selection"])
+        self.assertEqual(report["superpowers"]["status"], "absent_unselected")
+        self.assertEqual(report["superpowers"]["compatibility"], "unselected")
+        self.assertEqual(report["superpowers"]["nextAction"], "")
+
+    def test_no_repo_dependency_check_treats_present_superpowers_as_unselected(self):
+        home = self.make_codex_home(
+            enable_plugin_eval=False,
+            superpowers_version="6.1.1",
+            superpowers_channel="openai-curated-remote",
+        )
+
+        report = self.dependency_report_with_fake_path(home, None)
+
+        self.assertIsNone(report["selection"])
+        self.assertEqual(report["superpowers"]["status"], "available_unselected")
+        self.assertEqual(report["superpowers"]["compatibility"], "unselected")
+        self.assertEqual(report["superpowers"]["nextAction"], "")
+
+    def test_standalone_superpowers_governance_never_mixes_skill_roots(self):
+        plugin_checks = importlib.import_module("workflow_dependency_plugin_checks")
+        home = self.make_codex_home(
+            enable_plugin_eval=False,
+            superpowers_version="6.0.3",
+            superpowers_channel="superpowers-upstream-v6-0-3",
+        )
+        for skill in [
+            "using-superpowers",
+            "brainstorming",
+            "test-driven-development",
+            "verification-before-completion",
+        ]:
+            self.write_skill(home, "superpowers", skill, channel="openai-curated-remote")
+        current_root = self.write_plugin_manifest(
+            home,
+            "superpowers",
+            version="6.1.1",
+            channel="openai-curated-remote",
+        )
+
+        report = plugin_checks.superpowers_governance_report(home, strict=True)
+
+        self.assertEqual(report["pluginRoot"], str(current_root))
+        self.assertFalse(report["requiredSkills"]["writing-plans"])
+        self.assertEqual(report["status"], "superpowers_unsupported")
 
     def test_core_readiness_requires_hash_matched_project_devflow_skills(self):
         module = self.provider_module()
@@ -602,7 +849,6 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
     def test_matt_lock_hash_drift_blocks_lean_routing(self):
         module = self.provider_module()
         home = self.make_codex_home(enable_plugin_eval=False, install_superpowers=False)
-        self.write_standalone_skills(home, MATT_ALLOWED)
         repo = self.make_project_repo(
             enable_superpowers=False,
             enable_gsd=False,
@@ -617,8 +863,9 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
                 }
             },
         )
-        self.write_matching_matt_lock(repo, home)
-        with (home / "skills" / "tdd" / "SKILL.md").open("a") as handle:
+        project_root = self.write_project_matt_skills(repo)
+        self.write_matching_matt_lock(repo)
+        with (project_root / "tdd" / "SKILL.md").open("a") as handle:
             handle.write("\nlocal drift\n")
 
         report = module.diagnose_provider_selection(
@@ -631,7 +878,6 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
     def test_wrong_explicit_matt_selector_cannot_attest_same_named_skills(self):
         module = self.provider_module()
         home = self.make_codex_home(enable_plugin_eval=False, install_superpowers=False)
-        self.write_standalone_skills(home, MATT_ALLOWED)
         repo = self.make_project_repo(
             enable_superpowers=False,
             enable_gsd=False,
@@ -646,6 +892,7 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
                 }
             },
         )
+        self.write_project_matt_skills(repo)
 
         report = module.diagnose_provider_selection(
             module.resolve_provider_selection(repo, home, {}), repo, home
@@ -657,15 +904,17 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
     def test_unlocked_arbitrary_same_named_matt_skills_are_not_trusted(self):
         module = self.provider_module()
         home = self.make_codex_home(enable_plugin_eval=False, install_superpowers=False)
-        self.write_standalone_skills(home, MATT_ALLOWED)
-        for skill in MATT_ALLOWED:
-            (home / "skills" / skill / "SKILL.md").write_text(self.skill_fixture_text(skill))
         repo = self.make_project_repo(
             enable_superpowers=False,
             enable_gsd=False,
             methodology_profile="lean-matt",
             roadmap_provider="none",
         )
+        self.write_project_matt_skills(repo)
+        for skill in MATT_ALLOWED:
+            (repo / ".agents" / "skills" / skill / "SKILL.md").write_text(
+                self.skill_fixture_text(skill)
+            )
 
         report = module.diagnose_provider_selection(
             module.resolve_provider_selection(repo, home, {}), repo, home
@@ -677,16 +926,16 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
     def test_triggered_lean_matt_capability_rejects_foreign_project_skill_route(self):
         module = self.provider_module()
         home = self.make_codex_home(enable_plugin_eval=False, install_superpowers=False)
-        self.write_standalone_skills(home, MATT_ALLOWED)
         repo = self.make_project_repo(
             enable_superpowers=False,
             enable_gsd=False,
             methodology_profile="lean-matt",
             roadmap_provider="none",
         )
-        self.write_matching_matt_lock(repo, home)
+        self.write_project_matt_skills(repo)
+        self.write_matching_matt_lock(repo)
         target = repo / ".agents" / "skills" / "tdd" / "SKILL.md"
-        target.parent.mkdir(parents=True)
+        target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text("---\nname: tdd\ndescription: foreign source\n---\n")
 
         report = module.diagnose_provider_selection(
@@ -698,13 +947,12 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
 
         capability = report["capabilities"]["test-first-execution"]
         self.assertFalse(capability["ready"], report)
-        self.assertEqual(capability["projectSkills"]["tdd"]["status"], "source_conflict")
+        self.assertEqual(capability["projectSkills"]["tdd"]["status"], "source_untrusted")
         self.assertFalse(report["methodologyReady"], report)
         self.assertFalse(report["ok"], report)
 
     def test_lean_matt_activation_reports_existing_foreign_target_as_conflict(self):
         home = self.make_codex_home(enable_plugin_eval=False, install_superpowers=False)
-        self.write_standalone_skills(home, MATT_ALLOWED)
         repo = self.make_project_repo(
             enable_superpowers=False,
             enable_gsd=False,
@@ -921,7 +1169,8 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
             methodology_profile="lean-matt",
             roadmap_provider="none",
         )
-        self.write_matching_matt_lock(repo, home)
+        self.write_project_matt_skills(repo)
+        self.write_matching_matt_lock(repo)
 
         report = module.diagnose_provider_selection(
             module.resolve_provider_selection(repo, home, {}), repo, home
@@ -1088,9 +1337,146 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
         )
         matt_command = next(command for command in matt_commands if "skills@1.5.9" in command)
         self.assertIn("https://github.com/mattpocock/skills/tree/v1.1.0", matt_command)
-        self.assertIn("--global", matt_command)
+        self.assertNotIn("--global", matt_command)
         self.assertTrue(strict["local_skills"]["ok"], strict)
         self.assertTrue(matt["local_skills"]["ok"], matt)
+
+    def test_activation_bootstraps_matt_from_matching_lock_without_selector(self):
+        home = self.make_codex_home(enable_plugin_eval=False, install_superpowers=False)
+        repo = self.make_project_repo(
+            enable_superpowers=False,
+            enable_gsd=False,
+            methodology_profile="lean-matt",
+            roadmap_provider="none",
+            provider_selectors={},
+        )
+        self.write_project_matt_skills(repo)
+        self.write_matching_matt_lock(repo)
+        for skill in MATT_ALLOWED:
+            shutil.rmtree(repo / ".agents" / "skills" / skill)
+
+        report = activate_project_dependencies(
+            repo,
+            dry_run=True,
+            plugin_root=PLUGIN_ROOT,
+            codex_home=home,
+        )
+
+        matt_commands = [item["command"] for item in report["commands"]]
+        command = next(command for command in matt_commands if "skills@1.5.9" in command)
+        self.assertIn("https://github.com/mattpocock/skills/tree/v1.1.0", command)
+        self.assertNotIn("--global", command)
+
+    def test_activation_bootstraps_matt_from_unique_trusted_source(self):
+        home = self.make_codex_home(enable_plugin_eval=False, install_superpowers=False)
+        repo = self.make_project_repo(
+            enable_superpowers=False,
+            enable_gsd=False,
+            methodology_profile="lean-matt",
+            roadmap_provider="none",
+            provider_selectors={},
+        )
+        lock = repo / ".planning" / "devflow" / "providers.lock.json"
+        if lock.exists():
+            lock.unlink()
+
+        report = activate_project_dependencies(
+            repo,
+            dry_run=True,
+            plugin_root=PLUGIN_ROOT,
+            codex_home=home,
+        )
+
+        matt_commands = [item["command"] for item in report["commands"]]
+        command = next(command for command in matt_commands if "skills@1.5.9" in command)
+        self.assertIn("https://github.com/mattpocock/skills/tree/v1.1.0", command)
+        self.assertNotIn("--global", command)
+
+    def test_activation_keeps_ambiguous_matt_bootstrap_fail_closed(self):
+        activation_module = importlib.import_module("workflow_project_activation")
+        source = {
+            "provider": "mattpocock-skills",
+            "repository": "mattpocock/skills",
+            "ref": "v1.1.0",
+            "commit": "d574778f94cf620fcc8ce741584093bc650a61d3",
+            "installCommand": ["npx", "skills@1.5.9", "add", "fixture"],
+        }
+        commands = activation_module.official_install_command_records(
+            Path("/tmp/devflow-matt-ambiguous"),
+            plugin_root=PLUGIN_ROOT,
+            selection={
+                "effectiveMethodologyProfile": "lean-matt",
+                "effectiveRoadmapProvider": "none",
+                "providerSelectors": {},
+                "providerLock": {"providers": {}},
+            },
+            diagnosis={
+                "providers": {
+                    "mattpocock-skills": {
+                        "ready": False,
+                        "status": "missing_capabilities",
+                        "projectRootLocal": True,
+                        "nonLocalSkills": [],
+                    }
+                }
+            },
+            source_records={
+                "matt-a": source,
+                "matt-b": {**source, "commit": "b" * 40},
+            },
+        )
+
+        self.assertFalse(any("skills@1.5.9" in command["command"] for command in commands))
+
+    def test_lean_matt_apply_rediagnoses_project_local_installer_output(self):
+        activation_module = importlib.import_module("workflow_project_activation")
+        home = self.make_codex_home(enable_plugin_eval=False, install_superpowers=False)
+        repo = self.make_project_repo(
+            enable_superpowers=False,
+            enable_gsd=False,
+            methodology_profile="lean-matt",
+            roadmap_provider="none",
+            provider_selectors={
+                "mattpocock-skills": {"source_id": "mattpocock-skills-v1-1-0"}
+            },
+        )
+
+        def successful(command, _repo, dry_run, provenance_source=None, environment=None):
+            if "skills@1.5.9" in command:
+                self.write_project_matt_skills(repo)
+            return {
+                "ok": True,
+                "command": command,
+                "skipped": dry_run,
+                "provenanceSource": provenance_source,
+                "environment": environment or {},
+            }
+
+        with mock.patch.object(activation_module, "run_command", side_effect=successful):
+            report = activation_module.activate_project_dependencies(
+                repo,
+                dry_run=False,
+                plugin_root=PLUGIN_ROOT,
+                codex_home=home,
+            )
+
+        matt = report["providers"]["mattpocock-skills"]
+        matt_items = [
+            item for item in report["local_skills"]["items"]
+            if item["provider"] == "mattpocock-skills"
+        ]
+        lock = json.loads((repo / ".planning" / "devflow" / "providers.lock.json").read_text())
+        project_root = (repo / ".agents" / "skills").resolve()
+        self.assertTrue(report["ok"], report)
+        self.assertTrue(report["methodologyReady"], report)
+        self.assertEqual(matt["root"], str(project_root))
+        self.assertTrue(all(item["status"] == "already-present" for item in matt_items), matt_items)
+        self.assertTrue(all(Path(item["source"]).is_relative_to(project_root) for item in matt_items))
+        self.assertEqual(
+            lock["providers"]["mattpocock-skills"]["sourceRoot"],
+            str(project_root),
+        )
+        self.assertFalse((home / "skills").exists())
 
     def test_gsd_apply_bootstraps_lock_only_from_successful_pinned_install_and_rediagnoses(self):
         activation_module = importlib.import_module("workflow_project_activation")
@@ -1431,7 +1817,8 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
                     provider_selectors=selectors,
                 )
                 if methodology == "lean-matt":
-                    self.write_matching_matt_lock(repo, home)
+                    self.write_project_matt_skills(repo)
+                    self.write_matching_matt_lock(repo)
 
                 report = module.diagnose_provider_selection(
                     module.resolve_provider_selection(repo, home, {}), repo, home
@@ -1473,17 +1860,14 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
     def test_provider_availability_does_not_satisfy_canonical_evidence(self):
         module = self.provider_module()
         home = self.make_codex_home(enable_plugin_eval=False, install_superpowers=False)
-        self.write_standalone_skills(home, MATT_ALLOWED)
         repo = self.make_project_repo(
             enable_superpowers=False,
             enable_gsd=False,
             methodology_profile="lean-matt",
             roadmap_provider="none",
         )
-        self.write_matching_matt_lock(repo, home)
-        target = repo / ".agents" / "skills" / "tdd"
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.symlink_to(home / "skills" / "tdd", target_is_directory=True)
+        self.write_project_matt_skills(repo)
+        self.write_matching_matt_lock(repo)
 
         report = module.diagnose_provider_selection(
             module.resolve_provider_selection(repo, home, {}),

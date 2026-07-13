@@ -91,6 +91,42 @@ Do not auto-clean legacy `.codex/skills` duplicates, conflicts, or
 manual-review items. Report them separately and require explicit approval before
 cleanup or conflict resolution.
 
+## Safe Provider Cleanup
+
+Provider cleanup is a separate, explicit operation from ordinary refresh. Start
+with a dry-run and save the complete JSON report; it contains the exact verified
+project-local links, `planDigest`, preservation decisions, and per-link rollback
+commands:
+
+```bash
+python3 dev/plugins/dev-flow/scripts/activate_project_dependencies.py \
+  --repo <project> \
+  --skip-official-installs \
+  --deactivate-provider <provider-id> \
+  --dry-run \
+  --json > provider-cleanup-dry-run.json
+```
+
+After reviewing that exact plan, apply it only with the named authorization and
+the matching digest:
+
+```bash
+python3 dev/plugins/dev-flow/scripts/activate_project_dependencies.py \
+  --repo <project> \
+  --skip-official-installs \
+  --deactivate-provider <provider-id> \
+  --authorize-provider-cleanup <provider-id> \
+  --provider-cleanup-plan <planDigest> \
+  --apply \
+  --json > provider-cleanup-apply.json
+```
+
+Retain both JSON files as verification and rollback evidence. Rerun the dry-run
+after apply to confirm that no verified candidates remain. Preserve every
+unverified, copied, or manual-review path. Provider cleanup never deletes global
+provider configuration, installed plugin caches, or source caches; disabling a
+global plugin is a separate configuration change with its own authorization.
+
 ## AGENTS.md Boundary
 
 Do not overwrite active `AGENTS.md` as part of ordinary skill-link refresh.
@@ -105,8 +141,8 @@ surfaces new template guidance that may need to be merged.
 
 Compare the dry-run `AGENTS.md.generated` candidate with the active
 `AGENTS.md` whenever it appears. Durable workflow rules include Workflow
-Ownership, Project Control Plane, Superpowers Artifact Mapping, GSD/OpenSpec
-routing, Brainstorm and Planning Flow, Goal Workflow, AI Coding Planning Rules,
+Ownership, Project Control Plane, Methodology Artifact Mapping, GSD/OpenSpec
+routing, Decision and Planning Flow, Goal Workflow, AI Coding Planning Rules,
 Workflow Mode Routing, Plugin Eval Gate, and Local Reference Update Reminder.
 
 Skill links, installed cache freshness, control-plane file creation, and

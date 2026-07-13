@@ -8,16 +8,23 @@
   reversible migration, and measured default-switch gates.
 - scope_in: `dev/plugins/dev-flow`, DevFlow control-plane guidance, release
   sync/runtime verification plumbing, OpenSpec evidence, and isolated tests.
-- scope_out: live dependency installation, real project migration, cache
-  refresh, archive, and paid/live benchmark execution. Repository release sync,
-  commit, and push were subsequently authorized by the user.
+- scope_out: third-party provider installation, broad real-project migration,
+  global methodology-plugin or Matt-pack disable/removal, provider-cache
+  deletion, archive, and paid/live benchmark execution. Repository release
+  sync, named DevFlow cache refresh, explicit `core + none` persistence,
+  digest-bound verified legacy-link cleanup, commit, and push are authorized by
+  the user's continuation and optimization requests.
 - acceptance_criteria: Source tests and OpenSpec validation pass; `core + none`
-  has no universal Superpowers/GSD dependency; provider provenance is bound;
-  migration is dry-run-first and reversible; default remains core until the
-  benchmark and human gates pass.
+  has no universal Superpowers, Matt, or GSD dependency; stable routing and
+  ledger output uses capability ids; unselected providers are action-free;
+  Matt activation is project-local; cleanup is digest-authorized,
+  transactional, dry-run-first, and reversible; release/runtime/cache parity
+  is fresh; default remains core until the benchmark and human gates pass.
 - validation_commands: DevFlow unittest discovery, strict OpenSpec validation,
-  provider benchmark dry-run, target-scoped release sync dry-run, Plugin Eval,
-  updater dry-run, and `git diff --check`.
+  provider benchmark dry-run, release-promotion gate and post-sync dry-run,
+  packaged discovery/runtime verification, release-target Plugin Eval, named
+  installed-cache refresh, project diagnostics, digest-bound cleanup plus
+  idempotence check, updater/cache-drift checks, and `git diff --check`.
 - knowledge_update_target: none
 
 ## Tasks
@@ -33,7 +40,11 @@ execution. Use `not-delegated` for ordinary main-agent tasks.
 | DF-PA-4 | Strict-vs-lean benchmark framework | provider_benchmark_impl | `dev/plugins/dev-flow/evals/provider-profiles/**`, benchmark scripts/tests | `.planning/agent-tasks/20260710-devflow-provider-implementation-research.md` | 10-task/3-repeat dry-run and threshold tests | live run requires user approval | done |
 | DF-PA-5 | Live benchmark and default decision | unassigned | raw/model evidence only | not-delegated | 60-run dry-run complete; live paired evidence belongs to a later default-switch change | explicit spend + blind review | skipped_with_reason |
 | DF-PA-6 | Release sync and packaged runtime | main | generated `plugins/dev-flow/**` | not-delegated | post-sync current, packaged 3x2 smoke, runtime verification, release Eval | repository release/commit/push authorized | done |
-| DF-PA-7 | Installed cache and real-project refresh | unassigned | local runtime/project state | not-delegated | updater and migration diagnostics | separate explicit apply approval | skipped_with_reason |
+| DF-PA-7 | Installed cache and real-project refresh | main | local runtime/project state | not-delegated | cache matches release; migration and skill layout current | explicit apply authorized by continuation request | done |
+| DF-PA-8 | Provider-neutral gates and durable routing ledgers | provider_neutral | decision matrix/runtime, plan linter, AGENTS/task-ledger templates, focused routing tests | `.planning/agent-tasks/20260713-devflow-provider-hardening.md` | RED/GREEN provider-neutral gate and generated-template tests | independent review | done |
+| DF-PA-9 | Unselected diagnostics and verified-link deactivation | provider_diagnostics + main | dependency summaries, activation cleanup path, dependency tests | `.planning/agent-tasks/20260713-devflow-provider-hardening.md` | action-free summary plus digest/persistence/dirfd/rollback/preservation/idempotence tests | independent safety review | done |
+| DF-PA-10 | Matt project locality and current strict compatibility | matt_local_version + main | Matt resolution/provenance/install, Superpowers metadata, profile/runtime tests | `.planning/agent-tasks/20260713-devflow-provider-hardening.md` | project-local lock/unique-source allowlist and 6.1.1 manifest/version tests | independent provider-boundary review | done |
+| DF-PA-11 | Release, local refresh, evidence, and remote submission | main | generated release, local DevFlow/project provider state, evidence/status | not-delegated | 438 dev, 8 packaged, 277 runtime, OpenSpec/Eval/cache-drift evidence | independent final review | done |
 
 Agent Task Contract template: `AGENT_TASK_CONTRACT.md`.
 
@@ -79,3 +90,41 @@ Agent Task Contract template: `AGENT_TASK_CONTRACT.md`.
 - 2026-07-13: Runtime verification was deliberately rerun without the
   `PYTHONDONTWRITEBYTECODE` environment variable and still left release sync
   `current`, proving the verifier no longer dirties its own release tree.
+- 2026-07-13: The latest Superpowers/Matt and active-runtime re-audit reopened a
+  hardening slice for provider-neutral core gates, advisory-only unselected
+  diagnostics, Matt project-local activation, safe legacy-link deactivation,
+  current compatibility metadata, and named DevFlow cache/project refresh.
+- 2026-07-13: Upstream comparison pinned Superpowers `v6.1.1`/main at
+  `d884ae04edebef577e82ff7c4e143debd0bbec99`, Matt main at
+  `391a2701dd948f94f56a39f7533f8eea9a859c87`, and Matt `v1.1.0` at
+  `d574778f94cf620fcc8ce741584093bc650a61d3`. The approved Matt allowlist is
+  6,771 static words versus 20,957 for six comparable Superpowers skills; this
+  supports opt-in instruction efficiency, not an outcome-equivalence claim.
+- 2026-07-13: Independent review found and closed provider-cleanup parent
+  escape/TOCTOU, wrong-digest side writes, missing selection persistence,
+  Matt bootstrap precedence, no-repo strict action leakage, provenance action
+  leakage, malformed ledger fail-open behavior, and stale guidance. Cleanup now
+  anchors parent directories with no-follow dirfds and inode checks.
+- 2026-07-13: Final development discovery passed 438 tests in 65.373 seconds;
+  packaged discovery passed 8 tests; runtime verification passed 277 checks
+  with archive SHA-256
+  `6f860c942a16fc853a5caa05ce4f2ef465c28cb1b5f19108a7e2239e173c8570`.
+- 2026-07-13: Release sync is `current`. Release-target Plugin Eval is 86/B,
+  medium risk, with zero failures and the same three static token-budget
+  warnings (`385` trigger, `11,430` invoke, `27,044` deferred tokens). Live
+  outcome measurement remains deferred to a separately authorized future
+  default-switch study.
+- 2026-07-13: The named DevFlow cache was refreshed with the active ChatGPT App
+  runtime and now `matches-source`; project migration and skill layout are
+  `current`, workflow doctor is healthy, explicit `core + none` is persisted,
+  and a post-cleanup dry-run reports no remaining verified Superpowers links.
+
+## Final Result
+
+DevFlow now defaults to an independent `core + none` control plane. Matt is an
+optional project-local six-skill methodology profile, Superpowers is an
+optional strict profile with manifest-driven hooks, and GSD is required only
+when explicitly selected as the roadmap provider. Release and installed-cache
+parity are verified; remote submission is the remaining delivery action in the
+current turn. OpenSpec archive is intentionally not performed without its
+separate authorization.

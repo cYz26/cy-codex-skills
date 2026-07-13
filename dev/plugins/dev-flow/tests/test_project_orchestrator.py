@@ -225,8 +225,10 @@ class ProjectOrchestratorTests(unittest.TestCase):
             sys.path.remove(str(scripts))
 
         matrix = load_decision_grilling_matrix(PLUGIN_ROOT)
-        self.assertEqual(matrix["schemaVersion"], 1)
+        self.assertEqual(matrix["schemaVersion"], 2)
         self.assertEqual(matrix["sourcePath"], str(PLUGIN_ROOT / "docs" / "decision_grilling_matrix.json"))
+        self.assertEqual(matrix["capabilityGate"], "decision-resolution")
+        self.assertNotIn("methodGate", matrix)
         self.assertIn("one-question-at-a-time", matrix["protocol"])
 
         required = decision_grilling_guidance(
@@ -236,7 +238,9 @@ class ProjectOrchestratorTests(unittest.TestCase):
             plugin_root=PLUGIN_ROOT,
         )
         self.assertEqual(required["status"], "required")
-        self.assertEqual(required["method_gate"], "superpowers:brainstorming")
+        self.assertEqual(required["schema_version"], 2)
+        self.assertEqual(required["capability_gate"], "decision-resolution")
+        self.assertNotIn("method_gate", required)
         self.assertTrue(required["local_evidence_first"])
         self.assertIn("decision-grilling: required", required["ledger_entry"])
         self.assertIn("OpenSpec", " ".join(required["canonical_artifacts"]))
@@ -258,8 +262,20 @@ class ProjectOrchestratorTests(unittest.TestCase):
             open_questions=[],
             plugin_root=PLUGIN_ROOT,
         )
+        self.assertEqual(skipped["schema_version"], 2)
         self.assertEqual(skipped["status"], "skipped")
+        self.assertNotIn("method_gate", skipped)
         self.assertIn("approved", skipped["reason"])
+
+        normal = decision_grilling_guidance(
+            kind="new-feature",
+            request="Implement the resolved design.",
+            open_questions=[],
+            plugin_root=PLUGIN_ROOT,
+        )
+        self.assertEqual(normal["schema_version"], 2)
+        self.assertEqual(normal["status"], "skipped")
+        self.assertNotIn("method_gate", normal)
 
     def test_devflow_no_longer_owns_agent_kb_hooks_or_core_behavior(self):
         forbidden_skills = {
@@ -551,31 +567,37 @@ class ProjectOrchestratorTests(unittest.TestCase):
             for phrase in phrases:
                 self.assertIn(phrase, text, skill_name)
 
-    def test_skill_routing_ledger_guards_brainstorming_gate(self):
-        legacy_paths = {
+    def test_skill_routing_ledger_uses_provider_neutral_capabilities(self):
+        core_paths = {
             "root": REPO_ROOT / "AGENTS.md",
-            "release-template": RELEASE_PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template",
+            "dev-template": PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template",
             "task-ledger": PLUGIN_ROOT
             / "skills"
             / "ai-native-tech-plan"
             / "assets"
             / "task-ledger-template.md",
         }
-        for label, path in legacy_paths.items():
+        for label, path in core_paths.items():
             text = path.read_text()
             with self.subTest(path=label):
                 self.assertIn("Skill Routing Ledger", text)
-                self.assertIn("brainstorming: required/used/skipped", text)
+                self.assertIn("decision-resolution: required/used/skipped", text)
                 self.assertIn("decision-grilling: required/used/skipped", text)
+                self.assertIn("implementation-planning: required/used/skipped", text)
+                self.assertIn("architecture-guidance: required/used/skipped", text)
+                self.assertIn("artifact-status: draft/final", text)
                 self.assertIn("Open Questions", text)
+                self.assertNotIn("brainstorming: required/used/skipped", text)
+                self.assertNotIn("writing-plans: required/used/skipped", text)
 
         agents = (PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template").read_text()
         for phrase in [
             "Skill Routing Ledger",
             "capability-research: required/used/skipped",
-            "brainstorming: required/used/skipped",
+            "decision-resolution: required/used/skipped",
             "decision-grilling: required/used/skipped",
-            "writing-plans: required/used/skipped",
+            "implementation-planning: required/used/skipped",
+            "architecture-guidance: required/used/skipped",
             "required capabilities",
             "Open Questions",
             "decision resolution",
@@ -870,7 +892,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
         allowed = run_script_allow_failure("lint_ai_plan.py", str(policy_doc))
         self.assertEqual(allowed.returncode, 0, allowed.stdout + allowed.stderr)
 
-    def test_lint_ai_plan_flags_open_questions_without_brainstorming_route(self):
+    def test_lint_ai_plan_requires_decision_resolution_for_open_questions(self):
         repo = self.make_repo()
         missing_route = repo / "missing-route.md"
         write_ai_plan(
@@ -886,7 +908,29 @@ class ProjectOrchestratorTests(unittest.TestCase):
 
         bad = run_script_allow_failure("lint_ai_plan.py", str(missing_route))
         self.assertEqual(bad.returncode, 1)
-        self.assertIn("unresolved Open Questions require brainstorming", bad.stdout)
+        self.assertIn("unresolved Open Questions require decision-resolution", bad.stdout)
+
+        legacy_route = repo / "legacy-route.md"
+        write_ai_plan(
+            legacy_route,
+            "Slice 1: validated capability.",
+            preface=(
+                "## Skill Routing Ledger\n\n"
+                "- kind: new-feature\n"
+                "- superpowers:brainstorming: required - product tradeoffs remain.\n"
+                "- decision-grilling: required - Open Questions remain.\n"
+            ),
+            target="Design the complete feature.",
+            contract="- [ ] Open choices are explicit",
+        )
+        legacy_route.write_text(
+            legacy_route.read_text()
+            + "\n## Open Questions\n\n- Which deployment shape should be selected?\n"
+        )
+
+        legacy = run_script_allow_failure("lint_ai_plan.py", str(legacy_route))
+        self.assertEqual(legacy.returncode, 1)
+        self.assertIn("unresolved Open Questions require decision-resolution", legacy.stdout)
 
         routed = repo / "routed.md"
         write_ai_plan(
@@ -895,8 +939,9 @@ class ProjectOrchestratorTests(unittest.TestCase):
             preface=(
                 "## Skill Routing Ledger\n\n"
                 "- kind: new-feature\n"
-                "- brainstorming: required - product tradeoffs remain.\n"
-                "- decision-grilling: required - Open Questions remain.\n"
+                "- artifact-status: draft\n"
+                "- decision-resolution: required - product tradeoffs remain.\n"
+                "- decision-grilling: skipped - draft records unresolved choices.\n"
             ),
             target="Design the complete feature.",
             contract="- [ ] Open choices are explicit",
@@ -907,6 +952,48 @@ class ProjectOrchestratorTests(unittest.TestCase):
 
         good = run_script_allow_failure("lint_ai_plan.py", str(routed))
         self.assertEqual(good.returncode, 0, good.stdout + good.stderr)
+
+        final_unresolved = repo / "final-unresolved.md"
+        write_ai_plan(
+            final_unresolved,
+            "Slice 1: validated capability.",
+            preface=(
+                "## Skill Routing Ledger\n\n"
+                "- kind: new-feature\n"
+                "- artifact-status: final\n"
+                "- decision-resolution: required - product tradeoffs remain.\n"
+                "- decision-grilling: required - Open Questions remain.\n"
+            ),
+            target="Design the complete feature.",
+            contract="- [ ] Open choices are explicit",
+        )
+        final_unresolved.write_text(
+            final_unresolved.read_text()
+            + "\n## Open Questions\n\n- Which deployment shape should be selected?\n"
+        )
+
+        final_result = run_script_allow_failure("lint_ai_plan.py", str(final_unresolved))
+        self.assertEqual(final_result.returncode, 1)
+        self.assertIn("unresolved Open Questions require artifact-status: draft", final_result.stdout)
+
+        placeholder = repo / "placeholder-ledger.md"
+        placeholder.write_text(
+            (
+                PLUGIN_ROOT
+                / "skills"
+                / "ai-native-tech-plan"
+                / "assets"
+                / "task-ledger-template.md"
+            ).read_text()
+            + "\n## Open Questions\n\n- Which deployment shape should be selected?\n"
+        )
+
+        placeholder_result = run_script_allow_failure("lint_ai_plan.py", str(placeholder))
+        self.assertEqual(placeholder_result.returncode, 1)
+        self.assertIn(
+            "unresolved Open Questions require decision-resolution",
+            placeholder_result.stdout,
+        )
 
     def test_create_change_updates_state_and_validate_reports_missing_artifacts(self):
         repo = self.make_repo("greenfield-empty")

@@ -342,7 +342,7 @@ class ProviderBenchmarkContractTests(unittest.TestCase):
         matt = report["providers"]["mattpocock-skills"]
         self.assertEqual(matt["status"], "ready")
         self.assertEqual(matt["selectionSource"], "matching_lock")
-        self.assertEqual(Path(matt["root"]), codex_home / "skills")
+        self.assertEqual(Path(matt["root"]), fixture / ".agents" / "skills")
 
     def test_strict_fixture_resolves_through_production_provider_facade(self):
         import workflow_provider_profiles as providers

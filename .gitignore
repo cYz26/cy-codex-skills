@@ -19,6 +19,12 @@ plugins/godot-core/evals/artifacts/
 # Local orchestration state is useful in-session but should not be committed
 # unless intentionally sharing the current development checkpoint.
 .planning/
+# Provider benchmark checkpoints and locks are reproducible test fixtures, not
+# live project state. Keep this narrow fixture subtree versioned.
+!dev/plugins/dev-flow/fixtures/provider-profiles/*/.planning/
+!dev/plugins/dev-flow/fixtures/provider-profiles/*/.planning/devflow/
+!dev/plugins/dev-flow/fixtures/provider-profiles/*/.planning/devflow/STATE.md
+!dev/plugins/dev-flow/fixtures/provider-profiles/*/.planning/devflow/providers.lock.json
 .dev-flow/
 openspec/changes/
 setup-report.md

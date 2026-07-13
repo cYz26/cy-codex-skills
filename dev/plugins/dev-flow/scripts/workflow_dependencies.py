@@ -71,11 +71,11 @@ def dependency_report(
         provider_report=provider_report,
         triggered_capabilities=triggered_capabilities,
     )
-    catalog_only_dependencies = (
-        {"gsd-core"}
-        if selection is None or selection["effectiveRoadmapProvider"] != "gsd"
-        else set()
-    )
+    catalog_only_dependencies: set[str] = set()
+    if selection is None or selection["effectiveRoadmapProvider"] != "gsd":
+        catalog_only_dependencies.add("gsd-core")
+    if selection is None or selection["effectiveMethodologyProfile"] != "strict-superpowers":
+        catalog_only_dependencies.add("superpowers")
     provenance = dependency_provenance_report(
         plugin_root,
         repo,

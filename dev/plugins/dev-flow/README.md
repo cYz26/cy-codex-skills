@@ -113,12 +113,42 @@ IDs, OpenSpec/roadmap route, and the reason for every skipped gate. If unresolve
 Open Questions remain, decision resolution cannot be skipped; keep the artifact
 as draft until the questions are resolved.
 
-Decision grilling is the narrow ambiguity-resolution protocol inside
-brainstorming. Use `scripts/workflow_decision_grilling.py --json` to classify
+Decision grilling is the narrow ambiguity-resolution protocol inside decision
+resolution. Use `scripts/workflow_decision_grilling.py --json` to classify
 the gate when needed. The protocol is: inspect local evidence first, ask one
 question at a time, provide a recommended answer, walk dependent decision
 branches, and record resolved decisions in OpenSpec, the selected roadmap, or DevFlow ledger
 artifacts.
+
+## Safe Provider Cleanup
+
+Provider deactivation removes only verified project-local skill links. Preview
+the exact removal plan first and save its JSON, including `planDigest` and the
+per-link rollback commands:
+
+```bash
+python3 scripts/activate_project_dependencies.py --repo <project> \
+  --skip-official-installs \
+  --deactivate-provider <provider-id> --dry-run --json \
+  > provider-cleanup-dry-run.json
+```
+
+Apply only that reviewed plan by naming the provider, authorizing cleanup, and
+passing the matching digest from the dry-run output:
+
+```bash
+python3 scripts/activate_project_dependencies.py --repo <project> \
+  --skip-official-installs \
+  --deactivate-provider <provider-id> \
+  --authorize-provider-cleanup <provider-id> \
+  --provider-cleanup-plan <planDigest> --apply --json \
+  > provider-cleanup-apply.json
+```
+
+Keep both JSON reports as verification and rollback evidence. Cleanup preserves
+unverified paths and never deletes global provider configuration, installed
+plugin caches, or provider source caches. Disable a global plugin separately
+when that independently authorized configuration change is required.
 
 ## Goal Workflow
 
@@ -239,9 +269,11 @@ targets are missing or already symlinks.
 Develop plugins and standalone skills under `dev/`. At verified workflow
 boundaries, run explicit release promotion to copy allowlisted runtime assets to
 their release counterparts and then perform release validation. Stop hooks only
-run read-only release-promotion checks. Use
-`sync_release_assets.py --target dev-flow --apply --json` for an explicit,
-target-scoped sync, or
+run read-only release-promotion checks. After fresh verification has been
+recorded, use
+`release_promotion_gate.py --repo . --apply --json` for the authorized DevFlow
+sync. Direct `sync_release_assets.py --apply` calls are intentionally denied.
+Use
 `sync_release_assets.py --eval-target <path> --json` to resolve the
 release-first Plugin Eval target.
 

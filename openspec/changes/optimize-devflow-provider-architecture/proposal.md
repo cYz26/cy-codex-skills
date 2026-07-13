@@ -23,6 +23,19 @@ The current local evidence makes the architectural issue concrete:
 - The release plugin's static Plugin Eval result is `86/B` with a heavy
   `14,534` active-token estimate and no observed-usage benchmark.
 
+The 2026-07-13 upstream and local-runtime re-audit found four residual gaps in
+the otherwise complete provider architecture:
+
+- stable core gates and generated routing ledgers still expose
+  `superpowers:brainstorming`, `brainstorming`, and `writing-plans` identities;
+- an installed but unselected Superpowers distribution is summarized as
+  `superpowers_missing` with an install action instead of remaining advisory;
+- Matt activation records a global install command even though methodology
+  providers are required to be project-local;
+- the compatibility baseline still targets Superpowers `6.0.3`, while the
+  current curated release is `6.1.1` and the installed DevFlow cache still
+  exposes legacy provider links.
+
 ## What Changes
 
 - Replace hard-coded methodology skill names with a machine-readable provider
@@ -60,6 +73,16 @@ The current local evidence makes the architectural issue concrete:
   size alone cannot justify changing the default methodology profile.
 - Reduce DevFlow's own repeated skill guidance and implicit invocation surface,
   then reassess the release package with Plugin Eval and observed usage.
+- Make core routing ledgers and decision gates provider-neutral by using stable
+  capability identifiers such as `decision-resolution` and
+  `implementation-planning`.
+- Keep unselected provider diagnostics advisory and action-free; never convert
+  `available_unselected` into a missing-provider remediation.
+- Install and resolve Matt's allowlisted primitives project-locally, and add an
+  explicit dry-run-first cleanup path for verified legacy provider symlinks.
+- Align strict compatibility metadata with the current Superpowers `6.1.1`
+  release while retaining older source records only for verifiable legacy
+  compatibility.
 
 ## Capabilities
 
@@ -111,6 +134,16 @@ migration.
       `lean-matt` occurs without non-inferiority and efficiency evidence.
 - [x] Release-target Plugin Eval, release runtime verification, OpenSpec
       validation, and local-reference dry-run evidence are recorded.
+- [x] Core decision gates, generated AGENTS guidance, and task-ledger templates
+      expose stable capability ids rather than provider skill names.
+- [x] Unselected Superpowers and Matt content contributes no install action,
+      fallback, blocking status, or misleading compatibility summary.
+- [x] Lean Matt activation installs and resolves only the six allowlisted skills
+      from a project-local source.
+- [x] Explicit provider deactivation removes only verified managed symlinks,
+      is dry-run-first, and preserves copies, directories, and unknown content.
+- [x] Superpowers `6.1.1`, release assets, installed DevFlow cache, and current
+      project selection are freshly verified after the hardening changes.
 
 ## Impact
 
@@ -127,4 +160,6 @@ migration.
   direct hard-coded dependency instructions.
 
 No production dependency, public plugin id, automatic installer authorization,
-or destructive cleanup is introduced by this change.
+or automatic/unauthorized destructive cleanup is introduced by this change.
+The explicit provider-deactivation path remains digest-bound, symlink-only,
+transactional within the process, and separately authorized.

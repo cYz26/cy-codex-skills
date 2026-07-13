@@ -567,7 +567,7 @@ def _validate_one(
     source_root_value = locked_provider.get("sourceRoot")
     source_root = (fixture / str(source_root_value)).resolve() if source_root_value else None
     expected_source_root = (
-        fixture / "codex-home" / "skills"
+        fixture / ".agents" / "skills"
         if expected_profile == "lean-matt"
         else fixture
         / "codex-home"

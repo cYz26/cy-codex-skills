@@ -277,8 +277,14 @@ def official_install_command_records(
         "strict-superpowers": "superpowers",
         "lean-matt": "mattpocock-skills",
     }.get(selection.get("effectiveMethodologyProfile"))
-    if selected and not reports.get(selected, {}).get("ready", False):
-        source = selected_source_record(selected, selection, source_records or {})
+    selected_report = reports.get(selected, {}) if selected else {}
+    if selected and provider_install_is_safe_remediation(selected, selected_report):
+        source = selected_source_record(
+            selected,
+            selection,
+            source_records or {},
+            selected_report,
+        )
         if source and (source.get("installCommand") or source.get("updateCommand")):
             commands.append(provider_install_record(selected, source, provenance_source, codex_home))
     if (
@@ -298,10 +304,29 @@ def official_install_command_records(
     return commands
 
 
+def provider_install_is_safe_remediation(
+    provider: str,
+    report: dict[str, Any],
+) -> bool:
+    if report.get("ready", False):
+        return False
+    status = report.get("status")
+    if provider == "mattpocock-skills":
+        return bool(
+            status == "missing_capabilities"
+            and report.get("projectRootLocal", False)
+            and not report.get("nonLocalSkills")
+        )
+    if provider == "superpowers":
+        return status in {"missing", "missing_capabilities"}
+    return False
+
+
 def selected_source_record(
     provider: str,
     selection: dict[str, Any],
     source_records: dict[str, Any],
+    provider_report: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     selector = selection.get("providerSelectors", {}).get(provider, {})
     candidates = [
@@ -309,21 +334,66 @@ def selected_source_record(
         for source_id, record in source_records.items()
         if isinstance(record, dict) and record.get("provider") == provider
     ]
-    source_id = selector.get("source_id") if isinstance(selector, dict) else None
-    if source_id:
-        return next((item for item in candidates if item["source_id"] == source_id), None)
-    identity_keys = ("source_channel", "version") if provider == "superpowers" else (
-        ("repository", "ref", "commit") if provider == "mattpocock-skills" else ("package", "version")
-    )
+    if isinstance(selector, dict) and selector:
+        return matching_source_record(provider, selector, candidates)
+    lock = selection.get("providerLock", {}).get("providers", {}).get(provider, {})
+    if isinstance(lock, dict) and lock:
+        return matching_source_record(provider, lock, candidates)
+    diagnosed_identity = (provider_report or {}).get("sourceIdentity", {})
+    if isinstance(diagnosed_identity, dict) and diagnosed_identity:
+        return matching_source_record(provider, diagnosed_identity, candidates)
+    return candidates[0] if len(candidates) == 1 else None
+
+
+def matching_source_record(
+    provider: str,
+    identity: dict[str, Any],
+    candidates: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    aliases = {
+        "source_id": ("source_id", "sourceId"),
+        "source_channel": ("source_channel", "sourceChannel"),
+        "repository": ("repository",),
+        "ref": ("ref",),
+        "commit": ("commit",),
+        "package": ("package",),
+        "version": ("version",),
+    }
+
+    def value(names: tuple[str, ...]) -> Any:
+        return next((identity[name] for name in names if identity.get(name) not in (None, "")), None)
+
+    source_id = value(aliases["source_id"])
+    if source_id is not None:
+        matched = [item for item in candidates if str(item.get("source_id")) == str(source_id)]
+        if len(matched) != 1:
+            return None
+        candidate = matched[0]
+        for key, names in aliases.items():
+            expected = value(names)
+            if key == "source_id" or expected in (None, ""):
+                continue
+            if str(candidate.get(key)) != str(expected):
+                return None
+        return candidate
+    keys = {
+        "superpowers": ("source_channel", "version"),
+        "mattpocock-skills": ("repository", "ref", "commit"),
+        "gsd": ("package", "version"),
+    }.get(provider, ())
+    expected = {
+        key: value(aliases[key])
+        for key in keys
+        if value(aliases[key]) not in (None, "")
+    }
+    if not keys or not expected:
+        return None
+    if provider == "mattpocock-skills" and set(expected) != set(keys):
+        return None
     matched = [
         item
         for item in candidates
-        if isinstance(selector, dict)
-        and selector
-        and all(
-            selector.get(key) in (None, "") or str(selector.get(key)) == str(item.get(key))
-            for key in identity_keys
-        )
+        if all(str(item.get(key)) == str(expected_value) for key, expected_value in expected.items())
     ]
     return matched[0] if len(matched) == 1 else None
 

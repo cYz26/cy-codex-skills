@@ -388,8 +388,68 @@ goal_gate:
         check = module.ledger_completion_stop_check(repo)
 
         self.assertEqual(check["id"], "ledger_completion")
-        self.assertEqual(check["compatibilityAlias"], "superpowers_completion")
+        self.assertNotIn("compatibilityAlias", check)
         self.assertTrue(check["ok"])
+        self.assertEqual(module.superpowers_completion_stop_check(repo), check)
+
+    def test_stop_hook_treats_current_ledger_work_statuses_as_incomplete(self):
+        module = importlib.import_module("devflow_stop_hook")
+        for status in ("todo", "in_progress", "planned", "executing", "review", "blocked"):
+            with self.subTest(status=status):
+                repo = self.make_repo()
+                (repo / "TASK_LEDGER.md").write_text(
+                    "| Task | Status |\n| --- | --- |\n" f"| A | {status} |\n"
+                )
+
+                check = module.ledger_completion_stop_check(repo)
+
+                self.assertFalse(check["ok"])
+                self.assertEqual(check["status"], "incomplete")
+
+    def test_stop_hook_reads_only_the_markdown_status_column(self):
+        module = importlib.import_module("devflow_stop_hook")
+        repo = self.make_repo()
+        (repo / "TASK_LEDGER.md").write_text(
+            "| Task | Review Gate | Status |\n"
+            "| --- | --- | --- |\n"
+            "| A | review | done |\n"
+        )
+
+        check = module.ledger_completion_stop_check(repo)
+
+        self.assertTrue(check["ok"])
+        self.assertEqual(check["status"], "complete")
+
+    def test_stop_hook_handles_escaped_pipes_before_incomplete_status_rows(self):
+        module = importlib.import_module("devflow_stop_hook")
+        repo = self.make_repo()
+        (repo / "TASK_LEDGER.md").write_text(
+            "| Task | Review Gate | Status |\n"
+            "| --- | --- | --- |\n"
+            "| A | schema \\| contract | done |\n"
+            "| B | review | in_progress |\n"
+        )
+
+        check = module.ledger_completion_stop_check(repo)
+
+        self.assertFalse(check["ok"])
+        self.assertEqual(check["status"], "incomplete")
+
+    def test_stop_hook_fails_closed_for_empty_or_unknown_task_status(self):
+        module = importlib.import_module("devflow_stop_hook")
+        for status in ("", "mystery"):
+            with self.subTest(status=status):
+                repo = self.make_repo()
+                (repo / "TASK_LEDGER.md").write_text(
+                    "| Task | Status |\n"
+                    "| --- | --- |\n"
+                    f"| A | {status} |\n"
+                )
+
+                check = module.ledger_completion_stop_check(repo)
+
+                self.assertFalse(check["ok"])
+                self.assertEqual(check["status"], "incomplete")
 
     def test_hook_response_keeps_additional_context_for_non_stop_warnings(self):
         repo = self.make_repo()
@@ -502,7 +562,7 @@ goal_gate:
         self.assertIn("routing.matrix.json", matrix["sourcePath"])
 
         gate_matrix = gates.load_superpowers_gate_matrix(PLUGIN_ROOT)
-        self.assertEqual(gate_matrix["targetSuperpowersVersion"], "6.0.3")
+        self.assertEqual(gate_matrix["targetSuperpowersVersion"], "6.1.1")
         self.assertIn("verification-before-completion", gates.required_gate_ids(PLUGIN_ROOT))
 
     def test_workflow_mode_routes_explicit_prototype_with_non_production_guardrails(self):

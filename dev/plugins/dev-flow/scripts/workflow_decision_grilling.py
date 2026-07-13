@@ -59,9 +59,10 @@ def decision_grilling_guidance(
 
     if skipped_kind and not questions:
         return {
+            "schema_version": matrix["schemaVersion"],
             "status": "skipped",
             "gate_id": matrix["gateId"],
-            "method_gate": matrix["methodGate"],
+            "capability_gate": matrix["capabilityGate"],
             "reason": f"{normalized_kind} has no unresolved design decisions",
             "ledger_entry": "decision-grilling: skipped - no unresolved design decisions.",
             "local_evidence_first": local_evidence_first,
@@ -76,9 +77,10 @@ def decision_grilling_guidance(
         reason = "Open Questions remain" if questions else "request contains ambiguity or grilling trigger"
         next_action = "inspect-local-evidence-before-asking" if locally_answerable else "ask-one-question-at-a-time"
         return {
+            "schema_version": matrix["schemaVersion"],
             "status": "required",
             "gate_id": matrix["gateId"],
-            "method_gate": matrix["methodGate"],
+            "capability_gate": matrix["capabilityGate"],
             "reason": reason,
             "ledger_entry": f"decision-grilling: required - {reason}.",
             "local_evidence_first": local_evidence_first,
@@ -91,9 +93,10 @@ def decision_grilling_guidance(
         }
 
     return {
+        "schema_version": matrix["schemaVersion"],
         "status": "skipped",
         "gate_id": matrix["gateId"],
-        "method_gate": matrix["methodGate"],
+        "capability_gate": matrix["capabilityGate"],
         "reason": "no unresolved plan or design ambiguity detected",
         "ledger_entry": "decision-grilling: skipped - no unresolved plan or design ambiguity.",
         "local_evidence_first": local_evidence_first,
@@ -117,6 +120,7 @@ def render_text(payload: dict[str, Any]) -> str:
     return "\n".join(
         [
             f"Decision grilling: {payload['status']}",
+            f"Capability gate: {payload['capability_gate']}",
             f"Reason: {payload['reason']}",
             f"Ledger: {payload['ledger_entry']}",
             f"Next action: {payload['next_action']}",

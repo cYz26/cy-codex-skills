@@ -50,9 +50,35 @@ def ensure_project_local_skills(
                 )
             )
     elif methodology == "lean-matt":
-        skills = (provider_diagnosis or {}).get("providers", {}).get("mattpocock-skills", {}).get("implicitSkills", [])
+        matt_report = (
+            (provider_diagnosis or {})
+            .get("providers", {})
+            .get("mattpocock-skills", {})
+        )
+        skills = matt_report.get("implicitSkills", [])
+        root = Path(str(matt_report.get("root") or (repo / ".agents" / "skills")))
+        expected_hashes = matt_report.get("expectedSkillHashes", {})
+        nonlocal_skills = set(matt_report.get("nonLocalSkills", []))
         for skill in skills:
-            source = codex_home / "skills" / skill
+            source = root / skill
+            source_file = source / "SKILL.md"
+            expected_hash = expected_hashes.get(skill)
+            if source_file.exists() and (
+                skill in nonlocal_skills
+                or not expected_hash
+                or hashlib.sha256(source_file.read_bytes()).hexdigest() != expected_hash
+            ):
+                installed.append(
+                    install_result(
+                        "mattpocock-skills",
+                        skill,
+                        source,
+                        official_project_skill_dir(repo, skill),
+                        False,
+                        "source-conflict",
+                    )
+                )
+                continue
             installed.append(
                 install_project_skill(
                     repo,

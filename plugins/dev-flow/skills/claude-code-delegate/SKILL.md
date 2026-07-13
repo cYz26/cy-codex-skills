@@ -19,7 +19,8 @@ asks to run a bounded task through Claude Code.
 
 ## Rules
 
-- Keep OpenSpec, GSD, Superpowers, and DevFlow verification gates authoritative.
+- Keep OpenSpec, DevFlow, and the selected roadmap and methodology-provider
+  gates authoritative; an unselected provider contributes no gate.
 - Prefer plan-only delegation first when the required output is analysis, review, or a plan.
 - Use apply mode when the approved task should be executed inside Claude Code.
 - Apply mode runs Claude Code with `--permission-mode bypassPermissions` by default so explicitly delegated execution can proceed without interactive permission prompts.

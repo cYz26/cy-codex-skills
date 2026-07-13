@@ -44,15 +44,17 @@ of these overrides only when both `--apply` and
 
 Core readiness verifies every required project-local DevFlow skill against the
 selected DevFlow plugin root. Lean readiness verifies each triggered Matt route
-against the bound `CODEX_HOME` skill hash. Missing or conflicting routes fail
-closed; activation reports the repair and never overwrites an ordinary
-user-owned skill directory. A syntax-valid configuration with a non-object
+under the current repository's `.agents/skills/` tree against the selected
+project-local skill hash and provider lock. A global `CODEX_HOME` Matt pack is
+advisory compatibility input only and cannot satisfy lean readiness. Missing or
+conflicting routes fail closed; activation reports the repair and never
+overwrites an ordinary user-owned skill directory. A syntax-valid configuration with a non-object
 `workflow`, selectors, or bindings value, or an unknown profile/provider enum,
 is invalid rather than silently defaulting to `core + none`.
 
 Superpowers activation uses only the selected source record's channel-specific
 Codex plugin command. Lean Matt activation uses the pinned `v1.1.0` tree and
-installs only the six allowed skills; `setup-matt-pocock-skills` is not an
+installs only the six allowed skills into the current project; `setup-matt-pocock-skills` is not an
 installer and its tracker/spec control plane remains excluded.
 
 GSD's runtime hash alone is insufficient to trust routed instructions. Normal

@@ -20,7 +20,7 @@ paths.
 - context health
 - verification evidence
 - checkpoint/compact state
-- Superpowers completion/ledger status
+- provider-neutral ledger completion status
 - release promotion dry-run status
 
 It does not write release assets, planning state, verification evidence, or

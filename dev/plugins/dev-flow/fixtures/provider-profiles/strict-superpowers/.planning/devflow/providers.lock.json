@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "providers": {
+    "superpowers": {
+      "sourceRoot": "codex-home/plugins/cache/openai-curated-remote/superpowers/6.1.1",
+      "sourceChannel": "openai-curated-remote",
+      "version": "6.1.1",
+      "manifestDigest": "42f44d5e17aff909bd6f2a53795d516d8ca78cd9512c32c91f19cbbcced68877",
+      "skillHashes": {
+        "brainstorming": "e14914605f640e0841758e45d0ab2a53243b59b921f929e47921c99668f2e61d",
+        "requesting-code-review": "1017ccdd5bc61fab67c654cf118cbdb520464b313073a0a6b9a6b9aa647a3ad6",
+        "systematic-debugging": "3b20719eca4f0461cb51a195221320d775dcf03b6859271066a03a5132a6ce7a",
+        "test-driven-development": "b5b4717b8b761cce15a6cfe9022e33fd959e0894c0c39d72c9cb49c23486c10e",
+        "using-superpowers": "55379fe7c1c473a02c61961c822996bff30e1320d6921d9062509bc508482c05",
+        "verification-before-completion": "ea52d15aabaf72bc6b558efe2c126f161b53961090ddcd712000273bfe8c7b6c",
+        "writing-plans": "272e1af349f5062c28dc282b3e21b220d58d683a7314a10c455b7432ec91d845"
+      }
+    }
+  }
+}

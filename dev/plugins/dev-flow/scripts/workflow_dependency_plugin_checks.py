@@ -9,8 +9,8 @@ from workflow_dependency_catalog import STRICT_RECOMMENDED_SUPERPOWERS_SKILLS
 
 
 SUPERPOWERS_MINIMUM_COMPATIBLE = "5.1.3"
-SUPERPOWERS_RECOMMENDED = "6.0.3"
-SUPERPOWERS_STRICT_REQUIRES = "6.0.3"
+SUPERPOWERS_RECOMMENDED = "6.1.1"
+SUPERPOWERS_STRICT_REQUIRES = SUPERPOWERS_MINIMUM_COMPATIBLE
 
 
 def add_skill_checks(
@@ -111,6 +111,10 @@ def superpowers_governance_report(codex_home: Path, strict: bool = False) -> dic
             "compatibility": "missing",
             "requiredSkills": {},
             "strictRecommendedSkills": {},
+            "minimumCompatibleVersion": SUPERPOWERS_MINIMUM_COMPATIBLE,
+            "recommendedVersion": SUPERPOWERS_RECOMMENDED,
+            "strictProfileRequires": SUPERPOWERS_STRICT_REQUIRES,
+            "sessionStartHookDeclared": False,
             "sessionStartHookPresent": False,
             "sessionStartHookTrusted": False,
             "nextAction": "Install and enable Superpowers before strict DevFlow execution.",
@@ -120,7 +124,7 @@ def superpowers_governance_report(codex_home: Path, strict: bool = False) -> dic
     version = str(manifest.get("version") or "unknown")
     source_channel = source_channel_for_root(codex_home, root)
     required_skills = {
-        skill: find_skill(codex_home, "superpowers", skill) is not None
+        skill: (root / "skills" / skill / "SKILL.md").is_file()
         for skill in [
             "using-superpowers",
             "brainstorming",
@@ -130,12 +134,19 @@ def superpowers_governance_report(codex_home: Path, strict: bool = False) -> dic
         ]
     }
     strict_skills = {
-        skill: find_skill(codex_home, "superpowers", skill) is not None
+        skill: (root / "skills" / skill / "SKILL.md").is_file()
         for skill in STRICT_RECOMMENDED_SUPERPOWERS_SKILLS
     }
+    session_start_declared = session_start_hook_declared(manifest)
     session_start_present = session_start_hook_present(root, manifest)
     session_start_trusted = session_start_hook_trusted(codex_home, root)
-    status = superpowers_status(version, required_skills, session_start_present, session_start_trusted)
+    status = superpowers_status(
+        version,
+        required_skills,
+        session_start_declared,
+        session_start_present,
+        session_start_trusted,
+    )
     return {
         "status": status,
         "version": version,
@@ -147,6 +158,7 @@ def superpowers_governance_report(codex_home: Path, strict: bool = False) -> dic
         "strictProfileRequires": SUPERPOWERS_STRICT_REQUIRES,
         "requiredSkills": required_skills,
         "strictRecommendedSkills": strict_skills,
+        "sessionStartHookDeclared": session_start_declared,
         "sessionStartHookPresent": session_start_present,
         "sessionStartHookTrusted": session_start_trusted,
         "strict": strict,
@@ -178,12 +190,13 @@ def add_superpowers_governance_checks(
         checks,
         "superpowers latest ready",
         compare_versions(str(report.get("version") or "0"), SUPERPOWERS_RECOMMENDED) >= 0
-        and all(report.get("requiredSkills", {}).values()),
+        and all(report.get("requiredSkills", {}).values())
+        and status in ok_statuses,
         strict,
         f"version {report.get('version') or 'unknown'}, recommended {SUPERPOWERS_RECOMMENDED}",
         status=status,
     )
-    if compare_versions(str(report.get("version") or "0"), "6.0.0") >= 0:
+    if report.get("sessionStartHookDeclared"):
         add_check(
             checks,
             "superpowers session-start hook present",
@@ -264,6 +277,13 @@ def session_start_hook_present(root: Path, manifest: dict[str, Any]) -> bool:
     return False
 
 
+def session_start_hook_declared(manifest: dict[str, Any]) -> bool:
+    hooks_value = manifest.get("hooks")
+    if isinstance(hooks_value, str):
+        return bool(hooks_value.strip())
+    return bool(hooks_value)
+
+
 def session_start_hook_trusted(codex_home: Path, root: Path) -> bool:
     if session_start_hook_trusted_in_legacy_files(codex_home, root):
         return True
@@ -331,12 +351,6 @@ def session_start_hook_candidates(root: Path, manifest: dict[str, Any]) -> list[
     hooks_value = manifest.get("hooks")
     if isinstance(hooks_value, str):
         candidates.append((normalize_hook_relative_path(hooks_value), root / hooks_value))
-    candidates.extend(
-        [
-            ("hooks/hooks-codex.json", root / "hooks" / "hooks-codex.json"),
-            ("hooks.json", root / "hooks.json"),
-        ]
-    )
     deduped: list[tuple[str, Path]] = []
     seen: set[Path] = set()
     for relative, path in candidates:
@@ -359,6 +373,7 @@ def is_trusted_hash(value: Any) -> bool:
 def superpowers_status(
     version: str,
     required_skills: dict[str, bool],
+    session_start_declared: bool,
     session_start_present: bool,
     session_start_trusted: bool,
 ) -> str:
@@ -366,12 +381,12 @@ def superpowers_status(
         return "superpowers_unsupported"
     if compare_versions(version, SUPERPOWERS_MINIMUM_COMPATIBLE) < 0:
         return "superpowers_unsupported"
+    if session_start_declared and not session_start_present:
+        return "superpowers_hook_missing"
+    if session_start_declared and not session_start_trusted:
+        return "superpowers_hook_untrusted"
     if compare_versions(version, SUPERPOWERS_RECOMMENDED) < 0:
         return "superpowers_upgrade_recommended"
-    if compare_versions(version, "6.0.0") >= 0 and not session_start_present:
-        return "superpowers_hook_missing"
-    if compare_versions(version, "6.0.0") >= 0 and not session_start_trusted:
-        return "superpowers_hook_untrusted"
     return "superpowers_ok"
 
 
@@ -386,12 +401,12 @@ def superpowers_compatibility(version: str) -> str:
 def superpowers_next_action(status: str) -> str:
     return {
         "superpowers_missing": "Install and enable Superpowers before strict DevFlow execution.",
-        "superpowers_unsupported": "Install Superpowers 5.1.3 or newer; recommended target is 6.0.3.",
+        "superpowers_unsupported": "Install Superpowers 5.1.3 or newer; recommended target is 6.1.1.",
         "superpowers_upgrade_recommended": (
-            "Upgrade Superpowers to 6.0.3 through an explicit marketplace or pinned-source action."
+            "Upgrade Superpowers to 6.1.1 through an explicit marketplace or pinned-source action."
         ),
-        "superpowers_hook_missing": "Install a Superpowers v6 package with a Codex SessionStart hook.",
-        "superpowers_hook_untrusted": "Review and trust the Superpowers SessionStart hook with /hooks.",
+        "superpowers_hook_missing": "Repair the SessionStart hook declared by the selected manifest.",
+        "superpowers_hook_untrusted": "Review and trust the manifest-declared SessionStart hook with /hooks.",
         "superpowers_ok": "Superpowers dependency is ready.",
     }.get(status, "Review Superpowers dependency status.")
 

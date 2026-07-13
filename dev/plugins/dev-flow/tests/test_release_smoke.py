@@ -248,7 +248,9 @@ context_health:
 
     def test_decision_grilling_contract_is_packaged(self):
         matrix = load_decision_grilling_matrix(PLUGIN_ROOT)
-        self.assertEqual(matrix["schemaVersion"], 1)
+        self.assertEqual(matrix["schemaVersion"], 2)
+        self.assertEqual(matrix["capabilityGate"], "decision-resolution")
+        self.assertNotIn("methodGate", matrix)
         self.assertIn("one-question-at-a-time", matrix["protocol"])
         self.assertIn("OpenSpec", " ".join(matrix["canonicalArtifacts"]))
 
@@ -259,6 +261,8 @@ context_health:
             plugin_root=PLUGIN_ROOT,
         )
         self.assertEqual(guidance["status"], "required")
+        self.assertEqual(guidance["capability_gate"], "decision-resolution")
+        self.assertNotIn("method_gate", guidance)
         self.assertIn("decision-grilling: required", guidance["ledger_entry"])
         self.assertTrue(guidance["local_evidence_first"])
 
@@ -441,6 +445,12 @@ context_health:
         self.assertIn("devflow_runtime.SOURCE_COMMIT", readme)
         self.assertIn("verify_release_runtime.py --plugin-root plugins/dev-flow --json", readme)
 
+    def test_readme_routes_release_apply_through_promotion_gate(self):
+        readme = (PLUGIN_ROOT / "README.md").read_text()
+
+        self.assertIn("release_promotion_gate.py --repo . --apply --json", readme)
+        self.assertNotIn("sync_release_assets.py --target dev-flow --apply", readme)
+
     def test_release_updater_plans_installed_plugin_refresh(self):
         marketplace_root = Path(tempfile.mkdtemp(prefix="devflow-release-marketplace-"))
         source = marketplace_root / "plugins" / "example"
@@ -549,7 +559,7 @@ context_health:
         ]:
             self.assertIn(phrase, readme)
 
-    def test_release_skill_routing_ledger_guards_brainstorming_gate(self):
+    def test_release_skill_routing_ledger_uses_provider_neutral_capabilities(self):
         expectations = {
             "project-orchestrator": [
                 "Capability Routing",
@@ -576,9 +586,20 @@ context_health:
         agents = (PLUGIN_ROOT / "assets/templates/AGENTS.md.template").read_text()
         self.assertIn("Skill Routing Ledger", agents)
         self.assertIn("required capabilities", normalized_text(agents))
+        self.assertIn("decision-resolution: required/used/skipped", agents)
+        self.assertIn("implementation-planning: required/used/skipped", agents)
+        self.assertIn("architecture-guidance: required/used/skipped", agents)
+        self.assertIn("artifact-status: draft/final", agents)
+        self.assertNotIn("brainstorming: required/used/skipped", agents)
+        self.assertNotIn("writing-plans: required/used/skipped", agents)
         ledger = (PLUGIN_ROOT / "skills/ai-native-tech-plan/assets/task-ledger-template.md").read_text()
         self.assertIn("Skill Routing Ledger", ledger)
-        self.assertIn("brainstorming: required/used/skipped", ledger)
+        self.assertIn("decision-resolution: required/used/skipped", ledger)
+        self.assertIn("implementation-planning: required/used/skipped", ledger)
+        self.assertIn("architecture-guidance: required/used/skipped", ledger)
+        self.assertIn("artifact-status: draft/final", ledger)
+        self.assertNotIn("brainstorming: required/used/skipped", ledger)
+        self.assertNotIn("writing-plans: required/used/skipped", ledger)
 
     def test_release_goal_workflow_routes_to_define_goal(self):
         readme = (PLUGIN_ROOT / "README.md").read_text()

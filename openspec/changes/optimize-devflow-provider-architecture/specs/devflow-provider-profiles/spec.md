@@ -150,10 +150,33 @@ on-demand capability.
 - **WHEN** Superpowers or Matt is available but not selected
 - **THEN** it is reported as `available_unselected` or an advisory pollution risk
 - **AND** it does not participate in readiness, activation, updater, or fallback selection
+- **AND** its compatibility summary contains no install command or next action
 
 #### Scenario: Dry-run activation is requested
 - **WHEN** activation or migration runs without explicit apply authorization
 - **THEN** it emits commands and file actions without changing config, caches, links, runtime files, or planning artifacts
+
+#### Scenario: Core routing artifacts are rendered
+- **WHEN** DevFlow renders a decision gate, Skill Routing Ledger, generated
+  AGENTS guidance, or technical-plan template under `core`
+- **THEN** it uses stable capability ids such as `decision-resolution`,
+  `implementation-planning`, and `architecture-guidance`
+- **AND** no Superpowers or Matt skill identity becomes a universal gate
+
+#### Scenario: Lean Matt is activated
+- **WHEN** a project explicitly selects and applies `lean-matt`
+- **THEN** only the six allowlisted primitives are installed or resolved under
+  that project's `.agents/skills/` tree
+- **AND** a global Matt pack does not satisfy project-local readiness or expose
+  alternate control-plane skills to implicit routing
+
+#### Scenario: Provider deactivation is requested
+- **WHEN** an authorized provider switch requests cleanup of obsolete project
+  links
+- **THEN** dry-run enumerates verified managed symlinks and preserved paths
+- **AND** apply removes only provider-verified symlinks
+- **AND** copied skills, directories, unknown links, global configuration,
+  caches, and user-modified content remain unchanged
 
 ### Requirement: Goal definition is an on-demand capability
 DevFlow SHALL declare `define-goal` provenance and diagnose it only when the

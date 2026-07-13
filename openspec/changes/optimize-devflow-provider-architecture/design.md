@@ -4,17 +4,25 @@
 
 - kind: `architecture / compatibility / workflow-repair`
 - workflow mode: `Full OpenSpec`
+- artifact-status: `final`
 - capability-research: `used` — current upstream repositories, installed
   caches, manifests, dependency commands, local scripts, tests, state schemas,
-  and release evaluation were inspected on 2026-07-10.
-- brainstorming: `used` — retain-hard-dependencies, direct replacement, and
-  provider/profile designs were compared; the user approved the recommended
-  direction by asking for the overall plan based on that conclusion.
+  and release evaluation were inspected on 2026-07-10 and refreshed on
+  2026-07-13 against Superpowers `v6.1.1`/main
+  (`d884ae04edebef577e82ff7c4e143debd0bbec99`) and Matt `v1.1.0`
+  (`d574778f94cf620fcc8ce741584093bc650a61d3`)/main
+  (`391a2701dd948f94f56a39f7533f8eea9a859c87`).
+- decision-resolution: `used` — retain-hard-dependencies, direct replacement,
+  and provider/profile designs were compared; the approved result is core by
+  default with optional lean and strict adapters.
 - decision-grilling: `skipped` — the architecture defaults, compatibility
   boundary, provider roles, and evaluation gate are resolved below; no open
   decision remains.
-- writing-plans: `used` — implementation is decomposed into dependency-ordered,
-  independently verifiable capability slices in `tasks.md`.
+- implementation-planning: `used` — implementation is decomposed into
+  dependency-ordered, independently verifiable capability slices in
+  `tasks.md`.
+- architecture-guidance: `used` — the provider boundary, canonical ownership,
+  project-local activation, and safe deactivation contracts are defined here.
 - OpenSpec: `required and used` — dependency, routing, integration, migration,
   state, and compatibility behavior changes require proposal, design, specs,
   tasks, verification, sync, and archive gates.
@@ -510,6 +518,38 @@ Default-switch gate:
 
 Without those results, lean remains opt-in.
 
+### 13. Keep provider identity outside stable core gates
+
+Stable DevFlow contracts use capability identifiers, never provider skill
+names. Decision gates expose `decision-resolution`; non-trivial planning uses
+`implementation-planning`; architecture routing uses
+`architecture-guidance`. The selected methodology adapter resolves those ids
+to DevFlow-native, Matt, or Superpowers implementations. Templates, linters,
+decision matrices, and diagnostics therefore remain valid when a provider is
+unselected, disabled, upgraded, or replaced.
+
+An unselected provider can be reported as `available_unselected`,
+`absent_unselected`, or an advisory pollution risk. It contributes no install
+command, next action, fallback, skill link, hook, or readiness failure.
+
+Matt's six allowlisted primitives are installed and resolved under the current
+repository's `.agents/skills/` tree. A global Matt pack is compatibility input
+only and excluded global control-plane skills are advisory pollution; DevFlow
+does not route them or silently use them to satisfy a project-local selection.
+
+Provider switching may offer an explicit deactivation action. It is dry-run by
+default and removes only symlinks whose skill name and provider identity are
+verified against the selected provenance or an exact legacy provider target.
+Directories, copied skills, unknown symlinks, user-modified content, global
+plugin configuration, and provider caches are preserved and reported for
+manual review. Apply requires the named cleanup authorization and records every
+removed or preserved path.
+
+Superpowers compatibility metadata targets curated `6.1.1`. Older source
+records remain eligible only for deterministic legacy discovery and never
+restore version-inferred hook requirements; the selected manifest remains the
+hook authority.
+
 ## Data and Control Flow
 
 1. Read workflow mode and explicit provider fields.
@@ -559,6 +599,18 @@ provider failure can reduce `coreReady`.
 - authoritative_current: Superpowers distributions differ; the installed
   curated `6.1.1` manifest has an empty hook map, so version-only hook inference
   is invalid.
+- authoritative_current: the Superpowers `6.1.1` Codex manifest removes the
+  SessionStart hook, but its routing guidance still applies global mandatory
+  skill-selection semantics; this is appropriate only for the opt-in strict
+  adapter.
+- authoritative_current: Matt `v1.1.0` remains substantially smaller for the
+  six DevFlow-approved primitives, but its full pack also includes an alternate
+  control plane; the complete pack is not a replacement for DevFlow Core. The
+  2026-07-13 main snapshots contain 39 Matt skills versus 14 Superpowers
+  skills. A static all-files word inventory of the six approved Matt
+  primitives is 6,771 words versus 20,957 for the six closest Superpowers
+  primitives. This supports a lower instruction footprint for the allowlist,
+  not outcome equivalence and not global installation of the full Matt pack.
 - local_scan: DevFlow hard-codes required Superpowers/GSD skills, unconditionally
   installs GSD, resolves skills across caches, and writes the same state/phase
   locations that GSD owns.
@@ -587,6 +639,11 @@ Goal, Scope, Constraints, Verification, Evidence, Human Gate, owner, disjoint
 write set, and review gate. Main-agent-owned artifacts are OpenSpec status,
 provider registry schema, release sync, final evidence, and user authorization
 decisions.
+
+The 2026-07-13 hardening implementation uses
+`.planning/agent-tasks/20260713-devflow-provider-hardening.md` and keeps the
+provider-neutral gates, provider diagnostics/deactivation, and Matt/version
+compatibility write sets disjoint.
 
 ## Migration Plan
 

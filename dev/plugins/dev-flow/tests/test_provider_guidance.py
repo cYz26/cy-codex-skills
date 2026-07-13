@@ -75,6 +75,9 @@ class ProviderGuidanceTests(unittest.TestCase):
             "local_only",
         ):
             self.assertIn(marker, text)
+        self.assertIn("current repository's `.agents/skills/` tree", text)
+        self.assertIn("project-local skill hash", text)
+        self.assertNotIn("bound `CODEX_HOME` skill hash", text)
 
     def test_generated_guidance_defaults_to_core_none_without_universal_dependencies(self):
         agents = (PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template").read_text()
@@ -89,6 +92,40 @@ class ProviderGuidanceTests(unittest.TestCase):
         self.assertIn(".planning/devflow/", agents)
         self.assertIn("provider capability", policy.lower())
         self.assertIn("Provider Selection", ledger)
+
+    def test_optional_provider_guidance_does_not_make_superpowers_universal(self):
+        upgrade = (PLUGIN_ROOT / "docs" / "superpowers-upgrade.md").read_text()
+        delegation = (PLUGIN_ROOT / "skills" / "claude-code-delegate" / "SKILL.md").read_text()
+        hook_contract = (PLUGIN_ROOT / "docs" / "hook-contract.md").read_text()
+        refresh = (PLUGIN_ROOT / "skills" / "dev-flow-refresh" / "SKILL.md").read_text()
+        normalized_delegation = " ".join(delegation.split())
+        normalized_refresh = " ".join(refresh.split())
+
+        self.assertIn("optional strict methodology provider", upgrade)
+        self.assertNotIn("methodology dependency", upgrade)
+        self.assertIn("selected roadmap and methodology-provider gates", normalized_delegation)
+        self.assertNotIn("Keep OpenSpec, GSD, Superpowers", delegation)
+        self.assertIn("provider-neutral ledger completion status", hook_contract)
+        self.assertNotIn("Superpowers completion/ledger status", hook_contract)
+        self.assertIn("Methodology Artifact Mapping", normalized_refresh)
+        self.assertNotIn("Superpowers Artifact Mapping", refresh)
+
+    def test_refresh_guidance_documents_safe_provider_cleanup(self):
+        readme = (PLUGIN_ROOT / "README.md").read_text()
+        refresh = (PLUGIN_ROOT / "skills" / "dev-flow-refresh" / "SKILL.md").read_text()
+        normalized_readme = " ".join(readme.split())
+
+        self.assertNotIn("inside brainstorming", readme)
+        self.assertIn("inside decision resolution", normalized_readme)
+        for text in (readme, refresh):
+            self.assertIn("--deactivate-provider", text)
+            self.assertIn("planDigest", text)
+            self.assertIn("--authorize-provider-cleanup", text)
+            self.assertIn("--provider-cleanup-plan", text)
+            self.assertIn("--skip-official-installs", text)
+            self.assertIn("rollback", text.lower())
+            self.assertIn("global", text.lower())
+            self.assertIn("cache", text.lower())
 
     def test_guidance_pruning_reduces_static_word_budget(self):
         words = 0

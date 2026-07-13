@@ -59,10 +59,12 @@ explicit apply gate. Provider-specific mapping and migration details live in
 - For research, design, architecture, product shape, or a technical plan,
   record a Skill Routing Ledger with request kind, workflow mode, required capabilities,
   OpenSpec/roadmap route, and reasons for skips. The ledger records
+  `artifact-status: draft/final`,
   `capability-research: required/used/skipped`,
-  `brainstorming: required/used/skipped` and
+  `decision-resolution: required/used/skipped`,
   `decision-grilling: required/used/skipped`, plus
-  `writing-plans: required/used/skipped` explicitly.
+  `implementation-planning: required/used/skipped` and
+  `architecture-guidance: required/used/skipped` explicitly.
 - Open Questions make decision resolution required. Keep the artifact draft
   until evidence or one-question-at-a-time decision grilling resolves them.
 - Use `ai-native-tech-plan` for a non-trivial technical or migration plan.

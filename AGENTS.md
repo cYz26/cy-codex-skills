@@ -86,7 +86,7 @@ are migration inputs, not the normal target layout.
 - When `roadmap_provider: none`, keep sequencing in the OpenSpec task ledger or
   `.planning/devflow/**`; do not require GSD.
 
-## Brainstorm and Planning Flow
+## Decision and Planning Flow
 
 - Resolve `.dev-flow.json` provider selection before routing methodology skills.
   Core uses DevFlow-native intake/planning, `lean-matt` uses only the mapped Matt
@@ -94,10 +94,12 @@ are migration inputs, not the normal target layout.
 - Use `capability-research` when a solution depends on current, external, platform, plugin, API, hook, CLI, installed-cache, or local-vs-platform capability evidence; the detailed evidence workflow lives in that skill.
 - For design, research, architecture, product-shape, or technical-plan requests,
   create a `Skill Routing Ledger` before writing the final design or plan. Record
-  `kind`, workflow mode, `capability-research: required/used/skipped`,
-  `brainstorming: required/used/skipped`, `decision-grilling:
-  required/used/skipped`, `writing-plans`, OpenSpec/GSD routing, and the
-  concrete reason for any skip.
+  `kind`, workflow mode, `artifact-status: draft/final`,
+  `capability-research: required/used/skipped`,
+  `decision-resolution: required/used/skipped`, `decision-grilling:
+  required/used/skipped`, `implementation-planning: required/used/skipped`,
+  `architecture-guidance: required/used/skipped`, OpenSpec/roadmap routing,
+  and the concrete reason for any skip.
 - If an artifact has unresolved `Open Questions`, decision resolution cannot be marked
   skipped. Mark the artifact as draft, not final, and use the selected profile's
   `decision-resolution` mapping or record it as required in the ledger.
@@ -108,16 +110,16 @@ are migration inputs, not the normal target layout.
   marked skipped while unresolved questions remain unless the artifact remains
   draft.
 - Ledger field: `decision-grilling: required/used/skipped`.
-- Use `openspec-explore` during brainstorming when the uncertainty is about user-visible behavior, compatibility, requirements, or acceptance criteria.
+- Use `openspec-explore` during decision resolution when the uncertainty is about user-visible behavior, compatibility, requirements, or acceptance criteria.
 - Use `gsd-discuss-phase` for milestone, sequencing, or phase uncertainty only
   when `roadmap_provider: gsd`.
 - Before a non-trivial plan, use the selected profile's
   `implementation-planning` mapping; canonicalize the result in OpenSpec or the
   selected roadmap ledger.
 - Use `ai-native-tech-plan` when generating technical plans, implementation plans, architecture plans, Codex execution plans, workflow plans, or anti-partial-delivery plans.
-- Use `openspec-propose` after brainstorming when behavior-level artifacts need to become proposal, design, specs, and tasks.
+- Use `openspec-propose` after decision resolution when behavior-level artifacts need to become proposal, design, specs, and tasks.
 - Use `gsd-plan-phase` only when the selected GSD overlay should own an approved phase plan.
-- Do not move from brainstorming/planning into implementation until the chosen plan, scope, verification approach, and open risks are recorded.
+- Do not move from decision resolution or planning into implementation until the chosen plan, scope, verification approach, and open risks are recorded.
 
 ## Goal Workflow
 

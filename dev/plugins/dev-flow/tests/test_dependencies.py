@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -28,6 +29,8 @@ from workflow_dependencies import dependency_report
 from workflow_validate import missing_agents_guidance
 from workflow_project_activation import activate_project_dependencies
 from workflow_project_skill_install import ensure_project_local_skills
+from workflow_provider_deactivation import deactivate_project_provider_skills
+import workflow_provider_deactivation as provider_deactivation_module
 
 
 class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
@@ -97,6 +100,34 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertTrue(checks["project openspec sync workflow available"]["ok"])
         self.assertFalse(checks["project openspec sync workflow available"]["required"])
         self.assertTrue(checks["developer plugin enabled: plugin-eval"]["ok"])
+
+    def test_dependency_json_does_not_embed_runtime_config_or_sensitive_values(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_project_repo()
+        sensitive_value = "devflow-test-secret-must-not-leak"
+        with (codex_home / "config.toml").open("a") as config_file:
+            config_file.write(
+                "\n[mcp_servers.sensitive-fixture]\n"
+                'command = "fixture"\n'
+                "[mcp_servers.sensitive-fixture.env]\n"
+                f'DEVFLOW_TEST_SECRET = "{sensitive_value}"\n'
+            )
+
+        report = run_json(
+            "check_dependencies.py",
+            "--plugin-root",
+            str(PLUGIN_ROOT),
+            "--repo",
+            str(repo),
+            "--codex-home",
+            str(codex_home),
+            "--config",
+            str(codex_home / "config.toml"),
+            "--json",
+        )
+
+        self.assertNotIn("runtimeConfig", report["selection"])
+        self.assertNotIn(sensitive_value, json.dumps(report, sort_keys=True))
 
     def test_dependency_cli_capability_flag_blocks_missing_goal_definition(self):
         codex_home = self.make_codex_home()
@@ -205,7 +236,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertEqual(openspec["smokeResult"]["summary"], "1.5.0")
         self.assertIn("@fission-ai/openspec", openspec["source"])
         self.assertEqual(report["provenance"]["schemaVersion"], 2)
-        self.assertEqual(openspec["lastVerified"], "2026-07-06")
+        self.assertEqual(openspec["lastVerified"], "2026-07-13")
 
         gsd = dependencies["gsd-core"]
         self.assertEqual(gsd["status"], "verified")
@@ -218,13 +249,16 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         )
         self.assertEqual(gsd["smokeCommand"][-1], "current-timestamp")
         self.assertTrue(gsd["smokeResult"]["ok"], gsd)
-        self.assertEqual(gsd["lastVerified"], "2026-07-06")
+        self.assertEqual(gsd["lastVerified"], "2026-07-13")
 
         superpowers = dependencies["superpowers"]
-        self.assertEqual(superpowers["status"], "policy_recorded")
+        self.assertEqual(superpowers["status"], "not_selected")
+        self.assertEqual(superpowers["installCommand"], [])
+        self.assertEqual(superpowers["recommendedCommand"], [])
+        self.assertEqual(superpowers["fallbackOrBlocker"], "")
         self.assertEqual(superpowers["minimumCompatibleVersion"], "5.1.3")
-        self.assertEqual(superpowers["recommendedVersion"], "6.0.3")
-        self.assertEqual(superpowers["strictProfileRequires"], "6.0.3")
+        self.assertEqual(superpowers["recommendedVersion"], "6.1.1")
+        self.assertEqual(superpowers["strictProfileRequires"], "5.1.3")
         self.assertIn("using-superpowers", superpowers["requiredSkills"])
 
     def test_dependency_report_does_not_probe_unselected_gsd_runtime(self):
@@ -251,8 +285,18 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertEqual(gsd["status"], "not_selected")
         self.assertFalse(gsd["required"])
         self.assertIsNone(gsd["installedVersion"])
+        self.assertEqual(gsd["installCommand"], [])
+        self.assertEqual(gsd["recommendedCommand"], [])
+        self.assertEqual(gsd["fallbackOrBlocker"], "")
         self.assertEqual(gsd["smokeCommand"], [])
         self.assertEqual(gsd["smokeResult"]["summary"], "not selected; runtime was not inspected")
+        superpowers = next(
+            item for item in report["dependencies"] if item["name"] == "superpowers"
+        )
+        self.assertEqual(superpowers["status"], "not_selected")
+        self.assertEqual(superpowers["installCommand"], [])
+        self.assertEqual(superpowers["recommendedCommand"], [])
+        self.assertEqual(superpowers["fallbackOrBlocker"], "")
 
     def test_dependency_check_reports_superpowers_fallback_and_upgrade_recommendation(self):
         codex_home = self.make_codex_home(superpowers_version="5.1.3", superpowers_channel="openai-curated")
@@ -270,7 +314,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertEqual(superpowers["version"], "5.1.3")
         self.assertEqual(superpowers["sourceChannel"], "openai-curated")
         self.assertEqual(superpowers["compatibility"], "fallback")
-        self.assertIn("6.0.3", superpowers["nextAction"])
+        self.assertIn("6.1.1", superpowers["nextAction"])
         checks = {item["name"]: item for item in report["checks"]}
         self.assertFalse(checks["superpowers dependency status"]["ok"])
         self.assertFalse(checks["superpowers dependency status"]["required"])
@@ -328,6 +372,72 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         superpowers = report["superpowers"]
         self.assertEqual(superpowers["status"], "superpowers_ok")
         self.assertFalse(report["providers"]["superpowers"]["hookDeclared"])
+
+    def test_unselected_superpowers_summary_preserves_available_status_without_action(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_dependency_ready_project_repo(
+            methodology_profile="core",
+            roadmap_provider="none",
+        )
+
+        report = self.dependency_report_with_fake_path(codex_home, repo)
+
+        self.assertEqual(report["providers"]["superpowers"]["status"], "available_unselected")
+        self.assertEqual(report["superpowers"]["status"], "available_unselected")
+        self.assertEqual(report["superpowers"]["compatibility"], "unselected")
+        self.assertEqual(report["superpowers"]["nextAction"], "")
+
+    def test_unselected_superpowers_summary_preserves_absent_status_without_action(self):
+        codex_home = self.make_codex_home(install_superpowers=False)
+        repo = self.make_dependency_ready_project_repo(
+            methodology_profile="core",
+            roadmap_provider="none",
+        )
+
+        report = self.dependency_report_with_fake_path(codex_home, repo)
+
+        self.assertEqual(report["providers"]["superpowers"]["status"], "absent_unselected")
+        self.assertEqual(report["superpowers"]["status"], "absent_unselected")
+        self.assertEqual(report["superpowers"]["compatibility"], "unselected")
+        self.assertEqual(report["superpowers"]["nextAction"], "")
+
+    def test_no_repo_strict_check_keeps_superpowers_unselected_and_action_free(self):
+        codex_home = self.make_codex_home()
+
+        report = dependency_report(
+            PLUGIN_ROOT,
+            codex_home,
+            codex_home / "config.toml",
+            True,
+            None,
+        )
+
+        self.assertEqual(report["superpowers"]["status"], "available_unselected")
+        self.assertEqual(report["superpowers"]["compatibility"], "unselected")
+        self.assertEqual(report["superpowers"]["nextAction"], "")
+
+    def test_global_matt_control_plane_skill_is_non_blocking_pollution_advisory(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_dependency_ready_project_repo(
+            methodology_profile="core",
+            roadmap_provider="none",
+        )
+        skill = codex_home / "skills" / "ask-matt" / "SKILL.md"
+        skill.parent.mkdir(parents=True)
+        skill.write_text("---\nname: ask-matt\ndescription: fixture\n---\n")
+
+        report = self.dependency_report_with_fake_path(codex_home, repo)
+
+        self.assertTrue(report["ok"], report)
+        check = next(
+            item
+            for item in report["checks"]
+            if item["name"] == "global Matt control-plane skill inactive: ask-matt"
+        )
+        self.assertFalse(check["ok"])
+        self.assertFalse(check["required"])
+        self.assertEqual(check["status"], "global_control_plane_pollution")
+        self.assertIn(str(skill), check["detail"])
 
     def test_dependency_check_rejects_ambiguous_superpowers_skill_roots(self):
         codex_home = self.make_codex_home(
@@ -726,6 +836,811 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertTrue((repo / ".agents" / "skills" / "test-driven-development" / "SKILL.md").exists())
         self.assertFalse((repo / ".codex" / "skills" / "project-orchestrator").exists())
         self.assertFalse((repo / ".codex" / "config.toml").exists())
+
+    def test_provider_deactivation_dry_run_has_zero_writes(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_project_repo(methodology_profile="core", roadmap_provider="none")
+        source = (
+            PLUGIN_ROOT
+            / "fixtures"
+            / "provider-profiles"
+            / "strict-superpowers"
+            / ".agents"
+            / "skills"
+            / "brainstorming"
+        )
+        target = repo / ".agents" / "skills" / "brainstorming"
+        target.symlink_to(source, target_is_directory=True)
+        before_config = (repo / ".dev-flow.json").read_bytes()
+        before_link = os.readlink(target)
+
+        report = run_json(
+            "activate_project_dependencies.py",
+            "--repo",
+            str(repo),
+            "--plugin-root",
+            str(PLUGIN_ROOT),
+            "--codex-home",
+            str(codex_home),
+            "--skip-official-installs",
+            "--deactivate-provider",
+            "superpowers",
+            "--dry-run",
+            "--json",
+        )
+
+        cleanup = report["provider_deactivation"]
+        item = next(entry for entry in cleanup["items"] if entry["skill"] == "brainstorming")
+        self.assertEqual(cleanup["mode"], "dry-run")
+        self.assertFalse(cleanup["changed"])
+        self.assertEqual(item["status"], "would_remove")
+        self.assertEqual(item["verification"], "provenance_hash")
+        self.assertEqual(len(cleanup["planDigest"]), 64)
+        self.assertEqual(cleanup["plan"]["provider"], "superpowers")
+        self.assertEqual(
+            set(cleanup["plan"]["items"][0]),
+            {"path", "rawTarget", "verification", "skillSha256", "rollback"},
+        )
+        self.assertTrue(target.is_symlink())
+        self.assertEqual(os.readlink(target), before_link)
+        self.assertEqual((repo / ".dev-flow.json").read_bytes(), before_config)
+
+        repeated = run_json(
+            "activate_project_dependencies.py",
+            "--repo",
+            str(repo),
+            "--plugin-root",
+            str(PLUGIN_ROOT),
+            "--codex-home",
+            str(codex_home),
+            "--skip-official-installs",
+            "--deactivate-provider",
+            "superpowers",
+            "--dry-run",
+            "--json",
+        )["provider_deactivation"]
+
+        self.assertEqual(repeated["planDigest"], cleanup["planDigest"])
+        self.assertEqual(repeated["plan"], cleanup["plan"])
+
+    def test_provider_deactivation_apply_requires_matching_named_authorization(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_project_repo(methodology_profile="core", roadmap_provider="none")
+        source = (
+            PLUGIN_ROOT
+            / "fixtures"
+            / "provider-profiles"
+            / "strict-superpowers"
+            / ".agents"
+            / "skills"
+            / "brainstorming"
+        )
+        target = repo / ".agents" / "skills" / "brainstorming"
+        target.symlink_to(source, target_is_directory=True)
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(PLUGIN_ROOT / "scripts" / "activate_project_dependencies.py"),
+                "--repo",
+                str(repo),
+                "--plugin-root",
+                str(PLUGIN_ROOT),
+                "--codex-home",
+                str(codex_home),
+                "--skip-official-installs",
+                "--deactivate-provider",
+                "superpowers",
+                "--apply",
+                "--json",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 1, result.stderr)
+        cleanup = json.loads(result.stdout)["provider_deactivation"]
+        self.assertEqual(cleanup["status"], "authorization_required")
+        self.assertEqual(cleanup["authorization"], "explicit_file_list_and_rollback")
+        self.assertFalse(cleanup["changed"])
+        self.assertTrue(target.is_symlink())
+
+    def test_provider_deactivation_apply_rejects_wrong_plan_digest(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_project_repo(
+            enable_orchestrator=False,
+            enable_legacy_openspec_skills=False,
+            methodology_profile="core",
+            roadmap_provider="none",
+        )
+        source = (
+            PLUGIN_ROOT
+            / "fixtures"
+            / "provider-profiles"
+            / "strict-superpowers"
+            / ".agents"
+            / "skills"
+            / "brainstorming"
+        )
+        target = repo / ".agents" / "skills" / "brainstorming"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.symlink_to(source, target_is_directory=True)
+        before_paths = sorted(
+            str(path.relative_to(repo))
+            for path in repo.rglob("*")
+        )
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(PLUGIN_ROOT / "scripts" / "activate_project_dependencies.py"),
+                "--repo",
+                str(repo),
+                "--plugin-root",
+                str(PLUGIN_ROOT),
+                "--codex-home",
+                str(codex_home),
+                "--skip-official-installs",
+                "--deactivate-provider",
+                "superpowers",
+                "--authorize-provider-cleanup",
+                "superpowers",
+                "--provider-cleanup-plan",
+                "0" * 64,
+                "--apply",
+                "--json",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 1, result.stderr)
+        cleanup = json.loads(result.stdout)["provider_deactivation"]
+        self.assertEqual(cleanup["status"], "authorization_required")
+        self.assertTrue(cleanup["namedAuthorizationMatches"])
+        self.assertTrue(cleanup["sideEffect"]["authorized"])
+        self.assertFalse(cleanup["planDigestMatches"])
+        self.assertFalse(cleanup["changed"])
+        self.assertTrue(target.is_symlink())
+        self.assertEqual(
+            sorted(str(path.relative_to(repo)) for path in repo.rglob("*")),
+            before_paths,
+        )
+
+    def test_provider_deactivation_apply_has_no_non_cleanup_writes(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_project_repo(
+            enable_orchestrator=False,
+            enable_legacy_openspec_skills=False,
+            methodology_profile="core",
+            roadmap_provider="none",
+        )
+        source = (
+            PLUGIN_ROOT
+            / "fixtures"
+            / "provider-profiles"
+            / "strict-superpowers"
+            / ".agents"
+            / "skills"
+            / "brainstorming"
+        )
+        target = repo / ".agents" / "skills" / "brainstorming"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.symlink_to(source, target_is_directory=True)
+        before_paths = {
+            str(path.relative_to(repo))
+            for path in repo.rglob("*")
+        }
+        common = (
+            "--repo",
+            str(repo),
+            "--plugin-root",
+            str(PLUGIN_ROOT),
+            "--codex-home",
+            str(codex_home),
+            "--skip-official-installs",
+            "--deactivate-provider",
+            "superpowers",
+        )
+        plan = run_json(
+            "activate_project_dependencies.py",
+            *common,
+            "--dry-run",
+            "--json",
+        )["provider_deactivation"]
+
+        cleanup = run_json(
+            "activate_project_dependencies.py",
+            *common,
+            "--authorize-provider-cleanup",
+            "superpowers",
+            "--provider-cleanup-plan",
+            plan["planDigest"],
+            "--apply",
+            "--json",
+        )["provider_deactivation"]
+
+        after_paths = {
+            str(path.relative_to(repo))
+            for path in repo.rglob("*")
+        }
+        self.assertEqual(cleanup["status"], "applied")
+        self.assertEqual(after_paths, before_paths - {".agents/skills/brainstorming"})
+        self.assertFalse(target.exists() or target.is_symlink())
+
+    def test_provider_deactivation_preserves_external_symlinked_skill_layout(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_project_repo(
+            enable_orchestrator=False,
+            enable_legacy_openspec_skills=False,
+            methodology_profile="core",
+            roadmap_provider="none",
+        )
+        source = (
+            PLUGIN_ROOT
+            / "fixtures"
+            / "provider-profiles"
+            / "strict-superpowers"
+            / ".agents"
+            / "skills"
+            / "brainstorming"
+        )
+        external_root = Path(tempfile.mkdtemp(prefix="devflow-external-skill-layout-"))
+        external_target = external_root / "skills" / "brainstorming"
+        external_target.parent.mkdir(parents=True)
+        external_target.symlink_to(source, target_is_directory=True)
+        (repo / ".agents").symlink_to(external_root, target_is_directory=True)
+        selection = {
+            "effectiveMethodologyProfile": "core",
+            "selectionSource": "explicit_config",
+        }
+
+        plan = deactivate_project_provider_skills(
+            repo,
+            "superpowers",
+            PLUGIN_ROOT,
+            codex_home=codex_home,
+            selection=selection,
+        )
+        cleanup = deactivate_project_provider_skills(
+            repo,
+            "superpowers",
+            PLUGIN_ROOT,
+            codex_home=codex_home,
+            apply=True,
+            authorized_provider="superpowers",
+            authorized_plan_digest=plan["planDigest"],
+            selection=selection,
+        )
+
+        self.assertEqual(plan["plan"]["items"], [])
+        self.assertTrue(external_target.is_symlink())
+        self.assertFalse(cleanup["changed"])
+        self.assertEqual(cleanup["status"], "current_with_preserved_paths")
+        self.assertTrue(cleanup["planDigestMatches"])
+        self.assertTrue(
+            any(item["status"] == "preserved_unsafe_layout" for item in cleanup["items"]),
+            cleanup,
+        )
+
+    def test_provider_deactivation_requires_explicit_persisted_selection(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_project_repo(
+            enable_orchestrator=False,
+            enable_legacy_openspec_skills=False,
+            methodology_profile="core",
+            roadmap_provider="none",
+        )
+        (repo / ".dev-flow.json").unlink()
+        source = (
+            PLUGIN_ROOT
+            / "fixtures"
+            / "provider-profiles"
+            / "strict-superpowers"
+            / ".agents"
+            / "skills"
+            / "brainstorming"
+        )
+        target = repo / ".agents" / "skills" / "brainstorming"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.symlink_to(source, target_is_directory=True)
+        dry_run_args = (
+            "--repo",
+            str(repo),
+            "--plugin-root",
+            str(PLUGIN_ROOT),
+            "--codex-home",
+            str(codex_home),
+            "--skip-official-installs",
+            "--deactivate-provider",
+            "superpowers",
+            "--dry-run",
+            "--json",
+        )
+        plan = run_json(
+            "activate_project_dependencies.py",
+            *dry_run_args,
+        )["provider_deactivation"]
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(PLUGIN_ROOT / "scripts" / "activate_project_dependencies.py"),
+                "--repo",
+                str(repo),
+                "--plugin-root",
+                str(PLUGIN_ROOT),
+                "--codex-home",
+                str(codex_home),
+                "--skip-official-installs",
+                "--deactivate-provider",
+                "superpowers",
+                "--authorize-provider-cleanup",
+                "superpowers",
+                "--provider-cleanup-plan",
+                plan["planDigest"],
+                "--apply",
+                "--json",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 1, result.stderr)
+        cleanup = json.loads(result.stdout)["provider_deactivation"]
+        self.assertEqual(cleanup["status"], "activation_prerequisite_failed")
+        self.assertIn("selection_not_persisted", cleanup["blockingReasons"])
+        self.assertTrue(target.is_symlink())
+
+    def test_provider_deactivation_requires_complete_explicit_selection(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_project_repo(
+            enable_orchestrator=False,
+            enable_legacy_openspec_skills=False,
+            methodology_profile="core",
+            roadmap_provider="none",
+        )
+        (repo / ".dev-flow.json").write_text(
+            json.dumps({"workflow": {"methodology_profile": "core"}}, indent=2) + "\n"
+        )
+        source = (
+            PLUGIN_ROOT
+            / "fixtures"
+            / "provider-profiles"
+            / "strict-superpowers"
+            / ".agents"
+            / "skills"
+            / "brainstorming"
+        )
+        target = repo / ".agents" / "skills" / "brainstorming"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.symlink_to(source, target_is_directory=True)
+        common = (
+            "--repo",
+            str(repo),
+            "--plugin-root",
+            str(PLUGIN_ROOT),
+            "--codex-home",
+            str(codex_home),
+            "--skip-official-installs",
+            "--deactivate-provider",
+            "superpowers",
+        )
+        plan = run_json(
+            "activate_project_dependencies.py",
+            *common,
+            "--dry-run",
+            "--json",
+        )["provider_deactivation"]
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(PLUGIN_ROOT / "scripts" / "activate_project_dependencies.py"),
+                *common,
+                "--authorize-provider-cleanup",
+                "superpowers",
+                "--provider-cleanup-plan",
+                plan["planDigest"],
+                "--apply",
+                "--json",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 1, result.stderr)
+        cleanup = json.loads(result.stdout)["provider_deactivation"]
+        self.assertIn("selection_not_persisted", cleanup["blockingReasons"])
+        self.assertTrue(target.is_symlink())
+
+    def test_provider_deactivation_rechecks_parent_layout_before_unlink(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_project_repo(
+            enable_orchestrator=False,
+            enable_legacy_openspec_skills=False,
+            methodology_profile="core",
+            roadmap_provider="none",
+        )
+        source = (
+            PLUGIN_ROOT
+            / "fixtures"
+            / "provider-profiles"
+            / "strict-superpowers"
+            / ".agents"
+            / "skills"
+            / "brainstorming"
+        )
+        target = repo / ".agents" / "skills" / "brainstorming"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.symlink_to(source, target_is_directory=True)
+        selection = {
+            "effectiveMethodologyProfile": "core",
+            "selectionSource": "explicit_config",
+        }
+        plan = deactivate_project_provider_skills(
+            repo,
+            "superpowers",
+            PLUGIN_ROOT,
+            codex_home=codex_home,
+            selection=selection,
+        )
+        target.unlink()
+        target.parent.rmdir()
+        external_skills = Path(tempfile.mkdtemp(prefix="devflow-swapped-layout-"))
+        external_target = external_skills / "brainstorming"
+        external_target.symlink_to(source, target_is_directory=True)
+        (repo / ".agents" / "skills").symlink_to(
+            external_skills,
+            target_is_directory=True,
+        )
+
+        cleanup = deactivate_project_provider_skills(
+            repo,
+            "superpowers",
+            PLUGIN_ROOT,
+            codex_home=codex_home,
+            apply=True,
+            authorized_provider="superpowers",
+            authorized_plan_digest=plan["planDigest"],
+            selection=selection,
+        )
+
+        self.assertTrue(external_target.is_symlink())
+        self.assertFalse(cleanup["changed"])
+        self.assertEqual(cleanup["status"], "authorization_required")
+        self.assertFalse(cleanup["planDigestMatches"])
+        self.assertTrue(
+            any(item["status"] == "preserved_unsafe_layout" for item in cleanup["items"]),
+            cleanup,
+        )
+
+    def test_provider_deactivation_uses_anchored_parent_when_layout_swaps_after_check(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_project_repo(
+            enable_orchestrator=False,
+            enable_legacy_openspec_skills=False,
+            methodology_profile="core",
+            roadmap_provider="none",
+        )
+        source = (
+            PLUGIN_ROOT
+            / "fixtures"
+            / "provider-profiles"
+            / "strict-superpowers"
+            / ".agents"
+            / "skills"
+            / "brainstorming"
+        )
+        target = repo / ".agents" / "skills" / "brainstorming"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.symlink_to(source, target_is_directory=True)
+        selection = {
+            "effectiveMethodologyProfile": "core",
+            "selectionSource": "explicit_config",
+        }
+        plan = deactivate_project_provider_skills(
+            repo,
+            "superpowers",
+            PLUGIN_ROOT,
+            codex_home=codex_home,
+            selection=selection,
+        )
+        external_skills = Path(tempfile.mkdtemp(prefix="devflow-post-check-swap-"))
+        external_target = external_skills / "brainstorming"
+        external_target.symlink_to(source, target_is_directory=True)
+        original_skills = repo / ".agents" / "skills.original"
+        original_readlink = provider_deactivation_module.os.readlink
+        swapped = False
+
+        def swap_parent_before_anchored_readlink(path, *args, **kwargs):
+            nonlocal swapped
+            if kwargs.get("dir_fd") is not None and not swapped:
+                swapped = True
+                (repo / ".agents" / "skills").rename(original_skills)
+                (repo / ".agents" / "skills").symlink_to(
+                    external_skills,
+                    target_is_directory=True,
+                )
+            return original_readlink(path, *args, **kwargs)
+
+        with mock.patch.object(
+            provider_deactivation_module.os,
+            "readlink",
+            side_effect=swap_parent_before_anchored_readlink,
+        ):
+            cleanup = deactivate_project_provider_skills(
+                repo,
+                "superpowers",
+                PLUGIN_ROOT,
+                codex_home=codex_home,
+                apply=True,
+                authorized_provider="superpowers",
+                authorized_plan_digest=plan["planDigest"],
+                selection=selection,
+            )
+
+        self.assertTrue(swapped)
+        self.assertTrue(external_target.is_symlink())
+        self.assertTrue((original_skills / "brainstorming").is_symlink())
+        self.assertFalse(cleanup["ok"], cleanup)
+        self.assertFalse(cleanup["changed"])
+
+    def test_provider_deactivation_apply_removes_only_verified_symlinks_and_is_idempotent(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_project_repo(methodology_profile="core", roadmap_provider="none")
+        fixture_skills = (
+            PLUGIN_ROOT
+            / "fixtures"
+            / "provider-profiles"
+            / "strict-superpowers"
+            / ".agents"
+            / "skills"
+        )
+        verified = repo / ".agents" / "skills" / "brainstorming"
+        verified.symlink_to(fixture_skills / "brainstorming", target_is_directory=True)
+        copied = repo / ".agents" / "skills" / "writing-plans"
+        shutil.copytree(fixture_skills / "writing-plans", copied)
+        unknown_source = (
+            Path(tempfile.mkdtemp(prefix="cpo-unknown-skill-"))
+            / "plugins"
+            / "cache"
+            / "superpowers"
+            / "user-build"
+            / "skills"
+            / "test-driven-development"
+        )
+        unknown_source.mkdir(parents=True)
+        (unknown_source / "SKILL.md").write_text(
+            "---\nname: test-driven-development\ndescription: user-owned\n---\n"
+        )
+        unknown = repo / ".codex" / "skills" / "test-driven-development"
+        unknown.parent.mkdir(parents=True, exist_ok=True)
+        unknown.symlink_to(unknown_source, target_is_directory=True)
+        legacy = repo / ".codex" / "skills" / "verification-before-completion"
+        legacy_target = (
+            codex_home
+            / "plugins"
+            / "cache"
+            / "legacy"
+            / "superpowers"
+            / "6.0.3"
+            / "skills"
+            / "verification-before-completion"
+        )
+        legacy.symlink_to(legacy_target, target_is_directory=True)
+
+        dry_run_args = (
+            "--repo",
+            str(repo),
+            "--plugin-root",
+            str(PLUGIN_ROOT),
+            "--codex-home",
+            str(codex_home),
+            "--skip-official-installs",
+            "--deactivate-provider",
+            "superpowers",
+            "--dry-run",
+            "--json",
+        )
+        plan = run_json(
+            "activate_project_dependencies.py",
+            *dry_run_args,
+        )["provider_deactivation"]
+        args = (
+            "--repo",
+            str(repo),
+            "--plugin-root",
+            str(PLUGIN_ROOT),
+            "--codex-home",
+            str(codex_home),
+            "--skip-official-installs",
+            "--deactivate-provider",
+            "superpowers",
+            "--authorize-provider-cleanup",
+            "superpowers",
+            "--provider-cleanup-plan",
+            plan["planDigest"],
+            "--apply",
+            "--json",
+        )
+        report = run_json("activate_project_dependencies.py", *args)
+
+        cleanup = report["provider_deactivation"]
+        by_skill = {item["skill"]: item for item in cleanup["items"]}
+        self.assertTrue(cleanup["ok"], cleanup)
+        self.assertTrue(cleanup["changed"])
+        self.assertEqual(cleanup["status"], "applied_with_preserved_paths")
+        self.assertTrue(cleanup["planDigestMatches"])
+        self.assertEqual(by_skill["brainstorming"]["status"], "removed")
+        self.assertEqual(by_skill["verification-before-completion"]["status"], "removed")
+        self.assertEqual(
+            by_skill["verification-before-completion"]["verification"],
+            "exact_legacy_provider_target",
+        )
+        self.assertEqual(by_skill["writing-plans"]["status"], "preserved_copy")
+        self.assertEqual(by_skill["test-driven-development"]["status"], "preserved_unknown_link")
+        self.assertFalse(verified.is_symlink())
+        self.assertFalse(legacy.is_symlink())
+        self.assertTrue((copied / "SKILL.md").exists())
+        self.assertTrue(unknown.is_symlink())
+        self.assertIn("rollback", by_skill["brainstorming"])
+
+        second_plan = run_json(
+            "activate_project_dependencies.py",
+            *dry_run_args,
+        )["provider_deactivation"]
+        second_args = [*args]
+        second_args[second_args.index(plan["planDigest"])] = second_plan["planDigest"]
+        second = run_json(
+            "activate_project_dependencies.py",
+            *second_args,
+        )["provider_deactivation"]
+
+        self.assertTrue(second["ok"], second)
+        self.assertFalse(second["changed"])
+        self.assertEqual(second["status"], "current_with_preserved_paths")
+        self.assertTrue((copied / "SKILL.md").exists())
+        self.assertTrue(unknown.is_symlink())
+
+    def test_provider_deactivation_apply_blocks_temporary_unpersisted_selection(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_project_repo(
+            enable_superpowers=True,
+            methodology_profile="strict-superpowers",
+            roadmap_provider="none",
+        )
+        source = (
+            PLUGIN_ROOT
+            / "fixtures"
+            / "provider-profiles"
+            / "strict-superpowers"
+            / ".agents"
+            / "skills"
+            / "brainstorming"
+        )
+        target = repo / ".agents" / "skills" / "brainstorming"
+        shutil.rmtree(target)
+        target.symlink_to(source, target_is_directory=True)
+        before_config = (repo / ".dev-flow.json").read_bytes()
+        plan = run_json(
+            "activate_project_dependencies.py",
+            "--repo",
+            str(repo),
+            "--plugin-root",
+            str(PLUGIN_ROOT),
+            "--codex-home",
+            str(codex_home),
+            "--skip-official-installs",
+            "--methodology-profile",
+            "core",
+            "--deactivate-provider",
+            "superpowers",
+            "--dry-run",
+            "--json",
+        )["provider_deactivation"]
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(PLUGIN_ROOT / "scripts" / "activate_project_dependencies.py"),
+                "--repo",
+                str(repo),
+                "--plugin-root",
+                str(PLUGIN_ROOT),
+                "--codex-home",
+                str(codex_home),
+                "--skip-official-installs",
+                "--methodology-profile",
+                "core",
+                "--deactivate-provider",
+                "superpowers",
+                "--authorize-provider-cleanup",
+                "superpowers",
+                "--provider-cleanup-plan",
+                plan["planDigest"],
+                "--apply",
+                "--json",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 1, result.stderr)
+        cleanup = json.loads(result.stdout)["provider_deactivation"]
+        self.assertEqual(cleanup["status"], "activation_prerequisite_failed")
+        self.assertEqual(cleanup["mode"], "blocked")
+        self.assertIn("selection_not_persisted", cleanup["blockingReasons"])
+        self.assertFalse(cleanup["changed"])
+        self.assertTrue(target.is_symlink())
+        self.assertEqual((repo / ".dev-flow.json").read_bytes(), before_config)
+
+    def test_provider_deactivation_rolls_back_removed_links_when_apply_fails(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_project_repo(methodology_profile="core", roadmap_provider="none")
+        fixture_skills = (
+            PLUGIN_ROOT
+            / "fixtures"
+            / "provider-profiles"
+            / "strict-superpowers"
+            / ".agents"
+            / "skills"
+        )
+        first = repo / ".agents" / "skills" / "brainstorming"
+        second = repo / ".agents" / "skills" / "test-driven-development"
+        first.symlink_to(fixture_skills / "brainstorming", target_is_directory=True)
+        second.symlink_to(
+            fixture_skills / "test-driven-development",
+            target_is_directory=True,
+        )
+        selection = {"effectiveMethodologyProfile": "core"}
+        plan = deactivate_project_provider_skills(
+            repo,
+            "superpowers",
+            PLUGIN_ROOT,
+            codex_home=codex_home,
+            selection=selection,
+        )
+        original_unlink = provider_deactivation_module.os.unlink
+
+        def fail_second(path, *args, **kwargs):
+            if Path(path).name == "test-driven-development":
+                raise OSError("injected unlink failure")
+            return original_unlink(path, *args, **kwargs)
+
+        with mock.patch.object(
+            provider_deactivation_module.os,
+            "unlink",
+            new=fail_second,
+        ):
+            cleanup = deactivate_project_provider_skills(
+                repo,
+                "superpowers",
+                PLUGIN_ROOT,
+                codex_home=codex_home,
+                apply=True,
+                authorized_provider="superpowers",
+                authorized_plan_digest=plan["planDigest"],
+                selection=selection,
+            )
+
+        by_skill = {item["skill"]: item for item in cleanup["items"]}
+        self.assertFalse(cleanup["ok"], cleanup)
+        self.assertEqual(cleanup["status"], "apply_failed_rolled_back")
+        self.assertFalse(cleanup["changed"])
+        self.assertEqual(cleanup["rollbackFailures"], [])
+        self.assertEqual(by_skill["brainstorming"]["status"], "rolled_back")
+        self.assertEqual(
+            by_skill["test-driven-development"]["status"],
+            "preserved_apply_failed",
+        )
+        self.assertTrue(first.is_symlink())
+        self.assertTrue(second.is_symlink())
 
     def test_dependency_check_reports_legacy_skill_layout_without_treating_it_as_active(self):
         codex_home = self.make_codex_home()

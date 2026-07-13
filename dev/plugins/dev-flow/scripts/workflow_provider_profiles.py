@@ -126,7 +126,6 @@ def resolve_provider_selection(
         "configErrors": errors,
         "repo": str(repo),
         "codexHome": str(codex_home),
-        "runtimeConfig": dict(config),
     }
 
 
@@ -152,7 +151,13 @@ def diagnose_provider_selection(
 
     superpowers = diagnose_superpowers(selection, codex_home, selected=profile == "strict-superpowers")
     providers["superpowers"] = superpowers
-    matt = diagnose_matt(selection, codex_home, selected=profile == "lean-matt", registry=registry)
+    matt = diagnose_matt(
+        selection,
+        repo,
+        codex_home,
+        selected=profile == "lean-matt",
+        registry=registry,
+    )
     providers["mattpocock-skills"] = matt
     gsd = diagnose_gsd(
         repo,
@@ -371,6 +376,7 @@ def diagnose_superpowers(
 
 def diagnose_matt(
     selection: dict[str, Any],
+    repo: Path,
     codex_home: Path,
     *,
     selected: bool,
@@ -378,15 +384,30 @@ def diagnose_matt(
 ) -> dict[str, Any]:
     profile = registry["methodologyProfiles"]["lean-matt"]
     implicit = list(profile["implicitSkills"])
-    root = codex_home / "skills"
+    root = Path(repo).resolve() / ".agents" / "skills"
+    global_root = (Path(codex_home).resolve() / "skills").resolve()
     available = {skill: (root / skill / "SKILL.md").exists() for skill in implicit}
-    present = any(available.values())
+    global_available = {
+        skill: (global_root / skill / "SKILL.md").exists()
+        for skill in implicit
+    }
+    present = any(available.values()) or any(global_available.values())
+    location_details = matt_location_details(
+        root,
+        global_root,
+        available,
+        global_available,
+    )
+    route_details = matt_route_details(root, available)
     if not selected:
         status = "available_unselected" if present else "absent_unselected"
         return {
             **provider_result(status, True),
+            **location_details,
+            **route_details,
             "implicitSkills": implicit,
             "excludedImplicitSkills": profile["excludedImplicitSkills"],
+            "skills": available,
         }
     missing = [skill for skill, exists in available.items() if not exists]
     hashes = skill_hashes(root, implicit)
@@ -397,20 +418,56 @@ def diagnose_matt(
     lock_source = matching_trusted_source(lock, trusted_sources) if lock else None
     if selector and selector_source is None:
         return matt_source_failure(
-            "source_mismatch", root, implicit, profile, available, missing, hashes, selector
+            "source_mismatch",
+            root,
+            global_root,
+            implicit,
+            profile,
+            available,
+            global_available,
+            missing,
+            hashes,
+            selector,
         )
     if lock and lock_source is None:
         return matt_source_failure(
-            "stale_lock", root, implicit, profile, available, missing, hashes, selector
+            "stale_lock",
+            root,
+            global_root,
+            implicit,
+            profile,
+            available,
+            global_available,
+            missing,
+            hashes,
+            selector,
         )
     locked_root = lock.get("sourceRoot") if isinstance(lock, dict) else None
     if locked_root and Path(str(locked_root)).resolve() != root.resolve():
         return matt_source_failure(
-            "stale_lock", root, implicit, profile, available, missing, hashes, selector
+            "stale_lock",
+            root,
+            global_root,
+            implicit,
+            profile,
+            available,
+            global_available,
+            missing,
+            hashes,
+            selector,
         )
     if selector_source and lock_source and source_identity(selector_source) != source_identity(lock_source):
         return matt_source_failure(
-            "stale_lock", root, implicit, profile, available, missing, hashes, selector
+            "stale_lock",
+            root,
+            global_root,
+            implicit,
+            profile,
+            available,
+            global_available,
+            missing,
+            hashes,
+            selector,
         )
     trusted_source = selector_source or lock_source
     expected_hashes = trusted_source.get("skillHashes", {}) if trusted_source else {}
@@ -418,7 +475,17 @@ def diagnose_matt(
         locked_hashes = lock.get("skillHashes", {}) if isinstance(lock, dict) else {}
         if locked_hashes != expected_hashes or set(locked_hashes) != set(implicit):
             return matt_source_failure(
-                "stale_lock", root, implicit, profile, available, missing, hashes, selector
+                "stale_lock",
+                root,
+                global_root,
+                implicit,
+                profile,
+                available,
+                global_available,
+                missing,
+                hashes,
+                selector,
+                expected_hashes=expected_hashes,
             )
     if not trusted_source and not selector and not lock:
         matching_hash_sources = [
@@ -432,31 +499,54 @@ def diagnose_matt(
             expected_hashes = trusted_source["skillHashes"]
         elif len(matching_hash_sources) > 1:
             return matt_source_failure(
-                "ambiguous_source", root, implicit, profile, available, missing, hashes, selector
+                "ambiguous_source",
+                root,
+                global_root,
+                implicit,
+                profile,
+                available,
+                global_available,
+                missing,
+                hashes,
+                selector,
             )
         elif not missing:
             return matt_source_failure(
-                "unverifiable_source", root, implicit, profile, available, missing, hashes, selector
+                "unverifiable_source",
+                root,
+                global_root,
+                implicit,
+                profile,
+                available,
+                global_available,
+                missing,
+                hashes,
+                selector,
             )
     drifted = sorted(
         skill
         for skill, expected in expected_hashes.items()
         if hashes.get(skill) != expected
     )
-    ready = not missing and not drifted
+    nonlocal_skills = route_details["nonLocalSkills"]
+    ready = not missing and not drifted and not nonlocal_skills
     status = "ready"
     if missing:
         status = "missing_capabilities"
+    elif nonlocal_skills:
+        status = "nonlocal_skill_route"
     elif drifted:
         status = "source_drift"
     return {
         **provider_result(status, ready),
-        "root": str(root),
+        **location_details,
+        **route_details,
         "implicitSkills": implicit,
         "excludedImplicitSkills": profile["excludedImplicitSkills"],
         "skills": available,
         "missingSkills": missing,
         "skillHashes": hashes,
+        "expectedSkillHashes": expected_hashes,
         "driftedSkills": drifted,
         "selector": selector,
         "sourceIdentity": source_identity(trusted_source or {}),
@@ -848,11 +938,15 @@ def diagnose_capabilities(
                 ready = provider_ready and mapping_ready
                 status = "ready" if ready else "missing"
         if profile == "lean-matt" and capability_provider == "mattpocock-skills":
-            expected_hashes = providers["mattpocock-skills"].get("skillHashes", {})
+            matt_report = providers["mattpocock-skills"]
+            expected_hashes = matt_report.get("expectedSkillHashes", {})
+            matt_root = Path(
+                str(matt_report.get("root") or (repo / ".agents" / "skills"))
+            )
             project_skills = {
                 skill: diagnose_bound_project_skill(
                     repo / ".agents" / "skills" / skill,
-                    codex_home / "skills" / skill,
+                    matt_root / skill,
                     expected_hashes.get(skill),
                 )
                 for skill in mapping
@@ -1254,24 +1348,70 @@ def source_identity(source: dict[str, Any]) -> dict[str, Any]:
 def matt_source_failure(
     status: str,
     root: Path,
+    global_root: Path,
     implicit: list[str],
     profile: dict[str, Any],
     available: dict[str, bool],
+    global_available: dict[str, bool],
     missing: list[str],
     hashes: dict[str, str],
     selector: dict[str, Any],
+    *,
+    expected_hashes: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     return {
         **provider_result(status, False),
-        "root": str(root),
+        **matt_location_details(root, global_root, available, global_available),
+        **matt_route_details(root, available),
         "implicitSkills": implicit,
         "excludedImplicitSkills": profile["excludedImplicitSkills"],
         "skills": available,
         "missingSkills": missing,
         "skillHashes": hashes,
+        "expectedSkillHashes": dict(expected_hashes or {}),
         "driftedSkills": [],
         "selector": selector,
         "selectionSource": "explicit_selector" if selector else "unique_discovery",
+    }
+
+
+def matt_location_details(
+    root: Path,
+    global_root: Path,
+    available: dict[str, bool],
+    global_available: dict[str, bool],
+) -> dict[str, Any]:
+    return {
+        "root": str(root),
+        "projectPackPresent": any(available.values()),
+        "globalRoot": str(global_root),
+        "globalSkills": global_available,
+        "globalPackPresent": any(global_available.values()),
+    }
+
+
+def matt_route_details(root: Path, available: dict[str, bool]) -> dict[str, Any]:
+    declared_root = root.absolute()
+    resolved_root = root.resolve()
+    project_root_local = declared_root == resolved_root
+    local_routes: dict[str, bool] = {}
+    for skill, exists in available.items():
+        if not exists or not project_root_local:
+            local_routes[skill] = False
+            continue
+        try:
+            (root / skill / "SKILL.md").resolve().relative_to(declared_root)
+            local_routes[skill] = True
+        except (OSError, ValueError):
+            local_routes[skill] = False
+    return {
+        "projectRootLocal": project_root_local,
+        "localSkillRoutes": local_routes,
+        "nonLocalSkills": sorted(
+            skill
+            for skill, exists in available.items()
+            if exists and not local_routes[skill]
+        ),
     }
 
 

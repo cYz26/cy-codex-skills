@@ -11,12 +11,14 @@
 
 - kind: <new-feature | bug-fix | workflow-repair | docs-only | tooling | other>
 - workflow mode: <Full OpenSpec | Lightweight Ledger | Prototype Mode>
+- artifact-status: draft/final - <unresolved questions require draft>
 - capability-research: required/used/skipped - <reason>
-- brainstorming: required/used/skipped - <reason>
+- decision-resolution: required/used/skipped - <reason>
 - decision-grilling: required/used/skipped - <reason>
-- writing-plans: required/used/skipped/pending - <reason>
-- openspec/gsd: required/used/skipped - <reason>
-- Open Questions: <none | unresolved questions require brainstorming plus decision-grilling or explicit draft status>
+- implementation-planning: required/used/skipped/pending - <reason>
+- architecture-guidance: required/used/skipped - <reason>
+- openspec/roadmap: required/used/skipped - <reason>
+- Open Questions: <none | unresolved questions require decision-resolution plus decision-grilling or explicit draft status>
 
 ## Target State
 

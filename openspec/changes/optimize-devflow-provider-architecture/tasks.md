@@ -1,10 +1,10 @@
 # DevFlow Provider Architecture Implementation Plan
 
 > **For agentic workers:** Execute one approved Capability Slice at a time.
-> Use `superpowers:test-driven-development` or the selected profile's mapped
-> TDD capability for behavior changes, and run fresh completion verification
-> before checking any slice as done. Subagent work requires an approved Agent
-> Task Contract and disjoint write sets.
+> Use the selected profile's `test-first-execution` mapping for behavior
+> changes, and run fresh `completion-proof` verification before checking any
+> slice as done. Subagent work requires an approved Agent Task Contract and
+> disjoint write sets.
 
 **Goal:** Make DevFlow Core independently usable, add deterministic optional
 methodology and roadmap providers, eliminate DevFlow/GSD planning-path
@@ -39,12 +39,16 @@ Plugin Eval.
 
 - kind: architecture / compatibility / workflow-repair
 - workflow mode: Full OpenSpec
+- artifact-status: final
 - capability-research: used — upstream/local/runtime evidence is recorded in
   `proposal.md` and `design.md`
-- brainstorming: used — three architectures were compared and provider/profile
-  was approved as the basis for this plan
+- decision-resolution: used — three architectures were compared and the
+  provider/profile boundary was approved as the basis for this plan
 - decision-grilling: skipped — Open Questions are empty
-- writing-plans: used — this file is the canonical implementation plan
+- implementation-planning: used — this file is the canonical implementation
+  plan
+- architecture-guidance: used — provider-local activation, capability routing,
+  and cleanup ownership are resolved in `design.md`
 - OpenSpec: required and used
 - GSD planning: skipped — GSD is the optional provider being repaired and its
   current repository state is inconsistent
@@ -66,6 +70,16 @@ Plugin Eval.
       sync, release-target Plugin Eval, and local-reference dry-run pass.
 - [x] C.8 The benchmark corpus exists and can reproduce profile comparisons;
       no default-switch claim is made without the full outcome gate.
+- [x] C.9 Core gates, routing ledgers, generated guidance, and plan lint use
+      stable capability ids rather than Superpowers or Matt skill names.
+- [x] C.10 Unselected providers remain advisory and action-free in every
+      summary, updater, activation, and fallback surface.
+- [x] C.11 Lean Matt activation installs and resolves its allowlist from the
+      current project's `.agents/skills/` tree.
+- [x] C.12 Explicit provider cleanup is dry-run-first and removes only verified
+      managed symlinks while preserving all other content.
+- [x] C.13 Superpowers `6.1.1`, dev/release parity, installed cache freshness,
+      and the current project's `core + none` state are freshly verified.
 
 ## 1. Baseline and Characterization
 
@@ -482,8 +496,9 @@ RELEASE_SYNC_JSON="$(python3.12 dev/plugins/dev-flow/scripts/sync_release_assets
 printf '%s\n' "$RELEASE_SYNC_JSON"
 printf '%s\n' "$RELEASE_SYNC_JSON" | jq -e '.status == "pending" or .status == "current"'
 
-# HUMAN GATE: run apply only after explicit release-sync approval.
-python3.12 dev/plugins/dev-flow/scripts/sync_release_assets.py --repo . --target dev-flow --apply --json
+# HUMAN GATE: record fresh verification state, then use the only supported
+# release apply entrypoint after explicit release-sync approval.
+python3.12 dev/plugins/dev-flow/scripts/release_promotion_gate.py --repo . --apply --json
 POST_SYNC_JSON="$(python3.12 dev/plugins/dev-flow/scripts/sync_release_assets.py --repo . --target dev-flow --json)"
 printf '%s\n' "$POST_SYNC_JSON"
 printf '%s\n' "$POST_SYNC_JSON" | jq -e '.status == "current"'
@@ -530,6 +545,83 @@ unauthorized at plan-review time. Final evidence must show release sync
 `current`, Plugin Eval score/warning IDs/risk/finding dispositions, and updater
 JSON `codex_home` matching the resolved active runtime.
 
+## 9. Provider-Neutral Hardening and Local Runtime Refresh
+
+**Files:**
+
+- Modify: `dev/plugins/dev-flow/docs/decision_grilling_matrix.json`
+- Modify: `dev/plugins/dev-flow/scripts/workflow_decision_grilling.py`
+- Modify: `dev/plugins/dev-flow/scripts/lint_ai_plan.py`
+- Modify: `dev/plugins/dev-flow/scripts/devflow_stop_hook.py`
+- Modify: provider diagnostics, activation, provenance, and compatibility files
+- Modify: DevFlow AGENTS/task-ledger templates, provider-boundary docs/skills,
+  and focused tests
+- Create: `.planning/agent-tasks/20260713-devflow-provider-hardening.md`
+- Evidence: `.planning/devflow/verification/provider-hardening-20260713.md`
+
+- [x] 9.1 Add RED tests proving stable core surfaces contain no provider skill
+      identity and unresolved questions require `decision-resolution`.
+- [x] 9.2 Replace `methodGate`, `brainstorming`, and `writing-plans` contracts
+      with provider-neutral capability ids in runtime outputs, linters,
+      templates, Stop-hook payloads, and durable repository guidance. Preserve
+      legacy callable adapters only where they do not leak into stable output.
+- [x] 9.3 Add RED tests proving `available_unselected` and
+      `absent_unselected` never become a missing-provider summary or install
+      action; report globally exposed Matt control-plane skills only as
+      non-blocking pollution advisories.
+- [x] 9.4 Make explicit provider deactivation dry-run-first and symlink-only,
+      with provider-identity verification, apply authorization, preservation
+      results, and idempotence tests.
+- [x] 9.5 Remove Matt's global install flag, resolve the six allowlisted skills
+      project-locally, and reject global-only content as satisfaction of a
+      selected lean profile.
+- [x] 9.6 Align current strict compatibility metadata with Superpowers `6.1.1`
+      and retain manifest-driven hook behavior plus deterministic legacy source
+      discovery.
+- [x] 9.7 Synchronize the release package and pass focused RED/GREEN tests,
+      complete dev and packaged discovery, strict OpenSpec validation, runtime
+      verification, release-target Plugin Eval, and `git diff --check`.
+- [x] 9.8 Refresh the named installed DevFlow plugin/cache, run project
+      diagnostics, persist explicit `core + none`, and apply cleanup only to
+      enumerated verified legacy provider symlinks. Preserve global Matt packs,
+      provider caches, copied skills, and unknown content for manual review.
+- [x] 9.9 Record exact evidence, obtain an independent final review, update all
+      control-plane status, then commit and push the authorized repository
+      branch.
+
+**Validation:**
+
+```bash
+python3.12 -m unittest dev.plugins.dev-flow.tests.test_project_orchestrator -v
+python3.12 -m unittest dev.plugins.dev-flow.tests.test_dependencies -v
+python3.12 -m unittest dev.plugins.dev-flow.tests.test_provider_profiles -v
+python3.12 -m unittest dev.plugins.dev-flow.tests.test_runtime_gates -v
+python3.12 -m unittest discover -s dev/plugins/dev-flow/tests -p 'test_*.py' -v
+python3.12 dev/plugins/dev-flow/scripts/release_promotion_gate.py --repo . --apply --json
+python3.12 dev/plugins/dev-flow/scripts/sync_release_assets.py --repo . --target dev-flow --json | jq -e '.status == "current"'
+python3.12 -m unittest discover -s plugins/dev-flow/tests -p 'test_*.py' -v
+python3.12 plugins/dev-flow/scripts/verify_release_runtime.py --plugin-root plugins/dev-flow --repo-root . --json
+openspec validate optimize-devflow-provider-architecture --type change --strict
+
+# Refresh the named DevFlow plugin using the verified active runtime binary,
+# then confirm source/cache parity before changing project-local state.
+"$ACTIVE_CODEX_BIN" plugin add dev-flow@cy-codex-skills --json
+python3.12 dev/plugins/dev-flow/scripts/doctor_workflow.py --repo . --codex-home "$ACTIVE_CODEX_HOME" --check-cache-drift --json
+python3.12 dev/plugins/dev-flow/scripts/plugin_project_migration.py --repo . --codex-home "$ACTIVE_CODEX_HOME" --json
+python3.12 dev/plugins/dev-flow/scripts/validate_workflow_state.py --repo . --json
+python3.12 dev/plugins/dev-flow/scripts/scaffold_workflow.py --repo . --dry-run --json
+
+# Save and review the exact cleanup plan before authorizing the same digest.
+python3.12 dev/plugins/dev-flow/scripts/activate_project_dependencies.py --repo . --codex-home "$ACTIVE_CODEX_HOME" --skip-official-installs --deactivate-provider superpowers --json > .planning/devflow/verification/provider-cleanup-plan.json
+CLEANUP_PLAN_DIGEST="$(jq -r '.provider_deactivation.planDigest' .planning/devflow/verification/provider-cleanup-plan.json)"
+test -n "$CLEANUP_PLAN_DIGEST" && test "$CLEANUP_PLAN_DIGEST" != null
+python3.12 dev/plugins/dev-flow/scripts/activate_project_dependencies.py --repo . --codex-home "$ACTIVE_CODEX_HOME" --skip-official-installs --apply --deactivate-provider superpowers --authorize-provider-cleanup superpowers --provider-cleanup-plan "$CLEANUP_PLAN_DIGEST" --json > .planning/devflow/verification/provider-cleanup-apply.json
+python3.12 dev/plugins/dev-flow/scripts/activate_project_dependencies.py --repo . --codex-home "$ACTIVE_CODEX_HOME" --skip-official-installs --deactivate-provider superpowers --json | jq -e '.provider_deactivation.status == "current" or .provider_deactivation.status == "current_with_preserved_paths"'
+
+python3.12 dev/scripts/codex_auto_update_plugins_skills.py --repo "$PWD" --codex-home "$ACTIVE_CODEX_HOME" --skip-codex-update --skip-openai-curated-cache --skip-external-updaters --json
+git diff --check
+```
+
 ## Execution Ledger
 
 | Slice | Status | Owner | Required evidence | Human gate |
@@ -542,7 +634,11 @@ JSON `codex_home` matching the resolved active runtime.
 | 6 Routing/context cost | done | main agent | `evidence/slice-6-routing-context.md`; routing tests + diagnostic Eval disposition | release-target Eval awaits sync approval |
 | 7 Outcome benchmark | skipped_with_reason | unassigned | `evidence/slice-7-benchmark-framework.md`; valid 60-run dry-run with zero model calls/writes | later default-switch change requires spend + blind review |
 | 8a Release packaging | done | main agent | `evidence/slice-8-release-pending.md`; sync current; packaged matrix/runtime/Eval pass | repository release/commit/push approved by user |
-| 8b Local cache/project refresh | skipped_with_reason | unassigned | updater and migration dry-run evidence | installed-cache refresh and real-project migration remain separate approvals |
+| 8b Local cache/project refresh | done | main agent | named cache matches release; project migration and skill layout are current | authorized by the user's continuation request |
+| 9a Provider-neutral core gates | done | provider_neutral | RED/GREEN routing, lint, template, release-smoke tests | independent review passed |
+| 9b Diagnostics and safe deactivation | done | provider_diagnostics + main agent | action-free summaries; digest/auth/persistence/dirfd/rollback tests; real-project idempotence | cleanup limited to eight verified links and then current |
+| 9c Matt locality and strict compatibility | done | matt_local_version + main agent | project-local lock/unique-source bootstrap, ambiguity rejection, and `6.1.1` manifest/version tests | no Matt install performed by the implementation workflow |
+| 9d Release/runtime/local refresh | done | main agent | `evidence/slice-9-provider-hardening.md`; 438 dev tests; 8 packaged tests; 277 runtime checks; cache/project current | release and local refresh authorized; independent review passed |
 
 Valid statuses: `todo`, `in_progress`, `blocked`, `done`,
 `skipped_with_reason`. Mark `done` only after the listed evidence passes.
@@ -563,6 +659,12 @@ Valid statuses: `todo`, `in_progress`, `blocked`, `done`,
       provider matrices are synchronized and verifiable.
 - [x] A.8 Lean default remains unchanged unless a later approved change cites a
       fully passing benchmark result.
+- [x] A.9 Core routing and planning contracts use stable capability ids and are
+      independent of installed provider identity.
+- [x] A.10 Matt allowlist activation is project-local and global alternate
+      control-plane skills remain unselected advisory content.
+- [x] A.11 Verified-link deactivation, current provider compatibility metadata,
+      release/runtime parity, and local DevFlow refresh have fresh evidence.
 
 ## Review Checklist
 
@@ -584,11 +686,11 @@ Valid statuses: `todo`, `in_progress`, `blocked`, `done`,
 
 ## Final Result
 
-Source implementation and the release candidate are complete through the
-provider seam, optional adapters, roadmap ownership, reversible migration,
-provider-neutral routing, benchmark framework, packaged provider/roadmap
-matrix, and runtime verification. `core + none` remains the default; GSD is an
-optional roadmap overlay and `lean-matt` is opt-in. The paid/live benchmark is
-deferred to a later default-switch proposal. Installed-cache refresh,
-real-project migration, and archive remain separate actions; repository commit
-and push are authorized for this change.
+The provider architecture and hardening work are complete. `core + none` is the
+independent default; `lean-matt` is a project-local six-skill opt-in;
+`strict-superpowers` is an optional manifest-bound strict profile; and GSD is
+roadmap-only when explicitly selected. Unselected providers are action-free,
+cleanup is digest/persistence/dirfd guarded, dev and release runtime are in
+sync, the named installed cache matches source, and independent review passed.
+The live outcome benchmark remains a separately authorized prerequisite only
+for a future default-switch proposal. Archive remains a separate approval.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "targetSuperpowersVersion": "6.0.3",
+  "targetSuperpowersVersion": "6.1.1",
   "fallbackCompatibleVersion": "5.1.3",
   "gates": [
     {
@@ -8,7 +8,7 @@
       "skill": "using-superpowers",
       "requiredInStrictProfile": true,
       "when": ["session-start", "before-first-devflow-routing"],
-      "devflowAction": "diagnose-or-prompt-hook-trust"
+      "devflowAction": "diagnose-selected-manifest-hooks"
     },
     {
       "id": "design-before-implementation",

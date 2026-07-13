@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -18,6 +19,10 @@ else:
     REPO_ROOT = PLUGIN_ROOT.parents[2]
     RUNTIME_ARCHIVE = REPO_ROOT / "plugins" / "dev-flow" / "scripts" / "devflow_runtime.pyz"
     sys.path.insert(0, str(PLUGIN_ROOT / "scripts"))
+
+RELEASE_PLUGIN_ROOT = (
+    PLUGIN_ROOT if PACKAGED else REPO_ROOT / "plugins" / "dev-flow"
+)
 
 
 from workflow_dependency_provenance import default_plugin_root as provenance_plugin_root
@@ -77,6 +82,7 @@ class PackagedRuntimeTests(unittest.TestCase):
         self.assertEqual(gsd["version"], "1.6.1")
         self.assertEqual(matt["ref"], "v1.1.0")
         self.assertEqual(len(matt["skillHashes"]), 6)
+        self.assertNotIn("--global", matt["installCommand"])
 
     def test_provider_roadmap_matrix(self):
         methodology_providers = {
@@ -109,6 +115,7 @@ class PackagedRuntimeTests(unittest.TestCase):
             members = set(archive.namelist())
 
         self.assertIn("workflow_provider_profiles.py", members)
+        self.assertIn("workflow_provider_deactivation.py", members)
         self.assertIn("workflow_provider_migration.py", members)
         self.assertIn("workflow_roadmap_provider.py", members)
         self.assertIn("workflow_release_sync.py", members)
@@ -125,6 +132,21 @@ class PackagedRuntimeTests(unittest.TestCase):
         self.assertTrue((PLUGIN_ROOT / "scripts" / "check_dependencies.py").is_file())
         self.assertTrue((PLUGIN_ROOT / "scripts" / "archive_roadmap_binding.py").is_file())
         self.assertTrue((PLUGIN_ROOT / "scripts" / "verify_release_runtime.py").is_file())
+
+    def test_provider_cleanup_cli_help_from_release_wrapper(self):
+        entrypoint = RELEASE_PLUGIN_ROOT / "scripts" / "activate_project_dependencies.py"
+        result = subprocess.run(
+            [sys.executable, str(entrypoint), "--help"],
+            cwd=RELEASE_PLUGIN_ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("--deactivate-provider", result.stdout)
+        self.assertIn("--authorize-provider-cleanup", result.stdout)
+        self.assertIn("--provider-cleanup-plan", result.stdout)
 
     def test_agent_kb_is_absent(self):
         workflow_lib = runtime_module_text("workflow_lib.py")

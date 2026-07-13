@@ -51,6 +51,7 @@ def check_external_dependencies(
     check_required_cli_tools(checks)
     check_global_plugin_inactive(checks, global_config, "superpowers", required=False)
     check_global_skills_inactive(checks, codex_home, global_config, methodology, roadmap)
+    check_global_matt_control_plane_pollution(checks, codex_home, global_config)
     if repo is not None:
         check_project_skills(checks, repo, PROJECT_ORCHESTRATOR_SKILLS, True)
         if methodology == "strict-superpowers":
@@ -95,11 +96,25 @@ def provider_superpowers_compatibility(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     if provider_report is None:
         report = add_superpowers_governance_checks([], codex_home, strict)
+        report = {
+            **report,
+            "status": (
+                "available_unselected"
+                if report.get("pluginRoot")
+                else "absent_unselected"
+            ),
+            "compatibility": "unselected",
+            "strict": strict,
+            "nextAction": "",
+        }
         return report, report
     bound = dict(provider_report.get("providers", {}).get("superpowers", {}))
     version = str(bound.get("version") or "0")
     bound_status = bound.get("status")
-    if bound_status == "ready":
+    unselected = bound_status in {"available_unselected", "absent_unselected"}
+    if unselected:
+        status = str(bound_status)
+    elif bound_status == "ready":
         status = (
             "superpowers_ok"
             if compare_versions(version, SUPERPOWERS_RECOMMENDED) >= 0
@@ -119,12 +134,12 @@ def provider_superpowers_compatibility(
         "version": bound.get("version"),
         "sourceChannel": bound.get("sourceChannel"),
         "pluginRoot": bound.get("root"),
-        "compatibility": superpowers_compatibility(version),
+        "compatibility": "unselected" if unselected else superpowers_compatibility(version),
         "requiredSkills": bound.get("skills", {}),
         "sessionStartHookPresent": bound.get("hookPresent", False),
         "sessionStartHookTrusted": bound.get("hookTrusted", False),
         "strict": strict,
-        "nextAction": superpowers_next_action(status),
+        "nextAction": "" if unselected else superpowers_next_action(status),
     }
     return report, bound
 
@@ -328,6 +343,30 @@ def check_global_skills_inactive(
         inactive = not path.exists() or skill_disabled(config, path)
         detail = "not installed globally" if not path.exists() else skill_detail(path, config)
         add_check(checks, f"global skill inactive: {skill}", inactive, required, detail)
+
+
+def check_global_matt_control_plane_pollution(
+    checks: list[dict[str, Any]],
+    codex_home: Path,
+    config: dict[str, Any],
+) -> None:
+    from workflow_provider_registry import default_plugin_root, load_provider_registry
+
+    registry = load_provider_registry(default_plugin_root())
+    profile = registry["methodologyProfiles"]["lean-matt"]
+    for skill in profile["excludedImplicitSkills"]:
+        path = codex_home / "skills" / skill / "SKILL.md"
+        inactive = not path.exists() or skill_disabled(config, path)
+        detail = "not installed globally" if not path.exists() else skill_detail(path, config)
+        add_check(
+            checks,
+            f"global Matt control-plane skill inactive: {skill}",
+            inactive,
+            False,
+            detail,
+            status="inactive" if inactive else "global_control_plane_pollution",
+            provider="mattpocock-skills",
+        )
 
 
 def skill_disabled(config: dict[str, Any], path: Path) -> bool:

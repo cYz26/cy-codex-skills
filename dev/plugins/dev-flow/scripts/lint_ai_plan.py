@@ -31,16 +31,31 @@ REQUIRED_HEADINGS = [
 ]
 
 OPEN_QUESTIONS_HEADING = re.compile(r"^##\s+Open Questions(?!\s*\(RESOLVED\))", re.IGNORECASE | re.MULTILINE)
-ACTIVE_BRAINSTORMING_ROUTE = re.compile(
-    r"(superpowers:brainstorming|brainstorming\s*:\s*(required|used|pending))",
-    re.IGNORECASE,
+ACTIVE_DECISION_RESOLUTION_ROUTE = re.compile(
+    r"^\s*-\s*decision-resolution\s*:\s*`?(required|used|pending)`?"
+    r"(?:\s*(?:-|—)\s*.*)?\s*$",
+    re.IGNORECASE | re.MULTILINE,
 )
-SKIPPED_BRAINSTORMING_ROUTE = re.compile(r"brainstorming\s*:\s*skipp?ed", re.IGNORECASE)
+SKIPPED_DECISION_RESOLUTION_ROUTE = re.compile(
+    r"^\s*-\s*decision-resolution\s*:\s*`?skipped`?"
+    r"(?:\s*(?:-|—)\s*.*)?\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
 ACTIVE_DECISION_GRILLING_ROUTE = re.compile(
-    r"(decision-grilling\s*:\s*(required|used|pending)|decision grilling)",
-    re.IGNORECASE,
+    r"^\s*-\s*decision-grilling\s*:\s*`?(required|used|pending)`?"
+    r"(?:\s*(?:-|—)\s*.*)?\s*$",
+    re.IGNORECASE | re.MULTILINE,
 )
-SKIPPED_DECISION_GRILLING_ROUTE = re.compile(r"decision-grilling\s*:\s*skipp?ed", re.IGNORECASE)
+SKIPPED_DECISION_GRILLING_ROUTE = re.compile(
+    r"^\s*-\s*decision-grilling\s*:\s*`?skipped`?"
+    r"(?:\s*(?:-|—)\s*.*)?\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+ACTIVE_ARTIFACT_DRAFT = re.compile(
+    r"^\s*-\s*artifact-status\s*:\s*`?draft`?"
+    r"(?:\s*(?:-|—)\s*.*)?\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
 
 
 def lint_ai_plan(path: Path, *, skip_required_headings: bool = False) -> dict[str, object]:
@@ -60,11 +75,26 @@ def lint_ai_plan(path: Path, *, skip_required_headings: bool = False) -> dict[st
     open_questions = OPEN_QUESTIONS_HEADING.search(text)
     if open_questions:
         line = text[: open_questions.start()].count("\n") + 1
-        if SKIPPED_BRAINSTORMING_ROUTE.search(text) or not ACTIVE_BRAINSTORMING_ROUTE.search(text):
+        is_draft = bool(ACTIVE_ARTIFACT_DRAFT.search(text))
+        if SKIPPED_DECISION_RESOLUTION_ROUTE.search(text) or not ACTIVE_DECISION_RESOLUTION_ROUTE.search(text):
             findings.append(
-                f"line {line}: unresolved Open Questions require brainstorming in the Skill Routing Ledger"
+                f"line {line}: unresolved Open Questions require decision-resolution in the Skill Routing Ledger"
             )
-        if SKIPPED_DECISION_GRILLING_ROUTE.search(text) or not ACTIVE_DECISION_GRILLING_ROUTE.search(text):
+        if not is_draft:
+            findings.append(
+                f"line {line}: unresolved Open Questions require artifact-status: draft"
+            )
+        if is_draft:
+            grilling_recorded = bool(
+                ACTIVE_DECISION_GRILLING_ROUTE.search(text)
+                or SKIPPED_DECISION_GRILLING_ROUTE.search(text)
+            )
+        else:
+            grilling_recorded = bool(
+                ACTIVE_DECISION_GRILLING_ROUTE.search(text)
+                and not SKIPPED_DECISION_GRILLING_ROUTE.search(text)
+            )
+        if not grilling_recorded:
             findings.append(
                 f"line {line}: unresolved Open Questions require decision-grilling in the Skill Routing Ledger"
             )

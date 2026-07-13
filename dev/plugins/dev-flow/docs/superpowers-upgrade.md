@@ -1,7 +1,8 @@
 # Superpowers Upgrade Policy
 
-DevFlow treats Superpowers as a methodology dependency, not as DevFlow-owned
-runtime code.
+DevFlow treats Superpowers as an optional strict methodology provider, not as a
+core dependency or DevFlow-owned runtime code. This policy is inactive for
+`core` and `lean-matt` projects.
 
 ## Version Policy
 
@@ -16,13 +17,15 @@ silently switch an existing project between curated and upstream channels.
 ## Boundaries
 
 - DevFlow may diagnose missing, unsupported, fallback, upgrade-recommended,
-  hook-missing, hook-untrusted, and ok states.
+  hook-missing, hook-untrusted, and ok states only when the strict provider is
+  selected. Unselected availability remains advisory and action-free.
 - DevFlow updater apply mode may run only the selected source record's pinned
   `updateCommand`. If no unique source is selected, it stops with
   `source-selection-required`.
 - DevFlow hooks do not install or upgrade Superpowers.
 - DevFlow does not trust or bypass Superpowers hooks.
-- Users must review bundled hooks through `/hooks`.
+- Users must review bundled hooks through `/hooks` only when the selected
+  distribution declares a hook.
 
 ## Validation
 
