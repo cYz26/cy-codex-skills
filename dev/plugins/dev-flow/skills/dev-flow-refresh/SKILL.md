@@ -63,6 +63,20 @@ workflow files by path.
 
 Apply only the safe refreshes that the latest user request already authorizes.
 
+Refresh official OpenSpec skills through DevFlow's isolated OpenSpec staging
+path. Dry-run invokes no CLI and writes nothing; apply verifies the exact six
+1.6 skills, copies them transactionally, and excludes real global OpenSpec
+configuration and OPSX prompts:
+
+```bash
+python3 dev/plugins/dev-flow/scripts/activate_project_dependencies.py \
+  --repo <project> --codex-home <codex-home> \
+  --refresh-project-skills --dry-run --json
+python3 dev/plugins/dev-flow/scripts/activate_project_dependencies.py \
+  --repo <project> --codex-home <codex-home> \
+  --refresh-project-skills --apply --json
+```
+
 Refresh stale project-local DevFlow skill links:
 
 ```bash

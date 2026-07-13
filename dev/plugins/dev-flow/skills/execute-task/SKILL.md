@@ -34,7 +34,9 @@ lock persistence occur only in explicit apply mode.
 
 1. Read `AGENTS.md`, `.planning/devflow/STATE.md`, the active change or
    lightweight ledger, relevant source, Acceptance Criteria, and Validation
-   Commands.
+   Commands. For Full OpenSpec, read `openspec status --change <id> --json`
+   and the applicable `openspec instructions <artifact> --change <id> --json`;
+   use returned `artifactPaths` and `actionContext`.
 2. Confirm the workflow route is executable. Full OpenSpec work proceeds
    through `openspec-apply-change`; Prototype Mode remains non-production.
 3. Pick one unfinished Capability Slice or ledger item.

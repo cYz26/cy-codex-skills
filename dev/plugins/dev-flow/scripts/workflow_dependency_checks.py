@@ -64,6 +64,7 @@ def check_external_dependencies(
             check_project_gsd_agents(checks, repo, True)
         check_project_openspec_setup(checks, repo, True)
         check_project_openspec_sync_workflow(checks, repo, False)
+        check_project_openspec_update_workflow(checks, repo, False)
         check_legacy_project_skills(checks, repo, LEGACY_OPENSPEC_SKILLS, False)
     superpowers, bound_superpowers = provider_superpowers_compatibility(provider_report, codex_home, strict)
     if methodology == "strict-superpowers":
@@ -290,8 +291,22 @@ def check_project_openspec_setup(checks: list[dict[str, Any]], repo: Path, requi
 
 
 def check_project_openspec_sync_workflow(checks: list[dict[str, Any]], repo: Path, required: bool) -> None:
-    official = official_project_skill_file(repo, "openspec-sync-specs")
-    legacy = legacy_project_skill_file(repo, "openspec-sync-specs")
+    check_project_openspec_workflow(checks, repo, "openspec-sync-specs", "sync", required)
+
+
+def check_project_openspec_update_workflow(checks: list[dict[str, Any]], repo: Path, required: bool) -> None:
+    check_project_openspec_workflow(checks, repo, "openspec-update-change", "update", required)
+
+
+def check_project_openspec_workflow(
+    checks: list[dict[str, Any]],
+    repo: Path,
+    skill: str,
+    workflow: str,
+    required: bool,
+) -> None:
+    official = official_project_skill_file(repo, skill)
+    legacy = legacy_project_skill_file(repo, skill)
     ok = official.exists() or legacy.exists()
     if official.exists():
         detail = str(official)
@@ -301,13 +316,14 @@ def check_project_openspec_sync_workflow(checks: list[dict[str, Any]], repo: Pat
         path_kind = LEGACY_PROJECT_SKILL_PATH_KIND
     else:
         detail = (
-            "missing openspec-sync-specs; refresh with "
-            f"`openspec init --tools codex --profile core {repo} --force`"
+            f"missing {skill}; use DevFlow's isolated activation dry-run, then explicit apply: "
+            f"`python3 {Path(__file__).with_name('activate_project_dependencies.py')} "
+            f"--repo {repo} --refresh-project-skills --dry-run --json`"
         )
         path_kind = OFFICIAL_PROJECT_SKILL_PATH_KIND
     add_check(
         checks,
-        "project openspec sync workflow available",
+        f"project openspec {workflow} workflow available",
         ok,
         required,
         detail,

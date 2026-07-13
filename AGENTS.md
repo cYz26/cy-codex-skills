@@ -76,8 +76,17 @@ OpenSpec and any selected GSD overlay are activated project-locally through
 `.agents/skills/`; do not enable GSD globally. Legacy `.codex/skills/` entries
 are migration inputs, not the normal target layout.
 
+OpenSpec 1.6 contributes exactly six project-local core skills:
+`openspec-propose`, `openspec-explore`, `openspec-apply-change`,
+`openspec-update-change`, `openspec-sync-specs`, and
+`openspec-archive-change`. DevFlow activation generates and verifies them in an
+isolated environment before copying them into `.agents/skills`; user-global
+OpenSpec delivery and global OPSX prompts are optional and never readiness
+prerequisites.
+
 - Use `openspec-explore` when requirements, compatibility, or behavior boundaries are unclear.
 - Use `openspec-propose` before implementing user-visible behavior, public API, data model, permission, persistence, integration, migration, error handling, or compatibility changes.
+- Use `openspec-update-change` when revising planning artifacts for an existing change without implementing code.
 - Use `openspec-apply-change` when executing approved OpenSpec tasks.
 - Use `openspec-archive-change` only after verification evidence is recorded and the archive gate is clear.
 - When `roadmap_provider: gsd`, use `gsd-discuss-phase` and `gsd-plan-phase` for

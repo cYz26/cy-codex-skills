@@ -1,5 +1,82 @@
 # Task Ledger
 
+## Active Change: OpenSpec 1.6 Integration
+
+### Goal Contract
+
+- goal_id: openspec:upgrade-devflow-openspec-1-6 (no active Codex goal)
+- objective: Upgrade DevFlow to the released OpenSpec 1.6.0 contract with six
+  deterministic project-local Codex skills, pinned dependency updates, and no
+  writes to user-global OpenSpec or Codex prompt configuration.
+- scope_in: `dev/plugins/dev-flow`, generated release assets, OpenSpec change
+  evidence, current-project DevFlow/OpenSpec refresh, and control-plane docs.
+- scope_out: unreleased OpenSpec main, stores/custom-schema adoption, global
+  OPSX prompt enablement, unrelated dependency/provider updates, and archive.
+- acceptance_criteria: OpenSpec 1.6.0 and Node >=20.19 are enforced; isolated
+  generation verifies and copies exactly six official skills; dry-run is
+  write-free; custom targets survive; source/package/runtime/cache/project
+  verification passes; no real global OPSX prompt is created.
+- validation_commands: focused and complete DevFlow unittest discovery,
+  strict OpenSpec 1.6 validation, release promotion dry-run/apply/current,
+  packaged/runtime verification, release-target Plugin Eval, cache drift,
+  project migration/workflow/scaffold diagnostics, and `git diff --check`.
+- knowledge_update_target: none
+
+### Tasks
+
+| task_id | summary | owner | write_set | contract_path | required_evidence | review_gate | status |
+|---|---|---|---|---|---|---|---|
+| DF-OS-1 | Official 1.6 source/package/CLI research and canonical change | main | `openspec/changes/upgrade-devflow-openspec-1-6/**` | not-delegated | tag/package/generated-skill/global-delivery reproduction | strict OpenSpec validation | done |
+| DF-OS-2 | RED dependency, isolation, copy, refresh, failure, and cleanup contracts | main | DevFlow tests and change evidence | not-delegated | focused failing test output | test-first review | done |
+| DF-OS-3 | Isolated six-skill integration, routing, updater, diagnostics, and guidance | main | `dev/plugins/dev-flow/**`, control-plane guidance | not-delegated | focused GREEN tests and global-path invariants | spec review | done |
+| DF-OS-4 | Release synchronization and packaged/runtime verification | main | generated `plugins/dev-flow/**` | not-delegated | release current, packaged/runtime tests, Plugin Eval | release gate | done |
+| DF-OS-5 | Pinned CLI, named plugin cache, and current-project refresh | main | local CLI/cache and project `.agents/skills` | not-delegated | version/cache/project diagnostics | named upgrade request | done |
+| DF-OS-6 | Final evidence and control-plane closeout | main | change tasks/evidence, ledger, local state | not-delegated | exact commands/results/risks and clean global prompt check | no archive without approval | done |
+
+### Execution Log
+
+- 2026-07-13: Audited official OpenSpec `v1.5.0`, released `v1.6.0`, npm
+  package metadata/tarball, generated Codex skills, CLI help, and post-tag
+  `main`; selected released `1.6.0` and Node `>=20.19.0`.
+- 2026-07-13: Reproduced that real `delivery: commands` overrides the current
+  DevFlow `--profile core` init assumption, then proved isolated
+  `XDG_CONFIG_HOME` and `CODEX_HOME` generate the six 1.6 skills without global
+  writes. Strict validation of the canonical change passed.
+- 2026-07-13: RED ran 10 tests with 7 failures and 5 errors; the completed
+  isolated implementation then passed 10/10 plus provider profile 63/63 and
+  guidance 9/9. Full development discovery passed 448 source tests; its only
+  expected failure was stale packaged preflight awaiting release sync.
+- 2026-07-13: Installed pinned OpenSpec 1.6.0 on Node 24.13.0. A real isolated
+  activation verified and copied six skills while preserving byte-identical
+  global OpenSpec configuration and OPSX prompt snapshots.
+- 2026-07-13: Added a final regression for staging-directory setup failure;
+  the focused OpenSpec 1.6 suite passed 11 tests and complete development
+  discovery passed 450 tests in 62.298 seconds.
+- 2026-07-13: Release promotion synchronized the packaged runtime and the
+  immediate recheck returned `current`. Packaged discovery passed 8 tests;
+  runtime verification passed 277 checks with archive SHA-256
+  `efc0c73755e2630864506ce26e76f9076cc421d5553a25481597a1b400047b48`.
+- 2026-07-13: Release-target Plugin Eval remained 86/B with 0 failures and the
+  same three plugin-wide static token-budget warnings. Broader 16-skill token
+  restructuring is deferred to measured usage/outcome work outside this
+  OpenSpec integration change.
+- 2026-07-13: Refreshed the named DevFlow cache and proved its runtime hash
+  matches release. Current-project activation generated and copied six 1.6.0
+  OpenSpec skills, then an installed-cache rerun was idempotent (`current`, no
+  writes). Global OpenSpec config hash stayed identical and global OPSX prompt
+  count remained zero.
+- 2026-07-13: Final workflow validation and doctor passed; project control
+  plane/skill layout are current with no stale or missing skills. Provider
+  migration remains correctly blocked by the active OpenSpec change and was
+  not bypassed. Archive remains unperformed.
+- 2026-07-13: User separately authorized direct submission to remote `main`
+  and a fresh local DevFlow/project refresh. The submission gate reran 450
+  source tests, 8 packaged tests, strict OpenSpec validation, 277 runtime
+  checks, release-current validation, `git diff --check`, and release-target
+  Plugin Eval (86/B, 0 failures); all blocking checks passed.
+
+## Previous Completed Change: Provider Architecture
+
 ## Goal Contract
 
 - goal_id: openspec:optimize-devflow-provider-architecture (no active Codex goal)

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -13,10 +15,14 @@ from workflow_dependency_catalog import (
     STRICT_SUPERPOWERS_PROJECT_SKILLS,
 )
 from workflow_project_skill_paths import migrate_project_skill_layout
-from workflow_project_skill_install import ensure_project_local_skills
+from workflow_project_skill_install import (
+    ensure_project_local_skills,
+    verify_generated_openspec_skill_root,
+)
 from workflow_constants import resolve_plugin_root
 from workflow_dependency_provenance import (
     dependency_install_command,
+    dependency_provenance_record,
     dependency_provenance_source_path,
     load_dependency_provenance,
 )
@@ -94,47 +100,66 @@ def activate_project_dependencies(
         codex_home,
     )
     command_results = []
-    if not skip_official_installs:
-        for command in commands:
-            result = run_command(
-                command["command"],
+    openspec_skill_root: Path | None = None
+    openspec_generation_managed = False
+    openspec_staging_root: Path | None = None
+    try:
+        if not skip_official_installs:
+            for command in commands:
+                if command.get("provider") == "openspec":
+                    openspec_generation_managed = True
+                    generation_result, openspec_skill_root, openspec_staging_root = run_openspec_generation(
+                        command,
+                        execution_dry_run,
+                    )
+                    command_results.append(generation_result)
+                    continue
+                result = run_command(
+                    command["command"],
+                    repo,
+                    execution_dry_run,
+                    command.get("provenanceSource"),
+                    command.get("environment"),
+                )
+                command_results.append({**command, **result})
+        command_ok = all(item["ok"] for item in command_results)
+        receipts = successful_provider_install_receipts(command_results)
+        active_diagnosis = provider_diagnosis
+        if not execution_dry_run and command_ok:
+            selection = resolve_active_selection()
+            active_diagnosis = diagnose_provider_selection(
+                selection,
                 repo,
-                execution_dry_run,
-                command.get("provenanceSource"),
-                command.get("environment"),
+                codex_home,
+                triggered_capabilities=triggered_capabilities,
+                trusted_install_receipts=receipts,
+                core_plugin_root=plugin_root,
             )
-            command_results.append({**command, **result})
-    command_ok = all(item["ok"] for item in command_results)
-    receipts = successful_provider_install_receipts(command_results)
-    active_diagnosis = provider_diagnosis
-    if not execution_dry_run and command_ok:
-        selection = resolve_active_selection()
-        active_diagnosis = diagnose_provider_selection(
-            selection,
+        skill_layout_migration = None
+        if migrate_official_skill_layout:
+            skill_layout_migration = migrate_project_skill_layout(
+                repo,
+                managed_project_skills(),
+                dry_run=execution_dry_run or not apply_skill_layout_migration,
+                script_path=Path(__file__).resolve(),
+            )
+        openspec_record = dependency_provenance_record("openspec-cli", plugin_root)
+        skills_result = ensure_project_local_skills(
             repo,
+            plugin_root,
             codex_home,
+            execution_dry_run,
+            refresh_project_skills,
+            selection,
+            active_diagnosis,
             triggered_capabilities=triggered_capabilities,
-            trusted_install_receipts=receipts,
-            core_plugin_root=plugin_root,
+            openspec_skill_root=openspec_skill_root,
+            openspec_generation_planned=openspec_generation_managed,
+            openspec_expected_version=str(openspec_record["expectedVersion"]),
         )
-    skill_layout_migration = None
-    if migrate_official_skill_layout:
-        skill_layout_migration = migrate_project_skill_layout(
-            repo,
-            managed_project_skills(),
-            dry_run=execution_dry_run or not apply_skill_layout_migration,
-            script_path=Path(__file__).resolve(),
-        )
-    skills_result = ensure_project_local_skills(
-        repo,
-        plugin_root,
-        codex_home,
-        execution_dry_run,
-        refresh_project_skills,
-        selection,
-        active_diagnosis,
-        triggered_capabilities=triggered_capabilities,
-    )
+    finally:
+        if openspec_staging_root is not None:
+            shutil.rmtree(openspec_staging_root, ignore_errors=True)
     if not execution_dry_run and command_ok and skills_result["ok"]:
         selection = resolve_active_selection()
         active_diagnosis = diagnose_provider_selection(
@@ -267,9 +292,8 @@ def official_install_command_records(
     codex_home: Path | None = None,
 ) -> list[dict[str, Any]]:
     provenance_source = str(dependency_provenance_source_path(plugin_root))
-    commands = [
-        {"command": ["openspec", "init", "--tools", "codex", "--profile", "core", str(repo), "--force"]},
-    ]
+    openspec_record = dependency_provenance_record("openspec-cli", plugin_root)
+    commands = [isolated_openspec_generation_record(openspec_record, provenance_source)]
     if selection is None:
         return commands
     reports = (diagnosis or {}).get("providers", {})
@@ -302,6 +326,135 @@ def official_install_command_records(
         if source:
             commands.append(provider_install_record("gsd", source, provenance_source, codex_home))
     return commands
+
+
+def isolated_openspec_generation_record(
+    dependency: dict[str, Any],
+    provenance_source: str,
+) -> dict[str, Any]:
+    return {
+        "provider": "openspec",
+        "kind": "isolated-skill-generation",
+        "command": [
+            "openspec",
+            "init",
+            "--tools",
+            "codex",
+            "--profile",
+            "core",
+            "{isolatedStagingProject}",
+            "--force",
+        ],
+        "environment": {
+            "XDG_CONFIG_HOME": "{isolatedXdgConfigHome}",
+            "CODEX_HOME": "{isolatedCodexHome}",
+            "OPENSPEC_TELEMETRY": "0",
+        },
+        "expectedVersion": dependency.get("expectedVersion"),
+        "expectedSkills": list(LEGACY_OPENSPEC_SKILLS),
+        "isolation": {
+            "project": "temporary",
+            "xdgConfig": "temporary",
+            "codexHome": "temporary",
+            "telemetry": "disabled",
+            "realGlobalPaths": "excluded",
+        },
+        "provenanceSource": provenance_source,
+    }
+
+
+def run_openspec_generation(
+    record: dict[str, Any],
+    dry_run: bool,
+) -> tuple[dict[str, Any], Path | None, Path | None]:
+    if dry_run:
+        return (
+            {
+                **record,
+                "ok": True,
+                "skipped": True,
+                "generation": {
+                    "ok": True,
+                    "status": "planned",
+                    "expectedVersion": record.get("expectedVersion"),
+                    "expectedSkills": list(LEGACY_OPENSPEC_SKILLS),
+                },
+            },
+            None,
+            None,
+        )
+
+    staging_root = Path(tempfile.mkdtemp(prefix="devflow-openspec-generation-"))
+    staging_project = staging_root / "project"
+    isolated_xdg = staging_root / "xdg"
+    isolated_codex_home = staging_root / "codex-home"
+    try:
+        staging_project.mkdir()
+        isolated_xdg.mkdir()
+        isolated_codex_home.mkdir()
+    except OSError as exc:
+        shutil.rmtree(staging_root, ignore_errors=True)
+        generation = {
+            "ok": False,
+            "status": "staging_setup_failed",
+            "expectedVersion": record.get("expectedVersion"),
+            "expectedSkills": list(LEGACY_OPENSPEC_SKILLS),
+            "actualSkills": [],
+            "mismatches": [{"kind": "staging-setup-failed", "detail": str(exc)}],
+            "stagingProject": str(staging_project),
+        }
+        return (
+            {
+                **record,
+                "ok": False,
+                "error": str(exc),
+                "generation": generation,
+            },
+            None,
+            None,
+        )
+    replacements = {
+        "{isolatedStagingProject}": str(staging_project),
+        "{isolatedXdgConfigHome}": str(isolated_xdg),
+        "{isolatedCodexHome}": str(isolated_codex_home),
+    }
+    command = [replacements.get(part, part) for part in record["command"]]
+    environment = {
+        key: replacements.get(value, value)
+        for key, value in record.get("environment", {}).items()
+    }
+    result = run_command(
+        command,
+        staging_project,
+        False,
+        record.get("provenanceSource"),
+        environment,
+    )
+    if result["ok"]:
+        generation = verify_generated_openspec_skill_root(
+            staging_project / ".codex" / "skills",
+            str(record.get("expectedVersion") or ""),
+        )
+    else:
+        generation = {
+            "ok": False,
+            "status": "command_failed",
+            "expectedVersion": record.get("expectedVersion"),
+            "expectedSkills": list(LEGACY_OPENSPEC_SKILLS),
+            "actualSkills": [],
+            "mismatches": [{"kind": "command-failed", "returncode": result.get("returncode")}],
+        }
+    generation["stagingProject"] = str(staging_project)
+    combined = {
+        **record,
+        **result,
+        "command": command,
+        "environment": environment,
+        "ok": bool(result["ok"] and generation["ok"]),
+        "generation": generation,
+    }
+    source_root = staging_project / ".codex" / "skills" if generation["ok"] else None
+    return combined, source_root, staging_root
 
 
 def provider_install_is_safe_remediation(
@@ -478,6 +631,11 @@ def run_command(
         )
     except FileNotFoundError:
         output = {"ok": False, "command": command, "error": f"missing executable: {command[0]}"}
+        if provenance_source:
+            output["provenanceSource"] = provenance_source
+        return output
+    except OSError as exc:
+        output = {"ok": False, "command": command, "error": str(exc)}
         if provenance_source:
             output["provenanceSource"] = provenance_source
         return output

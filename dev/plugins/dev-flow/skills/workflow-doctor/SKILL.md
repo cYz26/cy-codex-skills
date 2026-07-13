@@ -19,6 +19,9 @@ provider never blocks workflow health.
 2. Run `scripts/doctor_workflow.py --repo <repo> --write-report --json`.
 3. Inspect `.dev-flow.json`, `.planning/devflow/STATE.md`, provider lock,
    OpenSpec artifacts, tracking status, cache drift, and generated guidance.
+   For an active change, compare `openspec status --change <id> --json` and
+   `openspec instructions <artifact> --change <id> --json`; use returned
+   `artifactPaths` and `actionContext` to distinguish schema paths from drift.
 4. For unclear behavior or compatibility, route to `openspec-explore`. For
    roadmap drift, use the selected read-only roadmap adapter.
 5. State root cause, broken contracts, systemic repair, tests, docs, migration,

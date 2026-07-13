@@ -31,6 +31,9 @@ Check Target State, Completion Contract, Capability Slices, Execution Ledger,
 Acceptance Criteria, exact Validation Commands, changed files, scope, risks,
 and rollback. Record results below `.planning/devflow/verification/`. Provider
 drafts and review notes count only after promotion into canonical artifacts.
+Use `openspec status --change <id> --json` and relevant `openspec instructions
+<artifact> --change <id> --json`; honor returned `artifactPaths` and
+`actionContext`.
 
 ## Archive Gate
 
@@ -38,6 +41,8 @@ Run `scripts/archive_status.py --repo <repo> --change <change> --json`.
 Archive requires complete tasks, synchronized specs, passing gates, explicit
 archive intent, and no unresolved worktree or compatibility risk. Run
 `openspec-sync-specs` before `openspec-archive-change` when delta specs exist.
+Any non-zero OpenSpec validate, sync, or archive result is a blocking failure;
+record it and leave the change active rather than bypassing the gate.
 An active roadmap binding is archived only after both OpenSpec and its bound
 phase gates pass. For a selected GSD binding, ingest the canonical UAT artifact
 after `gsd-verify-work`:

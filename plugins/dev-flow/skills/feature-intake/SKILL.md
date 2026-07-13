@@ -42,7 +42,8 @@ draft until resolved.
 
 Route technical-plan structure to `ai-native-tech-plan`, unclear OpenSpec
 behavior to `openspec-explore`, ready behavior intent to `openspec-propose`,
-and an approved task to `openspec-apply-change` through `execute-task`.
+planning-only revision of an existing change to `openspec-update-change`, and
+an approved task to `openspec-apply-change` through `execute-task`.
 
 Before delegated agent, subagent, worker, or parallel execution, require an
 Agent Task Contract with Goal, Scope, Constraints, Verification, Evidence, and

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import re
 import shutil
 import subprocess
 from typing import Any
@@ -57,6 +58,7 @@ def dependency_provenance_fields(
     command = record.get(command_name) or record.get("installCommand") or []
     return {
         "expectedVersion": record.get("expectedVersion"),
+        "runtimeRequirements": dict(record.get("runtimeRequirements", {})),
         "installCommand": list(record.get("installCommand", [])),
         "recommendedCommand": list(command),
         "source": record.get("source"),
@@ -115,6 +117,8 @@ def catalog_only_dependency(
         "required": False,
         "status": "not_selected",
         "expectedVersion": record.get("expectedVersion"),
+        "runtimeRequirements": dict(record.get("runtimeRequirements", {})),
+        "runtimeRequirementResults": {},
         "installedVersion": None,
         "binaryPath": None,
         "installCommand": [],
@@ -158,13 +162,23 @@ def evaluate_dependency(
     installed_version = installed_dependency_version(record, repo)
     smoke_command = resolve_command(record.get("smokeCommand", []), repo, binary_path)
     smoke_result = smoke_dependency(smoke_command, binary_path)
-    status = dependency_status(record, binary_path, installed_version, smoke_result, repo)
+    runtime_results = evaluate_runtime_requirements(record)
+    status = dependency_status(
+        record,
+        binary_path,
+        installed_version,
+        smoke_result,
+        repo,
+        runtime_results,
+    )
     return {
         "name": record["name"],
         "purpose": record.get("purpose"),
         "required": bool(record.get("required", True)),
         "status": status,
         "expectedVersion": record.get("expectedVersion"),
+        "runtimeRequirements": dict(record.get("runtimeRequirements", {})),
+        "runtimeRequirementResults": runtime_results,
         "installedVersion": installed_version,
         "binaryPath": str(binary_path) if binary_path else None,
         "installCommand": list(record.get("installCommand", [])),
@@ -198,6 +212,8 @@ def policy_only_dependency(
         "required": bool(record.get("required", True)),
         "status": "policy_recorded",
         "expectedVersion": record.get("expectedVersion"),
+        "runtimeRequirements": dict(record.get("runtimeRequirements", {})),
+        "runtimeRequirementResults": {},
         "installedVersion": None,
         "binaryPath": None,
         "installCommand": list(record.get("installCommand", [])),
@@ -307,6 +323,48 @@ def run_read_only_command(command: list[str], timeout: int = 120) -> dict[str, A
     }
 
 
+def evaluate_runtime_requirements(record: dict[str, Any]) -> dict[str, Any]:
+    results: dict[str, Any] = {}
+    for runtime, requirement_value in record.get("runtimeRequirements", {}).items():
+        requirement = str(requirement_value)
+        binary = shutil.which(str(runtime))
+        if binary is None:
+            results[str(runtime)] = {
+                "ok": False,
+                "requirement": requirement,
+                "installedVersion": None,
+                "binaryPath": None,
+                "status": "missing",
+            }
+            continue
+        result = run_read_only_command([binary, "--version"])
+        installed = extract_semver(result.get("stdout", "") or result.get("stderr", ""))
+        supported = bool(result["ok"] and installed and version_satisfies(installed, requirement))
+        results[str(runtime)] = {
+            "ok": supported,
+            "requirement": requirement,
+            "installedVersion": installed,
+            "binaryPath": binary,
+            "status": "supported" if supported else "incompatible",
+        }
+    return results
+
+
+def extract_semver(value: str) -> str | None:
+    match = re.search(r"(?:^|[^0-9])(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.-]+)?", value.strip())
+    if not match:
+        return None
+    return ".".join(match.groups())
+
+
+def version_satisfies(installed: str, requirement: str) -> bool:
+    match = re.fullmatch(r">=(\d+)\.(\d+)\.(\d+)", requirement.strip())
+    installed_match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", installed.strip())
+    if match is None or installed_match is None:
+        return False
+    return tuple(map(int, installed_match.groups())) >= tuple(map(int, match.groups()))
+
+
 def parse_version(output: str) -> str | None:
     text = output.strip()
     if not text:
@@ -337,6 +395,7 @@ def dependency_status(
     installed_version: str | None,
     smoke_result: dict[str, Any],
     repo: Path | None,
+    runtime_results: dict[str, Any] | None = None,
 ) -> str:
     if repo is None and "{repo}" in str(record.get("binaryPath", "")):
         return "not_applicable"
@@ -344,6 +403,8 @@ def dependency_status(
         return "missing"
     if not smoke_result.get("ok"):
         return "smoke_failed"
+    if any(not result.get("ok", False) for result in (runtime_results or {}).values()):
+        return "runtime_incompatible"
     expected = record.get("expectedVersion")
     if expected and installed_version != expected:
         return "dependency_drift"
@@ -359,6 +420,13 @@ def dependency_check_item(dependency: dict[str, Any]) -> dict[str, Any]:
         f"installed {dependency.get('installedVersion') or 'unknown'}, "
         f"binary {dependency.get('binaryPath') or 'missing'}"
     )
+    runtime_results = dependency.get("runtimeRequirementResults", {})
+    if runtime_results:
+        runtime_detail = ", ".join(
+            f"{name} {item.get('installedVersion') or 'missing'} ({item.get('requirement')})"
+            for name, item in sorted(runtime_results.items())
+        )
+        detail += f", runtime {runtime_detail}"
     return {
         "name": f"external dependency: {dependency['name']}",
         "ok": ok,

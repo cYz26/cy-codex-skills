@@ -35,6 +35,7 @@
         }
       ],
       "recommendedSkillWhenReady": "openspec-apply-change",
+      "recommendedSkillWhenRevising": "openspec-update-change",
       "recommendedSkillWhenBlocked": "openspec-propose"
     },
     {

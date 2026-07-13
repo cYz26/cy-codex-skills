@@ -127,6 +127,31 @@ class ProviderGuidanceTests(unittest.TestCase):
             self.assertIn("global", text.lower())
             self.assertIn("cache", text.lower())
 
+    def test_openspec_16_guidance_routes_update_and_isolated_project_skills(self):
+        readme = (PLUGIN_ROOT / "README.md").read_text()
+        agents = (PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template").read_text()
+        intake = (PLUGIN_ROOT / "skills" / "feature-intake" / "SKILL.md").read_text()
+        change_plan = (PLUGIN_ROOT / "skills" / "change-plan" / "SKILL.md").read_text()
+        execute = (PLUGIN_ROOT / "skills" / "execute-task" / "SKILL.md").read_text()
+        verify = (PLUGIN_ROOT / "skills" / "verify-and-archive" / "SKILL.md").read_text()
+        refresh = (PLUGIN_ROOT / "skills" / "dev-flow-refresh" / "SKILL.md").read_text()
+        matrix = json.loads((PLUGIN_ROOT / "docs" / "routing.matrix.json").read_text())
+        full = next(route for route in matrix["routes"] if route["id"] == "mandatory-full-openspec")
+        normalized_readme = " ".join(readme.split())
+
+        self.assertEqual(full["recommendedSkillWhenRevising"], "openspec-update-change")
+        for text in (readme, agents, intake, change_plan):
+            self.assertIn("openspec-update-change", text)
+        self.assertIn("OpenSpec 1.6.0", readme)
+        self.assertIn("isolated", readme.lower())
+        self.assertIn("global OPSX prompts", normalized_readme)
+        for text in (change_plan, execute, verify):
+            self.assertIn("artifactPaths", text)
+            self.assertIn("actionContext", text)
+        self.assertIn("non-zero", verify)
+        self.assertIn("isolated OpenSpec", refresh)
+        self.assertNotIn("openspec init --tools codex", refresh)
+
     def test_guidance_pruning_reduces_static_word_budget(self):
         words = 0
         for skill_name in TARGET_SKILLS:

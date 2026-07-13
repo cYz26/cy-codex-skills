@@ -61,6 +61,33 @@ For comparison or migration previews, both commands accept
 read-only unless activation receives both `--apply` and
 `--persist-provider-selection`.
 
+## OpenSpec 1.6 Boundary
+
+DevFlow pins released OpenSpec 1.6.0 and Node `>=20.19.0`. Its core Codex
+workflows are `openspec-propose`, `openspec-explore`,
+`openspec-apply-change`, `openspec-update-change`, `openspec-sync-specs`, and
+`openspec-archive-change`.
+
+Project activation generates those six official skills in an isolated
+temporary project with isolated XDG configuration and Codex home, verifies the
+exact 1.6 output, then transactionally copies it into `.agents/skills`.
+Activation never changes user-global OpenSpec profile/delivery or global OPSX
+prompts. Official global commands remain an optional user-managed OpenSpec UX,
+not a DevFlow readiness dependency. Preview before apply:
+
+```bash
+python3 scripts/activate_project_dependencies.py --repo <project> \
+  --refresh-project-skills --dry-run --json
+python3 scripts/activate_project_dependencies.py --repo <project> \
+  --refresh-project-skills --apply --json
+```
+
+For arbitrary OpenSpec schemas or stores, resolve paths from `openspec status
+--change <id> --json` and `openspec instructions <artifact> --change <id>
+--json`; use returned `artifactPaths` and `actionContext` instead of inventing
+paths. Planning-only revision routes to `openspec-update-change`; approved
+implementation remains `openspec-apply-change`.
+
 ## Contract-First Control Plane
 
 DevFlow setup and migration validate these root files:

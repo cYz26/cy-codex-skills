@@ -23,7 +23,11 @@ show its activation plan before apply.
 3. Run `scripts/scaffold_workflow.py --repo <repo> --dry-run --json`.
 4. Review writes, ownership, conflicts, and tracking status. Apply only after
    the plan is safe.
-5. Run `scripts/validate_workflow_state.py --repo <repo> --json`.
+5. Preview `scripts/activate_project_dependencies.py --repo <repo>
+   --refresh-project-skills --dry-run --json`; explicit apply generates the
+   six OpenSpec 1.6 skills in isolation and copies them to `.agents/skills`
+   without enabling global OPSX prompts.
+6. Run `scripts/validate_workflow_state.py --repo <repo> --json`.
 
 DevFlow writes state, checkpoints, verification, context health, and brownfield
 maps only under `.planning/devflow/`. Root `.planning/` roadmap/phase files are

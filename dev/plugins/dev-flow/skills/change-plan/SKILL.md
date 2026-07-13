@@ -16,7 +16,10 @@ inputs; OpenSpec is canonical. Mapping details live in
 
 ## Procedure
 
-1. Inspect the current system and existing specs.
+1. Inspect the current system and existing specs. For an existing change, run
+   `openspec status --change <id> --json` and `openspec instructions
+   <artifact> --change <id> --json`; follow returned `artifactPaths` and
+   `actionContext` rather than assuming schema/store paths.
 2. Use `capability-research` for Capability Evidence when current or external
    capability, runtime, cache, CLI, hook, API, or platform assumptions are
    unstable.
@@ -25,8 +28,9 @@ inputs; OpenSpec is canonical. Mapping details live in
 4. Ensure `proposal.md`, `design.md` when needed, delta `specs/`, and `tasks.md`
    cover Target State, Completion Contract, Capability Slices, Execution
    Ledger, Acceptance Criteria, Validation Commands, risks, and rollback.
-5. Route unclear behavior to `openspec-explore`, ready intent to
-   `openspec-propose`, and plan structure to `ai-native-tech-plan`.
+5. Route unclear behavior to `openspec-explore`, new ready intent to
+   `openspec-propose`, existing-change planning revision to
+   `openspec-update-change`, and plan structure to `ai-native-tech-plan`.
 6. Run `scripts/validate_workflow_state.py --repo <repo> --json` and OpenSpec
    validation.
 

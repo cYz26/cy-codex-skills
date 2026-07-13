@@ -17,7 +17,7 @@ sys.path.insert(0, str(TEST_ROOT))
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts"))
 
 from dependency_support import DependencyFixtureMixin
-from workflow_dependency_catalog import PROJECT_ORCHESTRATOR_SKILLS
+from workflow_dependency_catalog import OPENSPEC_WORKFLOW_SKILLS, PROJECT_ORCHESTRATOR_SKILLS
 from workflow_mode_routing import read_workflow_mode_config, route_workflow_mode
 from workflow_dependencies import dependency_report
 from workflow_project_activation import activate_project_dependencies
@@ -54,7 +54,7 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
         binary_dir = Path(tempfile.mkdtemp(prefix="devflow-provider-bin-"))
         for name, body in {
             "codex": "#!/bin/sh\nprintf 'codex fixture\\n'\n",
-            "openspec": "#!/bin/sh\nprintf '1.5.0\\n'\n",
+            "openspec": "#!/bin/sh\nprintf '1.6.0\\n'\n",
         }.items():
             path = binary_dir / name
             path.write_text(body)
@@ -101,6 +101,20 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
             )
             shutil.copytree(source, root / skill, dirs_exist_ok=True)
         return root
+
+    def write_generated_openspec_skills(self, project):
+        for skill in OPENSPEC_WORKFLOW_SKILLS:
+            path = Path(project) / ".codex" / "skills" / skill / "SKILL.md"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(
+                "---\n"
+                f"name: {skill}\n"
+                "description: Official OpenSpec workflow fixture\n"
+                "allowed-tools: Bash(openspec:*)\n"
+                "metadata:\n"
+                '  generatedBy: "1.6.0"\n'
+                "---\n"
+            )
 
     def test_registry_declares_profiles_capabilities_and_side_effect_policy(self):
         module = self.provider_module()
@@ -598,7 +612,7 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
         binary_dir = Path(tempfile.mkdtemp(prefix="devflow-provider-cli-bin-"))
         for name in ("codex", "openspec"):
             path = binary_dir / name
-            output = "1.5.0" if name == "openspec" else "codex fixture"
+            output = "1.6.0" if name == "openspec" else "codex fixture"
             path.write_text(f"#!/bin/sh\nprintf '{output}\\n'\n")
             path.chmod(0o755)
         command = [
@@ -1442,6 +1456,8 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
         )
 
         def successful(command, _repo, dry_run, provenance_source=None, environment=None):
+            if command[:2] == ["openspec", "init"]:
+                self.write_generated_openspec_skills(Path(command[-2]))
             if "skills@1.5.9" in command:
                 self.write_project_matt_skills(repo)
             return {
@@ -1492,6 +1508,8 @@ class ProviderProfileTests(DependencyFixtureMixin, unittest.TestCase):
         lock.unlink()
 
         def successful(command, _repo, dry_run, provenance_source=None, environment=None):
+            if command[:2] == ["openspec", "init"]:
+                self.write_generated_openspec_skills(Path(command[-2]))
             return {
                 "ok": True,
                 "command": command,

@@ -47,6 +47,10 @@ python3 scripts/plugin_project_migration.py --repo <repo> --apply --json
 
 Apply mode may refresh safe project-local skill symlinks and writes audit
 artifacts under `.planning/devflow/plugin-project-migration/`.
+Official OpenSpec skill refresh is a separate isolated activation operation:
+preview and then explicitly apply `activate_project_dependencies.py
+--refresh-project-skills`. It copies verified 1.6 skills transactionally;
+legacy `.codex/skills` remain migration inputs and are not auto-deleted.
 
 Apply provider selection/state files only after reviewing the separate dry-run
 `providerMigration` report:

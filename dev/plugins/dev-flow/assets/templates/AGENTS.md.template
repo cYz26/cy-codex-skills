@@ -19,6 +19,13 @@ Default selection is `core + none`: `workflow.methodology_profile: core` and
 `workflow.roadmap_provider: none` in `.dev-flow.json`. External methodology or
 roadmap providers are opt-in and project-local.
 
+OpenSpec 1.6 core skills are project-local:
+`openspec-propose`, `openspec-explore`, `openspec-apply-change`,
+`openspec-update-change`, `openspec-sync-specs`, and
+`openspec-archive-change`. DevFlow activation generates verified copies in an
+isolated environment; user-global OpenSpec delivery and global OPSX prompts are
+optional and never readiness prerequisites.
+
 ## Project Control Plane
 
 - `AGENTS.md`: durable routing rules.
@@ -69,6 +76,8 @@ explicit apply gate. Provider-specific mapping and migration details live in
   until evidence or one-question-at-a-time decision grilling resolves them.
 - Use `ai-native-tech-plan` for a non-trivial technical or migration plan.
 - Use `change-plan` to complete OpenSpec proposal, design, specs, and tasks.
+- Use `openspec-update-change` for planning-only revisions to an existing
+  change and `openspec-apply-change` only for approved implementation.
 
 Do not start implementation until scope, solution, validation, risks, and the
 next ledger item are recorded.

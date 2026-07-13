@@ -14,6 +14,7 @@ from typing import Any
 
 from workflow_context_config import read_config as read_toml_config
 import workflow_provider_profiles as provider_profiles
+from workflow_dependency_catalog import OPENSPEC_WORKFLOW_SKILLS
 from plugin_project_migration import project_migration_sync_result
 from workflow_constants import resolve_plugin_root
 from workflow_dependency_provenance import dependency_provenance_fields, dependency_update_command
@@ -159,17 +160,19 @@ def gsd_core_update_command(repo: Path | None) -> list[str]:
 
 
 def installed_openspec_version(codex_home: Path) -> str | None:
-    for skill in ["openspec-propose", "openspec-explore", "openspec-apply-change", "openspec-archive-change"]:
+    if executable_exists("openspec"):
+        result = run_command(["openspec", "--version"], timeout=120)
+        if result["ok"]:
+            version = parse_jsonish_version(result["stdout"])
+            if version:
+                return version
+    for skill in OPENSPEC_WORKFLOW_SKILLS:
         path = codex_home / "skills" / skill / "SKILL.md"
         if not path.exists():
             continue
         for line in path.read_text().splitlines():
             if line.strip().startswith("generatedBy:"):
                 return line.split(":", 1)[1].strip().strip('"')
-    if executable_exists("openspec"):
-        result = run_command(["openspec", "--version"], timeout=120)
-        if result["ok"]:
-            return parse_jsonish_version(result["stdout"])
     return None
 
 
@@ -815,30 +818,47 @@ def run_external_updaters(
         else:
             results.append(item("external-updater", "gsd-core", "skipped", "npx not available", **provenance))
 
-    has_openspec = any((codex_home / "skills" / skill / "SKILL.md").exists() for skill in [
-        "openspec-propose",
-        "openspec-explore",
-        "openspec-apply-change",
-        "openspec-archive-change",
-    ])
+    has_openspec = any(
+        (codex_home / "skills" / skill / "SKILL.md").exists()
+        for skill in OPENSPEC_WORKFLOW_SKILLS
+    )
     if executable_exists("openspec") or has_openspec:
         provenance = dependency_provenance_fields("openspec-cli", command_name="updateCommand")
+        update_command = dependency_update_command("openspec-cli")
+        expected = str(provenance.get("expectedVersion") or "") or None
         if not apply:
             current = installed_openspec_version(codex_home)
-            latest = npm_latest_version("@fission-ai/openspec")
+            registry_latest = npm_latest_version("@fission-ai/openspec")
             version_item = version_check_item(
                 "external-updater",
                 "openspec-cli",
                 current,
-                latest,
-                "read-only check; apply would run npm update -g @fission-ai/openspec",
+                expected,
+                f"read-only check; apply would run {' '.join(update_command)}",
             )
             version_item.update(provenance)
+            version_item["registryLatest"] = registry_latest
             results.append(version_item)
         elif executable_exists("npm"):
-            result = run_command(["npm", "update", "-g", "@fission-ai/openspec"], timeout=600)
-            status = "updated-or-unchanged" if result["ok"] else "failed"
-            results.append(item("external-updater", "openspec-cli", status, short_output(result), **provenance))
+            before = installed_openspec_version(codex_home)
+            result = run_command(update_command, timeout=600)
+            after = installed_openspec_version(codex_home) if result["ok"] else before
+            verified = bool(result["ok"] and expected and after == expected)
+            status = "updated-or-unchanged" if verified else "failed"
+            detail = short_output(result)
+            if result["ok"] and not verified:
+                detail = f"{detail}; installed version {after or 'unknown'} does not match {expected}"
+            results.append(
+                item(
+                    "external-updater",
+                    "openspec-cli",
+                    status,
+                    detail,
+                    before=before,
+                    after=after,
+                    **provenance,
+                )
+            )
         else:
             results.append(item("external-updater", "openspec-cli", "skipped", "npm not available", **provenance))
 

@@ -71,6 +71,7 @@ OPENSPEC_WORKFLOW_SKILLS = [
     "openspec-propose",
     "openspec-explore",
     "openspec-apply-change",
+    "openspec-update-change",
     "openspec-sync-specs",
     "openspec-archive-change",
 ]

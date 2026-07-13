@@ -49,7 +49,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         path.chmod(0o755)
         return path
 
-    def dependency_report_with_fake_path(self, codex_home, repo, openspec_version="1.5.0"):
+    def dependency_report_with_fake_path(self, codex_home, repo, openspec_version="1.6.0"):
         bin_dir = Path(tempfile.mkdtemp(prefix="cpo-dependency-bin-"))
         self.write_executable(bin_dir, "codex", "#!/bin/sh\nprintf 'codex fixture\\n'\n")
         self.write_executable(bin_dir, "openspec", f"#!/bin/sh\nprintf '{openspec_version}\\n'\n")
@@ -227,13 +227,15 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         dependencies = {item["name"]: item for item in report["dependencies"]}
         openspec = dependencies["openspec-cli"]
         self.assertEqual(openspec["status"], "verified")
-        self.assertEqual(openspec["expectedVersion"], "1.5.0")
-        self.assertEqual(openspec["installedVersion"], "1.5.0")
+        self.assertEqual(openspec["expectedVersion"], "1.6.0")
+        self.assertEqual(openspec["installedVersion"], "1.6.0")
         self.assertTrue(openspec["binaryPath"].endswith("/openspec"))
-        self.assertEqual(openspec["installCommand"], ["npm", "install", "-g", "@fission-ai/openspec@1.5.0"])
+        self.assertEqual(openspec["installCommand"], ["npm", "install", "-g", "@fission-ai/openspec@1.6.0"])
+        self.assertEqual(openspec["runtimeRequirements"], {"node": ">=20.19.0"})
+        self.assertTrue(openspec["runtimeRequirementResults"]["node"]["ok"])
         self.assertEqual(openspec["smokeCommand"], ["openspec", "--version"])
         self.assertTrue(openspec["smokeResult"]["ok"], openspec)
-        self.assertEqual(openspec["smokeResult"]["summary"], "1.5.0")
+        self.assertEqual(openspec["smokeResult"]["summary"], "1.6.0")
         self.assertIn("@fission-ai/openspec", openspec["source"])
         self.assertEqual(report["provenance"]["schemaVersion"], 2)
         self.assertEqual(openspec["lastVerified"], "2026-07-13")
@@ -543,8 +545,20 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         openspec_install = next(item for item in report["commands"] if item["command"][0:2] == ["openspec", "init"])
         self.assertEqual(
             openspec_install["command"],
-            ["openspec", "init", "--tools", "codex", "--profile", "core", str(repo.resolve()), "--force"],
+            [
+                "openspec",
+                "init",
+                "--tools",
+                "codex",
+                "--profile",
+                "core",
+                "{isolatedStagingProject}",
+                "--force",
+            ],
         )
+        self.assertEqual(openspec_install["kind"], "isolated-skill-generation")
+        self.assertEqual(openspec_install["environment"]["OPENSPEC_TELEMETRY"], "0")
+        self.assertNotIn(str(repo.resolve()), openspec_install["command"])
         self.assertIn(
             ["npx", "-y", "@opengsd/gsd-core@1.6.1", "--codex", "--local", "--profile=standard"],
             [item["command"] for item in report["commands"]],
@@ -1887,6 +1901,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
                 "openspec-propose",
                 "openspec-explore",
                 "openspec-apply-change",
+                "openspec-update-change",
                 "openspec-sync-specs",
                 "openspec-archive-change",
             ],
@@ -1898,7 +1913,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         source = repo / ".codex" / "skills" / "openspec-sync-specs" / "SKILL.md"
         source.parent.mkdir(parents=True)
         source.write_text(
-            '---\nname: openspec-sync-specs\nmetadata:\n  author: openspec\n  generatedBy: "1.5.0"\n---\n'
+            '---\nname: openspec-sync-specs\nmetadata:\n  author: openspec\n  generatedBy: "1.6.0"\n---\n'
         )
 
         report = ensure_project_local_skills(repo, PLUGIN_ROOT, codex_home, dry_run=False, refresh_existing=True)
@@ -1915,7 +1930,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         source = repo / ".codex" / "skills" / "openspec-propose" / "SKILL.md"
         source.parent.mkdir(parents=True)
         source.write_text(
-            '---\nname: openspec-propose\nmetadata:\n  author: openspec\n  generatedBy: "1.5.0"\n---\n'
+            '---\nname: openspec-propose\nmetadata:\n  author: openspec\n  generatedBy: "1.6.0"\n---\n'
         )
         target = repo / ".agents" / "skills" / "openspec-propose" / "SKILL.md"
         target.parent.mkdir(parents=True)
@@ -1928,7 +1943,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         item = next(item for item in report["items"] if item["skill"] == "openspec-propose")
         self.assertTrue(item["ok"], item)
         self.assertIn(item["status"], {"refreshed-link", "refreshed-copy"})
-        self.assertIn('generatedBy: "1.5.0"', target.read_text())
+        self.assertIn('generatedBy: "1.6.0"', target.read_text())
 
     def test_activation_preserves_user_authored_openspec_official_skill(self):
         repo = Path(tempfile.mkdtemp(prefix="cpo-openspec-custom-repo-"))
@@ -1936,7 +1951,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         source = repo / ".codex" / "skills" / "openspec-propose" / "SKILL.md"
         source.parent.mkdir(parents=True)
         source.write_text(
-            '---\nname: openspec-propose\nmetadata:\n  author: openspec\n  generatedBy: "1.5.0"\n---\n'
+            '---\nname: openspec-propose\nmetadata:\n  author: openspec\n  generatedBy: "1.6.0"\n---\n'
         )
         target = repo / ".agents" / "skills" / "openspec-propose" / "SKILL.md"
         target.parent.mkdir(parents=True)
@@ -1961,10 +1976,12 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         openspec_skill.write_text('---\nname: openspec-propose\nmetadata:\n  generatedBy: "1.5.0"\n---\n')
 
         def fake_run(command, cwd=None, timeout=300):
+            if command == ["openspec", "--version"]:
+                return {"ok": True, "returncode": 0, "stdout": "1.6.0\n", "stderr": ""}
             if command[:3] == ["npm", "view", "@opengsd/gsd-core"]:
                 return {"ok": True, "returncode": 0, "stdout": json.dumps({"version": "1.6.1"}), "stderr": ""}
             if command[:3] == ["npm", "view", "@fission-ai/openspec"]:
-                return {"ok": True, "returncode": 0, "stdout": json.dumps({"version": "1.5.0"}), "stderr": ""}
+                return {"ok": True, "returncode": 0, "stdout": json.dumps({"version": "1.6.0"}), "stderr": ""}
             raise AssertionError(f"unexpected command: {command}")
 
         with mock.patch.object(auto_update, "executable_exists", return_value=True), mock.patch.object(
@@ -1989,13 +2006,14 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertNotIn("get-shit-done-cc", by_name["gsd-core"]["detail"])
         self.assertEqual(by_name["openspec-cli"]["status"], "unchanged")
         self.assertIn("expectedVersion", by_name["openspec-cli"])
-        self.assertEqual(by_name["openspec-cli"]["expectedVersion"], "1.5.0")
+        self.assertEqual(by_name["openspec-cli"]["expectedVersion"], "1.6.0")
         self.assertIn("installCommand", by_name["openspec-cli"])
         self.assertEqual(
             by_name["openspec-cli"]["installCommand"],
-            ["npm", "install", "-g", "@fission-ai/openspec@1.5.0"],
+            ["npm", "install", "-g", "@fission-ai/openspec@1.6.0"],
         )
-        self.assertEqual(by_name["openspec-cli"]["latest"], "1.5.0")
+        self.assertEqual(by_name["openspec-cli"]["latest"], "1.6.0")
+        self.assertEqual(by_name["openspec-cli"]["registryLatest"], "1.6.0")
 
     def test_update_dry_run_keeps_selected_superpowers_fallback_pinned(self):
         codex_home = self.make_codex_home(superpowers_version="5.1.3", superpowers_channel="openai-curated")
