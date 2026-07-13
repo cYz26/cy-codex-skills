@@ -118,6 +118,9 @@ Agent Task Contract template: `AGENT_TASK_CONTRACT.md`.
   runtime and now `matches-source`; project migration and skill layout are
   `current`, workflow doctor is healthy, explicit `core + none` is persisted,
   and a post-cleanup dry-run reports no remaining verified Superpowers links.
+- 2026-07-13: The validated provider branch was fast-forwarded into `main` and
+  pushed to `origin`. Local `main` and `origin/main` were verified aligned; this
+  ledger closeout is the only post-verification documentation change.
 
 ## Final Result
 
@@ -125,6 +128,6 @@ DevFlow now defaults to an independent `core + none` control plane. Matt is an
 optional project-local six-skill methodology profile, Superpowers is an
 optional strict profile with manifest-driven hooks, and GSD is required only
 when explicitly selected as the roadmap provider. Release and installed-cache
-parity are verified; remote submission is the remaining delivery action in the
-current turn. OpenSpec archive is intentionally not performed without its
-separate authorization.
+parity are verified, and remote submission to `origin/main` is complete.
+OpenSpec archive is intentionally not performed without its separate
+authorization.
