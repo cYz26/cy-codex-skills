@@ -120,8 +120,9 @@ was unchanged when this RED run was recorded.
   Refresh used the existing `/Applications/ChatGPT.app/Contents/Resources/codex`
   (`0.144.0-alpha.4`) directly. Rebinding that machine profile is outside this
   change and remains an operational follow-up.
-- OpenSpec archive, commit, push, and merge were not performed; each remains a
-  separate authorization boundary.
+- OpenSpec archive remains unperformed. Repository submission and the fresh
+  local refresh were separately authorized after this initial evidence; their
+  result is recorded below.
 
 ## Remote-main submission gate — 2026-07-13
 
@@ -141,3 +142,35 @@ local DevFlow/project refresh. Archive remains outside this authorization.
   recorded static token-budget warnings, and 2 informational findings.
 - `git diff --check` passed, and a fresh `git fetch origin main` confirmed the
   branch base and `origin/main` had no commit divergence before submission.
+
+## Submission and refresh result — 2026-07-13
+
+- Commit `b44f01a` (`feat(devflow): upgrade OpenSpec integration to 1.6`) was
+  pushed as a fast-forward directly to `origin/main`. Local `main` was then
+  fast-forwarded and verified at the same commit.
+- `/Applications/ChatGPT.app/Contents/Resources/codex plugin add
+  dev-flow@cy-codex-skills --json` refreshed the named cache successfully. The
+  installed runtime and release runtime SHA-256 values both equal
+  `efc0c73755e2630864506ce26e76f9076cc421d5553a25481597a1b400047b48`.
+- Project refresh dry-run was write-free. Apply generated the exact six skills
+  through the isolated OpenSpec 1.6 path and reported the transaction
+  `current`, with all six targets `already-present` as regular directories.
+- Every local OpenSpec skill reports `generatedBy: "1.6.0"` and
+  `allowed-tools: Bash(openspec:*)`. DevFlow project links still resolve to the
+  repository source tree.
+- The global OpenSpec config SHA-256 remained
+  `1cfa273ff52c007ed07478ebfd47942ce005324b08776b8c00b16a6e5271cb5b` and
+  the global OPSX prompt count remained zero.
+- Final workflow validation and cache doctor passed. Project control plane and
+  skill layout remain current, `AGENTS.md.generated` is absent, and the only
+  migration status is the expected protective block for the active verified
+  change and phase.
+- The PATH `codex` shim still targets the missing legacy Codex App binary. The
+  refresh used the available ChatGPT App binary directly; changing the
+  independent `codex-switch` profile remains out of scope.
+- The refreshed session exposed a separate stale AgentKB hook/cache race. A
+  temporary targeted refresh restored the missing hook long enough to finish
+  diagnostics, but the user confirmed AgentKB had intentionally been
+  uninstalled in the Plugins manager. Final local state was therefore restored
+  with a targeted AgentKB removal; no repository file or marketplace-wide
+  update was involved.

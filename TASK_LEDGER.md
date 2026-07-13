@@ -74,6 +74,18 @@
   source tests, 8 packaged tests, strict OpenSpec validation, 277 runtime
   checks, release-current validation, `git diff --check`, and release-target
   Plugin Eval (86/B, 0 failures); all blocking checks passed.
+- 2026-07-13: Commit `b44f01a` (`feat(devflow): upgrade OpenSpec integration
+  to 1.6`) was pushed directly to `origin/main`; local `main` was
+  fast-forwarded and verified aligned with the remote.
+- 2026-07-13: Refreshed `dev-flow@cy-codex-skills` with the available ChatGPT
+  App Codex binary. Installed-cache and release runtime SHA-256 values both
+  equal `efc0c73755e2630864506ce26e76f9076cc421d5553a25481597a1b400047b48`.
+  Project activation verified all six OpenSpec 1.6.0 skills as current regular
+  directories; workflow validation and doctor passed, `AGENTS.md.generated`
+  is absent, global OpenSpec config remained byte-identical, and no global
+  OPSX prompt was created. Provider migration remains intentionally blocked by
+  the still-active verified change and phase; no migration or cleanup was
+  bypassed.
 
 ## Previous Completed Change: Provider Architecture
 
