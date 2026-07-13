@@ -51,7 +51,9 @@ Describe the complete behavior, internal structure, boundaries, and validation s
 
 ## Execution Ledger
 
-Track slice status in `tasks.md`, `.planning/STATE.md`, or a repo-specific ledger file. Mark a slice done only after its validation command passes or a blocker is recorded.
+Track slice status in `tasks.md`, `.planning/devflow/STATE.md`, or a repo-specific
+ledger file. Mark a slice done only after its validation command passes or a
+blocker is recorded.
 
 ## Capability Evidence
 

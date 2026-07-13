@@ -5,6 +5,7 @@ from typing import Any
 
 from workflow_git import run_git
 from workflow_paths import rel
+from workflow_planning_paths import checkpoint_root, context_health_root, verification_root
 
 
 def collect_repo_truth(repo: Path) -> dict[str, Any]:
@@ -62,9 +63,9 @@ def production_like_path(path: str) -> bool:
 
 
 def collect_workflow_truth(repo: Path, state: dict[str, Any]) -> dict[str, Any]:
-    verification_dir = repo / ".planning" / "verification"
-    checkpoints_dir = repo / ".planning" / "checkpoints"
-    reports_dir = repo / ".planning" / "context-health" / "reports"
+    verification_dir = verification_root(repo)
+    checkpoints_dir = checkpoint_root(repo)
+    reports_dir = context_health_root(repo) / "reports"
     change_id = state.get("current_change", {}).get("id", "none")
     change_root = repo / "openspec" / "changes" / str(change_id)
     return {

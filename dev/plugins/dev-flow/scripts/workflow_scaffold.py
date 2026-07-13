@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,11 @@ from workflow_paths import normalize_project_name, render_template, repo_path
 from workflow_state import default_state_values, render_state
 from workflow_change import write_change_files
 from workflow_contract_control_plane import write_missing_control_plane
+from workflow_planning_paths import atomic_write_text
+
+
+class ScaffoldWriteError(RuntimeError):
+    pass
 
 
 class WritePlan:
@@ -24,7 +30,7 @@ class WritePlan:
         self.planned_writes: list[str] = []
 
     def write(self, relative: str, content: str, *, force: bool = False) -> None:
-        path = self.repo / relative
+        path = guard_scaffold_write(self.repo, relative)
         self.planned_writes.append(relative)
         if path.exists() and not force:
             self.skipped.append(relative)
@@ -33,7 +39,29 @@ class WritePlan:
         if self.dry_run:
             return
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content)
+        guard_scaffold_write(self.repo, relative)
+        atomic_write_text(path, content)
+
+
+def guard_scaffold_write(repo: Path, relative: str) -> Path:
+    repo = Path(repo).resolve()
+    requested = Path(relative)
+    if requested.is_absolute() or not requested.parts or ".." in requested.parts:
+        raise ScaffoldWriteError(f"invalid scaffold target: {relative}")
+    target = repo.joinpath(*requested.parts)
+    cursor = repo
+    for segment in requested.parts[:-1]:
+        cursor = cursor / segment
+        if cursor.exists() and cursor.is_symlink():
+            raise ScaffoldWriteError(f"scaffold parent is a symlink: {cursor}")
+    if target.is_symlink():
+        raise ScaffoldWriteError(f"scaffold target is a symlink: {target}")
+    try:
+        resolved_parent = target.parent.resolve()
+        resolved_parent.relative_to(repo)
+    except (OSError, ValueError) as error:
+        raise ScaffoldWriteError(f"scaffold target escapes repository: {target}") from error
+    return target
 
 
 def scaffold_workflow(
@@ -49,7 +77,6 @@ def scaffold_workflow(
     writer = WritePlan(repo, dry_run=dry_run)
 
     write_base_files(writer, project_mode, force_agents)
-    write_phase_files(writer, project_mode)
     write_openspec_base(writer, repo)
     write_change_files(writer, project_mode, change_id, setup_change_title(project_mode))
     if project_mode == "brownfield":
@@ -73,28 +100,20 @@ def write_base_files(writer: WritePlan, project_mode: str, force_agents: bool) -
     for item in write_missing_control_plane(writer.repo, dry_run=True):
         writer.write(item["path"], render_template(item["template"], {}))
     writer.write(
-        ".planning/ROADMAP.md",
-        render_template("ROADMAP.md.template", {"project_mode": project_mode}),
-    )
-
-
-def write_phase_files(writer: WritePlan, project_mode: str) -> None:
-    values = {"project_mode": project_mode, "phase_id": "01-foundation"}
-    writer.write(
-        ".planning/phases/01-foundation/CONTEXT.md",
-        render_template("PHASE_CONTEXT.md.template", values),
-    )
-    writer.write(
-        ".planning/phases/01-foundation/PLAN.md",
-        render_template("PHASE_PLAN.md.template", values),
-    )
-    writer.write(
-        ".planning/phases/01-foundation/SUMMARY.md",
-        render_template("PHASE_SUMMARY.md.template", values),
-    )
-    writer.write(
-        ".planning/phases/01-foundation/VERIFICATION.md",
-        render_template("VERIFICATION.md.template", {}),
+        ".dev-flow.json",
+        json.dumps(
+            {
+                "workflow": {
+                    "mode": "full-openspec",
+                    "methodology_profile": "core",
+                    "roadmap_provider": "none",
+                    "provider_selectors": {},
+                    "roadmap_bindings": {},
+                }
+            },
+            indent=2,
+        )
+        + "\n",
     )
 
 
@@ -112,7 +131,7 @@ def setup_change_title(project_mode: str) -> str:
 
 def write_brownfield_files(writer: WritePlan, repo: Path) -> None:
     for filename, content in build_codebase_docs(repo).items():
-        writer.write(f".planning/codebase/{filename}", content)
+        writer.write(f".planning/devflow/codebase/{filename}", content)
     writer.write("openspec/specs/current-system/spec.md", current_system_spec(repo))
 
 
@@ -134,7 +153,7 @@ def write_setup_state_and_report(
     change_id: str,
 ) -> None:
     state_values = default_state_values(project_mode, change_id)
-    writer.write(".planning/STATE.md", render_state(state_values), force=True)
+    writer.write(".planning/devflow/STATE.md", render_state(state_values), force=True)
     writer.write(
         "setup-report.md",
         render_template(

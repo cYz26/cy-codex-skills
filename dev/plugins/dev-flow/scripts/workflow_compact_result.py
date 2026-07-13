@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from workflow_compact_options import clean_text, option_issues
 from workflow_compact_resolve import raw_compact_result, resolve_checkpoint
-from workflow_paths import rel, repo_path, write_json
+from workflow_paths import rel, repo_path
+from workflow_planning_paths import atomic_write_devflow, compact_result_root
 from workflow_state import update_state
 
 
@@ -20,7 +22,7 @@ def record_compact_result(repo: Path, options: dict[str, Any]) -> dict[str, Any]
     issues.extend(checkpoint["issues"])
     raw_result = raw_compact_result(repo, options, issues)
     checkpoint_id = checkpoint["checkpoint_id"] or "unknown-checkpoint"
-    result_file = repo / ".planning" / "compact-results" / f"{checkpoint_id}.json"
+    result_file = compact_result_root(repo) / f"{checkpoint_id}.json"
     report = compact_report(
         repo,
         checkpoint,
@@ -71,19 +73,17 @@ def write_compact_result(
     raw_result: str | None,
     options: dict[str, Any],
 ) -> None:
-    write_json(
-        result_file,
-        {
-            "checkpoint_id": checkpoint["checkpoint_id"],
-            "checkpoint_file": checkpoint["checkpoint_file"],
-            "status": status,
-            "source": source,
-            "recorded_at": recorded_at,
-            "raw_result": raw_result,
-            "skip_reason": clean_text(options.get("skip_reason")) or "none",
-            "error": clean_text(options.get("error")) or "none",
-        },
-    )
+    payload = {
+        "checkpoint_id": checkpoint["checkpoint_id"],
+        "checkpoint_file": checkpoint["checkpoint_file"],
+        "status": status,
+        "source": source,
+        "recorded_at": recorded_at,
+        "raw_result": raw_result,
+        "skip_reason": clean_text(options.get("skip_reason")) or "none",
+        "error": clean_text(options.get("error")) or "none",
+    }
+    atomic_write_devflow(repo, result_file, f"{json.dumps(payload, indent=2)}\n")
 
 
 def update_compact_state(

@@ -41,8 +41,8 @@ class ContextHealthTests(unittest.TestCase):
         (repo / "AGENTS.md").write_text("Project rules\n")
         (repo / "openspec").mkdir()
         (repo / "openspec" / "config.yaml").write_text("project: fixture\n")
-        (repo / ".planning").mkdir()
-        (repo / ".planning" / "STATE.md").write_text(self.state_text())
+        (repo / ".planning" / "devflow").mkdir(parents=True)
+        (repo / ".planning" / "devflow" / "STATE.md").write_text(self.state_text())
         return repo
 
     def state_text(self, compact_status="not_needed", goal_summary="none"):
@@ -119,7 +119,8 @@ Continue fixture work.
             },
         )
 
-        events_path = repo / ".dev-flow" / "context-health" / "events.jsonl"
+        events_path = repo / ".planning" / "devflow" / "context-health" / "events.jsonl"
+        self.assertTrue(events_path.exists(), "context events must use the DevFlow namespace")
         text = events_path.read_text()
         self.assertEqual(event["tool"], "Bash")
         self.assertEqual(event["command_category"], "test")
@@ -149,7 +150,9 @@ Continue fixture work.
 
     def test_pending_compact_is_high_risk(self):
         repo = self.make_repo()
-        (repo / ".planning" / "STATE.md").write_text(self.state_text(compact_status="pending"))
+        (repo / ".planning" / "devflow" / "STATE.md").write_text(
+            self.state_text(compact_status="pending")
+        )
 
         report = context_health_check(repo, {"current_objective": "Continue implementation"})
 
@@ -194,7 +197,9 @@ Continue fixture work.
 
     def test_weak_goal_routes_to_define_goal_for_repair(self):
         repo = self.make_repo()
-        (repo / ".planning" / "STATE.md").write_text(self.state_text(goal_summary="make progress"))
+        (repo / ".planning" / "devflow" / "STATE.md").write_text(
+            self.state_text(goal_summary="make progress")
+        )
 
         report = context_health_check(
             repo,
@@ -398,7 +403,9 @@ Continue fixture work.
 
     def test_stop_hook_does_not_repeat_medium_prompt_for_acknowledged_report(self):
         repo = self.make_repo()
-        (repo / ".planning" / "STATE.md").write_text(self.state_text(goal_summary="Previous goal"))
+        (repo / ".planning" / "devflow" / "STATE.md").write_text(
+            self.state_text(goal_summary="Previous goal")
+        )
         for _ in range(4):
             record_context_health_event(
                 repo,
@@ -476,7 +483,9 @@ Continue fixture work.
 
     def test_high_context_health_stop_hook_still_emits_block_feedback(self):
         repo = self.make_repo()
-        (repo / ".planning" / "STATE.md").write_text(self.state_text(compact_status="pending"))
+        (repo / ".planning" / "devflow" / "STATE.md").write_text(
+            self.state_text(compact_status="pending")
+        )
 
         result = run_script(
             "context_health_hook.py",
@@ -540,7 +549,8 @@ Continue fixture work.
         )
 
         report = import_codex_sessions(repo, codex_home)
-        imported_path = repo / ".dev-flow" / "context-health" / "imported-events.jsonl"
+        imported_path = repo / ".planning" / "devflow" / "context-health" / "imported-events.jsonl"
+        self.assertTrue(imported_path.exists(), "imported events must use the DevFlow namespace")
         imported_text = imported_path.read_text()
 
         self.assertEqual(report["coverage"], "partial")
@@ -565,7 +575,7 @@ Continue fixture work.
 
         self.assertEqual(result.returncode, 0, result.stderr)
         payload = json.loads(result.stdout)
-        self.assertTrue(payload["report_file"].startswith(".planning/context-health/reports/"))
+        self.assertTrue(payload["report_file"].startswith(".planning/devflow/context-health/reports/"))
         self.assertTrue((repo / payload["report_file"]).exists())
 
 

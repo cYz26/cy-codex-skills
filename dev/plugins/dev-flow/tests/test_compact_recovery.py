@@ -19,7 +19,7 @@ class CompactRecoveryTests(unittest.TestCase):
     def make_repo(self, *, status="pending", checkpoint_id="checkpoint-one"):
         repo = Path(tempfile.mkdtemp(prefix="devflow-compact-recovery-"))
         self.addCleanup(lambda: shutil.rmtree(repo, ignore_errors=True))
-        checkpoint = repo / ".planning" / "checkpoints" / f"{checkpoint_id}.md"
+        checkpoint = repo / ".planning" / "devflow" / "checkpoints" / f"{checkpoint_id}.md"
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
         checkpoint.write_text(
             "\n".join(
@@ -34,7 +34,7 @@ class CompactRecoveryTests(unittest.TestCase):
                 ]
             )
         )
-        (repo / ".planning" / "STATE.md").write_text(
+        (repo / ".planning" / "devflow" / "STATE.md").write_text(
             f"""---
 workflow_version: 0.3.0
 project_mode: brownfield
@@ -57,7 +57,7 @@ gates:
 context_management:
   compact_policy: checkpoint_boundary
   last_checkpoint_id: {checkpoint_id}
-  last_checkpoint_file: .planning/checkpoints/{checkpoint_id}.md
+  last_checkpoint_file: .planning/devflow/checkpoints/{checkpoint_id}.md
   compact_recommended: true
   compact_status: {status}
   last_compact_result_file: none
@@ -99,9 +99,9 @@ context_health:
         self.assertEqual(state["compact_source"], "cli")
         self.assertEqual(
             state["last_compact_result_file"],
-            ".planning/compact-results/checkpoint-one.json",
+            ".planning/devflow/compact-results/checkpoint-one.json",
         )
-        result_file = repo / ".planning" / "compact-results" / "checkpoint-one.json"
+        result_file = repo / ".planning" / "devflow" / "compact-results" / "checkpoint-one.json"
         self.assertTrue(result_file.exists())
         result = json.loads(result_file.read_text())
         self.assertEqual(result["source"], "cli")
@@ -116,7 +116,9 @@ context_health:
         self.assertTrue(report["ok"], report)
         self.assertEqual(report["action"], "ignored_trigger")
         self.assertEqual(parse_state(repo)["context_management"]["compact_status"], "pending")
-        self.assertFalse((repo / ".planning" / "compact-results" / "checkpoint-one.json").exists())
+        self.assertFalse(
+            (repo / ".planning" / "devflow" / "compact-results" / "checkpoint-one.json").exists()
+        )
 
     def test_completed_state_does_not_record_again(self):
         repo = self.make_repo(status="completed")
@@ -125,11 +127,13 @@ context_health:
 
         self.assertTrue(report["ok"], report)
         self.assertEqual(report["action"], "state_not_pending")
-        self.assertFalse((repo / ".planning" / "compact-results" / "checkpoint-one.json").exists())
+        self.assertFalse(
+            (repo / ".planning" / "devflow" / "compact-results" / "checkpoint-one.json").exists()
+        )
 
     def test_missing_checkpoint_noops_without_state_change(self):
         repo = self.make_repo()
-        (repo / ".planning" / "checkpoints" / "checkpoint-one.md").unlink()
+        (repo / ".planning" / "devflow" / "checkpoints" / "checkpoint-one.md").unlink()
 
         report = handle_compact_recovery_event(repo, "post_compact", {"trigger": "manual"})
 

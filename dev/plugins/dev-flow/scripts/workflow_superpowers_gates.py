@@ -4,9 +4,11 @@ import json
 from pathlib import Path
 from typing import Any
 
+from workflow_constants import resolve_plugin_root
+
 
 def default_plugin_root() -> Path:
-    return Path(__file__).resolve().parents[1]
+    return resolve_plugin_root(__file__)
 
 
 def superpowers_gate_matrix_path(plugin_root: Path | None = None) -> Path:

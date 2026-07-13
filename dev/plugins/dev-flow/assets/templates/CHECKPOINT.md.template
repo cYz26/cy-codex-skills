@@ -57,7 +57,7 @@ changed_files:
 The next stage should start by reading:
 
 1. `AGENTS.md`
-2. `.planning/STATE.md`
+2. `.planning/devflow/STATE.md`
 3. this checkpoint file
 4. relevant OpenSpec change files
 5. relevant phase plan files

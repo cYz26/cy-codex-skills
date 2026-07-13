@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -7,21 +8,40 @@ from pathlib import Path
 
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
-RELEASE_PLUGIN_ROOT = PLUGIN_ROOT.parents[2] / "plugins" / "dev-flow"
+REPO_ROOT = (
+    PLUGIN_ROOT.parents[2]
+    if PLUGIN_ROOT.parent.parent.name == "dev"
+    else PLUGIN_ROOT.parents[1]
+)
+RELEASE_PLUGIN_ROOT = REPO_ROOT / "plugins" / "dev-flow"
 SCRIPTS = PLUGIN_ROOT / "scripts"
+RUNTIME_ARCHIVE = SCRIPTS / "devflow_runtime.pyz"
 HOOK_SCRIPT_PREFIX = 'python3 "$PLUGIN_ROOT/scripts/'
-sys.path.insert(0, str(SCRIPTS))
+if RUNTIME_ARCHIVE.is_file():
+    os.environ.setdefault("DEVFLOW_PLUGIN_ROOT", str(PLUGIN_ROOT))
+sys.path.insert(0, str(RUNTIME_ARCHIVE if RUNTIME_ARCHIVE.is_file() else SCRIPTS))
 
 from workflow_context_health import context_health_check, record_context_health_event
 from workflow_context_tools import apply_context_tool_actions, audit_context_tools
 from workflow_compact_recovery import handle_compact_recovery_event
 from workflow_dependencies import dependency_report
+from workflow_dependency_provenance import default_plugin_root as provenance_plugin_root
+from workflow_planning_paths import current_plugin_version
+from workflow_routing_matrix import default_plugin_root as routing_plugin_root
+from workflow_superpowers_gates import default_plugin_root as superpowers_gate_plugin_root
 from codex_auto_update_plugins_skills import plugin_install_results, run_external_updaters
 from workflow_decision_grilling import decision_grilling_guidance, load_decision_grilling_matrix
 
 
 def normalized_text(text):
     return " ".join(text.split())
+
+
+def packaged_module_text(name):
+    if RUNTIME_ARCHIVE.is_file():
+        with zipfile.ZipFile(RUNTIME_ARCHIVE) as archive:
+            return archive.read(name).decode("utf-8")
+    return (SCRIPTS / name).read_text()
 
 
 class ReleaseSmokeTests(unittest.TestCase):
@@ -91,15 +111,18 @@ class ReleaseSmokeTests(unittest.TestCase):
     def make_repo(self):
         repo = Path(tempfile.mkdtemp(prefix="devflow-release-repo-"))
         (repo / "package.json").write_text('{"dependencies":{"react":"latest"}}\n')
-        (repo / ".planning").mkdir()
-        (repo / ".planning" / "STATE.md").write_text(
+        (repo / ".planning" / "devflow").mkdir(parents=True)
+        (repo / ".dev-flow.json").write_text(
+            '{"workflow":{"methodology_profile":"core","roadmap_provider":"none"}}\n'
+        )
+        (repo / ".planning" / "devflow" / "STATE.md").write_text(
             """---
 workflow_version: 0.3.0
 project_mode: brownfield
 current_stage: executing
 current_phase:
-  id: 01-foundation
-  status: planning
+  id: none
+  status: none
 current_change:
   id: release-smoke
   status: planned
@@ -167,7 +190,13 @@ context_health:
             "gsd-verify-work",
         ]
         for skill in required_skills:
-            self.write_skill(repo / ".agents" / "skills" / skill / "SKILL.md")
+            target = repo / ".agents" / "skills" / skill / "SKILL.md"
+            source = PLUGIN_ROOT / "skills" / skill / "SKILL.md"
+            if source.is_file():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(source.read_bytes())
+            else:
+                self.write_skill(target)
         for agent in ["gsd-phase-researcher", "gsd-planner", "gsd-plan-checker", "gsd-executor"]:
             path = repo / ".codex" / "agents" / f"{agent}.toml"
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -197,6 +226,14 @@ context_health:
         self.assertEqual(manifest["interface"]["websiteURL"], manifest["homepage"])
         self.assertNotIn("github.com/local", json.dumps(manifest))
         self.assertLessEqual(len(manifest["interface"]["defaultPrompt"]), 3)
+
+    def test_runtime_asset_helpers_resolve_the_launcher_plugin_root(self):
+        manifest = json.loads((PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text())
+
+        self.assertEqual(provenance_plugin_root(), PLUGIN_ROOT)
+        self.assertEqual(routing_plugin_root(), PLUGIN_ROOT)
+        self.assertEqual(superpowers_gate_plugin_root(), PLUGIN_ROOT)
+        self.assertEqual(current_plugin_version(), manifest["version"])
 
     def test_capability_research_skill_is_packaged(self):
         skill = (PLUGIN_ROOT / "skills" / "capability-research" / "SKILL.md").read_text()
@@ -233,7 +270,7 @@ context_health:
         self.assertIn("Codex verifies", skill)
         self.assertIn("re-delegate or report a blocker", skill)
         self.assertTrue((PLUGIN_ROOT / "scripts" / "claude_code_delegate.py").exists())
-        self.assertTrue((PLUGIN_ROOT / "scripts" / "workflow_claude_delegate.py").exists())
+        self.assertIn("class ClaudeDelegateOptions", packaged_module_text("workflow_claude_delegate.py"))
 
         scripts = str(PLUGIN_ROOT / "scripts")
         sys.path.insert(0, scripts)
@@ -341,7 +378,9 @@ context_health:
 
         self.assertEqual(report["risk"], "medium")
         self.assertEqual(report["decision"], "reconcile")
-        events_text = (repo / ".dev-flow" / "context-health" / "events.jsonl").read_text()
+        events_text = (
+            repo / ".planning" / "devflow" / "context-health" / "events.jsonl"
+        ).read_text()
         self.assertNotIn("SECRET_RELEASE_OUTPUT", events_text)
         self.assertNotIn("SECRET_RELEASE_TOKEN", events_text)
 
@@ -368,7 +407,7 @@ context_health:
 
         self.assertNotIn("agent-reach", {item["name"] for item in results})
 
-    def test_release_runtime_uses_opengsd_core_not_legacy_gsd(self):
+    def test_release_runtime_and_provenance_use_opengsd_core_not_legacy_gsd(self):
         runtime_archive = RELEASE_PLUGIN_ROOT / "scripts" / "devflow_runtime.pyz"
         with zipfile.ZipFile(runtime_archive) as archive:
             data = "\n".join(
@@ -376,11 +415,23 @@ context_health:
                 for name in archive.namelist()
                 if name.endswith(".py")
             )
+        provenance = json.loads(
+            (RELEASE_PLUGIN_ROOT / "docs" / "dependency-provenance.json").read_text()
+        )
+        source = provenance["providerSources"]["gsd-core-1-6-1"]
+        dependency = next(
+            item for item in provenance["dependencies"] if item["name"] == "gsd-core"
+        )
 
-        self.assertIn("@opengsd/gsd-core", data)
         self.assertIn("gsd-tools.cjs", data)
-        self.assertNotIn("get-shit-done-cc", data)
-        self.assertNotIn("gsd-sdk", data)
+        self.assertEqual(source["package"], "@opengsd/gsd-core")
+        self.assertEqual(source["version"], "1.6.1")
+        self.assertIn("@opengsd/gsd-core@1.6.1", source["installCommand"])
+        self.assertEqual(dependency["expectedVersion"], "1.6.1")
+        self.assertIn("@opengsd/gsd-core@1.6.1", dependency["installCommand"])
+        release_contract = data + json.dumps(provenance, sort_keys=True)
+        self.assertNotIn("get-shit-done-cc", release_contract)
+        self.assertNotIn("gsd-sdk", release_contract)
 
     def test_readme_documents_release_runtime_audit_command(self):
         readme = (PLUGIN_ROOT / "README.md").read_text()
@@ -449,18 +500,18 @@ context_health:
         self.assertIn("codex plugin add dev-flow@cy-codex-skills --json", text)
 
     def test_release_subagent_strategy_is_packaged(self):
-        project_orchestrator = (PLUGIN_ROOT / "skills" / "project-orchestrator" / "SKILL.md").read_text()
+        project_orchestrator = normalized_text(
+            (PLUGIN_ROOT / "skills" / "project-orchestrator" / "SKILL.md").read_text()
+        )
         for phrase in [
             "## SubAgent Decision Gate",
-            "recommend a split without spawning",
+            "Recommend a split without spawning",
             "explicit user authorization",
             "disjoint write sets",
-            "main agent owns OpenSpec",
-            "gsd-execute-phase",
-            "subagent-driven-development",
-            "dispatching-parallel-agents",
+            "main agent owns",
+            "execution-orchestration",
         ]:
-            self.assertIn(phrase, project_orchestrator)
+            self.assertIn(normalized_text(phrase), project_orchestrator)
 
         skill_expectations = {
             "ai-native-tech-plan": [
@@ -482,10 +533,10 @@ context_health:
             ],
         }
         for skill, phrases in skill_expectations.items():
-            text = (PLUGIN_ROOT / "skills" / skill / "SKILL.md").read_text()
+            text = normalized_text((PLUGIN_ROOT / "skills" / skill / "SKILL.md").read_text())
             with self.subTest(skill=skill):
                 for phrase in phrases:
-                    self.assertIn(phrase, text)
+                    self.assertIn(normalized_text(phrase), text)
 
         readme = (PLUGIN_ROOT / "README.md").read_text()
         for phrase in [
@@ -501,17 +552,18 @@ context_health:
     def test_release_skill_routing_ledger_guards_brainstorming_gate(self):
         expectations = {
             "project-orchestrator": [
-                "design, research, architecture, or product-shape requests",
-                "feature-intake before ai-native-tech-plan",
+                "Capability Routing",
+                "decision-resolution",
+                "ai-native-tech-plan",
             ],
             "feature-intake": [
                 "Skill Routing Ledger",
-                "brainstorming: required/used/skipped",
+                "decision-resolution",
                 "Open Questions",
             ],
             "ai-native-tech-plan": [
                 "Skill Routing Ledger",
-                "Open Questions remain",
+                "Open Questions",
                 "draft, not final",
             ],
         }
@@ -521,14 +573,12 @@ context_health:
                 for phrase in phrases:
                     self.assertIn(phrase, text)
 
-        for rel_path in [
-            "assets/templates/AGENTS.md.template",
-            "skills/ai-native-tech-plan/assets/task-ledger-template.md",
-        ]:
-            text = (PLUGIN_ROOT / rel_path).read_text()
-            with self.subTest(path=rel_path):
-                self.assertIn("Skill Routing Ledger", text)
-                self.assertIn("brainstorming: required/used/skipped", text)
+        agents = (PLUGIN_ROOT / "assets/templates/AGENTS.md.template").read_text()
+        self.assertIn("Skill Routing Ledger", agents)
+        self.assertIn("required capabilities", normalized_text(agents))
+        ledger = (PLUGIN_ROOT / "skills/ai-native-tech-plan/assets/task-ledger-template.md").read_text()
+        self.assertIn("Skill Routing Ledger", ledger)
+        self.assertIn("brainstorming: required/used/skipped", ledger)
 
     def test_release_goal_workflow_routes_to_define_goal(self):
         readme = (PLUGIN_ROOT / "README.md").read_text()
@@ -536,22 +586,18 @@ context_health:
             "project-orchestrator": [
                 "define-goal",
                 "goal-backed",
-                "Goal Suitability Gate",
-                "Goal Quality Gate",
-                "ordinary implementation",
+                "Goal Gate",
+                "stop conditions",
             ],
             "feature-intake": [
                 "define-goal",
-                "active goal",
                 "Goal Suitability Gate",
-                "Goal Quality Gate",
-                "verification evidence",
+                "definition of done",
             ],
             "ai-native-tech-plan": [
                 "define-goal",
                 "Goal Mode Prompt",
                 "Goal Suitability Gate",
-                "Goal Quality Gate",
                 "stop conditions",
             ],
         }
@@ -586,8 +632,11 @@ context_health:
         self.assertIn("workflow_goal_quality.py", names)
         self.assertIn("validate_goal_quality.py", names)
 
+        agents = normalized_text((PLUGIN_ROOT / "assets/templates/AGENTS.md.template").read_text())
+        for phrase in ["define-goal", "verification evidence", "stop conditions", "long-running"]:
+            self.assertIn(phrase, agents)
+
         for rel_path in [
-            "assets/templates/AGENTS.md.template",
             "skills/ai-native-tech-plan/references/goal-prompt-template.md",
             "skills/context-health-check/SKILL.md",
         ]:
@@ -712,7 +761,7 @@ context_health:
         packaged_skills = {path.name for path in (PLUGIN_ROOT / "skills").iterdir() if path.is_dir()}
         self.assertTrue(forbidden_skills.isdisjoint(packaged_skills))
 
-        workflow_lib = (PLUGIN_ROOT / "scripts" / "workflow_lib.py").read_text()
+        workflow_lib = packaged_module_text("workflow_lib.py")
         hooks = (PLUGIN_ROOT / "hooks.json").read_text()
         self.assertNotIn("workflow_agent_kb", workflow_lib)
         self.assertNotIn("workflow_obsidian_kb", workflow_lib)

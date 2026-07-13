@@ -7,8 +7,10 @@ from plugin_preflight_hooks import hook_cache_drift_issues
 from workflow_compact_state import check_compact_state
 from workflow_constants import resolve_plugin_root
 from workflow_goal_gate import goal_gate_warning
+from workflow_mode_routing import read_workflow_mode_config
 from workflow_paths import repo_path
-from workflow_state import parse_state
+from workflow_roadmap_provider import validate_roadmap_bindings
+from workflow_state import parse_state, resolve_state
 
 
 def validate_workflow_state(
@@ -22,7 +24,7 @@ def validate_workflow_state(
     warnings: list[str] = []
     check_required_roots(repo, issues)
     check_agents_guidance(repo, issues, warnings)
-    state = read_state_or_issue(repo, issues)
+    state = read_state_or_issue(repo, issues, warnings)
     check_phase(repo, state, issues)
     check_change(repo, state, issues, warnings)
     check_compact_state(repo, state, issues, warnings)
@@ -77,9 +79,8 @@ def missing_agents_guidance(text: str) -> list[str]:
     required_markers = {
         "Workflow Ownership": "## Workflow Ownership",
         "Project Control Plane": "## Project Control Plane",
-        "Superpowers Artifact Mapping": "## Superpowers Artifact Mapping",
-        "GSD/OpenSpec Skills": "## GSD/OpenSpec Skills",
-        "Brainstorm and Planning Flow": "## Brainstorm and Planning Flow",
+        "Capability Routing": "## Capability Routing",
+        "Intake and Planning": "## Intake and Planning",
         "Goal Workflow": "## Goal Workflow",
         "AI Coding Planning Rules": "AI Coding Planning Rules",
         "Target State": "Target State",
@@ -89,9 +90,9 @@ def missing_agents_guidance(text: str) -> list[str]:
         "Acceptance Criteria": "Acceptance Criteria",
         "Validation Commands": "Validation Commands",
         "Final Verification": "Final Verification",
-        "OpenSpec change routing": "openspec/changes",
-        "Superpowers specs mapping": "docs/superpowers/specs",
-        "Superpowers plans mapping": "docs/superpowers/plans",
+        "Full OpenSpec routing": "Full OpenSpec",
+        "provider draft mapping": "docs/superpowers/specs",
+        "provider plan mapping": "docs/superpowers/plans",
         "canonical artifact guidance": "canonical",
         "Workflow Mode Routing": "## Workflow Mode Routing",
         "Plugin Eval Gate": "## Plugin Eval Gate",
@@ -110,19 +111,47 @@ def contains_slice_specific_agents_boundary(text: str) -> bool:
     return any(heading in text for heading in boundary_headings)
 
 
-def read_state_or_issue(repo: Path, issues: list[str]) -> dict[str, Any]:
-    if not (repo / ".planning" / "STATE.md").exists():
-        issues.append("Missing .planning/STATE.md")
+def read_state_or_issue(
+    repo: Path,
+    issues: list[str],
+    warnings: list[str],
+) -> dict[str, Any]:
+    resolution = resolve_state(repo)
+    if resolution["status"] == "missing":
+        issues.append("Missing .planning/devflow/STATE.md")
         return {}
+    if resolution["status"] == "legacy_read_only":
+        warnings.append(
+            "Legacy DevFlow root state is read-only; migrate to .planning/devflow/STATE.md before the 1.0.0 sunset"
+        )
+        return resolution["data"]
+    if resolution["status"] == "gsd_owned":
+        issues.append(
+            "Root state is GSD-owned; preserve it and create independent .planning/devflow/STATE.md"
+        )
+        return resolution["data"]
+    if resolution["status"] != "namespaced":
+        issues.append(
+            f"DevFlow state is `{resolution['status']}`; manual migration review is required"
+        )
+        return resolution["data"]
     return parse_state(repo)
 
 
 def check_phase(repo: Path, state: dict[str, Any], issues: list[str]) -> None:
-    phase_id = state.get("current_phase", {}).get("id")
-    if phase_id in (None, "none"):
+    del state
+    config = read_workflow_mode_config(repo)
+    if not config.get("valid", True):
+        issues.extend(f"Invalid .dev-flow.json: {error}" for error in config.get("config_errors", []))
         return
-    if not (repo / ".planning" / "phases" / str(phase_id) / "PLAN.md").exists():
-        issues.append(f"Current phase `{phase_id}` is missing PLAN.md")
+    report = validate_roadmap_bindings(
+        repo,
+        config.get("roadmap_bindings", {}),
+        str(config.get("roadmap_provider", "none")),
+    )
+    if not report["ready"]:
+        reasons = ", ".join(report["blockingReasons"]) or report["status"]
+        issues.append(f"Roadmap binding validation requires manual review: {reasons}")
 
 
 def check_change(

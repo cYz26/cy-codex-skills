@@ -1,5 +1,6 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "capabilityRegistry": "provider_profiles.json#/capabilities",
   "routes": [
     {
       "id": "mandatory-full-openspec",
@@ -16,6 +17,23 @@
         "compatibility-change"
       ],
       "requiredArtifacts": ["proposal.md", "design.md", "specs", "tasks.md"],
+      "requiredCapabilities": [
+        "decision-resolution",
+        "implementation-planning",
+        "test-first-execution",
+        "change-review",
+        "completion-proof"
+      ],
+      "conditionalCapabilities": [
+        {
+          "capability": "root-cause-diagnosis",
+          "when": "hard bug, regression, or unexpected behavior"
+        },
+        {
+          "capability": "execution-orchestration",
+          "when": "approved work is delegated, parallelized, or isolated"
+        }
+      ],
       "recommendedSkillWhenReady": "openspec-apply-change",
       "recommendedSkillWhenBlocked": "openspec-propose"
     },
@@ -24,6 +42,21 @@
       "label": "Lightweight Ledger",
       "kinds": ["docs-only", "test-only", "internal-maintenance", "low-risk-bugfix", "tooling"],
       "requiredArtifacts": ["TASK_LEDGER.md", "EVIDENCE_TEMPLATE.md", "REVIEW_CHECKLIST.md"],
+      "requiredCapabilities": [
+        "test-first-execution",
+        "change-review",
+        "completion-proof"
+      ],
+      "conditionalCapabilities": [
+        {
+          "capability": "root-cause-diagnosis",
+          "when": "the item is a hard bug, regression, or unexpected behavior"
+        },
+        {
+          "capability": "execution-orchestration",
+          "when": "approved work is delegated, parallelized, or isolated"
+        }
+      ],
       "recommendedSkillWhenReady": "execute-task"
     },
     {
@@ -31,6 +64,12 @@
       "label": "Prototype Mode",
       "kinds": ["prototype", "spike", "proof-of-concept"],
       "requiredArtifacts": ["TASK_LEDGER.md"],
+      "requiredCapabilities": [
+        "decision-resolution",
+        "architecture-guidance",
+        "completion-proof"
+      ],
+      "conditionalCapabilities": [],
       "recommendedSkillWhenReady": "feature-intake"
     }
   ]

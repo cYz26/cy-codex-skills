@@ -1,38 +1,36 @@
 ---
 name: project-setup
-description: Use when initializing Codex workflow files.
+description: Use when initializing or refreshing DevFlow workflow files in a project.
 ---
 
 # Project Setup
 
-Initialize project workflow files.
+Initialize DevFlow without inventing roadmap artifacts or overwriting project
+guidance.
+
+## Capability Routing
+
+Default to `core + none`. Write `workflow.methodology_profile: core` and
+`workflow.roadmap_provider: none` in `.dev-flow.json`; external providers are
+opt-in. Resolve any requested profile from `docs/provider_profiles.json` and
+show its activation plan before apply.
 
 ## Procedure
 
-1. Run `scripts/activate_project_dependencies.py --repo <repo> --json`.
-2. Run `scripts/check_dependencies.py --plugin-root <plugin-root> --repo <repo> --json`.
-3. Run `scripts/audit_context_tools.py --repo <repo> --json` for a read-only context tool audit.
-4. Run `scripts/detect_project_mode.py --repo <repo> --json`.
-5. Run `scripts/scaffold_workflow.py --repo <repo> --dry-run --json`.
-6. If the plan is safe, run `scripts/scaffold_workflow.py --repo <repo> --json`.
-7. Run `scripts/validate_workflow_state.py --repo <repo> --json`.
-8. If `AGENTS.md.generated` was produced, treat it as a merge-required setup
-   artifact: review and merge the DevFlow workflow rules into the active
-   `AGENTS.md`, then rerun validation.
-9. Report generated files, skipped files, context tool recommendations, risks, and next action.
+1. Run dependency and project-mode diagnosis.
+2. Run `scripts/audit_context_tools.py --repo <repo> --json` and keep actions
+   read-only unless separately approved.
+3. Run `scripts/scaffold_workflow.py --repo <repo> --dry-run --json`.
+4. Review writes, ownership, conflicts, and tracking status. Apply only after
+   the plan is safe.
+5. Run `scripts/validate_workflow_state.py --repo <repo> --json`.
 
-## Notes
+DevFlow writes state, checkpoints, verification, context health, and brownfield
+maps only under `.planning/devflow/`. Root `.planning/` roadmap/phase files are
+created only by a selected roadmap provider. Existing `AGENTS.md` is preserved;
+`AGENTS.md.generated` is merge-only.
 
-- Greenfield creates `AGENTS.md`, `.planning/`, `openspec/`, `initial-target-state`, `01-foundation`.
-- Brownfield preserves rules and drafts architecture, conventions, commands, risks, current-system spec.
-- Use `gsd-new-project` when the user wants full GSD project intake.
-- Use `context-tool-audit` before applying any context cleanup or tool installation actions from the audit report.
-- Generated workflow files include AI Coding Planning Rules; use `ai-native-tech-plan` for technical plan generation.
-- `validate_workflow_state.py` checks whether the active `AGENTS.md` contains
-  DevFlow planning rules, OpenSpec routing, and Superpowers artifact mapping.
-  Keep implementation-slice boundaries in the active OpenSpec change, not as
-  durable AGENTS rules.
-
-## Constraints
-
-Do not overwrite `AGENTS.md` without `--force-agents`. Do not edit production code. Keep Superpowers, GSD, and OpenSpec project-local.
+Legacy state or provider links route through dry-run migration. Do not clean or
+activate dependencies during scaffold. Setup is complete when validation names
+the effective profile, all planned writes have one owner, and the next action
+is explicit.

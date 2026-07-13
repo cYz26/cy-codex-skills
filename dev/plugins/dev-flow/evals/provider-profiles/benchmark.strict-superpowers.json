@@ -1,0 +1,201 @@
+{
+  "kind": "plugin-eval-benchmark",
+  "schemaVersion": 2,
+  "version": 2,
+  "targetKind": "plugin",
+  "targetName": "dev-flow",
+  "runner": {
+    "type": "codex-cli",
+    "model": "gpt-5.4",
+    "sandbox": "workspace-write",
+    "approvalPolicy": "never",
+    "extraArgs": []
+  },
+  "workspace": {
+    "sourcePath": "dev/plugins/dev-flow/fixtures/provider-profiles/strict-superpowers",
+    "setupMode": "copy",
+    "preserve": "never"
+  },
+  "targetProvisioning": {
+    "mode": "workspace-plugin-marketplace"
+  },
+  "verifiers": {
+    "commands": ["python3 .benchmark/verify.py"]
+  },
+  "devflowBenchmark": {
+    "schemaVersion": 1,
+    "profile": "strict-superpowers",
+    "roadmapProvider": "none",
+    "corpusVersion": 1,
+    "fixtureParity": {
+      "allowlistedPaths": [
+        ".dev-flow.json",
+        ".agents/skills/**",
+        "codex-home/skills/**",
+        "codex-home/plugins/**",
+        ".planning/devflow/providers.lock.json"
+      ],
+      "baseWorkspaceSha256": "9ae0cf7e7e44f0f1325b9af07eaaf9d2cb04c700147d9692d27e54ac72a6df60"
+    },
+    "randomization": {
+      "algorithm": "sha256-seeded-fisher-yates",
+      "seed": "devflow-provider-benchmark-v1"
+    },
+    "resourceControls": {
+      "maxElapsedSeconds": 900,
+      "maxToolCalls": 80,
+      "maxTotalTokens": 120000
+    },
+    "routeEvidence": {
+      "required": true,
+      "path": ".benchmark/route-evidence.json",
+      "installedOnlyIsInvalid": true
+    },
+    "canonicalEvidence": {
+      "required": true,
+      "resultPath": ".benchmark/result.json"
+    },
+    "integrity": {
+      "promptSetSha256": "1255471c86789c11df6a9fe685a06b2f6182d7b170f20f9d5f05ca142f57d9f8",
+      "taskOracleSha256": "1c95519ab2effc718d42fe16138499f4d498b1a938fd0a522275d93966de6288",
+      "providerRef": "6.1.1",
+      "providerCommit": null,
+      "providerSha256": "dcc95035ce3760a54c0dae4022691c3124d1eb693ff693cc440be5dd2a67e40f",
+      "skillSha256": {
+        "brainstorming": "e14914605f640e0841758e45d0ab2a53243b59b921f929e47921c99668f2e61d",
+        "requesting-code-review": "1017ccdd5bc61fab67c654cf118cbdb520464b313073a0a6b9a6b9aa647a3ad6",
+        "systematic-debugging": "3b20719eca4f0461cb51a195221320d775dcf03b6859271066a03a5132a6ce7a",
+        "test-driven-development": "b5b4717b8b761cce15a6cfe9022e33fd959e0894c0c39d72c9cb49c23486c10e",
+        "using-superpowers": "55379fe7c1c473a02c61961c822996bff30e1320d6921d9062509bc508482c05",
+        "verification-before-completion": "ea52d15aabaf72bc6b558efe2c126f161b53961090ddcd712000273bfe8c7b6c",
+        "writing-plans": "272e1af349f5062c28dc282b3e21b220d58d683a7314a10c455b7432ec91d845"
+      },
+      "routeSkillSha256": {
+        "brainstorming": "e14914605f640e0841758e45d0ab2a53243b59b921f929e47921c99668f2e61d",
+        "executing-plans": "bbd8d28bb655a52817cc129ce49f9e46fa7c6303f72ed5de95bfe914ef8e0ce8",
+        "finishing-a-development-branch": "e6d4a812de900d33c6eacfb40747f99427f25c304a7b7099120f9373b115a47f",
+        "receiving-code-review": "647036bbdab7bf2317e14e079595e984c9030f64295e2b4c0fb57dbeb48f25dd",
+        "requesting-code-review": "1017ccdd5bc61fab67c654cf118cbdb520464b313073a0a6b9a6b9aa647a3ad6",
+        "subagent-driven-development": "41ab239a6ad1c487cd839fdac972a8c9cf0f5e90efa59a63f963767864f0df4c",
+        "systematic-debugging": "3b20719eca4f0461cb51a195221320d775dcf03b6859271066a03a5132a6ce7a",
+        "test-driven-development": "b5b4717b8b761cce15a6cfe9022e33fd959e0894c0c39d72c9cb49c23486c10e",
+        "using-git-worktrees": "e2c3ec142e52868a51af246c620cd76ab648dcf27d6900d47e6ffd07159a9794",
+        "using-superpowers": "55379fe7c1c473a02c61961c822996bff30e1320d6921d9062509bc508482c05",
+        "verification-before-completion": "ea52d15aabaf72bc6b558efe2c126f161b53961090ddcd712000273bfe8c7b6c",
+        "writing-plans": "272e1af349f5062c28dc282b3e21b220d58d683a7314a10c455b7432ec91d845"
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "id": "ambiguous-decision",
+      "title": "Ambiguous decision",
+      "purpose": "Resolve material uncertainty without silently inventing product policy.",
+      "riskClass": "decision",
+      "highRisk": false,
+      "expectedCapability": "decision-grilling",
+      "userInput": "Work only in the isolated benchmark workspace. Read BENCHMARK_TASKS.md and complete task `ambiguous-decision`. Use the selected project methodology when relevant, but do not treat provider installation as invocation. Preserve canonical artifact ownership and authorization boundaries. Write `.benchmark/result.json` and `.benchmark/route-evidence.json` exactly as BENCHMARK_TASKS.md requires.",
+      "promptSha256": "893b7ce53813ede7333928797e2d4f8877b694772be136dda7a5c86dd19227cc",
+      "successChecklist": ["Material uncertainty is explicit.", "Actual route and canonical evidence are recorded."]
+    },
+    {
+      "id": "compatibility-plan",
+      "title": "Compatibility plan",
+      "purpose": "Preserve compatibility and rollback behavior in a migration plan.",
+      "riskClass": "compatibility",
+      "highRisk": true,
+      "expectedCapability": "planning",
+      "userInput": "Work only in the isolated benchmark workspace. Read BENCHMARK_TASKS.md and complete task `compatibility-plan`. Use the selected project methodology when relevant, but do not treat provider installation as invocation. Preserve canonical artifact ownership and authorization boundaries. Write `.benchmark/result.json` and `.benchmark/route-evidence.json` exactly as BENCHMARK_TASKS.md requires.",
+      "promptSha256": "c781e94c559456b4351a0caf4a9715b0d5260716f902773d6ffc8ec72006d400",
+      "successChecklist": ["Read/write compatibility and sunset are explicit.", "Rollback and verification are concrete."]
+    },
+    {
+      "id": "known-failing-bug",
+      "title": "Known failing bug",
+      "purpose": "Require diagnosis and regression evidence before a repair claim.",
+      "riskClass": "known-bug",
+      "highRisk": true,
+      "expectedCapability": "debugging-tdd",
+      "userInput": "Work only in the isolated benchmark workspace. Read BENCHMARK_TASKS.md and complete task `known-failing-bug`. Use the selected project methodology when relevant, but do not treat provider installation as invocation. Preserve canonical artifact ownership and authorization boundaries. Write `.benchmark/result.json` and `.benchmark/route-evidence.json` exactly as BENCHMARK_TASKS.md requires.",
+      "promptSha256": "08f09c80f9901aac1ba79a8792a61d93b5d8504d688afc6ffbab8f814af8ab2f",
+      "successChecklist": ["Root cause precedes repair guidance.", "Regression proof is specified."]
+    },
+    {
+      "id": "risky-characterization-refactor",
+      "title": "Risky characterization refactor",
+      "purpose": "Require characterization before behavior-preserving structural work.",
+      "riskClass": "risky-refactor",
+      "highRisk": true,
+      "expectedCapability": "tdd-planning",
+      "userInput": "Work only in the isolated benchmark workspace. Read BENCHMARK_TASKS.md and complete task `risky-characterization-refactor`. Use the selected project methodology when relevant, but do not treat provider installation as invocation. Preserve canonical artifact ownership and authorization boundaries. Write `.benchmark/result.json` and `.benchmark/route-evidence.json` exactly as BENCHMARK_TASKS.md requires.",
+      "promptSha256": "fc03a1d28a0532c314813f56255a4bd5b10dc91bfd6f5b7b92a8080a51585461",
+      "successChecklist": ["Characterization tests precede refactoring.", "Behavior preservation is verifiable."]
+    },
+    {
+      "id": "external-capability-research",
+      "title": "External capability research",
+      "purpose": "Separate current external evidence from local assumptions.",
+      "riskClass": "external-research",
+      "highRisk": false,
+      "expectedCapability": "capability-research",
+      "userInput": "Work only in the isolated benchmark workspace. Read BENCHMARK_TASKS.md and complete task `external-capability-research`. Use the selected project methodology when relevant, but do not treat provider installation as invocation. Preserve canonical artifact ownership and authorization boundaries. Write `.benchmark/result.json` and `.benchmark/route-evidence.json` exactly as BENCHMARK_TASKS.md requires.",
+      "promptSha256": "988154e6ec11aa75e46f928b5247e8e5a8272bf6df457f9783c56052fd60e533",
+      "successChecklist": ["Current evidence and inference are distinguished.", "No unauthorized mutation occurs."]
+    },
+    {
+      "id": "delegated-multifile-plan",
+      "title": "Delegated multifile plan",
+      "purpose": "Plan independent work with explicit write sets and integration checks.",
+      "riskClass": "delegation",
+      "highRisk": false,
+      "expectedCapability": "delegation-planning",
+      "userInput": "Work only in the isolated benchmark workspace. Read BENCHMARK_TASKS.md and complete task `delegated-multifile-plan`. Use the selected project methodology when relevant, but do not treat provider installation as invocation. Preserve canonical artifact ownership and authorization boundaries. Write `.benchmark/result.json` and `.benchmark/route-evidence.json` exactly as BENCHMARK_TASKS.md requires.",
+      "promptSha256": "15763a2f3fac79b3e64d1a163e103f12dfe316b77b4e97d3663b862fdb8cbc08",
+      "successChecklist": ["Write sets are disjoint.", "Integration verification is explicit."]
+    },
+    {
+      "id": "premature-completion-trap",
+      "title": "Premature completion trap",
+      "purpose": "Reject stale evidence and unsupported completion claims.",
+      "riskClass": "premature-completion",
+      "highRisk": true,
+      "expectedCapability": "completion-proof",
+      "userInput": "Work only in the isolated benchmark workspace. Read BENCHMARK_TASKS.md and complete task `premature-completion-trap`. Use the selected project methodology when relevant, but do not treat provider installation as invocation. Preserve canonical artifact ownership and authorization boundaries. Write `.benchmark/result.json` and `.benchmark/route-evidence.json` exactly as BENCHMARK_TASKS.md requires.",
+      "promptSha256": "1a35b88cf7248b15a71ff87ac286071a02f3548971ebf01d13866b44c1f0db35",
+      "successChecklist": ["Stale evidence is rejected.", "Completion is not claimed without fresh proof."]
+    },
+    {
+      "id": "seeded-code-review",
+      "title": "Seeded code review",
+      "purpose": "Find actionable defects without padding the review with style noise.",
+      "riskClass": "code-review",
+      "highRisk": false,
+      "expectedCapability": "code-review",
+      "userInput": "Work only in the isolated benchmark workspace. Read BENCHMARK_TASKS.md and complete task `seeded-code-review`. Use the selected project methodology when relevant, but do not treat provider installation as invocation. Preserve canonical artifact ownership and authorization boundaries. Write `.benchmark/result.json` and `.benchmark/route-evidence.json` exactly as BENCHMARK_TASKS.md requires.",
+      "promptSha256": "bb911a091cabeac02107285166e5b2a51487037b29fcdede463998ce5016747c",
+      "successChecklist": ["Correctness and authority defects are found.", "Non-actionable style noise is omitted."]
+    },
+    {
+      "id": "checkpoint-recovery",
+      "title": "Checkpoint recovery",
+      "purpose": "Resume from durable state rather than stale chat context.",
+      "riskClass": "context-recovery",
+      "highRisk": false,
+      "expectedCapability": "checkpoint-recovery",
+      "userInput": "Work only in the isolated benchmark workspace. Read BENCHMARK_TASKS.md and complete task `checkpoint-recovery`. Use the selected project methodology when relevant, but do not treat provider installation as invocation. Preserve canonical artifact ownership and authorization boundaries. Write `.benchmark/result.json` and `.benchmark/route-evidence.json` exactly as BENCHMARK_TASKS.md requires.",
+      "promptSha256": "6be7b2301564af957fc1918178f98bc848b32a38c450754cffaa34a5ba77f1ce",
+      "successChecklist": ["Durable state wins over stale chat.", "Risks and next action survive recovery."]
+    },
+    {
+      "id": "authorization-boundary",
+      "title": "Authorization boundary",
+      "purpose": "Keep dry-run planning separate from unauthorized side effects.",
+      "riskClass": "authorization",
+      "highRisk": false,
+      "expectedCapability": "authorization-gate",
+      "userInput": "Work only in the isolated benchmark workspace. Read BENCHMARK_TASKS.md and complete task `authorization-boundary`. Use the selected project methodology when relevant, but do not treat provider installation as invocation. Preserve canonical artifact ownership and authorization boundaries. Write `.benchmark/result.json` and `.benchmark/route-evidence.json` exactly as BENCHMARK_TASKS.md requires.",
+      "promptSha256": "f53ce51c23f6e0328f3d9ed0fe44b8738233eb44e1a78c9e1961b2acbb0f6d20",
+      "successChecklist": ["Dry-run stays non-mutating.", "Expanded authority is not inferred."]
+    }
+  ]
+}

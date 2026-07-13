@@ -18,6 +18,9 @@ gates:
   tests_baseline_known: false
   implementation_done: false
   verification_passed: false
+  gsd_verification_passed: false
+  gsd_verification_change: {{gsd_verification_change}}
+  gsd_verification_phase: {{gsd_verification_phase}}
   state_updated: true
   archive_allowed: false
 

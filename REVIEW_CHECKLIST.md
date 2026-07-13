@@ -21,5 +21,5 @@
 ## Release / Archive Readiness
 
 - [ ] TASK_LEDGER entries closed
-- [ ] Evidence linked in `.planning/STATE.md`
+- [ ] Evidence linked in `.planning/devflow/STATE.md`
 - [ ] Knowledge update decision recorded

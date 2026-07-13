@@ -9,6 +9,7 @@ from workflow_compact_policy import compact_recommendation, recommend_compact, r
 from workflow_git import git_branch, git_changed_files
 from workflow_paths import rel, render_template, repo_path
 from workflow_state import parse_state, update_state
+from workflow_planning_paths import atomic_write_devflow, checkpoint_root, guard_devflow_write
 
 
 def create_checkpoint(repo: Path, options: dict[str, Any]) -> dict[str, Any]:
@@ -34,8 +35,7 @@ def write_checkpoint(
     options: dict[str, Any],
     state: dict[str, Any],
 ) -> None:
-    checkpoint_file.parent.mkdir(parents=True, exist_ok=True)
-    checkpoint_file.write_text(render_template("CHECKPOINT.md.template", values))
+    atomic_write_devflow(repo, checkpoint_file, render_template("CHECKPOINT.md.template", values))
     update_state(
         repo,
         last_checkpoint_id=checkpoint_file.stem,
@@ -85,17 +85,14 @@ def checkpoint_suffix(change_id: str) -> str:
 
 
 def unique_checkpoint_file(repo: Path, checkpoint_id: str, output: str | None = None) -> Path:
-    root = repo / checkpoint_output(output)
+    root = repo / output if output else checkpoint_root(repo)
+    guard_devflow_write(repo, root / f"{checkpoint_id}.md")
     candidate = root / f"{checkpoint_id}.md"
     counter = 2
     while candidate.exists():
         candidate = root / f"{checkpoint_id}-{counter}.md"
         counter += 1
     return candidate
-
-
-def checkpoint_output(output: str | None) -> str:
-    return output if output else ".planning/checkpoints"
 
 
 def slugify(value: str) -> str:
@@ -152,10 +149,7 @@ def list_block(items: list[str] | None, fallback: str) -> str:
 def durable_context(repo: Path, phase_id: str, change_id: str) -> list[str]:
     candidates = [
         "AGENTS.md",
-        ".planning/STATE.md",
-        f".planning/phases/{phase_id}/PLAN.md",
-        f".planning/phases/{phase_id}/SUMMARY.md",
-        f".planning/phases/{phase_id}/VERIFICATION.md",
+        ".planning/devflow/STATE.md",
         f"openspec/changes/{change_id}/proposal.md",
         f"openspec/changes/{change_id}/design.md",
         f"openspec/changes/{change_id}/tasks.md",

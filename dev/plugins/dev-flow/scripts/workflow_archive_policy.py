@@ -7,6 +7,8 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+from workflow_mode_routing import read_workflow_mode_config
+from workflow_roadmap_provider import validate_roadmap_bindings
 from workflow_state import parse_state
 
 
@@ -53,6 +55,15 @@ def archive_status(
     policy = read_archive_policy(repo)
     risks: list[dict[str, Any]] = []
     blockers: list[dict[str, Any]] = []
+    workflow_config = read_workflow_mode_config(repo)
+    if not workflow_config.get("valid", True):
+        blockers.append(
+            risk(
+                "invalid_workflow_config",
+                "Archive is blocked because .dev-flow.json is malformed.",
+                errors=workflow_config.get("config_errors", []),
+            )
+        )
 
     if not change_id or change_id == "none":
         blockers.append(risk("missing_change", "No OpenSpec change id was provided."))
@@ -68,6 +79,9 @@ def archive_status(
                 gates=failed_gates,
             )
         )
+
+    if change_id and change_id != "none":
+        blockers.extend(roadmap_binding_archive_risks(repo, change_id, state))
 
     if change_id and change_id != "none":
         risks.extend(task_risks(repo, change_id))
@@ -131,6 +145,54 @@ def task_risks(repo: Path, change: str) -> list[dict[str, Any]]:
     return [risk("incomplete_tasks", "OpenSpec tasks are incomplete.", count=incomplete)]
 
 
+def roadmap_binding_archive_risks(
+    repo: Path,
+    change: str,
+    state: dict[str, Any],
+) -> list[dict[str, Any]]:
+    config = read_workflow_mode_config(repo)
+    if not config.get("valid", True):
+        return [
+            risk(
+                "invalid_workflow_config",
+                "Roadmap binding checks cannot run against malformed .dev-flow.json.",
+                errors=config.get("config_errors", []),
+            )
+        ]
+    bindings = config.get("roadmap_bindings", {})
+    binding = bindings.get(change) if isinstance(bindings, dict) else None
+    if config.get("roadmap_provider") != "gsd" or not isinstance(binding, dict):
+        return []
+    if binding.get("status") != "active":
+        return []
+
+    results: list[dict[str, Any]] = []
+    binding_report = validate_roadmap_bindings(repo, {change: binding}, "gsd")
+    if not binding_report["ready"]:
+        results.append(
+            risk(
+                "roadmap_binding_invalid",
+                "The active GSD roadmap binding requires manual review.",
+                reasons=binding_report["blockingReasons"],
+            )
+        )
+    gates = state.get("gates", {}) if isinstance(state.get("gates"), dict) else {}
+    verification_matches = (
+        gates.get("gsd_verification_passed") is True
+        and str(gates.get("gsd_verification_change")) == change
+        and str(gates.get("gsd_verification_phase")) == str(binding.get("phase_id"))
+    )
+    if not verification_matches:
+        results.append(
+            risk(
+                "gsd_verification_required",
+                "The bound GSD phase must have recorded verification before archive.",
+                phase=binding.get("phase_id"),
+            )
+        )
+    return results
+
+
 def dirty_worktree_risks(repo: Path, change: str) -> list[dict[str, Any]]:
     paths = dirty_worktree_paths(repo)
     unrelated = [path for path in paths if not archive_related_dirty_path(path, change)]
@@ -172,7 +234,7 @@ def dirty_worktree_paths(repo: Path) -> list[str]:
 def archive_related_dirty_path(path: str, change: str) -> bool:
     allowed_prefixes = (
         f"openspec/changes/{change}/",
-        ".planning/",
+        ".planning/devflow/",
         "dev/plugins/dev-flow/",
         "plugins/dev-flow/",
     )

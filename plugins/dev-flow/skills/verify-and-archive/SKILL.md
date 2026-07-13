@@ -1,55 +1,73 @@
 ---
 name: verify-and-archive
-description: Use when verifying work or gating OpenSpec archive.
+description: Use when verifying completed work, preparing a completion claim, or gating OpenSpec archive.
 ---
 
-# Verify And Archive
+# Verify and Archive
 
-Use when implementation appears complete or the user asks to finish, archive, or ship.
+Fresh evidence precedes every completion, commit, PR, release, or archive
+claim.
+
+## Capability Routing
+
+Resolve `change-review` and `completion-proof` from
+`docs/provider_profiles.json`. If an active roadmap binding exists, also
+resolve `roadmap-lifecycle`. Provider output supplements but never replaces
+canonical OpenSpec and DevFlow evidence.
+
+Diagnose the exact completion route before claiming readiness:
+
+```bash
+python3 scripts/check_dependencies.py --repo <repo> \
+  --capability change-review --capability completion-proof --json
+```
+
+Add `--capability roadmap-lifecycle` only when the resolved roadmap provider or
+an active binding requires it.
 
 ## Verification
 
-Use `superpowers:verification-before-completion` before claiming work is complete, fixed, passing, ready to commit, or ready for PR. Use `gsd-verify-work` when the completed work belongs to a GSD phase.
-
-Before completion claims, verify:
-
-- Target State is implemented.
-- Completion Contract is checked.
-- Capability Slices are done or blocked with reasons.
-- Execution Ledger is updated.
-- Acceptance Criteria and Validation Commands have recorded evidence.
-- `TASK_LEDGER.md`, `EVIDENCE_TEMPLATE.md`, and `REVIEW_CHECKLIST.md` have
-  evidence, review, and knowledge-update decisions for contract-first work.
-- Superpowers specs, plans, SDD reports, and review notes have been promoted to
-  canonical OpenSpec, GSD, DevFlow ledger, or verification artifacts when they
-  are used as completion evidence.
-
-Record commands with:
-
-```bash
-python3 scripts/record_verification.py --repo <repo> --command "<command>" --result pass --json
-```
+Check Target State, Completion Contract, Capability Slices, Execution Ledger,
+Acceptance Criteria, exact Validation Commands, changed files, scope, risks,
+and rollback. Record results below `.planning/devflow/verification/`. Provider
+drafts and review notes count only after promotion into canonical artifacts.
 
 ## Archive Gate
 
-Archive only when spec, plan, implementation, verification, and state gates are
-clear. If the OpenSpec change has delta specs under `specs/`, run or invoke
-`openspec-sync-specs` before `openspec-archive-change` so main specs reflect the
-implemented behavior before the change is archived. Missing
-`openspec-sync-specs` is a spec sync uncertainty risk; refresh OpenSpec with the
-core profile before archiving instead of skipping sync silently.
-
-DevFlow separates archive readiness from approval:
+Run `scripts/archive_status.py --repo <repo> --change <change> --json`.
+Archive requires complete tasks, synchronized specs, passing gates, explicit
+archive intent, and no unresolved worktree or compatibility risk. Run
+`openspec-sync-specs` before `openspec-archive-change` when delta specs exist.
+An active roadmap binding is archived only after both OpenSpec and its bound
+phase gates pass. For a selected GSD binding, ingest the canonical UAT artifact
+after `gsd-verify-work`:
 
 ```bash
-python3 scripts/archive_status.py --repo <repo> --change <change> --json
+python3 dev/plugins/dev-flow/scripts/record_verification.py \
+  --repo <repo> --gsd-change <change> --gsd-phase <phase> --json
 ```
 
-Default policy is `confirm-on-risk`. If the user explicitly asked to archive and
-the status report is ready with no risks, proceed with `openspec-archive-change`.
-If the report lists risks such as incomplete tasks, dirty unrelated paths,
-missing artifacts, failed gates, or spec sync uncertainty, summarize them and
-ask for confirmation before archive.
+This command resolves `.planning/phases/<phase-dir>/<phase-num>-UAT.md` through
+the pinned read-only GSD adapter, verifies complete/pass/no-gap state, and
+records its hash. Caller-provided command text or result claims are not GSD
+evidence. After OpenSpec is verified and actually archived, preview then
+explicitly persist the roadmap-binding lifecycle transition:
 
-After verification, archive, or phase ship, create a checkpoint with
-`checkpoint-compact`.
+```bash
+python3 dev/plugins/dev-flow/scripts/archive_roadmap_binding.py \
+  --repo <repo> --change <change> --json
+python3 dev/plugins/dev-flow/scripts/archive_roadmap_binding.py \
+  --repo <repo> --change <change> --apply \
+  --authorize-archive-binding --json
+```
+
+The first command is always read-only. The second requires canonical-write and
+archive authorization and re-checks OpenSpec archive, DevFlow state, and the
+current UAT hash before atomically updating `.dev-flow.json`.
+
+If the status reports risk, present it and obtain confirmation. Archive and
+release are separate approvals. After verification or archive, checkpoint under
+`.planning/devflow/checkpoints/`.
+
+Completion is proven only by commands run in the current worktree and recorded
+results; old or provider-authored claims are not evidence.

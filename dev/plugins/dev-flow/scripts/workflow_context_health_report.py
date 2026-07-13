@@ -5,7 +5,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from workflow_paths import rel, write_json
+from workflow_paths import rel
+from workflow_planning_paths import atomic_write_devflow, context_health_root
 from workflow_state import update_state
 
 
@@ -15,12 +16,11 @@ def write_health_report(
     update: bool = True,
 ) -> str:
     timestamp = datetime.now().astimezone().strftime("%Y%m%d%H%M%S")
-    root = repo / ".planning" / "context-health" / "reports"
-    root.mkdir(parents=True, exist_ok=True)
+    root = context_health_root(repo) / "reports"
     json_path = root / f"{timestamp}-context-health.json"
     md_path = root / f"{timestamp}-context-health.md"
-    write_json(json_path, report)
-    md_path.write_text(render_markdown_report(report), encoding="utf-8")
+    atomic_write_devflow(repo, json_path, f"{json.dumps(report, indent=2)}\n")
+    atomic_write_devflow(repo, md_path, render_markdown_report(report))
     rel_json = rel(repo, json_path)
     if update:
         update_state_from_report(repo, rel_json, report)

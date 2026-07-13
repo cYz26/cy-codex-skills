@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from workflow_context_health_events import read_events, record_event
+from workflow_planning_paths import context_health_root
 from workflow_paths import repo_path
 
 
@@ -91,7 +92,7 @@ def context_health_history(repo: Path) -> dict[str, Any]:
 
 def read_report_risks(repo: Path) -> dict[str, int]:
     risks: Counter[str] = Counter()
-    reports_root = repo / ".planning" / "context-health" / "reports"
+    reports_root = context_health_root(repo) / "reports"
     if not reports_root.exists():
         return {}
     for report_path in reports_root.glob("*.json"):

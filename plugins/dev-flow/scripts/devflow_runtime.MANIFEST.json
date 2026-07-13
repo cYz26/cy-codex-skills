@@ -1,25 +1,35 @@
 {
   "archive": {
-    "bytes": 137698,
+    "bytes": 219392,
     "path": "scripts/devflow_runtime.pyz",
-    "sha256": "5d13584dea2083d9d31b8ae69de4388b32a74d4d76759e8910ac36444355793e"
+    "sha256": "1aa795c12fb166e753dc8523d2ab56b0a2f79ecef553f06abb2afdedcb6b8a9a"
   },
   "buildCommand": [
-    "python3",
+    "/opt/homebrew/opt/python@3.12/bin/python3.12",
     "dev/scripts/package_devflow_release_runtime.py"
   ],
   "schemaVersion": 1,
-  "sourceCommit": "773bd2d139be65e311e4628ed133e9ce8d8b6733",
+  "sourceCommit": "63b4c0995ac9c4fcf56e8a690f674290d8d1a394",
   "sources": [
     {
-      "bytes": 1866,
+      "bytes": 3539,
       "path": "dev/plugins/dev-flow/scripts/activate_project_dependencies.py",
-      "sha256": "00c286831ceb4673368047f6a0501b2a6e623754b3ef3861fd7652a05ac01772"
+      "sha256": "7ec5a0b7404b22b0f60847f4ee067a54c59a3472a9a0ddb57404f87c8c417cef"
+    },
+    {
+      "bytes": 50263,
+      "path": "dev/plugins/dev-flow/scripts/aggregate_provider_benchmark.py",
+      "sha256": "eb63dc672b41035f09897cc5bb251d6cdfe3aefa0215efcf921984d6f79a87dd"
     },
     {
       "bytes": 1600,
       "path": "dev/plugins/dev-flow/scripts/apply_context_tool_actions.py",
       "sha256": "b7ea39670c835674460d72ba0b3c3fb748700f85288cc88335108113ba6de6a9"
+    },
+    {
+      "bytes": 1457,
+      "path": "dev/plugins/dev-flow/scripts/archive_roadmap_binding.py",
+      "sha256": "938b426adaf2a57ef9aff0571ece4d08cc5cba698893e91229f5950c4400d17f"
     },
     {
       "bytes": 1352,
@@ -32,9 +42,9 @@
       "sha256": "2c1aec9c557b1a7a96738ed78d781c22ea786a70570fb76970a8da46db185dc1"
     },
     {
-      "bytes": 1537,
+      "bytes": 2701,
       "path": "dev/plugins/dev-flow/scripts/check_dependencies.py",
-      "sha256": "0e0de51f798142335954c0fb0d321c8c173a0e8ae7ff1cfcd9c42c903602ec0c"
+      "sha256": "35ce97f5c37502cdd52dfdea38ba30cd1df9139c5e808a910c08d1c78db52ada"
     },
     {
       "bytes": 824,
@@ -42,14 +52,14 @@
       "sha256": "8f5be928691ea614455b5e27ee3350b590924a1ff37800be7d7356fc93af5b36"
     },
     {
-      "bytes": 2699,
+      "bytes": 2738,
       "path": "dev/plugins/dev-flow/scripts/claude_code_delegate.py",
-      "sha256": "990d6dc2c347e1db73a199f0bc583f5f3400d0f25db1e88b3af063962609acf7"
+      "sha256": "b017ed47a5821a802d18f106535bcbe8c8c6f771d6dc668dd7a774f08532dabb"
     },
     {
-      "bytes": 32075,
+      "bytes": 36079,
       "path": "dev/plugins/dev-flow/scripts/codex_auto_update_plugins_skills.py",
-      "sha256": "215655c5424fecc5ea3cd92e078c36483aecffffa53f0bd70533a2a212dbab21"
+      "sha256": "ed224543154c116c6a84174d50a44c7b75a411cdeb6dee6341986ec19b9328a8"
     },
     {
       "bytes": 1566,
@@ -102,9 +112,9 @@
       "sha256": "62d56259442dae2dacf982bc31efed080904edb8340dab6b0e8ce40c319b62e3"
     },
     {
-      "bytes": 5723,
+      "bytes": 6073,
       "path": "dev/plugins/dev-flow/scripts/devflow_stop_hook.py",
-      "sha256": "9871899c46f69b158d381c159c992a212616de2f7b47b81ebd5a8d222d1b882e"
+      "sha256": "b91374becfddf680aac8576af68070b602a1b3e03395f59e4560732f4cc56911"
     },
     {
       "bytes": 1074,
@@ -147,9 +157,9 @@
       "sha256": "0058d0850049279f94fe6353ea197f567d5f97792f88168e5bb8c2025c4bc867"
     },
     {
-      "bytes": 17761,
+      "bytes": 21931,
       "path": "dev/plugins/dev-flow/scripts/plugin_project_migration.py",
-      "sha256": "9c88fafff509b2a2186d2384db43390d3fd1791b491657d493ea36cb6374afc3"
+      "sha256": "7f2f67e0155d824f63c9179c7ce45cb3be084a069e0a9ce129526c4adf382e3a"
     },
     {
       "bytes": 1285,
@@ -182,29 +192,34 @@
       "sha256": "058c5fae79040bd8e7c1df5a37b0570fb9f8f708a5475d64485a519ae9cbac60"
     },
     {
-      "bytes": 5516,
+      "bytes": 5853,
       "path": "dev/plugins/dev-flow/scripts/record_context_health_disposition.py",
-      "sha256": "ad92e4409b95c4d6a2ed7676a5cd54b320330ecc976ecb2a357c42c59dc2f390"
+      "sha256": "92bd4071a843e60209cece52d6637d5a178c3a4d9f40fe96445eac4a49a00178"
     },
     {
-      "bytes": 1355,
+      "bytes": 1403,
       "path": "dev/plugins/dev-flow/scripts/record_task_evidence.py",
-      "sha256": "2208b2b379037984d0b79576c9e2675dfd78e6bb82fb0b6cad98c860a52f9d4c"
+      "sha256": "deb04dbdec90d108b72d5b129019f2056e6b3adacd3f60439dd8fcd336e3ba86"
     },
     {
-      "bytes": 793,
+      "bytes": 1493,
       "path": "dev/plugins/dev-flow/scripts/record_verification.py",
-      "sha256": "5b1dfcc75c4835812b672843f196180459b944f6a10211096d831e1a0f8b45a1"
+      "sha256": "c996b17b7d99d1191f4024712431c2cb804be62e12ea79fdc5d16f71a59737c9"
     },
     {
-      "bytes": 3075,
+      "bytes": 4501,
       "path": "dev/plugins/dev-flow/scripts/release_promotion_gate.py",
-      "sha256": "7e0fd7d688d1970a55afe8582fdc4230680fbb64ecdaeb3793b4af5e9b509b6d"
+      "sha256": "3a8a21657e9f8a69421b569cf85f84df7dca58d804c7a7c07cfcade13606447d"
     },
     {
       "bytes": 1153,
       "path": "dev/plugins/dev-flow/scripts/render_setup_report.py",
       "sha256": "8af63274b0504f3973016a3da3289d7ef03a4537d987f3124d26eadfb5508d8e"
+    },
+    {
+      "bytes": 61894,
+      "path": "dev/plugins/dev-flow/scripts/run_provider_benchmark.py",
+      "sha256": "25819dcbbddf8160730e92baf16e846f83ae7f1e54d461487c4be19bd7d894fd"
     },
     {
       "bytes": 879,
@@ -227,9 +242,9 @@
       "sha256": "76941dd4d0ca8d58f0f3789eebcd0ceb4d978b4c5b457391698e5c2bf8e44293"
     },
     {
-      "bytes": 1703,
+      "bytes": 2439,
       "path": "dev/plugins/dev-flow/scripts/sync_release_assets.py",
-      "sha256": "f4df25db71bb76128420016bc5426564b72da7a862fc3b7984a34c45a64c70bf"
+      "sha256": "00eb466c10aabdc968941877f66f6cc49e387306e05f09c1e155ba9a6758b268"
     },
     {
       "bytes": 840,
@@ -262,9 +277,9 @@
       "sha256": "416bb253dc6634ce4c560386c6d16b322bde0d84d7c7ff7d8fa12faa62fddd18"
     },
     {
-      "bytes": 7173,
+      "bytes": 9061,
       "path": "dev/plugins/dev-flow/scripts/verify_release_runtime.py",
-      "sha256": "d5834e76bf174375c3c30fdf5b0acdcde325b55be690df68bc49f685726f9c83"
+      "sha256": "3a5cb05229f6967fda71cc440814d41f7f5379579d58a768753bae7ae2238389"
     },
     {
       "bytes": 6578,
@@ -272,9 +287,9 @@
       "sha256": "952b2f9287e7eb610c90a360492c20dd5fd83beb82a8a8127e241cc66f8c327a"
     },
     {
-      "bytes": 9091,
+      "bytes": 11446,
       "path": "dev/plugins/dev-flow/scripts/workflow_archive_policy.py",
-      "sha256": "e592fcdccd0e30d85f64a37e2adcb165f3728873ee0f599a2f29e76fcda69179"
+      "sha256": "56625cdbaf49c9c599e120cc496d1488db581009fd26d39bb8c08b3bdebe1531"
     },
     {
       "bytes": 3224,
@@ -282,19 +297,19 @@
       "sha256": "5885a587dd1ac9591efd582fa3c10dc9da3d00cc68b80dcca0669b8b00cfbad6"
     },
     {
-      "bytes": 6605,
+      "bytes": 6477,
       "path": "dev/plugins/dev-flow/scripts/workflow_checkpoint_create.py",
-      "sha256": "ba9ae33037b7b37677d8128352fc60cc041c2730086e6c85fcb060a73fa82985"
+      "sha256": "9705438a416630e2581e78853ba339523e5c0fac9c87c354a6023b219e7cba6d"
     },
     {
-      "bytes": 4091,
+      "bytes": 3800,
       "path": "dev/plugins/dev-flow/scripts/workflow_checkpoint_validate.py",
-      "sha256": "4c2549087754bd2ec986fa1eeaf1a839fcf1124d9ea258caeac38abece7d93fe"
+      "sha256": "c0976e66d4371febb1de035c74a5e711a91e115d6f1dcf1004e1e029727158ec"
     },
     {
-      "bytes": 9679,
+      "bytes": 9713,
       "path": "dev/plugins/dev-flow/scripts/workflow_claude_delegate.py",
-      "sha256": "8dda46fb2556ddbf94d4cee4214685c68bb2095c2ac088f3ad1972653f3db4ed"
+      "sha256": "1b927df37020ce062d8651457daebc2f71c8843cc05da62acbfaa5bf859762d4"
     },
     {
       "bytes": 942,
@@ -322,14 +337,14 @@
       "sha256": "107c4857a2346f9b9803cdde97872909959b445c4c06ba03fa8290d706b9388c"
     },
     {
-      "bytes": 2337,
+      "bytes": 2376,
       "path": "dev/plugins/dev-flow/scripts/workflow_compact_resolve.py",
-      "sha256": "c64b7c1e6dc0dcadb15b9de118cae5c57e9cc93f93797b880fbc7aef3026eefc"
+      "sha256": "339a242c66d08210acacd70735d6f30d2536cbff8efac12c5152d8b0047c1586"
     },
     {
-      "bytes": 3474,
+      "bytes": 3547,
       "path": "dev/plugins/dev-flow/scripts/workflow_compact_result.py",
-      "sha256": "4ad19b82b0022a425e587db2910b4fefb655b37f58dd9a509700c84dd5001c9c"
+      "sha256": "30cc952dde5497a3199fe511e802b9483c7caa02fbbd9397dd1d07b0444939a6"
     },
     {
       "bytes": 1470,
@@ -347,9 +362,9 @@
       "sha256": "a84e2c66d658e4d0ffc0113238bf22f66052b23b01398142140a8012f66f7c22"
     },
     {
-      "bytes": 2106,
+      "bytes": 2239,
       "path": "dev/plugins/dev-flow/scripts/workflow_context_action_handlers.py",
-      "sha256": "a05b58a2bc364a714e2b53e4acb5e42b50ff28320aa3a414fcd93fdefa4ac7ba"
+      "sha256": "3881885de133609c05df219c73f885b1bc9c89b3cc34f9b30c540f2d6d99c818"
     },
     {
       "bytes": 2214,
@@ -377,9 +392,9 @@
       "sha256": "976c1a0a370e65bdf15b35f25af92a0234f2909ed2f1f096bfd63341e540db6b"
     },
     {
-      "bytes": 7269,
+      "bytes": 7227,
       "path": "dev/plugins/dev-flow/scripts/workflow_context_health_events.py",
-      "sha256": "957ff68db95dc106e1d19b9be54d0ab4442eade7723a3ca31d1ecb3b7eecfcc6"
+      "sha256": "1a107b5fc52f2c66e3c7b9e18a8fe99deb721492a2c1f0bbb37673f2c9a9c83c"
     },
     {
       "bytes": 6536,
@@ -387,14 +402,14 @@
       "sha256": "57ee86f349999cfd422b0a60600340564c94ce0e447a2c6957a33e0bfeeb3d76"
     },
     {
-      "bytes": 2999,
+      "bytes": 3054,
       "path": "dev/plugins/dev-flow/scripts/workflow_context_health_repo.py",
-      "sha256": "b68535a536f2f97514141ee3218e371a534ecaf3ab96dd557c5fce76b70ae5d4"
+      "sha256": "2c3756642820b47b8af52df2a70a1fad8618d0a1427e0cf8fd60a8a010e110da"
     },
     {
-      "bytes": 2922,
+      "bytes": 2976,
       "path": "dev/plugins/dev-flow/scripts/workflow_context_health_report.py",
-      "sha256": "548effd95b10fb835247edd2e1f75612e0963ff8767199dd92deadfc455830fb"
+      "sha256": "325c43717e2680270dbcda754c6d0ecc23d9958bfcb6b9ac9f23d107f3d12842"
     },
     {
       "bytes": 3952,
@@ -402,9 +417,9 @@
       "sha256": "916a4cc2da4b15eee5e69ff609c755e76473039bb666c8d7e08fef837630563d"
     },
     {
-      "bytes": 3216,
+      "bytes": 3260,
       "path": "dev/plugins/dev-flow/scripts/workflow_context_health_sessions.py",
-      "sha256": "f73ac50abb4c5b55d2c0844a23e657668f62a21a35d46827a9a6f66fe8ccf157"
+      "sha256": "1e696a41b3633695976a32111df1c30946a78b649622bafc4a0d1d8f5658231f"
     },
     {
       "bytes": 7421,
@@ -492,19 +507,19 @@
       "sha256": "f8a0574c60470d4b245dca8e95da470b29ee72e7a24064289c4f93e366687136"
     },
     {
-      "bytes": 2479,
+      "bytes": 5650,
       "path": "dev/plugins/dev-flow/scripts/workflow_dependencies.py",
-      "sha256": "da5fbad99af4b2d72971bda8d124618e52a592801ecb084b193f14c52a72b5a7"
+      "sha256": "96afd99acd23d02dd49f88555efcb630538129dbac3e84df9c5f0fdd44a461b7"
     },
     {
-      "bytes": 1560,
+      "bytes": 1825,
       "path": "dev/plugins/dev-flow/scripts/workflow_dependency_catalog.py",
-      "sha256": "00f65a70a845ad09163d63011d6d54943be381926652ace0e75e5006cfff8659"
+      "sha256": "ff8ce0455ba649c86a9fa74f7c1db08fda02b372e8e2a9e5f8e7044f80df972b"
     },
     {
-      "bytes": 7785,
+      "bytes": 13199,
       "path": "dev/plugins/dev-flow/scripts/workflow_dependency_checks.py",
-      "sha256": "914f4e797316970d15768f2781e3835ca6911da3359c9aa15bc31ed88ba99e33"
+      "sha256": "84ad162d488b5d312c216b3fd30e12a30aa2b6f31562a55a88f2d192c5ac55c0"
     },
     {
       "bytes": 14928,
@@ -512,9 +527,9 @@
       "sha256": "4a44afd7380c9c69922c4fe459b0cf9c73942e3461687ce61aaec5449b60137a"
     },
     {
-      "bytes": 11510,
+      "bytes": 12912,
       "path": "dev/plugins/dev-flow/scripts/workflow_dependency_provenance.py",
-      "sha256": "18ab4bf4fc01e9075e4e6dcca37a897d9e5bb0815c168359b1b2afc50a7077bc"
+      "sha256": "3537cb7aec11ee2d5c32e6c4326df2516e872c3a667cb642038de5f3ad49a415"
     },
     {
       "bytes": 2646,
@@ -547,9 +562,9 @@
       "sha256": "8e0f5dca9a984d72f1af08e026da67fe6e579ccf3d5a0f8c22cdf32aef8928b7"
     },
     {
-      "bytes": 911,
+      "bytes": 995,
       "path": "dev/plugins/dev-flow/scripts/workflow_inspect.py",
-      "sha256": "775621c30dd6c2dad04bc84f03a39f05e0b2512ebbac5474a97b635935929f61"
+      "sha256": "ddffaa514e94c0c5188f6f03a3e692029d5e528c6513f49a796e69ac6d6e9b9a"
     },
     {
       "bytes": 2828,
@@ -557,9 +572,9 @@
       "sha256": "e5ef13e612e2b92eef701a84931b1fbe1cc7a2cbf1ec11efb199e06d0c1d2560"
     },
     {
-      "bytes": 7956,
+      "bytes": 12588,
       "path": "dev/plugins/dev-flow/scripts/workflow_mode_routing.py",
-      "sha256": "020e803583f9b06cba1e299b7643ac2406fa8a5e29affab16141a004b5aee3ca"
+      "sha256": "8c2698ce4416f1634847f33f32a0795267542b6f8de661a135450ccca4cf00b7"
     },
     {
       "bytes": 1526,
@@ -567,24 +582,49 @@
       "sha256": "0a6647d84621974ce79d584f81bd4a2b16bdaa5fc2e9b76ea91d893481fdad31"
     },
     {
-      "bytes": 4307,
+      "bytes": 4447,
+      "path": "dev/plugins/dev-flow/scripts/workflow_planning_paths.py",
+      "sha256": "f42e50245e621da053461704cf7b8e04c084dc0aba30ca777f533a1d0ddb9a29"
+    },
+    {
+      "bytes": 15797,
       "path": "dev/plugins/dev-flow/scripts/workflow_project_activation.py",
-      "sha256": "88f3e95db13461b2d5947b2c7c201b9ee1db1f6375edce5a86ed55c5c72f00e2"
+      "sha256": "766202edc05c212612db884f49586addf1a9b618e9a9dfb925af6c6901c445f3"
     },
     {
-      "bytes": 5809,
+      "bytes": 9512,
       "path": "dev/plugins/dev-flow/scripts/workflow_project_skill_install.py",
-      "sha256": "59dbfbd36b08ee7f8332a5be202dabfe602d1a8844ea0f12be39458a1d3b033d"
+      "sha256": "61e5c20bded62445d266dd99e9f72ab4d3ad969938c65029ac569baa5293f73e"
     },
     {
-      "bytes": 8384,
+      "bytes": 10124,
       "path": "dev/plugins/dev-flow/scripts/workflow_project_skill_paths.py",
-      "sha256": "599becaa980fcb4b6f9481960d7806bc618b118d8d4e5f13c1c9fbaab826ee5e"
+      "sha256": "462ae790597023419517ae3f2abb05155f8621b1dde2cb60c9b3ecb3420c6822"
     },
     {
-      "bytes": 9754,
+      "bytes": 16308,
+      "path": "dev/plugins/dev-flow/scripts/workflow_provider_activation.py",
+      "sha256": "ea3765d8e9c0f981f6eced9a131b0922da7b35e2c5e7ab6d7a34b02057aa86f0"
+    },
+    {
+      "bytes": 52274,
+      "path": "dev/plugins/dev-flow/scripts/workflow_provider_migration.py",
+      "sha256": "892b12e09d292771781fa56c0991465e681928a4b6e8fa977159fbeeb35fa895"
+    },
+    {
+      "bytes": 52447,
+      "path": "dev/plugins/dev-flow/scripts/workflow_provider_profiles.py",
+      "sha256": "b7544c360e8dc10a5abd349d119d1bea2010690827bf6854045aff8b8e30d8c3"
+    },
+    {
+      "bytes": 3718,
+      "path": "dev/plugins/dev-flow/scripts/workflow_provider_registry.py",
+      "sha256": "bcd23c8c0a1be6862967fa1ccc9f57291a2756d8ff778eadb0f1032657e89c24"
+    },
+    {
+      "bytes": 32180,
       "path": "dev/plugins/dev-flow/scripts/workflow_release_sync.py",
-      "sha256": "04ca3b865ab815e01e85528409a547e2c3b542ea53a2f23a0010f4bfa1b2e9ef"
+      "sha256": "9bcfe1e2b662368dc9d6d9afe32d959189d98f1e7dbf6c79e338c918ee57cca2"
     },
     {
       "bytes": 1921,
@@ -597,34 +637,39 @@
       "sha256": "0a1e6912d2abb4042de691c61e8304e5e1ebfb7143b93c208d7d986e7130d99b"
     },
     {
-      "bytes": 1121,
+      "bytes": 35799,
+      "path": "dev/plugins/dev-flow/scripts/workflow_roadmap_provider.py",
+      "sha256": "71f00c40828f5744943f2447ffbb91bf11544f9f5cdd12b0fe35051ba8fd50df"
+    },
+    {
+      "bytes": 1167,
       "path": "dev/plugins/dev-flow/scripts/workflow_routing_matrix.py",
-      "sha256": "129a483956512a77e44caf86ad4505cf5930bcc222867ed8508573975fd14032"
+      "sha256": "756dc89b8d5537f74ee588552607166fff099395933ce33a2b98611bb49e1165"
     },
     {
-      "bytes": 5718,
+      "bytes": 6395,
       "path": "dev/plugins/dev-flow/scripts/workflow_scaffold.py",
-      "sha256": "b1460cbeeb8caed9518ad3c41b81f8bf8e00b814573d0e5b34db9f709f2fb74d"
+      "sha256": "f417ce4a5a5ac5ecd6c2ecdda45dfc78763ff7b97846e4286744721b4d755b0e"
     },
     {
-      "bytes": 9797,
+      "bytes": 13574,
       "path": "dev/plugins/dev-flow/scripts/workflow_state.py",
-      "sha256": "5812fd1a347ca5be281f51c75a5101e8bb93c3f11743d81889280681b16c2715"
+      "sha256": "61fe9ee298fd9491a61865d84edc20c0e4dc2513099c73e8735d3bd3708ad9a6"
     },
     {
-      "bytes": 862,
+      "bytes": 908,
       "path": "dev/plugins/dev-flow/scripts/workflow_superpowers_gates.py",
-      "sha256": "658274548eb86c026474adbe9b7d7bd4e6f4dbd0d4fc8f41199d076899d61f29"
+      "sha256": "8c1a0120a87b6a6c9f3527735d8ae4958b97943a6de40fec036619857d2dbb05"
     },
     {
-      "bytes": 6870,
+      "bytes": 7937,
       "path": "dev/plugins/dev-flow/scripts/workflow_validate.py",
-      "sha256": "918856c19f5d85136d427f4df2857ef8dd9d806dfa86b7b53e311ed0e7e3ff2f"
+      "sha256": "fc997aacaf09973897c718fc4788ac9e8d1935e7bb3ff929752da31c636d8580"
     },
     {
-      "bytes": 1783,
+      "bytes": 15890,
       "path": "dev/plugins/dev-flow/scripts/workflow_verification.py",
-      "sha256": "93fb544f249b0083892cf73e34516a7403f2d8733fcfd098def8651d9094b563"
+      "sha256": "bdfddb001b8c3caf51038f53907d501df73f93b5d4fe910879d1027456b13ff2"
     }
   ]
 }

@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "defaultDeny": true,
+  "effects": {
+    "workspace.read": {
+      "authorization": "task_scope",
+      "denial": "omit_and_report"
+    },
+    "draft.write": {
+      "authorization": "declared_draft_write_set",
+      "denial": "chat_or_stop"
+    },
+    "canonical.write": {
+      "authorization": "approved_promoter_write_set",
+      "denial": "require_promotion"
+    },
+    "code_test.modify": {
+      "authorization": "approved_task_write_set",
+      "denial": "block"
+    },
+    "git.branch_worktree": {
+      "authorization": "approved_isolation_plan",
+      "denial": "inline_or_stop"
+    },
+    "git.commit": {
+      "authorization": "explicit_user_request",
+      "denial": "leave_uncommitted"
+    },
+    "git.push_pr": {
+      "authorization": "explicit_user_request",
+      "denial": "do_not_contact_remote"
+    },
+    "tracker.read": {
+      "authorization": "task_scope_and_credentials",
+      "denial": "do_not_query"
+    },
+    "tracker.write": {
+      "authorization": "explicit_user_request",
+      "denial": "return_draft"
+    },
+    "dependency.install_update": {
+      "authorization": "explicit_named_dependency_request",
+      "denial": "dry_run_only"
+    },
+    "destructive.cleanup": {
+      "authorization": "explicit_file_list_and_rollback",
+      "denial": "preserve_and_report"
+    },
+    "archive_release": {
+      "authorization": "verified_and_explicit_user_request",
+      "denial": "ready_not_applied"
+    },
+    "goal.state": {
+      "authorization": "explicit_user_request_and_quality_gate",
+      "denial": "goal_mode_prompt_only"
+    }
+  }
+}

@@ -6,6 +6,7 @@ from typing import Any
 from workflow_compact_options import clean_text, first_text
 from workflow_paths import rel
 from workflow_state import parse_state
+from workflow_planning_paths import checkpoint_root
 
 
 def resolve_checkpoint(repo: Path, options: dict[str, Any]) -> dict[str, Any]:
@@ -33,7 +34,7 @@ def resolve_checkpoint(repo: Path, options: dict[str, Any]) -> dict[str, Any]:
 
 
 def checkpoint_candidate(repo: Path, checkpoint_id: str, issues: list[str]) -> Path:
-    candidate = repo / ".planning" / "checkpoints" / f"{checkpoint_id}.md"
+    candidate = checkpoint_root(repo) / f"{checkpoint_id}.md"
     if not candidate.exists():
         issues.append(f"Checkpoint file does not exist: {rel(repo, candidate)}")
     return candidate

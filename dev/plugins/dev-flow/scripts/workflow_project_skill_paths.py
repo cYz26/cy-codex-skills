@@ -12,12 +12,53 @@ OFFICIAL_PROJECT_SKILL_PATH_KIND = "official_repo_skill_path"
 LEGACY_PROJECT_SKILL_PATH_KIND = "legacy_codex_skill_path"
 
 
+class ProjectSkillOwnershipError(RuntimeError):
+    pass
+
+
 def official_project_skill_dir(repo: Path, skill: str) -> Path:
     return repo / OFFICIAL_PROJECT_SKILL_ROOT / skill
 
 
 def official_project_skill_file(repo: Path, skill: str) -> Path:
     return official_project_skill_dir(repo, skill) / "SKILL.md"
+
+
+def guard_project_skill_write(repo: Path, target: Path) -> Path:
+    """Reject writes that can escape through a symlinked project skill parent."""
+    repo_input = Path(repo).absolute()
+    target_input = Path(target).absolute()
+    try:
+        relative_target = target_input.relative_to(repo_input)
+    except ValueError as error:
+        raise ProjectSkillOwnershipError(
+            f"project skill target is outside repository: {target_input}"
+        ) from error
+    repo = repo_input.resolve()
+    target = repo / relative_target
+    skill_root = repo / OFFICIAL_PROJECT_SKILL_ROOT
+    try:
+        target.relative_to(skill_root)
+    except ValueError as error:
+        raise ProjectSkillOwnershipError(f"project skill target is outside {skill_root}: {target}") from error
+    parents = [repo / ".agents", skill_root]
+    current = skill_root
+    for part in target.relative_to(skill_root).parts[:-1]:
+        current = current / part
+        parents.append(current)
+    for parent in parents:
+        if parent.is_symlink():
+            raise ProjectSkillOwnershipError(f"project skill parent must not be a symlink: {parent}")
+        if parent.exists() and not parent.is_dir():
+            raise ProjectSkillOwnershipError(f"project skill parent is not a directory: {parent}")
+        if parent.exists():
+            try:
+                parent.resolve().relative_to(repo)
+            except ValueError as error:
+                raise ProjectSkillOwnershipError(
+                    f"project skill parent resolves outside repository: {parent}"
+                ) from error
+    return target
 
 
 def legacy_project_skill_dir(repo: Path, skill: str) -> Path:
@@ -229,6 +270,8 @@ def skill_tree_digest(root: Path) -> str | None:
 
 
 def write_skill_tree_from_legacy(legacy: Path, official: Path) -> str:
+    repo = official.parents[2]
+    guard_project_skill_write(repo, official)
     official.parent.mkdir(parents=True, exist_ok=True)
     if legacy.is_symlink():
         official.symlink_to(legacy.resolve(), target_is_directory=True)

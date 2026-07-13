@@ -9,17 +9,22 @@ from workflow_dependency_catalog import (
     LEGACY_OPENSPEC_SKILLS,
     PROJECT_ORCHESTRATOR_SKILLS,
     REQUIRED_CLI_TOOLS,
-    REQUIRED_GSD_AGENTS,
-    REQUIRED_GSD_SKILLS,
+    GSD_ROADMAP_AGENTS,
+    GSD_ROADMAP_SKILLS,
     REQUIRED_SKILLS,
-    REQUIRED_SUPERPOWERS_PROJECT_SKILLS,
+    STRICT_SUPERPOWERS_BASE_PROJECT_SKILLS,
+    STRICT_SUPERPOWERS_PROJECT_SKILLS,
 )
 from workflow_dependency_plugin_checks import (
+    SUPERPOWERS_RECOMMENDED,
     add_superpowers_governance_checks,
     add_skill_checks,
     check_global_plugin_inactive,
     check_plugin_activation,
     check_plugin_installed,
+    compare_versions,
+    superpowers_compatibility,
+    superpowers_next_action,
 )
 from workflow_project_skill_paths import (
     LEGACY_PROJECT_SKILL_PATH_KIND,
@@ -36,27 +41,154 @@ def check_external_dependencies(
     global_config: dict[str, Any],
     strict: bool,
     repo: Path | None = None,
-) -> None:
+    *,
+    selection: dict[str, Any] | None = None,
+    provider_report: dict[str, Any] | None = None,
+    triggered_capabilities: set[str] | None = None,
+) -> dict[str, Any]:
+    methodology = selection.get("effectiveMethodologyProfile") if selection else "core"
+    roadmap = selection.get("effectiveRoadmapProvider") if selection else "none"
     check_required_cli_tools(checks)
     check_global_plugin_inactive(checks, global_config, "superpowers", required=False)
-    check_global_skills_inactive(checks, codex_home, global_config)
+    check_global_skills_inactive(checks, codex_home, global_config, methodology, roadmap)
     if repo is not None:
         check_project_skills(checks, repo, PROJECT_ORCHESTRATOR_SKILLS, True)
-        check_project_skills(checks, repo, REQUIRED_SUPERPOWERS_PROJECT_SKILLS, True)
-        check_project_skills(checks, repo, REQUIRED_GSD_SKILLS, True)
-        check_project_gsd_core_runtime(checks, repo, True)
-        check_project_gsd_agents(checks, repo, True)
+        if methodology == "strict-superpowers":
+            check_project_skills(checks, repo, STRICT_SUPERPOWERS_BASE_PROJECT_SKILLS, True)
+            conditional = strict_conditional_skills_for_capabilities(triggered_capabilities or set())
+            check_project_skills(checks, repo, conditional, True)
+        if roadmap == "gsd":
+            check_project_skills(checks, repo, GSD_ROADMAP_SKILLS, True)
+            check_project_gsd_core_runtime(checks, repo, True)
+            check_project_gsd_agents(checks, repo, True)
         check_project_openspec_setup(checks, repo, True)
         check_project_openspec_sync_workflow(checks, repo, False)
         check_legacy_project_skills(checks, repo, LEGACY_OPENSPEC_SKILLS, False)
-    for plugin, skills in REQUIRED_SKILLS.items():
-        check_plugin_installed(checks, codex_home, plugin, "external plugin installed", True)
-        add_skill_checks(checks, codex_home, plugin, skills, True)
-    superpowers = add_superpowers_governance_checks(checks, codex_home, strict)
+    superpowers, bound_superpowers = provider_superpowers_compatibility(provider_report, codex_home, strict)
+    if methodology == "strict-superpowers":
+        add_bound_superpowers_checks(checks, bound_superpowers, superpowers)
     for plugin, skills in DEVELOPER_SKILLS.items():
         check_plugin_activation(checks, global_config, plugin, "developer plugin enabled", strict)
         add_skill_checks(checks, codex_home, plugin, skills, strict)
     return superpowers
+
+
+def strict_conditional_skills_for_capabilities(capabilities: set[str]) -> list[str]:
+    from workflow_provider_registry import default_plugin_root, load_provider_registry
+
+    registry = load_provider_registry(default_plugin_root())
+    conditional = set(registry["methodologyProfiles"]["strict-superpowers"]["conditionalSkills"])
+    return sorted(
+        {
+            skill
+            for capability in capabilities
+            for skill in registry["capabilities"].get(capability, {}).get("strict-superpowers", [])
+            if skill in conditional
+        }
+    )
+
+
+def provider_superpowers_compatibility(
+    provider_report: dict[str, Any] | None,
+    codex_home: Path,
+    strict: bool,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    if provider_report is None:
+        report = add_superpowers_governance_checks([], codex_home, strict)
+        return report, report
+    bound = dict(provider_report.get("providers", {}).get("superpowers", {}))
+    version = str(bound.get("version") or "0")
+    bound_status = bound.get("status")
+    if bound_status == "ready":
+        status = (
+            "superpowers_ok"
+            if compare_versions(version, SUPERPOWERS_RECOMMENDED) >= 0
+            else "superpowers_upgrade_recommended"
+        )
+    else:
+        status = {
+            "hook_untrusted_when_declared": "superpowers_hook_untrusted",
+            "hook_missing_when_declared": "superpowers_hook_missing",
+            "ambiguous_source": "superpowers_ambiguous_source",
+            "stale_lock": "superpowers_stale_lock",
+            "missing": "superpowers_missing",
+            "missing_capabilities": "superpowers_unsupported",
+        }.get(str(bound_status), "superpowers_missing")
+    report = {
+        "status": status,
+        "version": bound.get("version"),
+        "sourceChannel": bound.get("sourceChannel"),
+        "pluginRoot": bound.get("root"),
+        "compatibility": superpowers_compatibility(version),
+        "requiredSkills": bound.get("skills", {}),
+        "sessionStartHookPresent": bound.get("hookPresent", False),
+        "sessionStartHookTrusted": bound.get("hookTrusted", False),
+        "strict": strict,
+        "nextAction": superpowers_next_action(status),
+    }
+    return report, bound
+
+
+def add_bound_superpowers_checks(
+    checks: list[dict[str, Any]],
+    report: dict[str, Any],
+    compatibility: dict[str, Any],
+) -> None:
+    ready = bool(report.get("ready"))
+    add_check(
+        checks,
+        "external plugin installed: superpowers",
+        bool(report.get("candidates")),
+        True,
+        report.get("root") or report.get("status", "missing"),
+    )
+    skills = report.get("skills", {})
+    skill_paths = report.get("skillPaths", {})
+    for skill in REQUIRED_SKILLS["superpowers"]:
+        add_check(
+            checks,
+            f"external skill available: superpowers:{skill}",
+            bool(skills.get(skill)),
+            True,
+            skill_paths.get(skill, "missing"),
+        )
+    add_check(
+        checks,
+        "superpowers dependency status",
+        compatibility["status"] == "superpowers_ok",
+        not ready,
+        compatibility.get("nextAction", report.get("status", "missing")),
+        status=compatibility.get("status"),
+        version=report.get("version"),
+        sourceChannel=report.get("sourceChannel"),
+    )
+    latest_ready = compare_versions(str(report.get("version") or "0"), SUPERPOWERS_RECOMMENDED) >= 0
+    latest_ready = latest_ready and all(report.get("skills", {}).values())
+    add_check(
+        checks,
+        "superpowers latest ready",
+        latest_ready,
+        False,
+        f"version {report.get('version') or 'unknown'}, recommended {SUPERPOWERS_RECOMMENDED}",
+        status=compatibility.get("status"),
+    )
+    if report.get("hookDeclared"):
+        add_check(
+            checks,
+            "superpowers session-start hook present",
+            bool(report.get("hookPresent")),
+            True,
+            "SessionStart hook present" if report.get("hookPresent") else "missing SessionStart hook",
+            status=compatibility.get("status"),
+        )
+        add_check(
+            checks,
+            "superpowers session-start hook trusted",
+            bool(report.get("hookTrusted")),
+            True,
+            "trusted" if report.get("hookTrusted") else "review and trust with /hooks",
+            status=compatibility.get("status"),
+        )
 
 
 def check_required_cli_tools(checks: list[dict[str, Any]]) -> None:
@@ -169,7 +301,7 @@ def check_project_openspec_sync_workflow(checks: list[dict[str, Any]], repo: Pat
 
 
 def check_project_gsd_agents(checks: list[dict[str, Any]], repo: Path, required: bool) -> None:
-    for agent in REQUIRED_GSD_AGENTS:
+    for agent in GSD_ROADMAP_AGENTS:
         path = repo / ".codex" / "agents" / agent
         add_check(checks, f"project gsd agent active: {agent}", path.exists(), required, str(path))
 
@@ -183,12 +315,19 @@ def check_global_skills_inactive(
     checks: list[dict[str, Any]],
     codex_home: Path,
     config: dict[str, Any],
+    methodology: str = "strict-superpowers",
+    roadmap: str = "gsd",
 ) -> None:
-    for skill in [*REQUIRED_GSD_SKILLS, *LEGACY_OPENSPEC_SKILLS, *REQUIRED_SUPERPOWERS_PROJECT_SKILLS]:
+    skill_requirements = [
+        *[(skill, roadmap == "gsd") for skill in GSD_ROADMAP_SKILLS],
+        *[(skill, True) for skill in LEGACY_OPENSPEC_SKILLS],
+        *[(skill, methodology == "strict-superpowers") for skill in STRICT_SUPERPOWERS_PROJECT_SKILLS],
+    ]
+    for skill, required in skill_requirements:
         path = codex_home / "skills" / skill / "SKILL.md"
         inactive = not path.exists() or skill_disabled(config, path)
         detail = "not installed globally" if not path.exists() else skill_detail(path, config)
-        add_check(checks, f"global skill inactive: {skill}", inactive, True, detail)
+        add_check(checks, f"global skill inactive: {skill}", inactive, required, detail)
 
 
 def skill_disabled(config: dict[str, Any], path: Path) -> bool:

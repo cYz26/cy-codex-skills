@@ -36,9 +36,9 @@ Refresh only projects that actually use DevFlow. A project qualifies when it
 has one of these markers:
 
 - `AGENTS.md` with DevFlow guidance
-- `.planning/STATE.md`
+- `.planning/devflow/STATE.md`
 - `openspec/config.yaml`
-- `.dev-flow/plugin-project-migration/state.json`
+- `.planning/devflow/plugin-project-migration/state.json`
 - `.agents/skills` entries pointing to DevFlow skills
 
 If the user names projects, use that list. Otherwise inspect likely active repo
@@ -71,6 +71,7 @@ python3 dev/plugins/dev-flow/scripts/activate_project_dependencies.py \
   --codex-home <codex-home> \
   --skip-official-installs \
   --refresh-project-skills \
+  --apply \
   --json
 ```
 

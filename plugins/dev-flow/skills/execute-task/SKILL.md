@@ -1,70 +1,60 @@
 ---
 name: execute-task
-description: Use when executing one approved OpenSpec task.
+description: Use when executing one approved OpenSpec task or configured lightweight ledger item.
 ---
 
 # Execute Task
 
-Use only after the active change has proposal, specs, design when needed, and tasks.
+Execute one approved ledger item and leave fresh evidence.
+
+## Capability Routing
+
+Always resolve `test-first-execution` from `docs/provider_profiles.json`.
+Resolve `root-cause-diagnosis` only for a hard bug, regression, or unexpected
+behavior. Resolve `execution-orchestration` only when approved work is
+delegated, parallelized, or isolated. The selected implementation may add
+discipline, but it cannot replace OpenSpec tasks, DevFlow evidence, or the
+Completion Contract. Provider details live in
+`docs/provider-profile-migration.md`.
+
+Before editing, run selection-scoped diagnosis with the capabilities actually
+triggered by the item, for example:
+
+```bash
+python3 scripts/check_dependencies.py --repo <repo> \
+  --capability test-first-execution \
+  --capability execution-orchestration --json
+```
+
+Use the same flags with `activate_project_dependencies.py` when activation is
+needed. This is dry-run by default; provider installation, project links, and
+lock persistence occur only in explicit apply mode.
 
 ## Procedure
 
-1. Read `AGENTS.md`, `.planning/STATE.md`, the active OpenSpec change, and relevant source files.
-2. Use `openspec-apply-change` when executing approved OpenSpec tasks.
-3. Use `superpowers:test-driven-development` before implementation for features, bug fixes, and risky behavior changes.
-4. Read the Target State, Completion Contract, Capability Slices, Execution Ledger, Acceptance Criteria, and Validation Commands.
-5. Pick the next unfinished ledger item or capability slice from `tasks.md` or the repo-specific ledger.
-6. Write or update the failing test first, implement minimally, then run focused and broader checks.
-7. Update `tasks.md`, `.planning/STATE.md`, the Execution Ledger, and verification evidence only after validation passes or a blocker is recorded.
-
-Use `gsd-execute-phase` only for an approved phase plan.
-
-## Workflow Modes
-
-Full OpenSpec tasks require ready proposal, design, specs, and tasks before
-implementation. If workflow routing reports a mandatory Full OpenSpec blocker,
-stop and use `openspec-propose` or `openspec-apply-change` as directed.
-
-Lightweight Ledger execution is allowed only for configured low-risk work. Keep
-the ledger complete with Target State, Scope / Non-Goals, Validation Commands,
-Execution Log, and Completion Claim, and do not claim completion until evidence
-exists.
-
-Prototype Mode output is non-production. Keep cleanup or promotion criteria in
-the task record, and promote through Full OpenSpec before production behavior,
-API, data, integration, migration, permission, error-handling, or compatibility
-changes.
+1. Read `AGENTS.md`, `.planning/devflow/STATE.md`, the active change or
+   lightweight ledger, relevant source, Acceptance Criteria, and Validation
+   Commands.
+2. Confirm the workflow route is executable. Full OpenSpec work proceeds
+   through `openspec-apply-change`; Prototype Mode remains non-production.
+3. Pick one unfinished Capability Slice or ledger item.
+4. Add or update the failing test and record RED. Implement the smallest
+   complete behavior, then run focused and broader checks.
+5. Record changed files, commands, results, cleanup, and risks under
+   `.planning/devflow/verification/`.
+6. Update the task, Execution Ledger, and state only after evidence passes or a
+   blocker is recorded.
 
 ## Delegated Execution
 
-Use subAgents only when the user or active workflow explicitly authorized
-delegated parallel work and the approved task can be split into disjoint write
-sets. The shared files remain serialized through the main agent.
+Delegation requires explicit authority, disjoint write sets, and a validated
+Agent Task Contract. Run `scripts/validate_agent_task_contract.py` and record
+its `contract_path`; shared files remain serialized
+through the main agent. Each worker returns status (`DONE`,
+`DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`), files changed or
+inspected, tests, risks, and review needs. The main agent reviews the diff and
+reruns validation.
 
-For authorized execution, prefer the existing execution skills:
-
-- `gsd-execute-phase` for approved GSD phase waves.
-- `subagent-driven-development` for task-by-task implementation with review.
-- `dispatching-parallel-agents` for independent investigation or review.
-- `executing-plans` when subAgents are unavailable or the work is tightly coupled.
-
-Before dispatch, assign each worker concrete file ownership or read-only scope.
-Keep OpenSpec artifacts, `.planning/STATE.md`, verification evidence, shared
-README/docs, and final integration under main-agent ownership unless the plan
-serializes those edits.
-
-Before dispatch, create an Agent Task Contract and validate it with
-`python3 scripts/validate_agent_task_contract.py --contract <path> --json`.
-Record the contract in the task ledger as `contract_path`. The contract must
-define Goal, Scope, Constraints, Verification, Evidence, and Human Gate. Use
-`not-delegated` only for ordinary main-agent tasks that are not handed to
-another agent, subagent, worker, or parallel execution slice.
-
-Each delegated result must report status (`DONE`, `DONE_WITH_CONCERNS`,
-`NEEDS_CONTEXT`, or `BLOCKED`), files changed or inspected, commands or tests
-run, residual risks, and review needs. Review those results before updating the
-Execution Ledger.
-
-## Boundaries
-
-Do not expand scope, add dependencies, introduce migrations, or break public APIs without updating OpenSpec and getting approval. Do not mark a capability slice done before its validation command passes.
+Stop if scope, dependency, migration, public API, or acceptance behavior would
+expand beyond the approved artifact. The item is complete only after its
+validation command passes and its evidence is durable.

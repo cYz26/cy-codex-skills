@@ -12,8 +12,8 @@ Use this skill when a DevFlow task may be drifting, repeating failed work, expan
 1. Inspect current workflow state and repo truth:
    - `git status`
    - `git diff --stat`
-   - `.planning/STATE.md`
-   - latest `.planning/verification/`
+   - `.planning/devflow/STATE.md`
+   - latest `.planning/devflow/verification/`
    - active OpenSpec change files
 2. Run the health check:
 

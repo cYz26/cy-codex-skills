@@ -84,8 +84,8 @@ Implement the complete approved behavior for `{{change_id}}`, not a partial deli
 - Prove the change is complete and durable.
 
 **Files / Modules**
-- `.planning/STATE.md`
-- `.planning/verification/`
+- `.planning/devflow/STATE.md`
+- `.planning/devflow/verification/`
 - `openspec/changes/{{change_id}}/tasks.md`
 
 **Implementation**

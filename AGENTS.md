@@ -2,15 +2,20 @@
 
 ## Purpose
 
-This repository uses a Codex-first development workflow with GSD-style planning, OpenSpec change management, engineering discipline, and plan-first gates.
+This repository uses a Codex-first development workflow with OpenSpec change
+management, DevFlow-native engineering discipline, and optional methodology and
+roadmap providers.
 
 Do not implement non-trivial changes directly from chat memory.
 
 ## Workflow Ownership
 
-- GSD owns roadmap, milestones, phases, and phase verification.
+- DevFlow defaults to `methodology_profile: core` and `roadmap_provider: none`.
+- GSD owns roadmap, milestones, phases, and phase verification only when
+  `roadmap_provider: gsd` is explicitly selected or verifiably inferred.
 - OpenSpec owns behavior-level proposal, specs, design, tasks, verification, sync, and archive.
-- Engineering discipline governs clarification, brainstorming, planning, TDD, review, and finishing.
+- The selected methodology profile provides decision, planning, TDD, diagnosis,
+  review, and completion primitives; canonical evidence remains DevFlow/OpenSpec-owned.
 - Codex planning behavior is required before major design or implementation boundaries.
 
 ## Project Control Plane
@@ -26,30 +31,66 @@ Use these checked-in files as the durable execution control plane:
 Do not treat chat context or Superpowers scratch files as the source of truth
 when a control-plane file is required.
 
-## Superpowers Artifact Mapping
+## Capability Routing
 
-Superpowers provides process discipline for brainstorming, planning, TDD, and verification gates. OpenSpec, GSD, and DevFlow planning files are the canonical artifacts for this workflow.
+Route stable capabilities from
+`dev/plugins/dev-flow/docs/provider_profiles.json`, not hard-coded provider
+skills. The configured methodology and roadmap profiles supply implementations;
+an unselected provider never blocks readiness or contributes commands, links,
+hooks, or fallback behavior. Ambiguous or stale selected sources fail closed.
+
+Activation, provider selection persistence, migration, dependency changes, and
+external side effects retain their explicit authorization gates.
+
+## Intake and Planning
+
+- Use `feature-intake` for feature, bug, refactor, migration, tooling, or
+  workflow-repair intake.
+- Use `capability-research` for current external/platform/plugin/API/runtime
+  evidence.
+- Record the Skill Routing Ledger for research, design, architecture, product
+  shape, and non-trivial plans.
+- Resolve Open Questions before finalizing a design or implementation plan.
+- Use `ai-native-tech-plan` for the technical execution contract and
+  `change-plan` for canonical OpenSpec proposal, design, specs, and tasks.
+
+Do not start implementation until scope, solution, validation, risks, and the
+next ledger item are durable.
+
+## Methodology Artifact Mapping
+
+External methodology skills provide process primitives only. OpenSpec, selected
+roadmap-provider files, and `.planning/devflow/**` are the canonical artifacts.
 
 - If `superpowers:brainstorming` produces design notes for behavior, API, data, integration, compatibility, or error-handling work, map the approved content into `openspec/changes/<change-id>/proposal.md`, `design.md`, and `specs/`.
 - If `superpowers:writing-plans` produces task guidance for an OpenSpec change, map it into `openspec/changes/<change-id>/tasks.md`, including Capability Slices, Execution Ledger, Acceptance Criteria, and Validation Commands.
-- If `superpowers:writing-plans` supports GSD phase or milestone work, map it into `.planning/phases/.../PLAN.md` or a DevFlow-approved ledger.
+- If `superpowers:writing-plans` supports selected GSD phase or milestone work,
+  map it through the active GSD binding into the provider-owned phase plan; for
+  roadmap provider `none`, use a DevFlow-approved ledger.
 - Treat `docs/superpowers/specs/...` and `docs/superpowers/plans/...` as drafts, review notes, or inputs unless their content has been copied into the canonical artifacts above.
 - If Superpowers notes conflict with OpenSpec, GSD, or DevFlow files, update or discard the notes; do not let them become a second source of truth.
 
-## GSD/OpenSpec Skills
+## Roadmap/OpenSpec Skills
 
-GSD and OpenSpec are activated project-locally through `.agents/skills/`; do not enable them globally for this workflow. Legacy `.codex/skills/` entries should be treated as migration inputs, not as the normal target layout.
+OpenSpec and any selected GSD overlay are activated project-locally through
+`.agents/skills/`; do not enable GSD globally. Legacy `.codex/skills/` entries
+are migration inputs, not the normal target layout.
 
 - Use `openspec-explore` when requirements, compatibility, or behavior boundaries are unclear.
 - Use `openspec-propose` before implementing user-visible behavior, public API, data model, permission, persistence, integration, migration, error handling, or compatibility changes.
 - Use `openspec-apply-change` when executing approved OpenSpec tasks.
 - Use `openspec-archive-change` only after verification evidence is recorded and the archive gate is clear.
-- Use `gsd-discuss-phase` and `gsd-plan-phase` for multi-stage work, phase planning, broad refactors, or milestone planning.
-- Use `gsd-execute-phase` only when executing an approved phase plan, and `gsd-verify-work` before marking a phase shipped.
+- When `roadmap_provider: gsd`, use `gsd-discuss-phase` and `gsd-plan-phase` for
+  milestone/phase structure, `gsd-execute-phase` for an approved phase plan,
+  and `gsd-verify-work` before marking the bound phase shipped.
+- When `roadmap_provider: none`, keep sequencing in the OpenSpec task ledger or
+  `.planning/devflow/**`; do not require GSD.
 
 ## Brainstorm and Planning Flow
 
-- Use `superpowers:brainstorming` before committing to a solution when goals, constraints, tradeoffs, or implementation shape are still open.
+- Resolve `.dev-flow.json` provider selection before routing methodology skills.
+  Core uses DevFlow-native intake/planning, `lean-matt` uses only the mapped Matt
+  primitives, and `strict-superpowers` uses the mapped Superpowers primitives.
 - Use `capability-research` when a solution depends on current, external, platform, plugin, API, hook, CLI, installed-cache, or local-vs-platform capability evidence; the detailed evidence workflow lives in that skill.
 - For design, research, architecture, product-shape, or technical-plan requests,
   create a `Skill Routing Ledger` before writing the final design or plan. Record
@@ -57,9 +98,9 @@ GSD and OpenSpec are activated project-locally through `.agents/skills/`; do not
   `brainstorming: required/used/skipped`, `decision-grilling:
   required/used/skipped`, `writing-plans`, OpenSpec/GSD routing, and the
   concrete reason for any skip.
-- If an artifact has unresolved `Open Questions`, Brainstorming cannot be marked
-  skipped. Mark the artifact as draft, not final, and return to
-  `superpowers:brainstorming` or record `brainstorming: required` in the ledger.
+- If an artifact has unresolved `Open Questions`, decision resolution cannot be marked
+  skipped. Mark the artifact as draft, not final, and use the selected profile's
+  `decision-resolution` mapping or record it as required in the ledger.
 - If unresolved `Open Questions` remain after local evidence gathering, use
   decision grilling: ask one question at a time, provide a recommended answer,
   walk dependent decision branches, and record resolved decisions in canonical
@@ -68,11 +109,14 @@ GSD and OpenSpec are activated project-locally through `.agents/skills/`; do not
   draft.
 - Ledger field: `decision-grilling: required/used/skipped`.
 - Use `openspec-explore` during brainstorming when the uncertainty is about user-visible behavior, compatibility, requirements, or acceptance criteria.
-- Use `gsd-discuss-phase` during brainstorming when the uncertainty is about milestones, sequencing, scope boundaries, or phase structure.
-- Use `superpowers:writing-plans` before writing a non-trivial implementation plan, phase plan, migration plan, or refactor plan.
+- Use `gsd-discuss-phase` for milestone, sequencing, or phase uncertainty only
+  when `roadmap_provider: gsd`.
+- Before a non-trivial plan, use the selected profile's
+  `implementation-planning` mapping; canonicalize the result in OpenSpec or the
+  selected roadmap ledger.
 - Use `ai-native-tech-plan` when generating technical plans, implementation plans, architecture plans, Codex execution plans, workflow plans, or anti-partial-delivery plans.
 - Use `openspec-propose` after brainstorming when behavior-level artifacts need to become proposal, design, specs, and tasks.
-- Use `gsd-plan-phase` after brainstorming when the work should become an approved phase plan.
+- Use `gsd-plan-phase` only when the selected GSD overlay should own an approved phase plan.
 - Do not move from brainstorming/planning into implementation until the chosen plan, scope, verification approach, and open risks are recorded.
 
 ## Goal Workflow
@@ -161,7 +205,8 @@ Project mode: brownfield
 ### Greenfield
 
 - Establish Target State and Completion Contract first.
-- Create or update `.planning/ROADMAP.md`.
+- Create or update a roadmap only when a roadmap provider is explicitly
+  selected. Core + none does not create a synthetic roadmap.
 - Create initial OpenSpec specs or an `initial-target-state` change.
 - Establish test, lint, and build baselines early.
 
@@ -196,15 +241,22 @@ When hooks warn or block, diagnostics should preserve the Codex hook schema and
 include current stage, failed gates, next action, and recommended skill or
 command.
 
-## Superpowers Discipline
+## Methodology Provider Discipline
 
-Superpowers is activated project-locally through `.agents/skills/`; do not enable it globally for this workflow. Legacy `.codex/skills/` entries should be scanned and migrated through DevFlow rather than edited manually.
+External methodology providers are opt-in, source-pinned, and activated
+project-locally through `.agents/skills/`; do not enable them globally for this
+workflow. Legacy `.codex/skills/` entries are migrated through DevFlow.
 
-- Before structured ideation or solution exploration, use `superpowers:brainstorming`.
-- Before writing or committing to a non-trivial plan, use `superpowers:writing-plans`.
-- Before implementing a feature, bugfix, or risky behavior change, use `superpowers:test-driven-development`.
-- Before claiming work is complete, fixed, passing, ready to commit, or ready for PR, use `superpowers:verification-before-completion`.
-- If either Superpowers skill is unavailable, run the project orchestrator dependency check and activation before continuing.
+- `core`: use DevFlow-native capability mappings; no Superpowers or Matt dependency.
+- `lean-matt`: use only `grilling`, `tdd`, `diagnosing-bugs`, `code-review`,
+  `codebase-design`, and `domain-modeling`; DevFlow retains planning,
+  orchestration, and completion proof.
+- `strict-superpowers`: use the registry mappings for brainstorming, planning,
+  TDD, diagnosis, review, orchestration, and verification. Conditional skills
+  are required only when their capability is triggered.
+- Missing, ambiguous, untrusted, or drifted selected-provider content blocks
+  that routed capability. Run provider diagnostics/activation; never fall back
+  silently to another installed provider.
 
 ## Plugin Eval Gate
 
@@ -259,7 +311,7 @@ DevFlow workflow configuration needs refresh.
 
 ## Verification Rules
 
-Before marking work complete, run relevant tests, run lint/typecheck/build where applicable, update OpenSpec tasks, update `.planning/STATE.md`, record verification evidence, and report remaining risks.
+Before marking work complete, run relevant tests, run lint/typecheck/build where applicable, update OpenSpec tasks, update `.planning/devflow/STATE.md`, record verification evidence, and report remaining risks.
 
 ## Context Checkpoint and Compaction
 
@@ -267,13 +319,15 @@ At major workflow boundaries, create a durable checkpoint before continuing.
 
 Major boundaries include project setup completed, codebase mapping completed, design saved, OpenSpec change planned, phase plan saved, verification passed, change archived, and phase shipped.
 
-Before compaction, persist `.planning/STATE.md`, relevant `.planning/phases/` files, relevant `openspec/changes/` files, changed files summary, validation commands and results, unresolved risks, and next action.
+Before compaction, persist `.planning/devflow/STATE.md`, selected-provider
+roadmap files when applicable, relevant `openspec/changes/` files, changed files
+summary, validation commands and results, unresolved risks, and next action.
 
 Compaction is not a source of truth. Repository files remain authoritative. When a checkpoint is a
 continuation gate for the current thread, recommend `/compact` in Codex CLI before moving to the next major
 stage. When the task is complete or at a handoff/review boundary, update state immediately and treat compact
 as optional. If an external harness runs API compaction for a pending gate, record the compact result under
-`.planning/compact-results/`. If compaction is unavailable, start a new session from the checkpoint file.
+`.planning/devflow/compact-results/`. If compaction is unavailable, start a new session from the checkpoint file.
 
 ## Forbidden Without Explicit Approval
 

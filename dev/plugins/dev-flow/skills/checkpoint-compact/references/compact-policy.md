@@ -11,8 +11,8 @@ payload as authoritative state.
 Do not treat compacted conversation as the source of truth. Restart from:
 
 - `AGENTS.md`
-- `.planning/STATE.md`
-- `.planning/checkpoints/<checkpoint>.md`
-- `.planning/compact-results/<checkpoint>.json` when compact was required or externally recorded
+- `.planning/devflow/STATE.md`
+- `.planning/devflow/checkpoints/<checkpoint>.md`
+- `.planning/devflow/compact-results/<checkpoint>.json` when compact was required or externally recorded
 - relevant phase files
 - relevant OpenSpec change files

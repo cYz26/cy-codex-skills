@@ -20,33 +20,38 @@ PROJECT_ORCHESTRATOR_SKILLS = [
     "dev-flow-refresh",
 ]
 
-REQUIRED_SUPERPOWERS_PROJECT_SKILLS = [
+STRICT_SUPERPOWERS_BASE_PROJECT_SKILLS = [
+    "using-superpowers",
     "brainstorming",
     "writing-plans",
     "test-driven-development",
+    "systematic-debugging",
+    "requesting-code-review",
     "verification-before-completion",
 ]
 
-REQUIRED_SKILLS = {
-    "superpowers": [
-        "using-superpowers",
-        *REQUIRED_SUPERPOWERS_PROJECT_SKILLS,
-    ],
-}
-
-DEVELOPER_SKILLS = {"plugin-eval": ["evaluate-plugin"]}
-
-STRICT_RECOMMENDED_SUPERPOWERS_SKILLS = [
+STRICT_SUPERPOWERS_CONDITIONAL_PROJECT_SKILLS = [
+    "receiving-code-review",
     "using-git-worktrees",
     "executing-plans",
     "subagent-driven-development",
-    "requesting-code-review",
     "finishing-a-development-branch",
 ]
 
+STRICT_SUPERPOWERS_PROJECT_SKILLS = [
+    *STRICT_SUPERPOWERS_BASE_PROJECT_SKILLS,
+    *STRICT_SUPERPOWERS_CONDITIONAL_PROJECT_SKILLS,
+]
+
+REQUIRED_SKILLS = {"superpowers": STRICT_SUPERPOWERS_BASE_PROJECT_SKILLS}
+
+DEVELOPER_SKILLS = {"plugin-eval": ["evaluate-plugin"]}
+
+STRICT_RECOMMENDED_SUPERPOWERS_SKILLS = STRICT_SUPERPOWERS_CONDITIONAL_PROJECT_SKILLS
+
 REQUIRED_CLI_TOOLS = ["openspec"]
 
-REQUIRED_GSD_SKILLS = [
+GSD_ROADMAP_SKILLS = [
     "gsd-new-project",
     "gsd-discuss-phase",
     "gsd-plan-phase",
@@ -55,7 +60,7 @@ REQUIRED_GSD_SKILLS = [
     "gsd-verify-work",
 ]
 
-REQUIRED_GSD_AGENTS = [
+GSD_ROADMAP_AGENTS = [
     "gsd-phase-researcher.toml",
     "gsd-planner.toml",
     "gsd-plan-checker.toml",

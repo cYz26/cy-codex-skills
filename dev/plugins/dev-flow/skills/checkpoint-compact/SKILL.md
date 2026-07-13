@@ -11,7 +11,8 @@ for manual `/compact`.
 
 ## Procedure
 
-1. Read `AGENTS.md`, `.planning/STATE.md`, relevant phase files, and the active OpenSpec change.
+1. Read `AGENTS.md`, `.planning/devflow/STATE.md`, selected roadmap files, and
+   the active OpenSpec change.
 2. Run `scripts/create_checkpoint.py --repo <repo> --boundary <boundary> --next-stage <stage> --json`.
 3. Run `scripts/validate_checkpoint.py --repo <repo> --checkpoint <file> --json`.
 4. Run `scripts/compact_recommendation.py --repo <repo> --boundary <boundary> --next-stage <stage> --json`.

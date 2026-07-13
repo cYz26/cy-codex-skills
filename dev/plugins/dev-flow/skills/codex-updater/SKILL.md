@@ -64,9 +64,11 @@ results. Also report project migration sync findings, but do not apply project
 migrations from the updater path. Do not claim an installed plugin is refreshed
 unless cache verification or apply output supports it.
 
-For Superpowers, apply mode may register the pinned upstream marketplace and
-install `superpowers@superpowers-dev`. Report any remaining SessionStart hook
-trust action separately; do not write hook trust state from the updater path.
+For Superpowers, use only the selected source record's pinned `updateCommand`
+from `docs/dependency-provenance.json`; never replace the selected channel with
+a hard-coded marketplace alias. Report a hook trust action only when that
+selected source record declares a SessionStart hook; do not write hook trust
+state from the updater path.
 
 ## Safety
 

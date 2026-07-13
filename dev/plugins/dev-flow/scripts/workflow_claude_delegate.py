@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Optional
 
+from workflow_planning_paths import atomic_write_devflow, delegation_root
 from workflow_paths import rel, repo_path
 
 
@@ -246,8 +247,7 @@ def normalize_claude_result(
 
 
 def write_run_log(repo: Path, report: dict[str, Any]) -> str:
-    runs = repo / ".dev-flow" / "claude-code" / "runs"
-    runs.mkdir(parents=True, exist_ok=True)
+    runs = delegation_root(repo) / "runs"
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S%f")
     path = runs / f"{timestamp}-{report.get('mode', 'unknown')}.json"
     payload = {
@@ -262,5 +262,5 @@ def write_run_log(repo: Path, report: dict[str, Any]) -> str:
         "costUsd": report.get("costUsd"),
         "claudeVersion": report.get("claudeVersion"),
     }
-    path.write_text(f"{json.dumps(payload, indent=2)}\n")
+    atomic_write_devflow(repo, path, f"{json.dumps(payload, indent=2)}\n")
     return rel(repo, path)

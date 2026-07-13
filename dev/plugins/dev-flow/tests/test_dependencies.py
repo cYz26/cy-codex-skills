@@ -23,7 +23,7 @@ from dependency_support import (
 )
 
 import codex_auto_update_plugins_skills as auto_update
-from workflow_dependency_catalog import LEGACY_OPENSPEC_SKILLS
+from workflow_dependency_catalog import LEGACY_OPENSPEC_SKILLS, PROJECT_ORCHESTRATOR_SKILLS
 from workflow_dependencies import dependency_report
 from workflow_validate import missing_agents_guidance
 from workflow_project_activation import activate_project_dependencies
@@ -31,6 +31,15 @@ from workflow_project_skill_install import ensure_project_local_skills
 
 
 class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
+    def make_project_repo(self, **kwargs):
+        repo = super().make_project_repo(**kwargs)
+        if kwargs.get("enable_orchestrator", True) and kwargs.get("skill_layout", "official") == "official":
+            for skill in PROJECT_ORCHESTRATOR_SKILLS:
+                source = PLUGIN_ROOT / "skills" / skill / "SKILL.md"
+                target = repo / ".agents" / "skills" / skill / "SKILL.md"
+                target.write_bytes(source.read_bytes())
+        return repo
+
     def write_executable(self, directory, name, text):
         path = directory / name
         path.write_text(text)
@@ -63,11 +72,9 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
             "--json",
         )
         self.assertTrue(report["ok"], report)
-        self.assertEqual(report["status"], "ready_with_recommendations")
+        self.assertIn(report["status"], {"ready", "ready_with_recommendations"})
         checks = {item["name"]: item for item in report["checks"]}
         self.assertTrue(checks["global plugin inactive: superpowers"]["ok"])
-        self.assertTrue(checks["global skill inactive: brainstorming"]["ok"])
-        self.assertTrue(checks["global skill inactive: test-driven-development"]["ok"])
         self.assertTrue(checks["project skill active: ai-native-tech-plan"]["ok"])
         self.assertEqual(checks["project skill active: ai-native-tech-plan"]["path_kind"], "official_repo_skill_path")
         self.assertIn(
@@ -82,26 +89,103 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertTrue(checks["project skill active: context-tool-audit"]["ok"])
         self.assertTrue(checks["project skill active: codex-updater"]["ok"])
         self.assertTrue(checks["project skill active: plugin-project-migration"]["ok"])
-        self.assertTrue(checks["project skill active: brainstorming"]["ok"])
-        self.assertTrue(checks["project skill active: writing-plans"]["ok"])
-        self.assertTrue(checks["project skill active: test-driven-development"]["ok"])
-        self.assertTrue(checks["external plugin installed: superpowers"]["ok"])
-        self.assertTrue(checks["external skill available: superpowers:brainstorming"]["ok"])
-        self.assertTrue(checks["external skill available: superpowers:writing-plans"]["ok"])
-        self.assertTrue(checks["external skill available: superpowers:test-driven-development"]["ok"])
         self.assertNotIn("external cli available: gsd-sdk", checks)
-        self.assertTrue(checks["project gsd core runtime active"]["ok"])
-        self.assertTrue(checks["project skill active: gsd-new-project"]["ok"])
-        self.assertTrue(checks["project skill active: gsd-progress"]["ok"])
-        self.assertTrue(checks["project gsd agent active: gsd-planner.toml"]["ok"])
+        self.assertNotIn("project gsd core runtime active", checks)
+        self.assertEqual(report["selection"]["effectiveMethodologyProfile"], "core")
+        self.assertEqual(report["selection"]["effectiveRoadmapProvider"], "none")
         self.assertTrue(checks["project openspec setup active"]["ok"])
         self.assertTrue(checks["project openspec sync workflow available"]["ok"])
         self.assertFalse(checks["project openspec sync workflow available"]["required"])
         self.assertTrue(checks["developer plugin enabled: plugin-eval"]["ok"])
 
+    def test_dependency_cli_capability_flag_blocks_missing_goal_definition(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_project_repo()
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(PLUGIN_ROOT / "scripts" / "check_dependencies.py"),
+                "--plugin-root",
+                str(PLUGIN_ROOT),
+                "--repo",
+                str(repo),
+                "--codex-home",
+                str(codex_home),
+                "--config",
+                str(codex_home / "config.toml"),
+                "--capability",
+                "goal-definition",
+                "--json",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 1, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertFalse(report["capabilities"]["goal-definition"]["ready"])
+        self.assertIn("goal-definition", report["triggeredCapabilities"])
+
+    def test_activation_cli_capability_flag_plans_strict_conditional_links(self):
+        codex_home = self.make_codex_home(
+            superpowers_version="6.1.1",
+            superpowers_channel="openai-curated-remote",
+        )
+        repo = self.make_project_repo(
+            enable_superpowers=True,
+            methodology_profile="strict-superpowers",
+            roadmap_provider="none",
+            provider_selectors={
+                "superpowers": {
+                    "source_channel": "openai-curated-remote",
+                    "version": "6.1.1",
+                }
+            },
+        )
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(PLUGIN_ROOT / "scripts" / "activate_project_dependencies.py"),
+                "--repo",
+                str(repo),
+                "--plugin-root",
+                str(PLUGIN_ROOT),
+                "--codex-home",
+                str(codex_home),
+                "--skip-official-installs",
+                "--capability",
+                "execution-orchestration",
+                "--dry-run",
+                "--json",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        report = json.loads(result.stdout)
+        conditional = {
+            item["skill"]: item
+            for item in report["local_skills"]["items"]
+            if item["provider"] == "superpowers"
+        }
+        for skill in (
+            "executing-plans",
+            "subagent-driven-development",
+            "using-git-worktrees",
+            "finishing-a-development-branch",
+        ):
+            self.assertIn(skill, conditional)
+            self.assertEqual(conditional[skill]["status"], "would-link")
+
     def test_dependency_report_includes_provenance_and_verified_smoke_results(self):
         codex_home = self.make_codex_home()
-        repo = self.make_dependency_ready_project_repo()
+        repo = self.make_dependency_ready_project_repo(
+            enable_gsd=True,
+            methodology_profile="core",
+            roadmap_provider="gsd",
+        )
 
         report = self.dependency_report_with_fake_path(codex_home, repo)
 
@@ -143,9 +227,40 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertEqual(superpowers["strictProfileRequires"], "6.0.3")
         self.assertIn("using-superpowers", superpowers["requiredSkills"])
 
+    def test_dependency_report_does_not_probe_unselected_gsd_runtime(self):
+        codex_home = self.make_codex_home()
+        repo = self.make_dependency_ready_project_repo(
+            methodology_profile="core",
+            roadmap_provider="none",
+        )
+        marker = repo / "gsd-smoke-invoked"
+        runtime = repo / ".codex" / "gsd-core" / "bin" / "gsd-tools.cjs"
+        runtime.parent.mkdir(parents=True, exist_ok=True)
+        runtime.write_text(
+            "#!/usr/bin/env python3\n"
+            "from pathlib import Path\n"
+            f"Path({str(marker)!r}).write_text('invoked')\n"
+            "print('{\"timestamp\": \"2026-07-10T00:00:00Z\"}')\n"
+        )
+        runtime.chmod(0o755)
+
+        report = self.dependency_report_with_fake_path(codex_home, repo)
+
+        self.assertFalse(marker.exists(), report)
+        gsd = next(item for item in report["dependencies"] if item["name"] == "gsd-core")
+        self.assertEqual(gsd["status"], "not_selected")
+        self.assertFalse(gsd["required"])
+        self.assertIsNone(gsd["installedVersion"])
+        self.assertEqual(gsd["smokeCommand"], [])
+        self.assertEqual(gsd["smokeResult"]["summary"], "not selected; runtime was not inspected")
+
     def test_dependency_check_reports_superpowers_fallback_and_upgrade_recommendation(self):
         codex_home = self.make_codex_home(superpowers_version="5.1.3", superpowers_channel="openai-curated")
-        repo = self.make_dependency_ready_project_repo()
+        repo = self.make_dependency_ready_project_repo(
+            enable_superpowers=True,
+            methodology_profile="strict-superpowers",
+            roadmap_provider="none",
+        )
 
         report = self.dependency_report_with_fake_path(codex_home, repo)
 
@@ -161,82 +276,105 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertFalse(checks["superpowers dependency status"]["required"])
         self.assertEqual(checks["superpowers dependency status"]["status"], "superpowers_upgrade_recommended")
 
-    def test_dependency_check_blocks_strict_when_superpowers_v6_hook_is_untrusted(self):
+    def test_dependency_check_blocks_hook_injection_into_selected_source(self):
         codex_home = self.make_codex_home(
-            superpowers_version="6.0.3",
-            superpowers_channel="upstream-official",
+            superpowers_version="6.1.1",
+            superpowers_channel="openai-curated-remote",
             superpowers_hooks="hooks/hooks-codex.json",
         )
-        repo = self.make_dependency_ready_project_repo()
+        repo = self.make_dependency_ready_project_repo(
+            enable_superpowers=True,
+            methodology_profile="strict-superpowers",
+            roadmap_provider="none",
+            provider_selectors={
+                "superpowers": {
+                    "source_channel": "openai-curated-remote",
+                    "version": "6.1.1",
+                }
+            },
+        )
 
         report = dependency_report(PLUGIN_ROOT, codex_home, codex_home / "config.toml", True, repo)
 
         self.assertFalse(report["ok"], report)
-        superpowers = report["superpowers"]
-        self.assertEqual(superpowers["status"], "superpowers_hook_untrusted")
-        self.assertEqual(superpowers["version"], "6.0.3")
-        self.assertEqual(superpowers["compatibility"], "recommended")
-        checks = {item["name"]: item for item in report["checks"]}
-        self.assertTrue(checks["superpowers latest ready"]["ok"])
-        self.assertFalse(checks["superpowers session-start hook trusted"]["ok"])
-        self.assertTrue(checks["superpowers session-start hook trusted"]["required"])
+        self.assertEqual(report["providers"]["superpowers"]["status"], "source_drift")
 
-    def test_dependency_check_accepts_superpowers_v6_hook_trust_from_codex_config(self):
+    def test_dependency_check_accepts_authoritative_hookless_superpowers_source(self):
         codex_home = self.make_codex_home(
-            superpowers_version="6.0.3",
-            superpowers_channel="superpowers-upstream-v6-0-3",
-            superpowers_hooks="hooks/hooks-codex.json",
+            superpowers_version="6.1.1",
+            superpowers_channel="openai-curated-remote",
         )
-        config = codex_home / "config.toml"
-        config.write_text(
-            config.read_text()
-            + '\n[hooks.state."superpowers@superpowers-upstream-v6-0-3:hooks/hooks-codex.json:session_start:0:0"]\n'
-            + 'trusted_hash = "sha256:fixture"\n'
+        repo = self.make_dependency_ready_project_repo(
+            enable_superpowers=True,
+            methodology_profile="strict-superpowers",
+            roadmap_provider="none",
+            provider_selectors={
+                "superpowers": {
+                    "source_channel": "openai-curated-remote",
+                    "version": "6.1.1",
+                }
+            },
         )
-        repo = self.make_dependency_ready_project_repo()
 
-        report = dependency_report(PLUGIN_ROOT, codex_home, config, True, repo)
+        report = dependency_report(
+            PLUGIN_ROOT,
+            codex_home,
+            codex_home / "config.toml",
+            True,
+            repo,
+        )
 
         self.assertTrue(report["ok"], report)
         superpowers = report["superpowers"]
         self.assertEqual(superpowers["status"], "superpowers_ok")
-        self.assertTrue(superpowers["sessionStartHookTrusted"])
-        checks = {item["name"]: item for item in report["checks"]}
-        self.assertTrue(checks["superpowers session-start hook trusted"]["ok"])
-        self.assertTrue(checks["superpowers session-start hook trusted"]["required"])
+        self.assertFalse(report["providers"]["superpowers"]["hookDeclared"])
 
-    def test_dependency_check_prefers_latest_superpowers_skill_root(self):
-        codex_home = self.make_codex_home(superpowers_version="5.1.3", superpowers_channel="openai-curated")
+    def test_dependency_check_rejects_ambiguous_superpowers_skill_roots(self):
+        codex_home = self.make_codex_home(
+            superpowers_version="6.1.1",
+            superpowers_channel="openai-curated-remote",
+        )
         for skill in [
             "using-superpowers",
             "brainstorming",
             "writing-plans",
             "test-driven-development",
+            "systematic-debugging",
+            "requesting-code-review",
             "verification-before-completion",
         ]:
-            self.write_skill(codex_home, "superpowers", skill, channel="superpowers-dev")
+            self.write_skill(
+                codex_home,
+                "superpowers",
+                skill,
+                channel="superpowers-upstream-v6-0-3",
+            )
         self.write_plugin_manifest(
             codex_home,
             "superpowers",
             version="6.0.3",
-            channel="superpowers-dev",
-            hooks="hooks/hooks-codex.json",
+            channel="superpowers-upstream-v6-0-3",
         )
-        repo = self.make_dependency_ready_project_repo()
+        repo = self.make_dependency_ready_project_repo(
+            enable_superpowers=True,
+            methodology_profile="strict-superpowers",
+            roadmap_provider="none",
+        )
 
         report = self.dependency_report_with_fake_path(codex_home, repo)
 
-        self.assertEqual(report["superpowers"]["version"], "6.0.3")
-        checks = {item["name"]: item for item in report["checks"]}
-        self.assertIn(
-            "superpowers-dev",
-            checks["external skill available: superpowers:brainstorming"]["detail"],
-        )
+        self.assertFalse(report["ok"], report)
+        self.assertEqual(report["providers"]["superpowers"]["status"], "ambiguous_source")
+        self.assertEqual(len(report["providers"]["superpowers"]["candidates"]), 2)
 
     def test_dependency_report_marks_drift_missing_and_smoke_failed(self):
         codex_home = self.make_codex_home()
 
-        drift_repo = self.make_dependency_ready_project_repo()
+        drift_repo = self.make_dependency_ready_project_repo(
+            enable_gsd=True,
+            methodology_profile="core",
+            roadmap_provider="gsd",
+        )
         self.write_gsd_core_runtime(drift_repo, version="1.4.4")
         drift_report = self.dependency_report_with_fake_path(codex_home, drift_repo)
         self.assertIn("dependencies", drift_report)
@@ -250,7 +388,11 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
             ["npx", "-y", "@opengsd/gsd-core@1.6.1", "--codex", "--local", "--profile=standard"],
         )
 
-        missing_repo = self.make_dependency_ready_project_repo()
+        missing_repo = self.make_dependency_ready_project_repo(
+            enable_gsd=True,
+            methodology_profile="core",
+            roadmap_provider="gsd",
+        )
         (missing_repo / ".codex" / "gsd-core" / "bin" / "gsd-tools.cjs").unlink()
         missing_report = self.dependency_report_with_fake_path(codex_home, missing_repo)
         self.assertIn("dependencies", missing_report)
@@ -259,7 +401,11 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertEqual(missing_gsd["status"], "missing")
         self.assertEqual(missing_gsd["installedVersion"], "1.6.1")
 
-        smoke_repo = self.make_dependency_ready_project_repo()
+        smoke_repo = self.make_dependency_ready_project_repo(
+            enable_gsd=True,
+            methodology_profile="core",
+            roadmap_provider="gsd",
+        )
         smoke_tool = smoke_repo / ".codex" / "gsd-core" / "bin" / "gsd-tools.cjs"
         smoke_tool.write_text("#!/bin/sh\nprintf 'boom\\n' >&2\nexit 7\n")
         smoke_tool.chmod(0o755)
@@ -273,6 +419,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
     def test_activation_install_commands_are_sourced_from_dependency_provenance(self):
         repo = Path(tempfile.mkdtemp(prefix="cpo-provenance-activation-"))
         codex_home = self.make_codex_home()
+        self.write_provider_config(repo, methodology_profile="core", roadmap_provider="gsd")
 
         report = activate_project_dependencies(
             repo,
@@ -374,7 +521,12 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
 
     def test_dependency_check_fails_when_project_gsd_and_openspec_setup_are_missing(self):
         codex_home = self.make_codex_home()
-        repo = self.make_project_repo(enable_legacy_openspec_skills=False)
+        repo = self.make_project_repo(
+            enable_legacy_openspec_skills=False,
+            enable_gsd=True,
+            methodology_profile="core",
+            roadmap_provider="gsd",
+        )
         for directory in [repo / ".agents" / "skills" / "gsd-new-project"]:
             for path in directory.rglob("*"):
                 path.unlink()
@@ -407,7 +559,11 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
 
     def test_dependency_check_fails_when_gsd_progress_is_missing(self):
         codex_home = self.make_codex_home()
-        repo = self.make_project_repo()
+        repo = self.make_project_repo(
+            enable_gsd=True,
+            methodology_profile="core",
+            roadmap_provider="gsd",
+        )
         directory = repo / ".agents" / "skills" / "gsd-progress"
         for path in directory.rglob("*"):
             path.unlink()
@@ -439,7 +595,11 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
 
     def test_dependency_check_fails_when_project_gsd_core_runtime_is_missing(self):
         codex_home = self.make_codex_home()
-        repo = self.make_project_repo()
+        repo = self.make_project_repo(
+            enable_gsd=True,
+            methodology_profile="core",
+            roadmap_provider="gsd",
+        )
         runtime = repo / ".codex" / "gsd-core"
         for path in sorted(runtime.rglob("*"), reverse=True):
             if path.is_file():
@@ -474,7 +634,11 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
 
     def test_dependency_check_fails_when_superpowers_skill_is_global(self):
         codex_home = self.make_codex_home()
-        repo = self.make_project_repo()
+        repo = self.make_project_repo(
+            enable_superpowers=True,
+            methodology_profile="strict-superpowers",
+            roadmap_provider="none",
+        )
         global_skill = codex_home / "skills" / "test-driven-development" / "SKILL.md"
         global_skill.parent.mkdir(parents=True)
         global_skill.write_text("---\nname: test-driven-development\ndescription: fixture\n---\n")
@@ -532,6 +696,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
     def test_activation_installs_project_local_skills_without_official_installs(self):
         repo = Path(tempfile.mkdtemp(prefix="cpo-activation-"))
         codex_home = self.make_codex_home()
+        self.write_provider_config(repo, methodology_profile="strict-superpowers", roadmap_provider="none")
         report = run_json(
             "activate_project_dependencies.py",
             "--repo",
@@ -541,6 +706,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
             "--codex-home",
             str(codex_home),
             "--skip-official-installs",
+            "--apply",
             "--json",
         )
         self.assertTrue(report["ok"], report)
@@ -665,7 +831,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         codex_home = self.make_codex_home()
         legacy = repo / ".codex" / "skills" / "project-orchestrator" / "SKILL.md"
         legacy.parent.mkdir(parents=True)
-        legacy.write_text("---\nname: project-orchestrator\ndescription: legacy\n---\n")
+        legacy.write_bytes((PLUGIN_ROOT / "skills" / "project-orchestrator" / "SKILL.md").read_bytes())
 
         report = run_json(
             "activate_project_dependencies.py",
@@ -698,7 +864,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         codex_home = self.make_codex_home()
         legacy = repo / ".codex" / "skills" / "project-orchestrator" / "SKILL.md"
         legacy.parent.mkdir(parents=True)
-        legacy.write_text("---\nname: project-orchestrator\ndescription: legacy\n---\n")
+        legacy.write_bytes((PLUGIN_ROOT / "skills" / "project-orchestrator" / "SKILL.md").read_bytes())
 
         report = run_json(
             "activate_project_dependencies.py",
@@ -746,7 +912,17 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         target.parent.mkdir(parents=True)
         target.symlink_to(old_source, target_is_directory=True)
 
-        report = ensure_project_local_skills(repo, plugin_root, codex_home, dry_run=True)
+        provider_root = (
+            codex_home / "plugins" / "cache" / "openai-curated-remote" / "superpowers" / "local"
+        )
+        report = ensure_project_local_skills(
+            repo,
+            plugin_root,
+            codex_home,
+            dry_run=True,
+            selection={"effectiveMethodologyProfile": "strict-superpowers"},
+            provider_diagnosis={"providers": {"superpowers": {"root": str(provider_root)}}},
+        )
         brainstorming = next(item for item in report["items"] if item["skill"] == "brainstorming")
 
         self.assertEqual(brainstorming["status"], "already-linked-existing-source")
@@ -772,7 +948,18 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         target.parent.mkdir(parents=True)
         target.symlink_to(old_source, target_is_directory=True)
 
-        report = ensure_project_local_skills(repo, plugin_root, codex_home, dry_run=False, refresh_existing=True)
+        provider_root = (
+            codex_home / "plugins" / "cache" / "openai-curated-remote" / "superpowers" / "local"
+        )
+        report = ensure_project_local_skills(
+            repo,
+            plugin_root,
+            codex_home,
+            dry_run=False,
+            refresh_existing=True,
+            selection={"effectiveMethodologyProfile": "strict-superpowers"},
+            provider_diagnosis={"providers": {"superpowers": {"root": str(provider_root)}}},
+        )
         brainstorming = next(item for item in report["items"] if item["skill"] == "brainstorming")
 
         self.assertEqual(brainstorming["status"], "refreshed-link")
@@ -849,7 +1036,11 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
 
     def test_update_dry_run_reports_external_versions_without_mutating_updates(self):
         codex_home = self.make_codex_home()
-        repo = self.make_project_repo()
+        repo = self.make_project_repo(
+            enable_gsd=True,
+            methodology_profile="core",
+            roadmap_provider="gsd",
+        )
         openspec_skill = codex_home / "skills" / "openspec-propose" / "SKILL.md"
         openspec_skill.parent.mkdir(parents=True)
         openspec_skill.write_text('---\nname: openspec-propose\nmetadata:\n  generatedBy: "1.5.0"\n---\n')
@@ -891,57 +1082,80 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         )
         self.assertEqual(by_name["openspec-cli"]["latest"], "1.5.0")
 
-    def test_update_dry_run_reports_superpowers_upgrade_available(self):
+    def test_update_dry_run_keeps_selected_superpowers_fallback_pinned(self):
         codex_home = self.make_codex_home(superpowers_version="5.1.3", superpowers_channel="openai-curated")
+        repo = self.make_project_repo(
+            enable_superpowers=True,
+            methodology_profile="strict-superpowers",
+            roadmap_provider="none",
+            provider_selectors={
+                "superpowers": {
+                    "source_channel": "openai-curated",
+                    "version": "5.1.3",
+                }
+            },
+        )
 
         with mock.patch.object(auto_update, "executable_exists", return_value=False):
-            results = auto_update.run_external_updaters(codex_home, apply=False)
+            results = auto_update.run_external_updaters(codex_home, apply=False, repo=repo)
 
         by_name = {item["name"]: item for item in results}
         self.assertIn("superpowers", by_name)
         superpowers = by_name["superpowers"]
-        self.assertEqual(superpowers["status"], "update-available")
+        self.assertEqual(superpowers["status"], "unchanged")
         self.assertEqual(superpowers["current"], "5.1.3")
-        self.assertEqual(superpowers["latest"], "6.0.3")
-        self.assertEqual(superpowers["recommendedVersion"], "6.0.3")
-        expected_marketplace_command = [
-            "codex",
-            "plugin",
-            "marketplace",
-            "add",
-            "https://github.com/obra/superpowers",
-            "--ref",
-            "v6.0.3",
-            "--json",
-        ]
-        self.assertEqual(
-            superpowers["marketplaceCommand"],
-            expected_marketplace_command,
-        )
+        self.assertEqual(superpowers["latest"], "5.1.3")
+        self.assertEqual(superpowers["recommendedVersion"], "5.1.3")
         self.assertEqual(
             superpowers["installCommand"],
-            ["codex", "plugin", "add", "superpowers@superpowers-dev", "--json"],
+            ["codex", "plugin", "add", "superpowers@openai-curated", "--json"],
         )
 
-    def test_update_apply_installs_superpowers_from_upstream_marketplace(self):
-        codex_home = self.make_codex_home(superpowers_version="5.1.3", superpowers_channel="openai-curated")
+    def test_update_apply_repairs_only_the_selected_superpowers_source(self):
+        codex_home = self.make_codex_home(
+            superpowers_version="6.0.3",
+            superpowers_channel="superpowers-upstream-v6-0-3",
+        )
+        config = codex_home / "config.toml"
+        config.write_text(
+            config.read_text()
+            + "\n[marketplaces.superpowers-upstream-v6-0-3]\nsource = 'fixture'\n"
+        )
+        repo = self.make_project_repo(
+            enable_superpowers=True,
+            methodology_profile="strict-superpowers",
+            roadmap_provider="none",
+            provider_selectors={
+                "superpowers": {
+                    "source_channel": "superpowers-upstream-v6-0-3",
+                    "version": "6.0.3",
+                }
+            },
+        )
+        skill = (
+            codex_home
+            / "plugins"
+            / "cache"
+            / "superpowers-upstream-v6-0-3"
+            / "superpowers"
+            / "local"
+            / "skills"
+            / "brainstorming"
+            / "SKILL.md"
+        )
+        skill.write_text(skill.read_text() + "\ndrift\n")
         commands = []
         before_config = (codex_home / "config.toml").read_text()
 
         def fake_run(command, cwd=None, timeout=300):
             commands.append(command)
-            if command[:4] == ["codex", "plugin", "marketplace", "add"]:
-                return {
-                    "ok": True,
-                    "returncode": 0,
-                    "stdout": json.dumps({"marketplaceName": "superpowers-dev", "alreadyAdded": False}),
-                    "stderr": "",
-                }
             if command[:3] == ["codex", "plugin", "add"]:
                 return {
                     "ok": True,
                     "returncode": 0,
-                    "stdout": json.dumps({"pluginId": "superpowers@superpowers-dev", "version": "6.0.3"}),
+                    "stdout": json.dumps(
+                        {"pluginId": "superpowers@superpowers-upstream-v6-0-3", "version": "6.0.3"}
+                    ),
                     "stderr": "",
                 }
             raise AssertionError(f"unexpected command: {command}")
@@ -955,40 +1169,47 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
             "run_command",
             side_effect=fake_run,
         ):
-            results = auto_update.run_external_updaters(codex_home, apply=True)
+            results = auto_update.run_external_updaters(codex_home, apply=True, repo=repo)
 
         by_name = {item["name"]: item for item in results}
         self.assertEqual(by_name["superpowers"]["status"], "updated-or-unchanged")
-        expected_marketplace_command = [
-            "codex",
-            "plugin",
-            "marketplace",
-            "add",
-            "https://github.com/obra/superpowers",
-            "--ref",
-            "v6.0.3",
-            "--json",
-        ]
-        self.assertIn(
-            expected_marketplace_command,
+        self.assertEqual(
             commands,
+            [["codex", "plugin", "add", "superpowers@superpowers-upstream-v6-0-3", "--json"]],
         )
-        self.assertIn(["codex", "plugin", "add", "superpowers@superpowers-dev", "--json"], commands)
         self.assertEqual((codex_home / "config.toml").read_text(), before_config)
 
     def test_update_dry_run_reports_current_superpowers_unchanged(self):
-        codex_home = self.make_codex_home(superpowers_version="6.0.3", superpowers_channel="superpowers-dev")
+        codex_home = self.make_codex_home(
+            superpowers_version="6.1.1",
+            superpowers_channel="openai-curated-remote",
+        )
+        repo = self.make_project_repo(
+            enable_superpowers=True,
+            methodology_profile="strict-superpowers",
+            roadmap_provider="none",
+            provider_selectors={
+                "superpowers": {
+                    "source_channel": "openai-curated-remote",
+                    "version": "6.1.1",
+                }
+            },
+        )
 
         with mock.patch.object(auto_update, "executable_exists", return_value=False):
-            results = auto_update.run_external_updaters(codex_home, apply=False)
+            results = auto_update.run_external_updaters(codex_home, apply=False, repo=repo)
 
         superpowers = {item["name"]: item for item in results}["superpowers"]
         self.assertEqual(superpowers["status"], "unchanged")
-        self.assertEqual(superpowers["current"], "6.0.3")
+        self.assertEqual(superpowers["current"], "6.1.1")
 
     def test_gsd_apply_uses_opengsd_core_local_installer(self):
         codex_home = self.make_codex_home()
-        repo = self.make_project_repo()
+        repo = self.make_project_repo(
+            enable_gsd=True,
+            methodology_profile="core",
+            roadmap_provider="gsd",
+        )
         commands = []
 
         def fake_run(command, cwd=None, timeout=300):
@@ -1003,7 +1224,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         by_name = {item["name"]: item for item in results}
         self.assertEqual(by_name["gsd-core"]["status"], "updated-or-unchanged")
         self.assertIn(
-            (["npx", "-y", "@opengsd/gsd-core@latest", "--codex", "--local", "--profile=standard"], repo),
+            (["npx", "-y", "@opengsd/gsd-core@1.6.1", "--codex", "--local", "--profile=standard"], repo),
             commands,
         )
         self.assertFalse(any("get-shit-done-cc" in part for command, _ in commands for part in command))
@@ -1340,7 +1561,11 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
 
     def test_plugin_preflight_passes(self):
         codex_home = self.make_codex_home()
-        repo = self.make_project_repo()
+        release_repo = self.make_project_repo()
+        for skill in PROJECT_ORCHESTRATOR_SKILLS:
+            source = RELEASE_PLUGIN_ROOT / "skills" / skill / "SKILL.md"
+            target = release_repo / ".agents" / "skills" / skill / "SKILL.md"
+            target.write_bytes(source.read_bytes())
         release_report = run_json(
             "codex_plugin_preflight.py",
             "--plugin-root",
@@ -1348,7 +1573,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
             "--marketplace",
             str(MARKETPLACE),
             "--repo",
-            str(repo),
+            str(release_repo),
             "--codex-home",
             str(codex_home),
             "--config",
@@ -1360,6 +1585,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
         self.assertTrue(release_report["dependencies"]["ok"], release_report["dependencies"])
         self.assertTrue(any(item["name"] == "dependencies ready" for item in release_report["checks"]))
 
+        dev_repo = self.make_project_repo()
         dev_report = run_json(
             "codex_plugin_preflight.py",
             "--plugin-root",
@@ -1367,7 +1593,7 @@ class DependencyTests(DependencyFixtureMixin, unittest.TestCase):
             "--marketplace",
             str(DEV_MARKETPLACE),
             "--repo",
-            str(repo),
+            str(dev_repo),
             "--codex-home",
             str(codex_home),
             "--config",

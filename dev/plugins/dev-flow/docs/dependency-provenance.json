@@ -1,6 +1,170 @@
 {
   "schemaVersion": 2,
   "lastVerified": "2026-07-06",
+  "providerSources": {
+    "superpowers-openai-curated-remote": {
+      "provider": "superpowers",
+      "kind": "codex-plugin",
+      "plugin_id": "superpowers",
+      "source_channel": "openai-curated-remote",
+      "version": "6.1.1",
+      "manifestSha256": "42f44d5e17aff909bd6f2a53795d516d8ca78cd9512c32c91f19cbbcced68877",
+      "updateCommand": [
+        "codex",
+        "plugin",
+        "add",
+        "superpowers@openai-curated-remote",
+        "--json"
+      ],
+      "hookPolicy": {
+        "mode": "hookless"
+      },
+      "skillHashes": {
+        "using-superpowers": "55379fe7c1c473a02c61961c822996bff30e1320d6921d9062509bc508482c05",
+        "brainstorming": "e14914605f640e0841758e45d0ab2a53243b59b921f929e47921c99668f2e61d",
+        "writing-plans": "272e1af349f5062c28dc282b3e21b220d58d683a7314a10c455b7432ec91d845",
+        "test-driven-development": "b5b4717b8b761cce15a6cfe9022e33fd959e0894c0c39d72c9cb49c23486c10e",
+        "systematic-debugging": "3b20719eca4f0461cb51a195221320d775dcf03b6859271066a03a5132a6ce7a",
+        "requesting-code-review": "1017ccdd5bc61fab67c654cf118cbdb520464b313073a0a6b9a6b9aa647a3ad6",
+        "verification-before-completion": "ea52d15aabaf72bc6b558efe2c126f161b53961090ddcd712000273bfe8c7b6c",
+        "receiving-code-review": "647036bbdab7bf2317e14e079595e984c9030f64295e2b4c0fb57dbeb48f25dd",
+        "executing-plans": "bbd8d28bb655a52817cc129ce49f9e46fa7c6303f72ed5de95bfe914ef8e0ce8",
+        "subagent-driven-development": "41ab239a6ad1c487cd839fdac972a8c9cf0f5e90efa59a63f963767864f0df4c",
+        "using-git-worktrees": "e2c3ec142e52868a51af246c620cd76ab648dcf27d6900d47e6ffd07159a9794",
+        "finishing-a-development-branch": "e6d4a812de900d33c6eacfb40747f99427f25c304a7b7099120f9373b115a47f"
+      }
+    },
+    "superpowers-upstream-v6-0-3": {
+      "provider": "superpowers",
+      "kind": "codex-plugin",
+      "plugin_id": "superpowers",
+      "source_channel": "superpowers-upstream-v6-0-3",
+      "version": "6.0.3",
+      "manifestSha256": "0a246b93c2e44c3125b9a9f4ff37a9f41697190d51c0053e730be882efb57b7b",
+      "updateCommand": [
+        "codex",
+        "plugin",
+        "add",
+        "superpowers@superpowers-upstream-v6-0-3",
+        "--json"
+      ],
+      "requiresExistingMarketplace": true,
+      "hookPolicy": {
+        "mode": "session-start",
+        "manifestPath": "./hooks/hooks-codex.json",
+        "fileHashes": {
+          "hooks/hooks-codex.json": "9b28f3cecd0549403ed4d6b3fb3774bb1eb66f1ea68d659a680182c394dbfe62",
+          "hooks/run-hook.cmd": "d3d9c6199678dab2858e60509dde5e7414f13c2a2b5e48a38b1d368b6e1d6abb",
+          "hooks/session-start-codex": "550a0c2232f21230d0806182a8edf8dcd5b969d4aeb5445385076358f27f50a4"
+        }
+      },
+      "skillHashes": {
+        "using-superpowers": "918562bbba1c73d1407c50de77a92eeaa6930508bdb57a64324d7d508a9069e1",
+        "brainstorming": "e14914605f640e0841758e45d0ab2a53243b59b921f929e47921c99668f2e61d",
+        "writing-plans": "272e1af349f5062c28dc282b3e21b220d58d683a7314a10c455b7432ec91d845",
+        "test-driven-development": "b5b4717b8b761cce15a6cfe9022e33fd959e0894c0c39d72c9cb49c23486c10e",
+        "systematic-debugging": "3b20719eca4f0461cb51a195221320d775dcf03b6859271066a03a5132a6ce7a",
+        "requesting-code-review": "1017ccdd5bc61fab67c654cf118cbdb520464b313073a0a6b9a6b9aa647a3ad6",
+        "verification-before-completion": "ea52d15aabaf72bc6b558efe2c126f161b53961090ddcd712000273bfe8c7b6c",
+        "receiving-code-review": "647036bbdab7bf2317e14e079595e984c9030f64295e2b4c0fb57dbeb48f25dd",
+        "executing-plans": "b357c2a2e5bf24adf237b5d4a83cacd828f07b886d0873ad91546aa3c99905c9",
+        "subagent-driven-development": "41ab239a6ad1c487cd839fdac972a8c9cf0f5e90efa59a63f963767864f0df4c",
+        "using-git-worktrees": "e2c3ec142e52868a51af246c620cd76ab648dcf27d6900d47e6ffd07159a9794",
+        "finishing-a-development-branch": "e6d4a812de900d33c6eacfb40747f99427f25c304a7b7099120f9373b115a47f"
+      }
+    },
+    "superpowers-openai-curated-v5-1-3": {
+      "provider": "superpowers",
+      "kind": "codex-plugin",
+      "plugin_id": "superpowers",
+      "source_channel": "openai-curated",
+      "version": "5.1.3",
+      "manifestSha256": "700bf13c92bbadecfe094ce7b8e9f2ba921e21da3ef616cf58bdd9e1e309c739",
+      "updateCommand": [
+        "codex",
+        "plugin",
+        "add",
+        "superpowers@openai-curated",
+        "--json"
+      ],
+      "hookPolicy": {
+        "mode": "hookless"
+      },
+      "skillHashes": {
+        "using-superpowers": "316e29381219adf0cac62190c67aeabf427d6e6e5f2735541d502b3d339be7aa",
+        "brainstorming": "bba47904a7f6bbee3bf8a107ebbe84e65d392be683bbb898ded736b29e415f90",
+        "writing-plans": "4fd4627d2c02367879c0307d7249270bed633317ff9be82e926a6d57bf5d331b",
+        "test-driven-development": "7dee67b4af6bdccc7a914ca34533184d64592d0f5b23aeae631538168db14994",
+        "systematic-debugging": "4999cb851360485eca5074e727bbdd62ef20549c5d5b01216fcbf5831badb473",
+        "requesting-code-review": "5a3a44a3667800e2dc836829c6b92fada51e6dc58ac144ec05fe59f47d6bcd84",
+        "verification-before-completion": "ea52d15aabaf72bc6b558efe2c126f161b53961090ddcd712000273bfe8c7b6c",
+        "receiving-code-review": "c9382e92b8f32363566068ecfed19d3b2651eaf40d3942b24840f839dedfc406",
+        "executing-plans": "e2102f11631433939f162d383d769f8257d859d6639e0e14969cda3ef0a95eca",
+        "subagent-driven-development": "905a2b9be59b734dbe166525ad31dcaaf712a75926135adee1f554557aba5744",
+        "using-git-worktrees": "085a45ee3de432bdb2768011591d9a882cb6c759e2317f379226451c5618fe8e",
+        "finishing-a-development-branch": "5c8d4b59aedb14c94e2f5d787a3265e858e8f53d4ceffe7ff1c15878a52b0e91"
+      }
+    },
+    "mattpocock-skills-v1-1-0": {
+      "provider": "mattpocock-skills",
+      "kind": "git-skill-pack",
+      "repository": "mattpocock/skills",
+      "ref": "v1.1.0",
+      "commit": "d574778f94cf620fcc8ce741584093bc650a61d3",
+      "lastVerified": "2026-07-10",
+      "installCommand": [
+        "npx",
+        "-y",
+        "skills@1.5.9",
+        "add",
+        "https://github.com/mattpocock/skills/tree/v1.1.0",
+        "--skill",
+        "grilling",
+        "--skill",
+        "tdd",
+        "--skill",
+        "diagnosing-bugs",
+        "--skill",
+        "code-review",
+        "--skill",
+        "codebase-design",
+        "--skill",
+        "domain-modeling",
+        "--global",
+        "--agent",
+        "codex",
+        "--yes"
+      ],
+      "environment": {
+        "CODEX_HOME": "{codexHome}"
+      },
+      "skillHashes": {
+        "grilling": "5a35925d03a391bcfa46940868b649b72dba89ec9c19525e785bbb6bd3a7f478",
+        "tdd": "5363bb2775679fe9311fbb67947f95359169c6e7f1fac77c0f25e190bca6cf2f",
+        "diagnosing-bugs": "7a0779480f323a66d109404646bcc1a14bf0232b45b3e3ea93b652a035718acb",
+        "code-review": "6a65cc61114f96db07ec41e3920e67c9c5bf70dd6e0901eb9460ebcb2bdc209f",
+        "codebase-design": "a8d50abac5a4018f60e1d911d4b6f4e36454ca14d6c390c0695a578c7de65dad",
+        "domain-modeling": "152e2c97239affb12a60c5f4a7e74ab546a49ae169688c81f4e2ccc42dafa579"
+      }
+    },
+    "gsd-core-1-6-1": {
+      "provider": "gsd",
+      "kind": "project-runtime",
+      "package": "@opengsd/gsd-core",
+      "version": "1.6.1",
+      "runtimeSha256": "fd3df2a7e81bc9d2fba1c5e3d41e81c16954132ad969b03ac468842bf53a9460",
+      "contentManifestPath": ".codex/gsd-file-manifest.json",
+      "contentAttestation": "authorized-pinned-install",
+      "installCommand": [
+        "npx",
+        "-y",
+        "@opengsd/gsd-core@1.6.1",
+        "--codex",
+        "--local",
+        "--profile=standard"
+      ]
+    }
+  },
   "dependencies": [
     {
       "name": "openspec-cli",
@@ -19,7 +183,8 @@
     {
       "name": "gsd-core",
       "kind": "project-local-runtime",
-      "required": true,
+      "required": false,
+      "requiredWhen": "roadmap_provider == gsd",
       "purpose": "Project-local GSD runtime used by DevFlow planning, verification, and state commands.",
       "expectedVersion": "1.6.1",
       "binaryPath": "{repo}/.codex/gsd-core/bin/gsd-tools.cjs",
@@ -34,16 +199,18 @@
     {
       "name": "superpowers",
       "kind": "codex-plugin",
-      "required": true,
+      "required": false,
+      "requiredWhen": "methodology_profile == strict-superpowers",
       "purpose": "Methodology gates for brainstorming, planning, TDD, review, verification, and subagent execution discipline.",
       "minimumCompatibleVersion": "5.1.3",
       "recommendedVersion": "6.0.3",
       "strictProfileRequires": "6.0.3",
       "compatibilityPolicy": "upgrade-to-upstream-latest-with-explicit-trust-review; fallback-to-openai-curated-5.1.3",
       "source": "https://github.com/obra/superpowers",
-      "marketplaceCommand": ["codex", "plugin", "marketplace", "add", "https://github.com/obra/superpowers", "--ref", "v6.0.3", "--json"],
-      "installCommand": ["codex", "plugin", "add", "superpowers@superpowers-dev", "--json"],
-      "updateCommand": ["codex", "plugin", "add", "superpowers@superpowers-dev", "--json"],
+      "marketplaceCommand": [],
+      "installCommand": [],
+      "updateCommand": [],
+      "selectionPolicy": "resolve the selected providerSources record; no universal install command",
       "sources": {
         "openaiCuratedMarketplace": {
           "repository": "openai/plugins",
@@ -70,9 +237,7 @@
         "requesting-code-review",
         "finishing-a-development-branch"
       ],
-      "requiredHooksWhenVersionAtLeast": {
-        "6.0.0": ["SessionStart"]
-      },
+      "hookPolicy": "require-and-trust-check-only-hooks-declared-by-the-selected-manifest",
       "failureMode": "Missing or outdated Superpowers weakens DevFlow planning, TDD, review, verification, and subagent execution discipline.",
       "fallbackOrBlocker": "Install or upgrade Superpowers explicitly, then review and trust bundled hooks with /hooks."
     },

@@ -10,8 +10,10 @@ policy.
 ## Contract-First Execution
 
 - Define the Goal Contract before non-trivial execution.
-- Keep required behavior in OpenSpec, GSD phase plans, or `TASK_LEDGER.md`.
-- Treat Superpowers artifacts as drafts or method evidence until promoted.
+- Keep required behavior in OpenSpec, the selected roadmap-provider plan, or
+  `TASK_LEDGER.md`; GSD phase plans apply only when the GSD overlay is selected.
+- Treat all external methodology artifacts as drafts or method evidence until
+  promoted into the canonical control plane.
 - Do not run hidden installers, hook trust actions, release sync apply, or
   archive operations from hooks.
 
@@ -20,7 +22,7 @@ policy.
 - Use TDD for feature, bug, refactor, and behavior changes.
 - Record red/green evidence when TDD is required.
 - Run fresh validation before completion claims.
-- Store verification evidence under `.planning/verification/`.
+- Store DevFlow verification evidence under `.planning/devflow/verification/`.
 
 ## Dependencies and Release
 

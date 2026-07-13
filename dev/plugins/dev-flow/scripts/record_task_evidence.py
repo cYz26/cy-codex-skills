@@ -6,6 +6,8 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+from workflow_planning_paths import atomic_write_devflow, verification_root
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Record a DevFlow task evidence note.")
@@ -17,14 +19,15 @@ def main() -> int:
     args = parser.parse_args()
     repo = Path(args.repo).expanduser().resolve()
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
-    path = repo / ".planning" / "verification" / f"{timestamp}-{args.task_id}-evidence.md"
-    path.parent.mkdir(parents=True, exist_ok=True)
+    path = verification_root(repo) / f"{timestamp}-{args.task_id}-evidence.md"
     commands = "\n".join(f"- `{command}`" for command in args.command) or "- none"
-    path.write_text(
+    atomic_write_devflow(
+        repo,
+        path,
         f"# Evidence: {args.task_id}\n\n"
         f"## Claim\n{args.claim}\n\n"
         f"## Commands Run\n{commands}\n\n"
-        "## Risks / Gaps\n- none recorded\n"
+        "## Risks / Gaps\n- none recorded\n",
     )
     report = {"ok": True, "path": str(path), "task_id": args.task_id}
     if args.json:

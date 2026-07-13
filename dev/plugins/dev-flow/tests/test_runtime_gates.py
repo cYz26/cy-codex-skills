@@ -28,11 +28,11 @@ class RuntimeGateTests(unittest.TestCase):
         (repo / "AGENTS.md").write_text("# Instructions\n")
         (repo / "openspec").mkdir()
         (repo / "openspec" / "config.yaml").write_text("schema: spec-driven\n")
-        (repo / ".planning").mkdir()
+        (repo / ".planning" / "devflow").mkdir(parents=True)
         return repo
 
     def write_state(self, repo, extra_context=""):
-        (repo / ".planning" / "STATE.md").write_text(
+        (repo / ".planning" / "devflow" / "STATE.md").write_text(
             f"""---
 workflow_version: 0.3.0
 project_mode: brownfield
@@ -100,7 +100,7 @@ context_management:
 
     def test_update_state_preserves_existing_status_body_when_not_overridden(self):
         repo = self.make_repo()
-        (repo / ".planning" / "STATE.md").write_text(
+        (repo / ".planning" / "devflow" / "STATE.md").write_text(
             """---
 workflow_version: 0.3.0
 project_mode: brownfield
@@ -153,10 +153,55 @@ Keep this durable next action.
 
         update_state(repo, last_context_health_risk="medium")
 
-        state_text = (repo / ".planning" / "STATE.md").read_text()
+        state_text = (repo / ".planning" / "devflow" / "STATE.md").read_text()
         self.assertIn("Keep this durable status text.", state_text)
         self.assertIn("Keep this durable next action.", state_text)
         self.assertIn("last_risk: medium", state_text)
+
+    def test_core_none_validation_does_not_treat_current_phase_as_gsd_path(self):
+        repo = self.make_repo()
+        self.write_state(repo)
+        state_path = repo / ".planning" / "devflow" / "STATE.md"
+        state_path.write_text(
+            state_path.read_text().replace(
+                "id: none\n  status: none",
+                "id: 02-core\n  status: active",
+                1,
+            )
+        )
+        (repo / ".dev-flow.json").write_text(
+            json.dumps({"workflow": {"methodology_profile": "core", "roadmap_provider": "none"}})
+        )
+
+        validation = validate_workflow_state(repo)
+
+        self.assertFalse(any("PLAN.md" in issue for issue in validation["issues"]), validation)
+
+    def test_selected_gsd_binding_uses_read_only_adapter_and_blocks_missing_runtime(self):
+        repo = self.make_repo()
+        self.write_state(repo)
+        (repo / "openspec" / "changes" / "demo").mkdir(parents=True)
+        (repo / ".dev-flow.json").write_text(
+            json.dumps(
+                {
+                    "workflow": {
+                        "methodology_profile": "core",
+                        "roadmap_provider": "gsd",
+                        "roadmap_bindings": {
+                            "demo": {
+                                "phase_id": "02-core",
+                                "milestone": "v1",
+                                "status": "active",
+                            }
+                        },
+                    }
+                }
+            )
+        )
+
+        validation = validate_workflow_state(repo)
+
+        self.assertTrue(any("roadmap binding" in issue.lower() for issue in validation["issues"]), validation)
 
     def test_validation_and_doctor_report_installed_cache_hook_drift(self):
         repo = self.make_repo()
@@ -335,6 +380,17 @@ goal_gate:
         gate.assert_called_once_with(repo.resolve(), apply=False)
         sync.assert_not_called()
 
+    def test_stop_hook_uses_provider_neutral_ledger_completion_check(self):
+        module = importlib.import_module("devflow_stop_hook")
+        repo = self.make_repo()
+        (repo / "TASK_LEDGER.md").write_text("| Task | Status |\n| --- | --- |\n| A | done |\n")
+
+        check = module.ledger_completion_stop_check(repo)
+
+        self.assertEqual(check["id"], "ledger_completion")
+        self.assertEqual(check["compatibilityAlias"], "superpowers_completion")
+        self.assertTrue(check["ok"])
+
     def test_hook_response_keeps_additional_context_for_non_stop_warnings(self):
         repo = self.make_repo()
         self.write_state(repo)
@@ -440,7 +496,8 @@ goal_gate:
         gates = importlib.import_module("workflow_superpowers_gates")
 
         matrix = routing.load_routing_matrix(PLUGIN_ROOT)
-        self.assertEqual(matrix["schemaVersion"], 1)
+        self.assertEqual(matrix["schemaVersion"], 2)
+        self.assertEqual(matrix["capabilityRegistry"], "provider_profiles.json#/capabilities")
         self.assertIn("behavior-change", routing.full_openspec_kinds(PLUGIN_ROOT))
         self.assertIn("routing.matrix.json", matrix["sourcePath"])
 

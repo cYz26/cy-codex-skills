@@ -32,7 +32,11 @@ def main() -> int:
         help="Claude Code tool allowlist entry. Repeat for multiple entries.",
     )
     parser.add_argument("--check", action="store_true", help="Only report whether Claude Code delegation is available.")
-    parser.add_argument("--no-log", action="store_true", help="Do not write .dev-flow/claude-code run metadata.")
+    parser.add_argument(
+        "--no-log",
+        action="store_true",
+        help="Do not write .planning/devflow/claude-code run metadata.",
+    )
     parser.add_argument(
         "--json",
         action="store_true",

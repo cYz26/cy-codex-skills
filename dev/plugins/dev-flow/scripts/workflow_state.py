@@ -5,6 +5,16 @@ from pathlib import Path
 from typing import Any, Optional
 
 from workflow_paths import as_bool_text, rel, render_template
+from workflow_planning_paths import (
+    LEGACY_STATE_SUNSET_RELEASE,
+    PlanningOwnershipError,
+    current_plugin_version,
+    atomic_write_devflow,
+    guard_devflow_write,
+    legacy_state_path,
+    state_path,
+    version_at_or_after,
+)
 
 
 def parse_frontmatter(text: str) -> tuple[str, str]:
@@ -16,14 +26,100 @@ def parse_frontmatter(text: str) -> tuple[str, str]:
     return text[4:end], text[end + 5 :].lstrip("\n")
 
 
-def parse_state(repo: Path) -> dict[str, Any]:
-    path = repo / ".planning" / "STATE.md"
-    if not path.exists():
-        return {}
-    frontmatter, body = parse_frontmatter(path.read_text())
+def parse_state(repo: Path, current_version: str | None = None) -> dict[str, Any]:
+    return resolve_state(repo, current_version=current_version)["data"]
+
+
+def parse_state_text(text: str) -> dict[str, Any]:
+    frontmatter, body = parse_frontmatter(text)
     state: dict[str, Any] = {"body": body, "gates": {}}
     parse_yaml_subset(frontmatter, state)
     return state
+
+
+def resolve_state(repo: Path, current_version: str | None = None) -> dict[str, Any]:
+    repo = Path(repo).resolve()
+    namespaced = state_path(repo)
+    legacy = legacy_state_path(repo)
+    version = current_version or current_plugin_version()
+    if namespaced.exists():
+        return state_resolution(
+            "namespaced",
+            parse_state_text(namespaced.read_text()),
+            namespaced,
+            namespaced,
+            True,
+        )
+    if not legacy.exists():
+        return state_resolution("missing", {}, None, namespaced, True)
+    text = legacy.read_text()
+    frontmatter, _ = parse_frontmatter(text)
+    has_devflow = "workflow_version:" in frontmatter
+    has_gsd = "gsd_state_version:" in frontmatter
+    if has_devflow and has_gsd:
+        return state_resolution(
+            "manual_review_required",
+            {},
+            legacy,
+            namespaced,
+            False,
+            next_action="review_mixed_state_markers",
+        )
+    if has_gsd:
+        return state_resolution(
+            "gsd_owned",
+            {},
+            legacy,
+            namespaced,
+            False,
+            next_action="use_gsd_state_adapter",
+        )
+    if has_devflow:
+        if version_at_or_after(version, LEGACY_STATE_SUNSET_RELEASE):
+            return state_resolution(
+                "legacy_expired",
+                {},
+                legacy,
+                namespaced,
+                False,
+                next_action="migrate_devflow_state",
+            )
+        return state_resolution(
+            "legacy_read_only",
+            parse_state_text(text),
+            legacy,
+            namespaced,
+            False,
+            next_action="migrate_devflow_state",
+        )
+    return state_resolution(
+        "manual_review_required",
+        {},
+        legacy,
+        namespaced,
+        False,
+        next_action="review_unknown_root_state",
+    )
+
+
+def state_resolution(
+    status: str,
+    data: dict[str, Any],
+    read_path: Path | None,
+    write_path: Path,
+    write_allowed: bool,
+    *,
+    next_action: str = "",
+) -> dict[str, Any]:
+    return {
+        "status": status,
+        "data": data,
+        "readPath": str(read_path) if read_path else None,
+        "writePath": str(write_path),
+        "writeAllowed": write_allowed,
+        "nextAction": next_action,
+        "sunsetRelease": LEGACY_STATE_SUNSET_RELEASE,
+    }
 
 
 def parse_state_line(state: dict[str, Any], raw_line: str, current_section: Optional[str]) -> Optional[str]:
@@ -93,7 +189,7 @@ def default_state_values(project_mode: str, change_id: str, change_status: str =
     return {
         "project_mode": project_mode,
         "current_stage": "planning",
-        "phase_id": "01-foundation",
+        "phase_id": "none",
         "change_id": change_id,
         "change_status": change_status,
         "plan_written": True,
@@ -118,6 +214,8 @@ def default_state_values(project_mode: str, change_id: str, change_status: str =
         "goal_gate_status": "not_required",
         "goal_gate_reason": "none",
         "goal_gate_suggested_goal": "none",
+        "gsd_verification_change": "none",
+        "gsd_verification_phase": "none",
     }
 
 
@@ -126,10 +224,9 @@ def render_state(values: dict[str, Any]) -> str:
 
 
 def write_state(repo: Path, values: dict[str, Any], dry_run: bool = False) -> str:
-    path = repo / ".planning" / "STATE.md"
+    path = state_write_path(repo)
     if not dry_run:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(render_state(values))
+        atomic_write_devflow(repo, path, render_state(values))
     return rel(repo, path)
 
 
@@ -138,11 +235,27 @@ def update_state(repo: Path, **overrides: Any) -> str:
     values = merged_state_values(existing, overrides)
     text = render_state(values)
     for key, value in merged_gates(existing.get("gates", {}), overrides).items():
-        text = re.sub(rf"  {key}: (true|false)", f"  {key}: {as_bool_text(bool(value))}", text)
-    path = repo / ".planning" / "STATE.md"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text)
+        rendered = as_bool_text(value) if isinstance(value, bool) else str(value)
+        text = re.sub(rf"  {key}: .*", f"  {key}: {rendered}", text)
+    path = state_write_path(repo)
+    atomic_write_devflow(repo, path, text)
     return rel(repo, path)
+
+
+def state_write_path(repo: Path) -> Path:
+    resolution = resolve_state(repo)
+    path = Path(resolution["writePath"])
+    if not resolution["writeAllowed"]:
+        status = resolution["status"]
+        code = {
+            "legacy_read_only": "migration_required",
+            "legacy_expired": "migration_required",
+            "gsd_owned": "gsd_owned",
+            "manual_review_required": "manual_review_required",
+        }.get(status, "owner_mismatch")
+        raise PlanningOwnershipError(code, path, f"DevFlow state write blocked: {status}")
+    guard_devflow_write(repo, path)
+    return path
 
 
 def merged_state_values(existing: dict[str, Any], overrides: dict[str, Any]) -> dict[str, Any]:
@@ -155,8 +268,14 @@ def merged_state_values(existing: dict[str, Any], overrides: dict[str, Any]) -> 
         str(overrides.get("change_status", change.get("status", "planned"))),
     )
     values["current_stage"] = str(overrides.get("current_stage", existing.get("current_stage", "planning")))
-    values["phase_id"] = str(overrides.get("phase_id", phase.get("id", "01-foundation")))
+    values["phase_id"] = str(overrides.get("phase_id", phase.get("id", "none")))
     values["plan_written"] = bool(overrides.get("plan_written", gates.get("plan_written", True)))
+    values["gsd_verification_change"] = str(
+        overrides.get("gsd_verification_change", gates.get("gsd_verification_change", "none"))
+    )
+    values["gsd_verification_phase"] = str(
+        overrides.get("gsd_verification_phase", gates.get("gsd_verification_phase", "none"))
+    )
     values["status_text"] = str(
         overrides.get(
             "status_text",
@@ -224,6 +343,9 @@ def merged_gates(gates: dict[str, Any], overrides: dict[str, Any]) -> dict[str, 
         "tests_baseline_known": False,
         "implementation_done": False,
         "verification_passed": False,
+        "gsd_verification_passed": False,
+        "gsd_verification_change": "none",
+        "gsd_verification_phase": "none",
         "state_updated": True,
         "archive_allowed": False,
     }

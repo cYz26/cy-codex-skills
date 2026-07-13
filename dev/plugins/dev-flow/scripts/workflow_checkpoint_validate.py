@@ -5,7 +5,7 @@ from typing import Any
 
 from workflow_paths import repo_path
 from workflow_compact_state import SUPPORTED_COMPACT_STATUSES
-from workflow_state import parse_frontmatter, parse_state
+from workflow_state import parse_frontmatter, parse_state, resolve_state
 
 
 CHECKPOINT_REPAIR_GUIDANCE = (
@@ -36,7 +36,7 @@ def validate_checkpoint(repo: Path, checkpoint: str) -> dict[str, Any]:
     repo = repo_path(repo)
     path = repo / checkpoint
     missing: list[str] = []
-    if not (repo / ".planning" / "STATE.md").exists():
+    if resolve_state(repo)["status"] != "namespaced":
         missing.append("state")
     if not path.exists():
         return {"valid": False, "missing": ["checkpoint_file"], "compact_allowed": False}
@@ -95,12 +95,7 @@ def section_has_content(text: str, heading: str) -> bool:
 
 
 def check_active_artifacts(repo: Path, state: dict[str, Any], missing: list[str]) -> None:
-    phase_id = state.get("current_phase", {}).get("id")
     change_id = state.get("current_change", {}).get("id")
-    if phase_id not in (None, "", "none"):
-        phase_root = repo / ".planning" / "phases" / str(phase_id)
-        if not any(((phase_root / "PLAN.md").exists(), (phase_root / "SUMMARY.md").exists())):
-            missing.append("phase_context")
     if change_id not in (None, "", "none"):
         tasks = repo / "openspec" / "changes" / str(change_id) / "tasks.md"
         if not tasks.exists():

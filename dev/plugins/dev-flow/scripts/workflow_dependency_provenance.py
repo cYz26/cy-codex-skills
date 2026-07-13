@@ -6,9 +6,11 @@ import shutil
 import subprocess
 from typing import Any
 
+from workflow_constants import resolve_plugin_root
+
 
 def default_plugin_root() -> Path:
-    return Path(__file__).resolve().parents[1]
+    return resolve_plugin_root(__file__)
 
 
 def dependency_provenance_source_path(plugin_root: Path | None = None) -> Path:
@@ -74,11 +76,21 @@ def dependency_provenance_last_verified(
     return str(value) if value else None
 
 
-def dependency_provenance_report(plugin_root: Path, repo: Path | None = None) -> dict[str, Any]:
+def dependency_provenance_report(
+    plugin_root: Path,
+    repo: Path | None = None,
+    *,
+    catalog_only_names: set[str] | None = None,
+) -> dict[str, Any]:
     data = load_dependency_provenance(plugin_root)
     source = dependency_provenance_source_path(plugin_root)
+    catalog_only = set(catalog_only_names or ())
     dependencies = [
-        evaluate_dependency(record, source, data.get("lastVerified"), repo)
+        (
+            catalog_only_dependency(record, source, data.get("lastVerified"))
+            if record.get("name") in catalog_only
+            else evaluate_dependency(record, source, data.get("lastVerified"), repo)
+        )
         for record in data["dependencies"]
     ]
     return {
@@ -89,6 +101,35 @@ def dependency_provenance_report(plugin_root: Path, repo: Path | None = None) ->
         },
         "dependencies": dependencies,
         "checks": [dependency_check_item(item) for item in dependencies],
+    }
+
+
+def catalog_only_dependency(
+    record: dict[str, Any],
+    source_path: Path,
+    default_last_verified: str | None,
+) -> dict[str, Any]:
+    return {
+        "name": record["name"],
+        "purpose": record.get("purpose"),
+        "required": False,
+        "status": "not_selected",
+        "expectedVersion": record.get("expectedVersion"),
+        "installedVersion": None,
+        "binaryPath": None,
+        "installCommand": list(record.get("installCommand", [])),
+        "recommendedCommand": list(record.get("updateCommand") or record.get("installCommand") or []),
+        "smokeCommand": [],
+        "smokeResult": {
+            "ok": True,
+            "returncode": None,
+            "summary": "not selected; runtime was not inspected",
+        },
+        "source": record.get("source"),
+        "failureMode": record.get("failureMode"),
+        "fallbackOrBlocker": record.get("fallbackOrBlocker"),
+        "lastVerified": record.get("lastVerified") or default_last_verified,
+        "provenanceSource": str(source_path),
     }
 
 
@@ -164,6 +205,7 @@ def policy_only_dependency(
         "sources",
         "requiredSkills",
         "strictRecommendedSkills",
+        "hookPolicy",
         "requiredHooksWhenVersionAtLeast",
     ]:
         if key in record:
@@ -297,7 +339,7 @@ def dependency_status(
 
 def dependency_check_item(dependency: dict[str, Any]) -> dict[str, Any]:
     status = dependency["status"]
-    ok = status in {"verified", "not_applicable", "policy_recorded"}
+    ok = status in {"verified", "not_applicable", "not_selected", "policy_recorded"}
     required = bool(dependency.get("required")) and status != "not_applicable"
     detail = (
         f"{status}: expected {dependency.get('expectedVersion') or 'unknown'}, "

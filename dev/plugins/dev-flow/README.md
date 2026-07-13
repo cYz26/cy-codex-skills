@@ -23,6 +23,44 @@ under `scripts/`; detailed procedure stays in individual skills.
   single read-only `devflow_stop_hook.py` entrypoint.
 - Agent Reach is deprecated and not recommended for DevFlow automation.
 
+## Provider Profiles
+
+DevFlow defaults to `core + none`: native methodology and no roadmap provider.
+Optional `lean-matt`, `strict-superpowers`, and `gsd` selections implement
+stable capability IDs from `docs/provider_profiles.json`; they do not replace
+OpenSpec, DevFlow evidence, review, or release gates. Configure
+`workflow.methodology_profile` and `workflow.roadmap_provider` in
+`.dev-flow.json`.
+
+Resolution uses explicit selector, matching lock, then unique discovery. One
+source root is bound per provider. Diagnosis is read-only; activation,
+migration, provider lock persistence, and dependency changes require explicit
+apply. See `docs/provider-profile-migration.md` for mappings, planning ownership,
+tracking states, migration, and rollback.
+
+Pass current route requirements explicitly to diagnostics and activation:
+
+```bash
+python3 scripts/check_dependencies.py --repo . \
+  --capability test-first-execution --json
+python3 scripts/activate_project_dependencies.py --repo . \
+  --capability test-first-execution --dry-run --json
+```
+
+Repeat `--capability` for delegated execution, review, completion proof, goal
+definition, or selected roadmap lifecycle. Activation installs or links only
+the selected profile and triggered conditional skills. Missing external
+providers use the pinned source record; GSD's first content lock is created
+only after a successful authorized pinned installer run and post-install
+diagnosis. Matt's setup skill configures its alternate project workflow and is
+not used as a DevFlow installer or canonical control plane.
+
+For comparison or migration previews, both commands accept
+`--methodology-profile` and `--roadmap-provider`; repeat `--provider-source
+<provider-id>=<source-id>` for portable source selection. These overrides are
+read-only unless activation receives both `--apply` and
+`--persist-provider-selection`.
+
 ## Contract-First Control Plane
 
 DevFlow setup and migration validate these root files:
@@ -70,17 +108,16 @@ diagnostic.
 
 Design, research, architecture, product-shape, and technical-plan requests must
 record a Skill Routing Ledger before the final artifact. The ledger records the
-request kind, workflow mode, capability-research decision, `brainstorming:
-required/used/skipped`, `decision-grilling: required/used/skipped`,
-writing-plans decision, OpenSpec/GSD route, and the reason for every skipped
-gate. If unresolved Open Questions remain, Brainstorming and decision grilling
-cannot be skipped; keep the artifact as draft or record both gates as required.
+request kind, workflow mode, capability evidence, stable required capability
+IDs, OpenSpec/roadmap route, and the reason for every skipped gate. If unresolved
+Open Questions remain, decision resolution cannot be skipped; keep the artifact
+as draft until the questions are resolved.
 
 Decision grilling is the narrow ambiguity-resolution protocol inside
 brainstorming. Use `scripts/workflow_decision_grilling.py --json` to classify
 the gate when needed. The protocol is: inspect local evidence first, ask one
 question at a time, provide a recommended answer, walk dependent decision
-branches, and record resolved decisions in OpenSpec, GSD, or DevFlow ledger
+branches, and record resolved decisions in OpenSpec, the selected roadmap, or DevFlow ledger
 artifacts.
 
 ## Goal Workflow
@@ -167,28 +204,26 @@ and status (`verified`, `dependency_drift`, `missing`, or `smoke_failed`).
 Read-only checks report drift without running installers; mutating install and
 update commands remain behind explicit apply mode.
 
-The provenance schema also records Superpowers as a methodology dependency.
-DevFlow recommends upstream Superpowers `6.0.3`, accepts OpenAI curated
-`5.1.3` as a compatibility fallback, and reports upgrade, SessionStart hook,
-and hook-trust status. DevFlow updater apply mode can register the pinned
-upstream marketplace and install `superpowers@superpowers-dev`; DevFlow never
-trusts or bypasses Superpowers hooks automatically.
+The provenance schema records every supported provider source, selector, ref,
+and verification command. Readiness checks only the selected methodology and
+roadmap providers. Hook requirements come from the selected source manifest,
+not a version heuristic; DevFlow never trusts provider hooks automatically.
 
-## Routing And Method Gates
+## Routing and Capability Gates
 
 Workflow routing is machine-readable in `docs/routing.matrix.json`.
-Superpowers methodology gates are machine-readable in
-`docs/superpowers_gate_matrix.json`. Skills and hooks may cite these matrices,
-but OpenSpec, GSD, `.planning/STATE.md`, `TASK_LEDGER.md`, and
-`.planning/verification/*` remain canonical state.
+Capability implementations are machine-readable in
+`docs/provider_profiles.json`. The legacy `docs/superpowers_gate_matrix.json`
+remains a compatibility shim. OpenSpec, `TASK_LEDGER.md`, and
+`.planning/devflow/**` remain canonical DevFlow state and evidence; a selected
+roadmap provider owns only its declared roadmap paths.
 
-## Superpowers Artifact Promotion
+## Provider Artifact Promotion
 
-Superpowers outputs under `docs/superpowers/specs/*`,
-`docs/superpowers/plans/*`, SDD reports, and review notes are drafts or method
-evidence. Use `superpowers_artifact_mapping.py` rules to promote the approved
-content into OpenSpec proposal/design/specs/tasks, GSD phase plans,
-`TASK_LEDGER.md`, or verification evidence before archive or release readiness.
+Provider outputs, including compatibility paths under `docs/superpowers/`, are
+drafts or method evidence. Promote approved content into OpenSpec, the selected
+roadmap plan, `TASK_LEDGER.md`, or `.planning/devflow/verification/` before it
+can satisfy archive or release readiness.
 
 ## Plugin Project Migration
 
@@ -205,7 +240,8 @@ Develop plugins and standalone skills under `dev/`. At verified workflow
 boundaries, run explicit release promotion to copy allowlisted runtime assets to
 their release counterparts and then perform release validation. Stop hooks only
 run read-only release-promotion checks. Use
-`sync_release_assets.py --apply --json` for an explicit sync, or
+`sync_release_assets.py --target dev-flow --apply --json` for an explicit,
+target-scoped sync, or
 `sync_release_assets.py --eval-target <path> --json` to resolve the
 release-first Plugin Eval target.
 
@@ -239,8 +275,9 @@ can review the handoff before dispatch. Use
 contract. Ordinary narrow main-agent work does not need this gate solely
 because it has multiple steps.
 
-When authorized, route to `gsd-execute-phase`, `subagent-driven-development`,
-`dispatching-parallel-agents`, or `executing-plans`. The main agent owns OpenSpec artifacts, `.planning/STATE.md`, verification evidence, shared docs,
+When authorized, resolve the `execution-orchestration` capability from the
+selected profile. The main agent owns OpenSpec artifacts,
+`.planning/devflow/`, shared docs,
 and final integration unless shared files are explicitly serialized. Each
 SubAgent result reports status (`DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`), files changed or inspected, commands or tests run, residual
 risks, and review needs.

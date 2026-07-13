@@ -8,25 +8,23 @@ from pathlib import Path
 from typing import Any
 
 from workflow_paths import rel, repo_path
+from workflow_planning_paths import append_devflow_text, context_health_root
 
 
-EVENT_DIR = ".dev-flow/context-health"
 EVENT_FILE = "events.jsonl"
 IMPORTED_EVENT_FILE = "imported-events.jsonl"
 
 
 def event_store_path(repo: Path, imported: bool = False) -> Path:
     filename = IMPORTED_EVENT_FILE if imported else EVENT_FILE
-    return repo_path(repo) / EVENT_DIR / filename
+    return context_health_root(repo_path(repo)) / filename
 
 
 def record_event(repo: Path, event_type: str, payload: dict[str, Any], imported: bool = False) -> dict[str, Any]:
     repo = repo_path(repo)
     event = sanitize_event(repo, event_type, payload)
     path = event_store_path(repo, imported=imported)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(f"{json.dumps(event, sort_keys=True)}\n")
+    append_devflow_text(repo, path, f"{json.dumps(event, sort_keys=True)}\n")
     return event
 
 

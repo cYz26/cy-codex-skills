@@ -1,41 +1,40 @@
 ---
 name: change-plan
-description: Use when an OpenSpec change needs proposal, design, specs, or tasks.
+description: Use when an OpenSpec change needs proposal, design, specs, or executable tasks.
 ---
 
 # Change Plan
 
-Use when an active change lacks complete OpenSpec artifacts or needs implementation planning.
+Complete the active OpenSpec change before production implementation.
 
-## Artifacts
+## Capability Routing
 
-Ensure `openspec/changes/<change-id>/` has proposal, design, tasks, requirement scenarios, Target State, Completion Contract, Capability Slices, Execution Ledger, Acceptance Criteria, and Validation Commands.
+Resolve `decision-resolution`, `implementation-planning`, and when needed
+`architecture-guidance` from `docs/provider_profiles.json`. Provider notes are
+inputs; OpenSpec is canonical. Mapping details live in
+`docs/provider-profile-migration.md`.
 
-When the design depends on current, external, platform, plugin, API, hook, CLI, installed-cache, or local-vs-platform capability, add Capability Evidence before implementation. Use `capability-research` to confirm authoritative/current behavior, run the local scan, compare options, and turn the result into OpenSpec scenarios and validation commands.
+## Procedure
 
-For bug-fix or workflow-repair changes, the Target State and Completion
-Contract should describe the systemic and thorough solution first after
-investigation. If tasks choose a minimal fix, staged repair, or deferred
-follow-up, record why that smaller path is correct for the current state,
-approval boundary, risk, and validation cost.
+1. Inspect the current system and existing specs.
+2. Use `capability-research` for Capability Evidence when current or external
+   capability, runtime, cache, CLI, hook, API, or platform assumptions are
+   unstable.
+3. Resolve design tradeoffs and Open Questions; keep unresolved artifacts
+   draft.
+4. Ensure `proposal.md`, `design.md` when needed, delta `specs/`, and `tasks.md`
+   cover Target State, Completion Contract, Capability Slices, Execution
+   Ledger, Acceptance Criteria, Validation Commands, risks, and rollback.
+5. Route unclear behavior to `openspec-explore`, ready intent to
+   `openspec-propose`, and plan structure to `ai-native-tech-plan`.
+6. Run `scripts/validate_workflow_state.py --repo <repo> --json` and OpenSpec
+   validation.
 
-## Routes
+For repair, record the systemic solution first and explain any smaller approved
+execution path. Legacy `docs/superpowers/specs/` or
+`docs/superpowers/plans/` content is promoted into the active change before it
+can satisfy a gate.
 
-- Use `ai-native-tech-plan` when plan structure, execution ledger, completion contract, or anti-partial-delivery guidance is needed.
-- Use `capability-research` before finalizing design when capability evidence is incomplete or assumptions are unstable.
-- Use `openspec-explore` if design tradeoffs, compatibility, or acceptance criteria remain unclear.
-- Use `openspec-propose` when intent is ready for canonical proposal, design, specs, and tasks.
-- Use `superpowers:brainstorming` while solution shape is open.
-- Use decision grilling when Open Questions, behavior boundaries, compatibility
-  concerns, integration shape, acceptance criteria, or implementation shape are
-  still unresolved: inspect local evidence first, ask one question at a time,
-  provide a recommended answer, and record the result in OpenSpec artifacts.
-- Use `superpowers:writing-plans` before committing to `tasks.md`, `design.md`, or a GSD phase plan.
-
-## Superpowers Artifact Mapping
-
-Superpowers artifacts are inputs to this change, not peer canonical files. Fold `docs/superpowers/specs/...` into `proposal.md`, `design.md`, or `specs/`. Fold `docs/superpowers/plans/...` into `tasks.md` with Capability Slices, Execution Ledger, Acceptance Criteria, and Validation Commands. If the OpenSpec artifacts and Superpowers notes conflict, update the canonical OpenSpec files and retire the stale notes.
-
-## Rules
-
-Do not write production code. If design tradeoffs remain unresolved, return to intake or brainstorming. Before execution, run `scripts/validate_workflow_state.py --repo <repo> --json`.
+Planning is complete when every scenario has a task and validator, no required
+decision is open, and the next executable ledger item is explicit. Do not edit
+production code in this skill.

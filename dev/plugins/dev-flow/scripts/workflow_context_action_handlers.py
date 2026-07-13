@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from workflow_context_action_config import append_disabled_skill, ensure_backup, set_plugin_enabled
+from workflow_project_skill_paths import guard_project_skill_write
 
 
 def execute_action(action: dict[str, Any], backups: dict[Path, Path], timestamp: str | None) -> dict[str, Any]:
@@ -43,6 +44,7 @@ def install_project_skill(action: dict[str, Any]) -> dict[str, Any]:
     payload = action["payload"]
     source = Path(payload["sourcePath"])
     destination = Path(payload["destinationPath"])
+    guard_project_skill_write(Path(payload["repo"]), destination)
     destination.mkdir(parents=True, exist_ok=True)
     shutil.copytree(source.parent, destination, dirs_exist_ok=True)
     return {"id": action["id"], "type": action["type"], "status": "applied"}

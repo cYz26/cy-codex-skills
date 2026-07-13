@@ -10,7 +10,8 @@ from typing import Any
 
 from workflow_context_health_report import render_markdown_report
 from workflow_context_health_subagents import RESOLVED_DISPOSITIONS
-from workflow_paths import repo_path, write_json
+from workflow_paths import repo_path
+from workflow_planning_paths import atomic_write_devflow, guard_devflow_write
 from workflow_state import parse_state
 
 
@@ -19,7 +20,10 @@ def main() -> int:
         description="Record a disposition for the latest DevFlow context-health subagent recommendation."
     )
     parser.add_argument("--repo", required=True)
-    parser.add_argument("--report", help="Context-health report path. Defaults to .planning/STATE.md last_report.")
+    parser.add_argument(
+        "--report",
+        help="Context-health report path. Defaults to .planning/devflow/STATE.md last_report.",
+    )
     parser.add_argument(
         "--recommendation-id",
         help="Expected recommendation id. Defaults to the report recommendation.",
@@ -44,6 +48,10 @@ def main() -> int:
         return fail("No context-health report found. Run context_health_check.py --write-report first.", args.json)
     if not report_path.is_file():
         return fail(f"Context-health report not found: {report_path}", args.json)
+    try:
+        guard_devflow_write(repo, report_path)
+    except Exception as exc:
+        return fail(f"Context-health report is outside DevFlow ownership: {exc}", args.json)
 
     try:
         report = json.loads(report_path.read_text())
@@ -71,8 +79,8 @@ def main() -> int:
     subagents["dispositionNote"] = note
     subagents["dispositionRecordedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     subagents["nextAction"] = next_action(args.disposition)
-    write_json(report_path, report)
-    rewrite_markdown_report(report_path, report)
+    atomic_write_devflow(repo, report_path, f"{json.dumps(report, indent=2)}\n")
+    rewrite_markdown_report(repo, report_path, report)
 
     payload = {
         "ok": True,
@@ -100,12 +108,12 @@ def resolve_report_path(repo: Path, report_arg: str | None) -> Path | None:
     return repo / str(last_report)
 
 
-def rewrite_markdown_report(report_path: Path, report: dict[str, Any]) -> None:
+def rewrite_markdown_report(repo: Path, report_path: Path, report: dict[str, Any]) -> None:
     if report_path.suffix != ".json":
         return
     markdown_path = report_path.with_suffix(".md")
     if markdown_path.exists():
-        markdown_path.write_text(render_markdown_report(report), encoding="utf-8")
+        atomic_write_devflow(repo, markdown_path, render_markdown_report(report))
 
 
 def report_file_value(repo: Path, report_path: Path) -> str:

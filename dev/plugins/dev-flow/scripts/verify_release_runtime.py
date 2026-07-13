@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 import sys
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -27,9 +28,11 @@ def verify_release_runtime(plugin_root: Path, repo_root: Path | None = None) -> 
     expected_archive_sha = str(manifest.get("archive", {}).get("sha256", ""))
 
     archive_sha = check_archive(archive_path, expected_archive_sha, checks)
+    check_archive_members(archive_path, manifest, checks)
     check_sha_file(scripts_root / SHA256_NAME, archive_sha, checks)
     check_source_commit(scripts_root / SOURCE_COMMIT_NAME, manifest, checks)
     check_sources(repo_root, manifest, checks)
+    check_provider_defaults(plugin_root, checks)
 
     ok = all(check["ok"] for check in checks)
     return {
@@ -77,6 +80,36 @@ def check_archive(path: Path, expected_sha: str, checks: list[dict[str, Any]]) -
         f"expected {expected_sha or 'missing'}, actual {actual_sha}",
     )
     return actual_sha
+
+
+def check_archive_members(
+    path: Path,
+    manifest: dict[str, Any],
+    checks: list[dict[str, Any]],
+) -> None:
+    if not path.exists():
+        add_check(checks, "runtime archive members match manifest sources", False, "archive missing")
+        return
+    sources = manifest.get("sources", [])
+    expected = {
+        Path(str(source.get("path", ""))).name
+        for source in sources
+        if isinstance(source, dict) and str(source.get("path", "")).endswith(".py")
+    }
+    try:
+        with zipfile.ZipFile(path) as archive:
+            actual = {name for name in archive.namelist() if name.endswith(".py")}
+    except (OSError, zipfile.BadZipFile) as error:
+        add_check(checks, "runtime archive members match manifest sources", False, str(error))
+        return
+    missing = sorted(expected - actual)
+    unexpected = sorted(actual - expected)
+    add_check(
+        checks,
+        "runtime archive members match manifest sources",
+        not missing and not unexpected and bool(expected),
+        f"missing={missing}, unexpected={unexpected}",
+    )
 
 
 def check_sha_file(path: Path, archive_sha: str | None, checks: list[dict[str, Any]]) -> None:
@@ -130,6 +163,20 @@ def check_sources(repo_root: Path, manifest: dict[str, Any], checks: list[dict[s
             bool(expected_sha) and actual_sha == expected_sha,
             f"expected {expected_sha or 'missing'}, actual {actual_sha}",
         )
+
+
+def check_provider_defaults(plugin_root: Path, checks: list[dict[str, Any]]) -> None:
+    path = plugin_root / "docs" / "provider_profiles.json"
+    if not path.exists():
+        add_check(checks, "provider defaults are core plus none", False, str(path))
+        return
+    try:
+        defaults = json.loads(path.read_text()).get("defaults", {})
+    except (OSError, json.JSONDecodeError) as error:
+        add_check(checks, "provider defaults are core plus none", False, str(error))
+        return
+    ok = defaults == {"methodologyProfile": "core", "roadmapProvider": "none"}
+    add_check(checks, "provider defaults are core plus none", ok, json.dumps(defaults, sort_keys=True))
 
 
 def infer_repo_root(plugin_root: Path) -> Path:

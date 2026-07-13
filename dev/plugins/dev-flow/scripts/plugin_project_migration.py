@@ -9,11 +9,25 @@ from pathlib import Path
 from typing import Any
 
 from workflow_project_activation import managed_project_skills
-from workflow_project_skill_paths import official_project_skill_dir, scan_project_skill_layout
+from workflow_project_skill_paths import (
+    guard_project_skill_write,
+    official_project_skill_dir,
+    scan_project_skill_layout,
+)
 from workflow_contract_control_plane import control_plane_status, write_missing_control_plane
-
-
-RUNTIME_DIR = ".dev-flow/plugin-project-migration"
+from workflow_provider_migration import (
+    apply_provider_migration,
+    plan_provider_migration,
+    rollback_provider_migration,
+)
+from workflow_provider_profiles import diagnose_provider_selection, resolve_provider_selection
+from workflow_planning_paths import (
+    append_devflow_text,
+    atomic_write_devflow,
+    guard_devflow_write,
+    PlanningOwnershipError,
+    plugin_migration_root,
+)
 
 
 def default_plugin_root() -> Path:
@@ -40,9 +54,72 @@ def sync_project_migrations(
         plugin = inspect_plugin(repo, plugin_root, adapter)
         status = plugin_report_status(plugin)
         report = base_report(repo, plugin_root, codex_home_path, status, [plugin])
+    attach_provider_migration(report, repo, codex_home_path, plugin_root)
     if write_report:
         write_report_file(repo, report)
     return report
+
+
+def provider_migration_diagnosis(
+    repo: Path,
+    codex_home: Path,
+    plugin_root: Path | None = None,
+) -> dict[str, Any]:
+    selection = resolve_provider_selection(repo, codex_home, {})
+    return diagnose_provider_selection(
+        selection,
+        repo,
+        codex_home,
+        core_plugin_root=plugin_root,
+    )
+
+
+def attach_provider_migration(
+    report: dict[str, Any],
+    repo: Path,
+    codex_home: Path,
+    plugin_root: Path,
+) -> None:
+    migration = plan_provider_migration(
+        repo,
+        provider_migration_diagnosis(repo, codex_home, plugin_root),
+    )
+    report["providerMigration"] = migration
+    if migration["status"] == "blocked":
+        report["ok"] = False
+        report["status"] = "blocked"
+    elif migration["status"] == "planned" and report["status"] in {"current", "not_applicable"}:
+        report["status"] = "migration_pending"
+    report["recommendation"] = recommendation(report["status"], report.get("plugins"))
+
+
+def apply_provider_file_migration(
+    repo: str | Path,
+    *,
+    codex_home: str | Path | None = None,
+    plugin_root: str | Path | None = None,
+    authorized: bool = False,
+) -> dict[str, Any]:
+    repo_path = normalize_path(repo)
+    codex_home_path = normalize_path(codex_home or Path.home() / ".codex")
+    plugin_root_path = normalize_path(plugin_root or default_plugin_root())
+    plugin_root_path = resolve_project_source_plugin_root(repo_path, plugin_root_path)
+    diagnosis = provider_migration_diagnosis(repo_path, codex_home_path, plugin_root_path)
+    return apply_provider_migration(repo_path, diagnosis, authorized=authorized)
+
+
+def rollback_provider_file_migration(
+    repo: str | Path,
+    manifest_path: str | Path,
+    *,
+    authorized: bool = False,
+) -> dict[str, Any]:
+    """Rollback one exact provider manifest after explicit rollback intent."""
+    return rollback_provider_migration(
+        normalize_path(repo),
+        normalize_path(manifest_path),
+        authorized=authorized,
+    )
 
 
 def apply_project_migrations(
@@ -72,6 +149,7 @@ def apply_project_migrations(
         source = preferred_project_skill_source(repo, plugin_root, plugin_name, skill)
         accepted_sources = project_skill_sources(repo, plugin_root, plugin_name, skill)
         target = official_project_skill_dir(repo, skill)
+        guard_project_skill_write(repo, target)
         if not (source / "SKILL.md").exists():
             conflicts.append(conflict(skill, target, source, "missing-source"))
             continue
@@ -134,6 +212,16 @@ def project_migration_sync_result(
         detail = f"legacy skill layout {layout_status.replace('_', '-')}; run dry-run migration first: {command}"
     elif status == "migration-pending":
         detail = f"project migration drift detected; run plugin-project-migration for {plugin['name']}"
+    elif status == "blocked":
+        provider_conflicts = report.get("providerMigration", {}).get("conflicts", [])
+        plugin_conflicts = [
+            str(item.get("reason") or item)
+            for item in plugin.get("conflicts", [])
+        ]
+        reasons = [str(item) for item in [*provider_conflicts, *plugin_conflicts]]
+        detail = "project migration is blocked; resolve: " + (
+            "; ".join(reasons[:5]) if reasons else "manual review required"
+        )
     elif status == "not-applicable":
         detail = "plugin has no project migration adapter"
     else:
@@ -322,6 +410,7 @@ def resolve_marketplace_path(repo: Path, marketplace: Path, raw_path: str) -> li
 
 def read_state(repo: Path) -> dict[str, Any]:
     path = runtime_root(repo) / "state.json"
+    guard_devflow_write(repo, path)
     if not path.exists():
         return {"schemaVersion": "1.0", "plugins": {}}
     try:
@@ -340,11 +429,11 @@ def update_state(repo: Path, adapter: dict[str, Any], plugin: dict[str, Any]) ->
         "projectLocalSkills": list(adapter.get("projectLocalSkills", [])),
         "managedFiles": list(adapter.get("managedFiles", [])),
     }
-    write_json(runtime_root(repo) / "state.json", state)
+    write_json(repo, runtime_root(repo) / "state.json", state)
 
 
 def write_report_file(repo: Path, report: dict[str, Any]) -> None:
-    write_json(runtime_root(repo) / "reports" / "latest.json", report)
+    write_json(repo, runtime_root(repo) / "reports" / "latest.json", report)
 
 
 def append_history(
@@ -355,7 +444,6 @@ def append_history(
     conflicts: list[dict[str, Any]] | None = None,
 ) -> None:
     path = runtime_root(repo) / "migration-history.jsonl"
-    path.parent.mkdir(parents=True, exist_ok=True)
     record = {
         "timestamp": now_iso(),
         "plugin": plugin,
@@ -363,8 +451,7 @@ def append_history(
         "changes": changes,
         "conflicts": conflicts or [],
     }
-    with path.open("a") as handle:
-        handle.write(json.dumps(record, sort_keys=True) + "\n")
+    append_devflow_text(repo, path, json.dumps(record, sort_keys=True) + "\n")
 
 
 def base_report(
@@ -411,7 +498,7 @@ def conflict(skill: str, target: Path, source: Path, reason: str) -> dict[str, A
 
 
 def runtime_root(repo: Path) -> Path:
-    return repo / RUNTIME_DIR
+    return plugin_migration_root(repo)
 
 
 def normalize_path(value: str | Path) -> Path:
@@ -422,9 +509,8 @@ def read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text())
 
 
-def write_json(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+def write_json(repo: Path, path: Path, payload: dict[str, Any]) -> None:
+    atomic_write_devflow(repo, path, json.dumps(payload, indent=2, sort_keys=True) + "\n")
 
 
 def now_iso() -> str:
@@ -436,7 +522,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--repo", default=".")
     parser.add_argument("--plugin-root", default=default_plugin_root())
     parser.add_argument("--codex-home", default=Path.home() / ".codex")
-    parser.add_argument("--apply", action="store_true")
+    actions = parser.add_mutually_exclusive_group()
+    actions.add_argument("--apply", action="store_true")
+    actions.add_argument(
+        "--apply-provider-files",
+        action="store_true",
+        help="Apply only the separately approved provider/state file migration.",
+    )
+    actions.add_argument(
+        "--rollback-manifest",
+        type=Path,
+        help=(
+            "Explicitly authorize rollback of the exact provider migration manifest; "
+            "hash drift or paths outside its canonical snapshot stop all restoration."
+        ),
+    )
     parser.add_argument("--write-report", action="store_true")
     parser.add_argument("--json", action="store_true")
     return parser.parse_args()
@@ -444,7 +544,25 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    if args.apply:
+    if args.rollback_manifest:
+        report = rollback_provider_file_migration(
+            args.repo,
+            args.rollback_manifest,
+            authorized=True,
+        )
+        report.setdefault(
+            "recommendation",
+            "Rerun provider migration diagnosis; inspect conflicts before any manual restoration.",
+        )
+    elif args.apply_provider_files:
+        report = apply_provider_file_migration(
+            args.repo,
+            codex_home=args.codex_home,
+            plugin_root=args.plugin_root,
+            authorized=True,
+        )
+        report.setdefault("recommendation", "Review the provider migration manifest and rerun dry-run diagnosis.")
+    elif args.apply:
         report = apply_project_migrations(args.repo, args.plugin_root, args.codex_home)
     else:
         report = sync_project_migrations(args.repo, args.plugin_root, args.codex_home, args.write_report)

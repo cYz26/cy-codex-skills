@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
 import os
 from pathlib import Path
 import hashlib
@@ -8,6 +9,7 @@ import json
 import re
 import stat
 import subprocess
+import sys
 import zipfile
 
 
@@ -18,11 +20,11 @@ ARCHIVE_NAME = "devflow_runtime.pyz"
 MANIFEST_NAME = "devflow_runtime.MANIFEST.json"
 SHA256_NAME = "devflow_runtime.sha256"
 SOURCE_COMMIT_NAME = "devflow_runtime.SOURCE_COMMIT"
-BUILD_COMMAND = ["python3", "dev/scripts/package_devflow_release_runtime.py"]
+BUILD_COMMAND = [sys.executable, "dev/scripts/package_devflow_release_runtime.py"]
 ENTRYPOINT_SCAN_ROOTS = (
-    REPO_ROOT / "plugins" / "dev-flow" / "hooks.json",
-    REPO_ROOT / "plugins" / "dev-flow" / "README.md",
-    REPO_ROOT / "plugins" / "dev-flow" / "skills",
+    SOURCE_SCRIPTS.parent / "hooks.json",
+    SOURCE_SCRIPTS.parent / "README.md",
+    SOURCE_SCRIPTS.parent / "skills",
 )
 
 
@@ -73,6 +75,10 @@ def export_or_run(module_name: str, target_globals: dict[str, object], module_na
 WRAPPER_TEMPLATE = """#!/usr/bin/env python3
 from __future__ import annotations
 
+import sys
+
+sys.dont_write_bytecode = True
+
 from devflow_launcher import export_or_run
 
 export_or_run({module_name!r}, globals(), __name__)
@@ -90,6 +96,27 @@ def referenced_entrypoint_names() -> set[str]:
         for path in paths:
             names.update(re.findall(r"[A-Za-z0-9_]+\.py", path.read_text()))
     return names
+
+
+def entrypoint_sources(sources: list[Path]) -> list[Path]:
+    entrypoint_names = referenced_entrypoint_names()
+    return [
+        source
+        for source in sources
+        if source.name in entrypoint_names or stat.S_IMODE(source.stat().st_mode) & stat.S_IXUSR
+    ]
+
+
+def managed_output_paths(sources: list[Path]) -> list[str]:
+    names = {
+        ARCHIVE_NAME,
+        MANIFEST_NAME,
+        SHA256_NAME,
+        SOURCE_COMMIT_NAME,
+        "devflow_launcher.py",
+        *(source.name for source in entrypoint_sources(sources)),
+    }
+    return [f"scripts/{name}" for name in sorted(names)]
 
 
 def write_archive(sources: list[Path]) -> Path:
@@ -161,12 +188,7 @@ def release_relative_path(path: Path) -> str:
 
 def write_wrappers(sources: list[Path]) -> None:
     (RELEASE_SCRIPTS / "devflow_launcher.py").write_text(LAUNCHER)
-    entrypoint_names = referenced_entrypoint_names()
-    entrypoints = [
-        source
-        for source in sources
-        if source.name in entrypoint_names or stat.S_IMODE(source.stat().st_mode) & stat.S_IXUSR
-    ]
+    entrypoints = entrypoint_sources(sources)
     keep = {source.name for source in entrypoints} | {"devflow_launcher.py"}
     for target in RELEASE_SCRIPTS.glob("*.py"):
         if target.name not in keep:
@@ -177,8 +199,19 @@ def write_wrappers(sources: list[Path]) -> None:
         os.chmod(target, stat.S_IMODE(source.stat().st_mode))
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Build or inspect the deterministic DevFlow release runtime.")
+    parser.add_argument("--list-managed-outputs", action="store_true")
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args(argv or [])
     sources = iter_source_scripts()
+    if args.list_managed_outputs:
+        outputs = managed_output_paths(sources)
+        if args.json:
+            print(json.dumps({"managedOutputs": outputs}, indent=2, sort_keys=True))
+        else:
+            print("\n".join(outputs))
+        return 0
     archive = write_archive(sources)
     write_audit_artifacts(sources, archive)
     write_wrappers(sources)
@@ -186,4 +219,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(main(sys.argv[1:]))

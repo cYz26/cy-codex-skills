@@ -1,29 +1,24 @@
 # Engineering Policy
 
-## Purpose
-
-This file holds durable engineering rules that are too detailed for
-`AGENTS.md`. `AGENTS.md` routes agents here when the current task needs
-contract-first execution, testing, evidence, review, dependency, or release
-policy.
-
 ## Contract-First Execution
 
 - Define the Goal Contract before non-trivial execution.
-- Keep required behavior in OpenSpec, GSD phase plans, or `TASK_LEDGER.md`.
-- Treat Superpowers artifacts as drafts or method evidence until promoted.
-- Do not run hidden installers, hook trust actions, release sync apply, or
-  archive operations from hooks.
+- Keep required behavior in OpenSpec or `TASK_LEDGER.md`; a selected roadmap
+  provider may add sequencing but cannot redefine completion.
+- Route stable provider capability IDs from the DevFlow registry. Provider
+  notes are drafts until promoted into canonical artifacts.
+- Hooks do not run installers, dependency activation, release sync apply,
+  archive, migration, or provider selection persistence.
 
 ## Testing and Evidence
 
-- Use TDD for feature, bug, refactor, and behavior changes.
-- Record red/green evidence when TDD is required.
+- Use test-first execution for feature, bug, refactor, and risky behavior work.
+- Record RED/GREEN evidence or the approved exception.
 - Run fresh validation before completion claims.
-- Store verification evidence under `.planning/verification/`.
+- Store DevFlow verification below `.planning/devflow/verification/`.
 
 ## Dependencies and Release
 
-- Record dependency provenance and source channels.
-- Keep release assets synced from the managed dev source.
-- Run release runtime verification before release readiness claims.
+- Record source identity, selected profile, hashes, and side-effect approvals.
+- Keep release assets generated from the managed dev source.
+- Require runtime verification and release-target Plugin Eval before readiness.

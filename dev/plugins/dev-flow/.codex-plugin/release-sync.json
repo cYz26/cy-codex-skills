@@ -1,21 +1,64 @@
 {
+  "include": [
+    "tests/test_packaged_runtime.py"
+  ],
+  "defaultExcludeOverrides": [
+    "tests/**"
+  ],
   "exclude": [
     "scripts/**"
   ],
   "buildCommands": [
     [
-      "python3",
+      "{python}",
       "dev/scripts/package_devflow_release_runtime.py"
     ]
   ],
   "managedOutputs": [
-    "scripts/devflow_runtime.pyz",
-    "scripts/devflow_runtime.MANIFEST.json",
-    "scripts/devflow_runtime.sha256",
-    "scripts/devflow_runtime.SOURCE_COMMIT",
+    "scripts/activate_project_dependencies.py",
+    "scripts/apply_context_tool_actions.py",
+    "scripts/archive_roadmap_binding.py",
+    "scripts/archive_status.py",
+    "scripts/audit_context_tools.py",
+    "scripts/check_dependencies.py",
+    "scripts/claude_code_delegate.py",
+    "scripts/codex_auto_update_plugins_skills.py",
+    "scripts/compact_recommendation.py",
+    "scripts/compact_recovery_hook.py",
+    "scripts/context_health_check.py",
+    "scripts/context_health_hook.py",
+    "scripts/context_health_import_codex_sessions.py",
+    "scripts/create_change.py",
+    "scripts/create_checkpoint.py",
+    "scripts/detect_project_mode.py",
     "scripts/devflow_launcher.py",
+    "scripts/devflow_runtime.MANIFEST.json",
+    "scripts/devflow_runtime.SOURCE_COMMIT",
+    "scripts/devflow_runtime.pyz",
+    "scripts/devflow_runtime.sha256",
     "scripts/devflow_stop_hook.py",
-    "scripts/superpowers_artifact_mapping.py",
-    "scripts/verify_release_runtime.py"
+    "scripts/doctor_workflow.py",
+    "scripts/inspect_repo.py",
+    "scripts/lint_ai_plan.py",
+    "scripts/plugin_project_migration.py",
+    "scripts/plugin_project_migration_check.py",
+    "scripts/pre_archive_policy.py",
+    "scripts/pre_edit_policy.py",
+    "scripts/pre_next_phase_checkpoint_policy.py",
+    "scripts/record_compact_result.py",
+    "scripts/record_context_health_disposition.py",
+    "scripts/record_verification.py",
+    "scripts/release_promotion_gate.py",
+    "scripts/render_setup_report.py",
+    "scripts/scaffold_workflow.py",
+    "scripts/stop_checkpoint_policy.py",
+    "scripts/stop_verification_policy.py",
+    "scripts/sync_release_assets.py",
+    "scripts/validate_agent_task_contract.py",
+    "scripts/validate_checkpoint.py",
+    "scripts/validate_goal_quality.py",
+    "scripts/validate_workflow_state.py",
+    "scripts/verify_release_runtime.py",
+    "scripts/workflow_decision_grilling.py"
   ]
 }

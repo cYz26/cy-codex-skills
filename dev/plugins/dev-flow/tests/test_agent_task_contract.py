@@ -20,7 +20,7 @@ Implement the delegated parser change and return a concise summary of the final 
 ## Scope
 Allowed: modify `dev/plugins/dev-flow/scripts/workflow_example.py` and
 `dev/plugins/dev-flow/tests/test_example.py`.
-Forbidden: do not modify release assets, OpenSpec files, `.planning/STATE.md`,
+Forbidden: do not modify release assets, OpenSpec files, `.planning/devflow/STATE.md`,
 or files outside the named write set.
 
 ## Constraints
@@ -73,7 +73,7 @@ class AgentTaskContractTests(unittest.TestCase):
         from workflow_agent_task_contract import validate_agent_task_contract_text
 
         invalid = VALID_CONTRACT.replace(
-            "Forbidden: do not modify release assets, OpenSpec files, `.planning/STATE.md`,\n"
+            "Forbidden: do not modify release assets, OpenSpec files, `.planning/devflow/STATE.md`,\n"
             "or files outside the named write set.",
             "",
         ).replace(

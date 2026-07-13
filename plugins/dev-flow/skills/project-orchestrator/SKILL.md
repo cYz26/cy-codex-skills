@@ -1,129 +1,73 @@
 ---
 name: project-orchestrator
-description: Use when routing Codex setup, planning, execution, verify, or repair.
+description: Use when routing Codex setup, planning, execution, verification, or workflow repair.
 ---
 
 # Project Orchestrator
 
-Router for Codex-first project work.
+Route project work through one canonical control plane. Read `AGENTS.md`,
+`.dev-flow.json`, `.planning/devflow/STATE.md`, `openspec/config.yaml`, and the
+active ledger before choosing a workflow action.
 
-## Procedure
+## Route
 
-Read `AGENTS.md`, `.planning/STATE.md`, and `openspec/config.yaml`. Run dependency check; activate missing project-local dependencies.
+1. If workflow files are missing, route to `project-setup`.
+2. Classify the request with `feature-intake` and
+   `docs/routing.matrix.json`. Full OpenSpec is mandatory for behavior, API,
+   data, persistence, integration, migration, permission, error-handling, or
+   compatibility work.
+3. Run dependency diagnosis. Resolve the configured methodology profile and
+   roadmap provider before proposing activation; diagnosis is read-only. Pass
+   each capability needed by the current route explicitly, for example:
+   `python3 scripts/check_dependencies.py --repo <repo> --capability implementation-planning --json`.
+   If a selected capability is missing, preview activation with the same
+   repeatable `--capability` flags before any `--apply`.
+4. Route current or external capability uncertainty through
+   `capability-research` and its Capability Evidence Gate.
+5. Route an incomplete OpenSpec change to `change-plan`, an approved item to
+   `execute-task`, completion to `verify-and-archive`, and drift to
+   `workflow-doctor`.
+6. Route a non-trivial technical plan to `ai-native-tech-plan`.
 
-Also check the contract-first control plane when execution or delegation is in
-scope: `ENGINEERING_POLICY.md`, `TASK_LEDGER.md`,
-`AGENT_TASK_CONTRACT.md`, `EVIDENCE_TEMPLATE.md`, and
-`REVIEW_CHECKLIST.md`.
+## Capability Routing
 
-## Repair Framing
+Route stable capability IDs from `docs/provider_profiles.json`, never a
+provider name: `decision-resolution`, `implementation-planning`,
+`test-first-execution`, `root-cause-diagnosis`, `change-review`,
+`completion-proof`, `execution-orchestration`, and `architecture-guidance`.
+The resolved profile supplies the implementation; OpenSpec and DevFlow still
+own canonical artifacts and evidence. Provider-specific mappings and migration
+rules live in `docs/provider-profile-migration.md`.
 
-For bugs, broken workflows, state drift, or failed mechanisms, apply systemic repair framing
-before choosing an execution size. The route should gather
-enough evidence to describe the systemic and thorough solution first, then
-justify whether the work should execute that solution, a minimal fix, a staged
-repair, or a deferred follow-up.
+## Goal Gate
+
+Route to `define-goal` when the user requests goal-backed work or the work is
+long-running, multi-slice, migration/release oriented, cross-context, or likely
+to lose its definition of done. A goal contract names outcome, verification,
+scope, non-goals, success threshold, and stop conditions. Scripts may recommend
+goal mode but do not call goal tools.
 
 ## SubAgent Decision Gate
 
-At planning, execution, context-health, and review boundaries, evaluate whether
-subAgents would materially improve the work. Recommend a split when the task has
-independent domains, disjoint write sets, repeated investigation pressure,
-repeated command failures, or a bounded review/delegation need.
+Recommend a split without spawning when independent domains or disjoint write
+sets make delegation useful but authority is absent. With explicit user
+authorization, create a validated Agent Task Contract containing Goal,
+Scope, Constraints, Verification, Evidence, and Human Gate. The main agent owns
+OpenSpec, `.planning/devflow/`, shared docs, and final integration unless the
+contract serializes those writes. Each result reports status (`DONE`,
+`DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`), files changed or
+inspected, commands, risks, and review needs.
 
-If the user or active workflow has not authorized delegated parallel work,
-recommend a split without spawning subAgents. Delegation requires explicit user authorization,
-an approved GSD execution flow, or an approved Superpowers subagent plan before execution.
+## Compatibility Artifact Mapping
 
-Reuse existing execution systems instead of duplicating them: route approved
-phase/wave execution to `gsd-execute-phase`, task-by-task implementation to
-`subagent-driven-development`, independent investigation to
-`dispatching-parallel-agents`, and inline fallback to `executing-plans`.
+Provider drafts are inputs only. Promote approved methodology notes, including
+legacy `docs/superpowers/specs/` and `docs/superpowers/plans/`, into the active
+OpenSpec change, selected roadmap-provider plan, or DevFlow ledger before they
+satisfy a gate.
 
-Before delegation, define worker ownership and disjoint write sets. The main agent owns OpenSpec
-artifacts, `.planning/STATE.md`, verification evidence, shared README/docs
-coordination, and final integration unless those shared files are explicitly
-serialized.
+## Completion
 
-Before dispatching delegated agent, subagent, worker, or parallel execution,
-create and validate an Agent Task Contract. The contract must include Goal,
-Scope, Constraints, Verification, Evidence, and Human Gate sections. Use the
-validated Agent Task Contract to define allowed and forbidden scope, validation
-commands or read-only rationale, required evidence, and review triggers.
-
-Require each subAgent result to report status (`DONE`, `DONE_WITH_CONCERNS`,
-`NEEDS_CONTEXT`, or `BLOCKED`), files changed or inspected, commands or tests
-run, residual risks, and review needs. The main agent reviews diffs and reruns
-validation before marking ledger items complete.
-
-## Routing
-
-- No workflow files: use `project-setup`.
-- Use `docs/routing.matrix.json` as the machine-readable workflow routing
-  source. Full OpenSpec remains mandatory for behavior, API, data model,
-  persistence, migration, integration, permission, error-handling, or
-  compatibility changes.
-- Apply the Goal Suitability Gate during routing, before context-health drift
-  appears. Use `define-goal` when the user asks to create, set, refine, or use a
-  goal, asks for goal-backed execution, or when the development task is
-  long-running, multi-slice, migration or release oriented, broad-refactor
-  oriented, cross-context,
-  subagent/delegation backed, or otherwise likely to lose its definition of
-  done. `define-goal` owns the active goal check and goal-tool calls. Before
-  creating a goal, apply the Goal Quality Gate: the candidate objective must
-  include outcome, verification evidence, scope boundaries, non-goals, success
-  threshold, and stop conditions.
-- After `define-goal` shapes the objective, use `/goal <objective>` in a Codex
-  app, IDE, or CLI composer. Use `/goal`, `/goal pause`, `/goal resume`, and
-  `/goal clear` to inspect or control it; if unavailable, enable
-  `features.goals` or run `codex features enable goals`.
-- Use the complexity gate during routing: +2 multiple OpenSpec changes, +2
-  multiple capability slices, +2 long-running language such as
-  "continue/依次/持续/until human/直到需要人工介入", +1 governed surfaces such as
-  data model, persistence, integration, migration, AI/API, or platform
-  collection, +1 archive/release gate, +1 expected interruption or compaction.
-  Score >=3 requires a Goal Mode Prompt and a pause for `/goal <objective>` or
-  explicit skip; score 1-2 recommends a goal; score 0 does not.
-- For ordinary implementation work that is narrow, do not force goal creation
-  only because the task has multiple steps; route through the normal DevFlow
-  gates below. Treat context-health goal drift as a repair signal, not the
-  primary trigger.
-- For design, research, architecture, or product-shape requests with open goals,
-  constraints, tradeoffs, or implementation shape, use `feature-intake before ai-native-tech-plan`.
-  Intake must decide whether `capability-research`,
-  `superpowers:brainstorming`, decision grilling, OpenSpec, GSD, or
-  `ai-native-tech-plan` owns the next gate. Decision grilling resolves
-  remaining plan/design ambiguity by inspecting local evidence first, asking one
-  question at a time, providing a recommended answer, and recording outcomes in
-  canonical artifacts.
-- Technical plan, implementation plan, architecture plan, Codex execution plan, workflow plan, or anti-partial-delivery request: use `ai-native-tech-plan`.
-- Current, external, platform, plugin, API, hook, CLI, installed-cache, or local-vs-platform capability uncertainty: use `capability-research` for the Capability Evidence Gate before choosing a solution.
-- New feature, bug, behavior/API change, migration, or integration: use `feature-intake`.
-- Active change without proposal/design/specs/tasks: use `change-plan`.
-- Approved task with plan and tests ready: use `execute-task`.
-- Implementation complete or user asks to finish: use `verify-and-archive`.
-- State files conflict or artifacts are missing: use `workflow-doctor`.
-- Major workflow boundary or context cleanup request: use `checkpoint-compact`.
-- Global plugin/skill context audit, cleanup recommendation, or authorized cleanup/install request: use `context-tool-audit`.
-
-## Dependency Skills
-
-Routes: `capability-research`; `ai-native-tech-plan`; decision grilling through
-`scripts/workflow_decision_grilling.py`; `superpowers:brainstorming`,
-`superpowers:writing-plans`, `superpowers:test-driven-development`,
-`superpowers:verification-before-completion`; `openspec-explore`,
-`openspec-propose`, `openspec-apply-change`, `openspec-archive-change`;
-`gsd-discuss-phase`, `gsd-plan-phase`, `gsd-execute-phase`,
-`gsd-verify-work`.
-
-## Superpowers Artifact Mapping
-
-Superpowers provides process discipline; OpenSpec, GSD, and DevFlow planning files are the canonical artifacts. Map `docs/superpowers/specs/...` into `openspec/changes/<change-id>/proposal.md`, `design.md`, or `specs/` for behavior work. Map `docs/superpowers/plans/...` into `openspec/changes/<change-id>/tasks.md`, `.planning/phases/.../PLAN.md`, or a DevFlow-approved Execution Ledger before implementation.
-
-Use `docs/superpowers_gate_matrix.json` as the machine-readable method gate
-source. Superpowers docs, SDD reports, and review notes must be promoted through
-the artifact mapping rules before they satisfy DevFlow canonical gates.
-
-## Safety
-
-Do not edit production code during setup/intake/planning. Do not archive without verification evidence. Ask before dependencies, migrations, API breaks, or broad rewrites. Treat GSD phases as workflow governance; technical completion is governed by Target State, Completion Contract, Capability Slices, Execution Ledger, and Validation Commands. DevFlow hooks and scripts do not call goal tools; they can only route users back to `define-goal` in a Codex surface that supports goals.
+The route is complete when it names workflow mode, required capabilities,
+canonical artifacts, readiness blockers, side-effect approvals, next skill,
+and validation command. Keep setup, planning, and repair read-only until the
+selected action is approved.

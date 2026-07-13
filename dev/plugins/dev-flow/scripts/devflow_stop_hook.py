@@ -22,7 +22,7 @@ def run_stop_checks(repo: Path) -> dict[str, Any]:
         context_health_stop_check(repo),
         verification_stop_check(repo),
         checkpoint_stop_check(repo),
-        superpowers_completion_stop_check(repo),
+        ledger_completion_stop_check(repo),
         release_promotion_stop_check(repo),
     ]
     failed = [item["id"] for item in checks if not item["ok"]]
@@ -106,18 +106,30 @@ def checkpoint_stop_check(repo: Path) -> dict[str, Any]:
     }
 
 
-def superpowers_completion_stop_check(repo: Path) -> dict[str, Any]:
+def ledger_completion_stop_check(repo: Path) -> dict[str, Any]:
     ledger = repo / "TASK_LEDGER.md"
     if not ledger.exists():
-        return {"id": "superpowers_completion", "ok": True, "status": "not_applicable", "detail": "no ledger"}
+        return {
+            "id": "ledger_completion",
+            "compatibilityAlias": "superpowers_completion",
+            "ok": True,
+            "status": "not_applicable",
+            "detail": "no ledger",
+        }
     text = ledger.read_text().lower()
     incomplete = any(f"| {status} |" in text for status in ["planned", "executing", "review", "blocked"])
     return {
-        "id": "superpowers_completion",
+        "id": "ledger_completion",
+        "compatibilityAlias": "superpowers_completion",
         "ok": not incomplete,
         "status": "complete" if not incomplete else "incomplete",
         "detail": "ledger tasks are closed" if not incomplete else "ledger has incomplete task rows",
     }
+
+
+def superpowers_completion_stop_check(repo: Path) -> dict[str, Any]:
+    """Compatibility alias for callers predating provider-neutral ledgers."""
+    return ledger_completion_stop_check(repo)
 
 
 def release_promotion_stop_check(repo: Path) -> dict[str, Any]:

@@ -24,13 +24,13 @@ class CheckpointCompactContractTests(unittest.TestCase):
         (repo / "AGENTS.md").write_text("Project rules\n")
         (repo / "openspec").mkdir()
         (repo / "openspec" / "config.yaml").write_text("project: fixture\n")
-        (repo / ".planning" / "compact-results").mkdir(parents=True)
+        (repo / ".planning" / "devflow" / "compact-results").mkdir(parents=True)
         result_file = "none"
         if compact_status == "completed":
-            result = repo / ".planning" / "compact-results" / "checkpoint-one.json"
+            result = repo / ".planning" / "devflow" / "compact-results" / "checkpoint-one.json"
             result.write_text("{}\n")
-            result_file = ".planning/compact-results/checkpoint-one.json"
-        (repo / ".planning" / "STATE.md").write_text(
+            result_file = ".planning/devflow/compact-results/checkpoint-one.json"
+        (repo / ".planning" / "devflow" / "STATE.md").write_text(
             self.state_text(compact_status=compact_status, skip_reason=skip_reason, result_file=result_file)
         )
         return repo
@@ -62,7 +62,7 @@ gates:
 context_management:
   compact_policy: checkpoint_boundary
   last_checkpoint_id: checkpoint-one
-  last_checkpoint_file: .planning/checkpoints/checkpoint-one.md
+  last_checkpoint_file: .planning/devflow/checkpoints/checkpoint-one.md
   compact_recommended: false
   compact_status: {compact_status}
   last_compact_result_file: {result_file}
@@ -162,7 +162,7 @@ Fixture state.
 
     def test_hand_written_checkpoint_with_required_sections_still_requires_canonical_frontmatter(self):
         repo = self.make_repo()
-        checkpoint = repo / ".planning" / "checkpoints" / "manual.md"
+        checkpoint = repo / ".planning" / "devflow" / "checkpoints" / "manual.md"
         checkpoint.parent.mkdir(parents=True)
         checkpoint.write_text(
             """# Checkpoint: manual
@@ -177,7 +177,7 @@ Continue work.
 
 ## Durable context written
 
-- .planning/STATE.md
+- .planning/devflow/STATE.md
 
 ## Key decisions
 
@@ -193,7 +193,7 @@ Regenerate if invalid.
 """
         )
 
-        report = validate_checkpoint(repo, ".planning/checkpoints/manual.md")
+        report = validate_checkpoint(repo, ".planning/devflow/checkpoints/manual.md")
 
         self.assertFalse(report["valid"], report)
         self.assertFalse(report["compact_allowed"], report)
