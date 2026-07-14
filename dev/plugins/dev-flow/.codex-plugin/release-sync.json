@@ -1,6 +1,7 @@
 {
   "include": [
-    "tests/test_packaged_runtime.py"
+    "tests/test_packaged_runtime.py",
+    "vendor/**"
   ],
   "defaultExcludeOverrides": [
     "tests/**"
@@ -17,7 +18,6 @@
   "managedOutputs": [
     "scripts/activate_project_dependencies.py",
     "scripts/apply_context_tool_actions.py",
-    "scripts/archive_roadmap_binding.py",
     "scripts/archive_status.py",
     "scripts/audit_context_tools.py",
     "scripts/check_dependencies.py",
@@ -38,15 +38,17 @@
     "scripts/devflow_runtime.sha256",
     "scripts/devflow_stop_hook.py",
     "scripts/doctor_workflow.py",
+    "scripts/inspect_legacy_workflow_config.py",
     "scripts/inspect_repo.py",
     "scripts/lint_ai_plan.py",
     "scripts/plugin_project_migration.py",
     "scripts/plugin_project_migration_check.py",
     "scripts/pre_archive_policy.py",
     "scripts/pre_edit_policy.py",
-    "scripts/pre_next_phase_checkpoint_policy.py",
     "scripts/record_compact_result.py",
     "scripts/record_context_health_disposition.py",
+    "scripts/record_release_verification.py",
+    "scripts/record_spec_sync.py",
     "scripts/record_verification.py",
     "scripts/release_promotion_gate.py",
     "scripts/render_setup_report.py",
@@ -59,6 +61,7 @@
     "scripts/validate_goal_quality.py",
     "scripts/validate_workflow_state.py",
     "scripts/verify_release_runtime.py",
-    "scripts/workflow_decision_grilling.py"
+    "scripts/workflow_decision_grilling.py",
+    "scripts/workflow_methodology.py"
   ]
 }

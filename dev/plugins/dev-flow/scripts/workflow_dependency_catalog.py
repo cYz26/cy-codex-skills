@@ -20,52 +20,9 @@ PROJECT_ORCHESTRATOR_SKILLS = [
     "dev-flow-refresh",
 ]
 
-STRICT_SUPERPOWERS_BASE_PROJECT_SKILLS = [
-    "using-superpowers",
-    "brainstorming",
-    "writing-plans",
-    "test-driven-development",
-    "systematic-debugging",
-    "requesting-code-review",
-    "verification-before-completion",
-]
-
-STRICT_SUPERPOWERS_CONDITIONAL_PROJECT_SKILLS = [
-    "receiving-code-review",
-    "using-git-worktrees",
-    "executing-plans",
-    "subagent-driven-development",
-    "finishing-a-development-branch",
-]
-
-STRICT_SUPERPOWERS_PROJECT_SKILLS = [
-    *STRICT_SUPERPOWERS_BASE_PROJECT_SKILLS,
-    *STRICT_SUPERPOWERS_CONDITIONAL_PROJECT_SKILLS,
-]
-
-REQUIRED_SKILLS = {"superpowers": STRICT_SUPERPOWERS_BASE_PROJECT_SKILLS}
-
 DEVELOPER_SKILLS = {"plugin-eval": ["evaluate-plugin"]}
 
-STRICT_RECOMMENDED_SUPERPOWERS_SKILLS = STRICT_SUPERPOWERS_CONDITIONAL_PROJECT_SKILLS
-
 REQUIRED_CLI_TOOLS = ["openspec"]
-
-GSD_ROADMAP_SKILLS = [
-    "gsd-new-project",
-    "gsd-discuss-phase",
-    "gsd-plan-phase",
-    "gsd-execute-phase",
-    "gsd-progress",
-    "gsd-verify-work",
-]
-
-GSD_ROADMAP_AGENTS = [
-    "gsd-phase-researcher.toml",
-    "gsd-planner.toml",
-    "gsd-plan-checker.toml",
-    "gsd-executor.toml",
-]
 
 OPENSPEC_WORKFLOW_SKILLS = [
     "openspec-propose",

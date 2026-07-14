@@ -10,13 +10,11 @@ from workflow_state import parse_state
 MAJOR_BOUNDARIES = {
     "project_setup_completed",
     "codebase_mapping_completed",
-    "brainstorm_completed",
+    "decision_resolution_completed",
     "design_saved",
     "openspec_change_planned",
-    "phase_plan_saved",
     "verification_passed",
     "change_archived",
-    "phase_shipped",
 }
 SKIP_BOUNDARIES = {"small_task_update", "typo_fix", "docs_only_micro_change"}
 STOPPING_POINT_STAGES = {

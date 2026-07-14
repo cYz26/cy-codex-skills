@@ -20,18 +20,5 @@
     "dev-flow-refresh",
     "plugin-project-migration"
   ],
-  "managedFiles": [],
-  "providerStateMigration": {
-    "enabled": true,
-    "approval": "separate",
-    "dryRunDefault": true,
-    "reportRoot": ".planning/devflow/provider-migration",
-    "applyFlag": "--apply-provider-files",
-    "rollback": {
-      "flag": "--rollback-manifest",
-      "authorization": "explicit_file_list_and_rollback",
-      "manifestRoot": ".planning/devflow/provider-migration/snapshots",
-      "hashGuarded": true
-    }
-  }
+  "managedFiles": []
 }

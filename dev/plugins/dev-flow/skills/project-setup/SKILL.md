@@ -5,15 +5,14 @@ description: Use when initializing DevFlow workflow files or restoring a missing
 
 # Project Setup
 
-Initialize a missing DevFlow control plane without inventing roadmap artifacts.
+Initialize a missing DevFlow control plane without inventing planning artifacts.
 Route established-project upgrades to `dev-flow-refresh`.
 
 ## Capability Routing
 
-Default to `core + none`. Write `workflow.methodology_profile: core` and
-`workflow.roadmap_provider: none` in `.dev-flow.json`; external providers are
-opt-in. Resolve any requested profile from `docs/provider_profiles.json` and
-show its activation plan before apply.
+Write the minimal `workflow.mode: full-openspec` configuration. Resolve
+triggered capabilities from `scripts/workflow_methodology.py` and preview
+project-local skill activation before apply.
 
 ## Procedure
 
@@ -30,11 +29,10 @@ show its activation plan before apply.
 6. Run `scripts/validate_workflow_state.py --repo <repo> --json`.
 
 DevFlow writes state, checkpoints, verification, context health, and brownfield
-maps only under `.planning/devflow/`. Root `.planning/` roadmap/phase files are
-created only by a selected roadmap provider. Existing `AGENTS.md` is preserved;
+maps only under `.planning/devflow/`. Existing `AGENTS.md` is preserved;
 `AGENTS.md.generated` is merge-only.
 
-Legacy state or provider links route through dry-run migration. Do not clean or
-activate dependencies during scaffold. Setup is complete when validation names
-the effective profile, all planned writes have one owner, and the next action
-is explicit.
+Legacy state or retired workflow files route through read-only inspection. Do
+not clean or activate dependencies during scaffold. Setup is complete when the
+minimal configuration is valid, all planned writes have one owner, and the
+next action is explicit.

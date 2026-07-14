@@ -39,9 +39,6 @@ class CompactRecoveryTests(unittest.TestCase):
 workflow_version: 0.3.0
 project_mode: brownfield
 current_stage: review_or_archive
-current_phase:
-  id: 01-foundation
-  status: verification_passed
 current_change:
   id: compact-fixture
   status: verified

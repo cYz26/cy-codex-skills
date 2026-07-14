@@ -15,8 +15,8 @@ migrations, stale project-local skill links, or missing migration state, but
 they do not edit `AGENTS.md`, `.agents/skills`, legacy `.codex/skills`,
 `openspec/`, `.planning/`, or project scripts.
 
-Project mutation requires explicit user intent to migrate/apply. Provider-file
-migration and rollback are separate approvals from ordinary project migration.
+Project mutation requires explicit user intent to migrate/apply. Retired
+workflow configuration is outside ordinary project migration.
 
 ## Sync
 
@@ -52,19 +52,18 @@ preview and then explicitly apply `activate_project_dependencies.py
 --refresh-project-skills`. It copies verified 1.6 skills transactionally;
 legacy `.codex/skills` remain migration inputs and are not auto-deleted.
 
-## Provider Files and Rollback
+## Legacy Configuration
 
-Provider-file migration and destructive rollback are not ordinary apply. Before
-either action, read
-`references/provider-migration-and-rollback.md`. That reference owns the
-`--apply-provider-files` snapshot contract, the exact `--rollback-manifest`
-authorization, pre-write hash checks, compensation behavior, and evidence.
-Never infer either operation from sync, diagnosis, or a failed migration.
+When retired workflow keys or old integration files are present, run
+`inspect_legacy_workflow_config.py` separately. This migration skill does not
+import that inspector, apply its findings, or perform cleanup. Preserve
+ambiguous and user-authored files until a separately approved action names
+exact paths and rollback evidence.
 
 ## Safety Rules
 
 - Automatic hook/updater paths are sync-only.
-- Default invocation is dry-run; never add a rollback manifest automatically.
+- Default invocation is dry-run.
 - Do not replace non-symlink project-local skill directories.
 - Do not overwrite user content outside declared managed targets.
 - Stop and report conflicts when a managed target has local content.
@@ -80,5 +79,4 @@ Summarize:
 - pending migrations or drift;
 - changed files if apply ran;
 - conflicts and manual next steps;
-- report path under `.planning/devflow/plugin-project-migration/`;
-- provider manifest path and rollback policy decision when those actions ran.
+- report path under `.planning/devflow/plugin-project-migration/`.

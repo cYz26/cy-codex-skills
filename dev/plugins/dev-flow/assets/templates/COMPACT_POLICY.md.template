@@ -6,7 +6,6 @@ Compact only at major workflow boundaries after durable project context is writt
 
 - `AGENTS.md`
 - `.planning/devflow/STATE.md`
-- `.planning/phases/`
 - `.planning/devflow/checkpoints/`
 - `openspec/`
 - git diff and log

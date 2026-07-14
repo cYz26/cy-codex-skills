@@ -15,14 +15,13 @@ from workflow_planning_paths import atomic_write_devflow, checkpoint_root, guard
 def create_checkpoint(repo: Path, options: dict[str, Any]) -> dict[str, Any]:
     repo = repo_path(repo)
     state = parse_state(repo)
-    phase_id = option_or_state(options, state, "phase", "current_phase")
     change_id = option_or_state(options, state, "change", "current_change")
     checkpoint_file = unique_checkpoint_file(
         repo,
         build_checkpoint_id(options["boundary"], change_id),
         options.get("output"),
     )
-    values = checkpoint_values(repo, state, options, checkpoint_file, phase_id, change_id)
+    values = checkpoint_values(repo, state, options, checkpoint_file, change_id)
     if not options.get("dry_run"):
         write_checkpoint(repo, checkpoint_file, values, options, state)
     return checkpoint_report(repo, checkpoint_file, values, options)
@@ -105,7 +104,6 @@ def checkpoint_values(
     state: dict[str, Any],
     options: dict[str, Any],
     checkpoint_file: Path,
-    phase_id: str,
     change_id: str,
 ) -> dict[str, Any]:
     boundary = options["boundary"]
@@ -118,7 +116,6 @@ def checkpoint_values(
         "created_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "boundary": boundary,
         "project_mode": state.get("project_mode", "unknown"),
-        "phase_id": phase_id,
         "change_id": change_id,
         "compact_recommended": compact,
         "compact_status": "pending" if compact else "not_needed",
@@ -128,7 +125,7 @@ def checkpoint_values(
         "title": title_for_boundary(boundary, change_id),
         "current_goal": options.get("current_goal", "Not recorded."),
         "completed_work": list_block(options.get("completed_work"), "No completed work recorded."),
-        "durable_context": list_block(durable_context(repo, phase_id, change_id), "No durable context found."),
+        "durable_context": list_block(durable_context(repo, change_id), "No durable context found."),
         "key_decisions": list_block(options.get("decisions"), "No key decisions recorded."),
         "open_questions": list_block(options.get("open_questions"), "No open questions recorded."),
         "risks": list_block(options.get("risks"), "No risks recorded."),
@@ -146,7 +143,7 @@ def list_block(items: list[str] | None, fallback: str) -> str:
     return "\n".join(f"- {item}" for item in values) if values else f"- {fallback}"
 
 
-def durable_context(repo: Path, phase_id: str, change_id: str) -> list[str]:
+def durable_context(repo: Path, change_id: str) -> list[str]:
     candidates = [
         "AGENTS.md",
         ".planning/devflow/STATE.md",

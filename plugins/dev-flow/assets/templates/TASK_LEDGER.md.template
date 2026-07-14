@@ -8,14 +8,14 @@
 - scope_out: pending
 - acceptance_criteria: pending
 - validation_commands: pending
+- stop_conditions: pending
 - knowledge_update_target: none
 
-## Provider Selection
+## Capability Routing
 
-- methodology_profile: core
-- roadmap_provider: none
 - required_capabilities: pending
-- source_lock: `.planning/devflow/providers.lock.json`
+- matt_primitives: pending
+- openspec_route: pending
 
 ## Tasks
 
@@ -25,7 +25,8 @@ main-agent tasks.
 | task_id | summary | owner | write_set | contract_path | required_evidence | review_gate | status |
 |---|---|---|---|---|---|---|---|
 
-Agent Task Contract template: `AGENT_TASK_CONTRACT.md`.
+Agent Task Contract template: `AGENT_TASK_CONTRACT.md`. Validate every
+delegated contract and reject overlapping write sets before spawning workers.
 
 ## Execution Log
 

@@ -50,9 +50,6 @@ REQUIRED_SKILL_RESOURCES = {
     Path("context-health-check/references/goal-and-delegation.md"),
     Path("context-health-check/references/session-recovery.md"),
     Path("dev-flow-refresh/references/project-refresh.md"),
-    Path("dev-flow-refresh/references/provider-cleanup.md"),
-    Path("plugin-project-migration/references/provider-migration-and-rollback.md"),
-    Path("verify-and-archive/references/roadmap-archive.md"),
 }
 RESOURCE_USAGE_MARKERS = {
     Path("ai-native-tech-plan/assets/task-ledger-template.md"): "When creating a durable task ledger",
@@ -60,11 +57,6 @@ RESOURCE_USAGE_MARKERS = {
     Path("context-health-check/references/goal-and-delegation.md"): "recording any delegation disposition",
     Path("context-health-check/references/session-recovery.md"): "work that predates DevFlow events",
     Path("dev-flow-refresh/references/project-refresh.md"): "before running its read-only diagnostics",
-    Path("dev-flow-refresh/references/provider-cleanup.md"): "Provider cleanup is separate",
-    Path(
-        "plugin-project-migration/references/provider-migration-and-rollback.md"
-    ): "Provider-file migration and destructive rollback",
-    Path("verify-and-archive/references/roadmap-archive.md"): "roadmap-lifecycle` resolves to a selected binding",
 }
 
 
@@ -458,9 +450,8 @@ class ProjectOrchestratorTests(unittest.TestCase):
         self.assertFalse((repo / ".planning" / "STATE.md").exists())
         self.assertFalse((repo / ".planning" / "ROADMAP.md").exists())
         self.assertFalse((repo / ".planning" / "phases").exists())
-        provider_config = json.loads((repo / ".dev-flow.json").read_text())
-        self.assertEqual(provider_config["workflow"]["methodology_profile"], "core")
-        self.assertEqual(provider_config["workflow"]["roadmap_provider"], "none")
+        workflow_config = json.loads((repo / ".dev-flow.json").read_text())
+        self.assertEqual(workflow_config, {"workflow": {"mode": "full-openspec"}})
         self.assertTrue((repo / "openspec" / "changes" / "initial-target-state" / "tasks.md").exists())
         for filename in [
             "ENGINEERING_POLICY.md",
@@ -484,9 +475,10 @@ class ProjectOrchestratorTests(unittest.TestCase):
         self.assertIn("## Context Checkpoint and Compaction", agents)
         self.assertIn("## Capability Routing", agents)
         self.assertIn("## Intake and Planning", agents)
-        self.assertIn("core + none", agents)
-        self.assertIn("methodology_profile", agents)
-        self.assertIn("roadmap_provider", agents)
+        self.assertIn("Matt Methodology Contract", agents)
+        self.assertIn("workflow_methodology.py", agents)
+        self.assertNotIn("methodology_profile", agents)
+        self.assertNotIn("roadmap_provider", agents)
         self.assertIn("decision resolution", agents)
         self.assertIn("test-first execution", agents)
         self.assertIn("completion proof", agents)
@@ -562,23 +554,22 @@ class ProjectOrchestratorTests(unittest.TestCase):
         self.assertIn("detailed evidence workflow lives in that skill", agents)
         self.assertNotIn("official capability \u2192 local implementation scan \u2192 solution comparison", agents)
 
-    def test_provider_artifacts_map_to_canonical_workflow_artifacts(self):
+    def test_matt_notes_map_to_canonical_workflow_artifacts(self):
         agents_template = (PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template").read_text()
         for phrase in [
             "## Capability Routing",
-            "Provider drafts are inputs only",
+            "Matt Methodology Contract",
             "OpenSpec",
-            "docs/superpowers/specs",
-            "docs/superpowers/plans",
             ".planning/devflow/",
         ]:
             self.assertIn(phrase, agents_template)
+        self.assertNotIn("docs/provider_profiles.json", agents_template)
 
         for skill in ["project-orchestrator", "feature-intake", "change-plan", "ai-native-tech-plan"]:
             text = (PLUGIN_ROOT / "skills" / skill / "SKILL.md").read_text()
             self.assertIn("Capability Routing", text, skill)
             self.assertIn("canonical", text, skill)
-            self.assertIn("provider-profile-migration.md", text, skill)
+            self.assertIn("workflow_methodology.py", text, skill)
 
     def test_plugin_eval_gate_is_required_for_plugin_and_skill_changes(self):
         paths = {
@@ -588,14 +579,18 @@ class ProjectOrchestratorTests(unittest.TestCase):
         }
         for label, path in paths.items():
             text = path.read_text()
+            normalized = normalized_text(text)
             with self.subTest(path=label):
                 self.assertIn("## Plugin Eval Gate", text)
                 self.assertIn("plugin-eval analyze", text)
                 self.assertIn("creating or updating Codex plugins or skills", text)
-                self.assertIn("record the score, findings, and optimization decisions", text)
-                self.assertIn("default to fixing or optimizing", text)
+                self.assertIn(
+                    "record the score, findings, and optimization decisions",
+                    normalized,
+                )
+                self.assertIn("default to fixing or optimizing", normalized.lower())
                 self.assertIn("Deferral is an exception", text)
-                self.assertIn("residual risk and follow-up path", text)
+                self.assertIn("residual risk and follow-up path", normalized)
 
     def test_plugin_skill_changes_remind_local_reference_update(self):
         paths = {
@@ -647,11 +642,12 @@ class ProjectOrchestratorTests(unittest.TestCase):
         }
         for label, path in paths.items():
             text = path.read_text()
+            normalized = normalized_text(text)
             with self.subTest(path=label):
                 self.assertIn("## Repair Solution Discipline", text)
-                self.assertIn("systemic and thorough solution first", text)
+                self.assertIn("systemic and thorough solution first", normalized)
                 self.assertIn("minimal fix", text)
-                self.assertIn("after investigation", text)
+                self.assertIn("after investigation", normalized)
 
         skill_expectations = {
             "feature-intake": ["workflow repair", "systemic solution first", "minimal"],
@@ -664,7 +660,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
             for phrase in phrases:
                 self.assertIn(phrase, text, skill_name)
 
-    def test_skill_routing_ledger_uses_provider_neutral_capabilities(self):
+    def test_skill_routing_ledger_uses_static_capabilities(self):
         core_paths = {
             "root": REPO_ROOT / "AGENTS.md",
             "dev-template": PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template",
@@ -726,14 +722,14 @@ class ProjectOrchestratorTests(unittest.TestCase):
                 for phrase in phrases:
                     self.assertIn(phrase, text)
 
-    def test_subagent_strategy_is_routed_with_explicit_authorization(self):
+    def test_subagent_strategy_is_routed_with_validated_contract(self):
         project_orchestrator = normalized_text(
             (PLUGIN_ROOT / "skills" / "project-orchestrator" / "SKILL.md").read_text()
         )
         for phrase in [
             "## SubAgent Decision Gate",
-            "Recommend a split without spawning",
-            "explicit user authorization",
+            "Delegate when independent domains",
+            "validated Agent Task Contract",
             "disjoint write sets",
             "main agent owns",
             "execution-orchestration",
@@ -813,19 +809,20 @@ class ProjectOrchestratorTests(unittest.TestCase):
         expectations = [
             "## SubAgent Strategy",
             "policy/router layer",
-            "does not spawn subagents from scripts or hooks",
-            "explicit user authorization",
-            "main agent owns OpenSpec",
-            "status (`DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`)",
+            "scripts and hooks do not\nspawn subagents",
+            "validated Agent Task Contract",
+            "Root control-plane files, OpenSpec",
+            "`DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or\n  `BLOCKED`",
         ]
         for label, path in {
             "dev": PLUGIN_ROOT / "README.md",
             "release": RELEASE_PLUGIN_ROOT / "README.md",
         }.items():
             text = path.read_text()
+            normalized = normalized_text(text)
             with self.subTest(readme=label):
                 for phrase in expectations:
-                    self.assertIn(phrase, text)
+                    self.assertIn(normalized_text(phrase), normalized)
 
     def test_devflow_hooks_and_scripts_do_not_spawn_subagents(self):
         forbidden = ["spawn_agent", "Task("]
@@ -929,7 +926,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
                 "OpenSpec",
                 "implementation-planning",
             ],
-            "project-setup": ["audit_context_tools.py", "core + none"],
+            "project-setup": ["audit_context_tools.py", "workflow.mode: full-openspec"],
             "feature-intake": [
                 "ai-native-tech-plan",
                 "openspec-explore",
@@ -953,11 +950,10 @@ class ProjectOrchestratorTests(unittest.TestCase):
                 "Completion Contract",
                 "Execution Ledger",
                 "completion-proof",
-                "roadmap-lifecycle",
                 "openspec-sync-specs",
                 "openspec-archive-change",
             ],
-            "workflow-doctor": ["roadmap", "openspec-explore"],
+            "workflow-doctor": ["methodology", "openspec-explore"],
             "context-tool-audit": ["audit_context_tools.py", "apply_context_tool_actions.py"],
         }
         for skill, names in expectations.items():
@@ -1153,8 +1149,6 @@ class ProjectOrchestratorTests(unittest.TestCase):
             str(repo),
             "--boundary",
             "project_setup_completed",
-            "--phase",
-            "01-foundation",
             "--change",
             "initial-target-state",
             "--next-stage",
@@ -1230,8 +1224,6 @@ class ProjectOrchestratorTests(unittest.TestCase):
             str(repo),
             "--boundary",
             "verification_passed",
-            "--phase",
-            "01-foundation",
             "--change",
             "initial-target-state",
             "--next-stage",
@@ -1291,8 +1283,6 @@ class ProjectOrchestratorTests(unittest.TestCase):
             str(repo),
             "--boundary",
             "verification_passed",
-            "--phase",
-            "01-foundation",
             "--change",
             "initial-target-state",
             "--next-stage",
@@ -1365,8 +1355,8 @@ class ProjectOrchestratorTests(unittest.TestCase):
 
         (repo / ".dev-flow.json").unlink()
         (repo / ".codex-project-orchestrator.json").write_text(json.dumps({"hook": {"mode": "off"}}))
-        legacy_off = run_script("pre_edit_policy.py", input_text=payload)
-        self.assertEqual(legacy_off.stdout.strip(), "")
+        legacy_ignored = run_script("pre_edit_policy.py", input_text=payload)
+        self.assertIn(DISPLAY_NAME, legacy_ignored.stdout)
 
     def test_checkpoint_stop_policy_allows_pending_compact_advisory(self):
         repo = self.make_repo("greenfield-empty")
@@ -1412,34 +1402,12 @@ class ProjectOrchestratorTests(unittest.TestCase):
         self.assertIn(f"last_compact_result_file: {recorded['compact_result_file']}", state)
         self.assertIn("compact_source: responses_api", state)
 
-        payload = json.dumps({"cwd": str(repo), "tool_name": "Bash", "tool_input": {"command": "true"}})
-        warning = run_script("pre_next_phase_checkpoint_policy.py", input_text=payload)
-        self.assertEqual(warning.stdout.strip(), "")
-
-    def test_pre_next_phase_requires_skipped_reason(self):
-        repo = self.make_repo("greenfield-empty")
-        run_json("scaffold_workflow.py", "--repo", str(repo), "--json")
-        self.create_pending_checkpoint(repo)
-        state_file = repo / ".planning" / "devflow" / "STATE.md"
-        state_file.write_text(state_file.read_text().replace("compact_status: pending", "compact_status: skipped"))
-        payload = json.dumps({"cwd": str(repo), "tool_name": "Bash", "tool_input": {"command": "true"}})
-
-        warning = run_script("pre_next_phase_checkpoint_policy.py", input_text=payload)
-        self.assertIn("skip reason", warning.stdout)
-
-        skipped = run_json(
-            "record_compact_result.py",
-            "--repo",
-            str(repo),
-            "--status",
-            "skipped",
-            "--skip-reason",
-            "Context was still small after checkpoint validation.",
-            "--json",
+    def test_phase_transition_hook_is_retired(self):
+        self.assertFalse(
+            (PLUGIN_ROOT / "scripts" / "pre_next_phase_checkpoint_policy.py").exists()
         )
-        self.assertTrue(skipped["ok"])
-        clear = run_script("pre_next_phase_checkpoint_policy.py", input_text=payload)
-        self.assertEqual(clear.stdout.strip(), "")
+        hooks = json.loads((PLUGIN_ROOT / "hooks.json").read_text())
+        self.assertNotIn("pre_next_phase", json.dumps(hooks, sort_keys=True))
 
 
 if __name__ == "__main__":

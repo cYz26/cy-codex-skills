@@ -1,7 +1,5 @@
 {
   "workflow": {
-    "methodology_profile": "core",
-    "roadmap_bindings": {},
-    "roadmap_provider": "none"
+    "mode": "full-openspec"
   }
 }

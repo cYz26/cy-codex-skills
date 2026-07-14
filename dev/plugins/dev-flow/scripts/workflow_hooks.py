@@ -6,20 +6,19 @@ from typing import Any
 
 from workflow_constants import CODE_EXTENSIONS, SOURCE_DIRS
 from hook_response_adapter import advisory, block_stop_continue
+from workflow_mode_routing import read_devflow_config_document
 from workflow_state import parse_state
 
 
 def hook_mode(repo: Path) -> str:
-    config = repo / ".dev-flow.json"
-    if not config.exists():
-        legacy_config = repo / ".codex-project-orchestrator.json"
-        config = legacy_config if legacy_config.exists() else config
-    if not config.exists():
+    document = read_devflow_config_document(repo)
+    if not document["present"]:
         return "warn"
-    try:
-        mode = json.loads(config.read_text()).get("hook", {}).get("mode", "warn")
-    except json.JSONDecodeError:
-        return "warn"
+    if not document["valid"]:
+        return "block"
+    config = document["data"]
+    hook = config.get("hook") if isinstance(config.get("hook"), dict) else {}
+    mode = hook.get("mode", "warn")
     return mode if mode in {"off", "warn", "block"} else "warn"
 
 

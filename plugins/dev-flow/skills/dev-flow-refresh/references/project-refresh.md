@@ -44,7 +44,7 @@ legacy `.codex/skills` duplicates, conflicts, or manual-review paths.
 `scaffold_workflow.py --dry-run` surfaces new template guidance. When
 `AGENTS.md.generated` appears, compare it with active `AGENTS.md`. Merge only
 durable workflow rules, including Workflow Ownership, Project Control Plane,
-Methodology Artifact Mapping, provider routing, and completion gates. Preserve
+Matt Methodology Contract, capability routing, and completion gates. Preserve
 project-specific guidance, resolve or retain the generated candidate
 explicitly, then rerun validation. Skill-link and cache freshness alone do not
 justify changing `AGENTS.md`.

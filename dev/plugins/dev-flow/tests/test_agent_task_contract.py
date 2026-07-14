@@ -11,15 +11,20 @@ SCRIPTS = PLUGIN_ROOT / "scripts"
 TEMPLATES = PLUGIN_ROOT / "assets" / "templates"
 sys.path.insert(0, str(SCRIPTS))
 
+VALID_WRITE_SET = """Allowed write set for worker `parser` only:
+- `dev/plugins/dev-flow/scripts/workflow_example.py`
+- `dev/plugins/dev-flow/tests/test_example.py`"""
 
-VALID_CONTRACT = """# Agent Task Contract
+VALID_CONTRACT = f"""# Agent Task Contract
 
 ## Goal
 Implement the delegated parser change and return a concise summary of the final artifact.
 
+## Worker ID
+`parser`
+
 ## Scope
-Allowed: modify `dev/plugins/dev-flow/scripts/workflow_example.py` and
-`dev/plugins/dev-flow/tests/test_example.py`.
+{VALID_WRITE_SET}
 Forbidden: do not modify release assets, OpenSpec files, `.planning/devflow/STATE.md`,
 or files outside the named write set.
 
@@ -47,6 +52,7 @@ class AgentTaskContractTests(unittest.TestCase):
         for heading in [
             "# Agent Task Contract",
             "## Goal",
+            "## Worker ID",
             "## Scope",
             "## Constraints",
             "## Verification",
@@ -59,6 +65,10 @@ class AgentTaskContractTests(unittest.TestCase):
         self.assertIn("changed files", template)
         self.assertIn("unverified areas", template)
         self.assertIn("risk notes", template)
+        self.assertIn("Allowed write set for worker `<worker-id>` only", template)
+        self.assertIn("Read-only explorers and", template)
+        self.assertIn("Primary-owned shared paths", template)
+        self.assertIn("repeat `--contract`", template)
 
     def test_validator_accepts_complete_contract(self):
         from workflow_agent_task_contract import validate_agent_task_contract_text
@@ -68,6 +78,257 @@ class AgentTaskContractTests(unittest.TestCase):
         self.assertTrue(report["ok"], report)
         self.assertEqual(report["missingSections"], [])
         self.assertEqual(report["errors"], [])
+
+    def test_validator_rejects_overlapping_worker_write_sets(self):
+        from workflow_agent_task_contract import validate_agent_task_contract_text
+
+        overlapping = VALID_CONTRACT.replace(
+            VALID_WRITE_SET,
+            "Allowed write set for worker `parser` only:\n"
+            "- `dev/plugins/dev-flow/scripts/workflow_example.py`\n"
+            "Allowed write set for worker `tests` only:\n"
+            "- `dev/plugins/dev-flow/scripts/workflow_example.py`",
+        )
+
+        report = validate_agent_task_contract_text(overlapping)
+
+        self.assertFalse(report["ok"])
+        self.assertIn(
+            "Write path overlap: `dev/plugins/dev-flow/scripts/workflow_example.py` "
+            "is assigned to workers `parser` and `tests`.",
+            report["errors"],
+        )
+
+    def test_validator_treats_parent_and_child_write_paths_as_overlapping(self):
+        from workflow_agent_task_contract import validate_agent_task_contract_text
+
+        overlapping = VALID_CONTRACT.replace(
+            VALID_WRITE_SET,
+            "Allowed write set for worker `scripts` only:\n"
+            "- `dev/plugins/dev-flow/scripts`\n"
+            "Allowed write set for worker `parser` only:\n"
+            "- `dev/plugins/dev-flow/scripts/workflow_example.py`",
+        )
+
+        report = validate_agent_task_contract_text(overlapping)
+
+        self.assertFalse(report["ok"])
+        self.assertIn(
+            "Write path overlap: `dev/plugins/dev-flow/scripts` is assigned to workers "
+            "`scripts` and `parser`.",
+            report["errors"],
+        )
+
+    def test_validator_reserves_shared_control_plane_paths_for_primary_agent(self):
+        from workflow_agent_task_contract import validate_agent_task_contract_text
+
+        worker_owns_openspec = VALID_CONTRACT.replace(
+            VALID_WRITE_SET,
+            "Allowed write set for worker `parser` only:\n"
+            "- `openspec/changes/example/tasks.md`",
+        )
+
+        report = validate_agent_task_contract_text(worker_owns_openspec)
+
+        self.assertFalse(report["ok"])
+        self.assertIn(
+            "Worker `parser` cannot own primary-managed path "
+            "`openspec/changes/example/tasks.md`.",
+            report["errors"],
+        )
+
+    def test_validator_reserves_generated_release_root_for_primary_agent(self):
+        from workflow_agent_task_contract import validate_agent_task_contract_text
+
+        worker_owns_release_root = VALID_CONTRACT.replace(
+            VALID_WRITE_SET,
+            "Allowed write set for worker `packager` only:\n- `plugins`",
+        )
+
+        report = validate_agent_task_contract_text(worker_owns_release_root)
+
+        self.assertFalse(report["ok"])
+        self.assertIn(
+            "Worker `packager` cannot own primary-managed path `plugins`.",
+            report["errors"],
+        )
+
+    def test_validator_reserves_nested_release_metadata_for_primary_agent(self):
+        from workflow_agent_task_contract import validate_agent_task_contract_text
+
+        worker_owns_metadata = VALID_CONTRACT.replace(
+            VALID_WRITE_SET,
+            "Allowed write set for worker `packager` only:\n"
+            "- `dev/plugins/dev-flow/.codex-plugin/release-sync.json`",
+        )
+
+        report = validate_agent_task_contract_text(worker_owns_metadata)
+
+        self.assertFalse(report["ok"])
+        self.assertIn(
+            "Worker `packager` cannot own primary-managed path "
+            "`dev/plugins/dev-flow/.codex-plugin/release-sync.json`.",
+            report["errors"],
+        )
+
+    def test_validator_rejects_write_paths_that_escape_repository_scope(self):
+        from workflow_agent_task_contract import validate_agent_task_contract_text
+
+        escaping_scope = VALID_CONTRACT.replace(
+            VALID_WRITE_SET,
+            "Allowed write set for worker `parser` only:\n- `../openspec/changes/example/tasks.md`",
+        )
+
+        report = validate_agent_task_contract_text(escaping_scope)
+
+        self.assertFalse(report["ok"])
+        self.assertIn(
+            "Worker `parser` write path must be a normalized repository-relative path: "
+            "`../openspec/changes/example/tasks.md`.",
+            report["errors"],
+        )
+
+    def test_validator_rejects_glob_write_paths_before_overlap_analysis(self):
+        from workflow_agent_task_contract import validate_agent_task_contract_text
+
+        glob_scope = VALID_CONTRACT.replace(
+            VALID_WRITE_SET,
+            "Allowed write set for worker `parser` only:\n- `dev/plugins/dev-flow/**`",
+        )
+
+        report = validate_agent_task_contract_text(glob_scope)
+
+        self.assertFalse(report["ok"])
+        self.assertIn(
+            "Worker `parser` write path must be a normalized repository-relative path: "
+            "`dev/plugins/dev-flow/**`.",
+            report["errors"],
+        )
+
+    def test_batch_validator_rejects_write_overlap_across_contracts(self):
+        from workflow_agent_task_contract import validate_agent_task_contract_files
+
+        root = Path(tempfile.mkdtemp(prefix="agent-contract-batch-"))
+        parser_contract = root / "parser.md"
+        tests_contract = root / "tests.md"
+        parser_contract.write_text(
+            VALID_CONTRACT.replace(
+                VALID_WRITE_SET,
+                "Allowed write set for worker `parser` only:\n"
+                "- `dev/plugins/dev-flow/scripts/workflow_example.py`",
+            )
+        )
+        tests_contract.write_text(
+            VALID_CONTRACT.replace(
+                VALID_WRITE_SET,
+                "Allowed write set for worker `tests` only:\n"
+                "- `dev/plugins/dev-flow/scripts/workflow_example.py`",
+            )
+        )
+
+        report = validate_agent_task_contract_files([parser_contract, tests_contract])
+
+        self.assertFalse(report["ok"])
+        self.assertEqual(len(report["contracts"]), 2)
+        self.assertEqual(
+            report["overlaps"],
+            [
+                {
+                    "path": "dev/plugins/dev-flow/scripts/workflow_example.py",
+                    "owners": [
+                        {"contract": str(parser_contract), "worker": "parser"},
+                        {"contract": str(tests_contract), "worker": "tests"},
+                    ],
+                }
+            ],
+        )
+
+    def test_validator_rejects_generic_unnamed_write_scope(self):
+        from workflow_agent_task_contract import validate_agent_task_contract_text
+
+        unnamed = VALID_CONTRACT.replace(
+            VALID_WRITE_SET,
+            "Allowed: modify `dev/plugins/dev-flow/scripts/workflow_example.py`.",
+        )
+
+        report = validate_agent_task_contract_text(unnamed)
+
+        self.assertFalse(report["ok"])
+        self.assertTrue(
+            any("generic write ownership is not allowed" in error for error in report["errors"]),
+            report,
+        )
+
+    def test_validator_rejects_hidden_write_intent_after_read_only_scope(self):
+        from workflow_agent_task_contract import validate_agent_task_contract_text
+
+        hidden_write = VALID_CONTRACT.replace(
+            VALID_WRITE_SET,
+            "Allowed read-only scope: inspect `dev/plugins/dev-flow/scripts`.\n"
+            "Worker may modify `dev/plugins/dev-flow/scripts/workflow_example.py`.\n"
+            "Forbidden: do not modify any other repository path.",
+        )
+
+        report = validate_agent_task_contract_text(hidden_write)
+
+        self.assertFalse(report["ok"], report)
+        self.assertIn(
+            "Implementation scope must name a unique worker id for every write set.",
+            report["errors"],
+        )
+
+    def test_validator_rejects_change_synonym_hidden_in_read_only_scope(self):
+        from workflow_agent_task_contract import validate_agent_task_contract_text
+
+        hidden_change = VALID_CONTRACT.replace(
+            VALID_WRITE_SET,
+            "Allowed read-only scope: inspect `dev/plugins/dev-flow/scripts`.\n"
+            "Worker may change `dev/plugins/dev-flow/scripts/workflow_example.py`.\n"
+            "Forbidden: do not modify any other repository path.",
+        )
+
+        report = validate_agent_task_contract_text(hidden_change)
+
+        self.assertFalse(report["ok"], report)
+        self.assertIn(
+            "Implementation scope must name a unique worker id for every write set.",
+            report["errors"],
+        )
+
+    def test_read_only_scope_must_forbid_all_not_merely_other_writes(self):
+        from workflow_agent_task_contract import validate_agent_task_contract_text
+
+        ambiguous = VALID_CONTRACT.replace(
+            VALID_WRITE_SET,
+            "Allowed read-only scope: inspect `dev/plugins/dev-flow/scripts`.\n"
+            "Forbidden: do not modify any other repository path.",
+        )
+
+        report = validate_agent_task_contract_text(ambiguous)
+
+        self.assertFalse(report["ok"], report)
+        self.assertIn(
+            "A contract without a named write set must explicitly forbid all repository writes.",
+            report["errors"],
+        )
+
+    def test_batch_validator_rejects_duplicate_worker_ids_across_contracts(self):
+        from workflow_agent_task_contract import validate_agent_task_contract_files
+
+        root = Path(tempfile.mkdtemp(prefix="agent-contract-duplicate-worker-"))
+        first = root / "first.md"
+        second = root / "second.md"
+        first.write_text(VALID_CONTRACT)
+        second.write_text(
+            VALID_CONTRACT.replace(
+                "workflow_example.py", "workflow_other.py"
+            ).replace("test_example.py", "test_other.py")
+        )
+
+        report = validate_agent_task_contract_files([first, second])
+
+        self.assertFalse(report["ok"])
+        self.assertEqual(set(report["duplicateWorkers"]), {"parser"})
 
     def test_validator_rejects_missing_forbidden_scope_and_vague_verification(self):
         from workflow_agent_task_contract import validate_agent_task_contract_text
@@ -94,6 +355,10 @@ class AgentTaskContractTests(unittest.TestCase):
         from workflow_agent_task_contract import validate_agent_task_contract_text
 
         read_only = VALID_CONTRACT.replace(
+            VALID_WRITE_SET,
+            "Allowed read-only scope: inspect `dev/plugins/dev-flow/scripts`.\n"
+            "Forbidden: do not modify any repository path.",
+        ).replace(
             "Run `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest dev.plugins.dev-flow.tests.test_example`.",
             "Not applicable: this is a read-only explorer task; verify by reporting inspected files "
             "and residual risks.",
@@ -102,6 +367,67 @@ class AgentTaskContractTests(unittest.TestCase):
         report = validate_agent_task_contract_text(read_only)
 
         self.assertTrue(report["ok"], report)
+
+    def test_validator_rejects_anonymous_read_only_worker(self):
+        from workflow_agent_task_contract import validate_agent_task_contract_text
+
+        read_only = VALID_CONTRACT.replace(
+            "## Worker ID\n`parser`\n\n",
+            "",
+        ).replace(
+            VALID_WRITE_SET,
+            "Allowed read-only scope: inspect `dev/plugins/dev-flow/scripts`.\n"
+            "Forbidden: do not modify any repository path.",
+        )
+
+        report = validate_agent_task_contract_text(read_only)
+
+        self.assertFalse(report["ok"])
+        self.assertIn("Missing required section: Worker ID.", report["errors"])
+
+    def test_validator_rejects_case_insensitive_primary_paths(self):
+        from workflow_agent_task_contract import validate_agent_task_contract_text
+
+        for protected in (
+            "AGENT_TASK_CONTRACT.md",
+            "OpenSpec/changes/example/tasks.md",
+            "Plugins/dev-flow/README.md",
+            "dev/plugins/dev-flow/.CODEX-PLUGIN/release-sync.json",
+        ):
+            with self.subTest(path=protected):
+                report = validate_agent_task_contract_text(
+                    VALID_CONTRACT.replace(
+                        VALID_WRITE_SET,
+                        f"Allowed write set for worker `parser` only:\n- `{protected}`",
+                    )
+                )
+                self.assertFalse(report["ok"], report)
+                self.assertTrue(
+                    any("cannot own primary-managed path" in error for error in report["errors"]),
+                    report,
+                )
+
+    def test_batch_validator_rejects_case_insensitive_worker_ids_and_paths(self):
+        from workflow_agent_task_contract import validate_agent_task_contract_files
+
+        root = Path(tempfile.mkdtemp(prefix="agent-contract-casefold-"))
+        first = root / "first.md"
+        second = root / "second.md"
+        first.write_text(VALID_CONTRACT.replace("`parser`", "`Foo`").replace(
+            "workflow_example.py", "Workflow_Example.py"
+        ))
+        second.write_text(VALID_CONTRACT.replace("`parser`", "`foo`").replace(
+            "test_example.py", "test_other.py"
+        ))
+
+        report = validate_agent_task_contract_files([first, second])
+
+        self.assertFalse(report["ok"])
+        self.assertEqual(set(report["duplicateWorkers"]), {"Foo"})
+        self.assertEqual(
+            report["overlaps"][0]["path"].casefold(),
+            "dev/plugins/dev-flow/scripts/workflow_example.py",
+        )
 
     def test_cli_reports_json_failure_for_placeholder_contract(self):
         contract = Path(tempfile.mkdtemp(prefix="agent-contract-")) / "contract.md"
@@ -139,6 +465,42 @@ pending
         report = json.loads(result.stdout)
         self.assertFalse(report["ok"])
         self.assertIn("Goal contains placeholder content.", report["errors"])
+
+    def test_cli_repeated_contract_flag_rejects_cross_contract_overlap(self):
+        root = Path(tempfile.mkdtemp(prefix="agent-contract-cli-batch-"))
+        first = root / "first.md"
+        second = root / "second.md"
+        for path, worker in ((first, "first"), (second, "second")):
+            path.write_text(
+                VALID_CONTRACT.replace(
+                    VALID_WRITE_SET,
+                    f"Allowed write set for worker `{worker}` only:\n"
+                    "- `dev/plugins/dev-flow/scripts/workflow_example.py`",
+                )
+            )
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPTS / "validate_agent_task_contract.py"),
+                "--contract",
+                str(first),
+                "--contract",
+                str(second),
+                "--json",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        report = json.loads(result.stdout)
+        self.assertFalse(report["ok"])
+        self.assertEqual(
+            report["overlaps"][0]["path"],
+            "dev/plugins/dev-flow/scripts/workflow_example.py",
+        )
 
 
 if __name__ == "__main__":

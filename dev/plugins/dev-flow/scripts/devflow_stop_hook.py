@@ -213,11 +213,6 @@ def markdown_table_cells(line: str) -> list[str]:
     return [cell.strip().lower() for cell in cells]
 
 
-def superpowers_completion_stop_check(repo: Path) -> dict[str, Any]:
-    """Compatibility alias for callers predating provider-neutral ledgers."""
-    return ledger_completion_stop_check(repo)
-
-
 def release_promotion_stop_check(repo: Path) -> dict[str, Any]:
     report = release_promotion_run_gate(repo, apply=False)
     ok = report.get("status") not in {"pending", "synced"}

@@ -15,12 +15,6 @@ from workflow_project_skill_paths import (
     scan_project_skill_layout,
 )
 from workflow_contract_control_plane import control_plane_status, write_missing_control_plane
-from workflow_provider_migration import (
-    apply_provider_migration,
-    plan_provider_migration,
-    rollback_provider_migration,
-)
-from workflow_provider_profiles import diagnose_provider_selection, resolve_provider_selection
 from workflow_planning_paths import (
     append_devflow_text,
     atomic_write_devflow,
@@ -54,72 +48,9 @@ def sync_project_migrations(
         plugin = inspect_plugin(repo, plugin_root, adapter)
         status = plugin_report_status(plugin)
         report = base_report(repo, plugin_root, codex_home_path, status, [plugin])
-    attach_provider_migration(report, repo, codex_home_path, plugin_root)
     if write_report:
         write_report_file(repo, report)
     return report
-
-
-def provider_migration_diagnosis(
-    repo: Path,
-    codex_home: Path,
-    plugin_root: Path | None = None,
-) -> dict[str, Any]:
-    selection = resolve_provider_selection(repo, codex_home, {})
-    return diagnose_provider_selection(
-        selection,
-        repo,
-        codex_home,
-        core_plugin_root=plugin_root,
-    )
-
-
-def attach_provider_migration(
-    report: dict[str, Any],
-    repo: Path,
-    codex_home: Path,
-    plugin_root: Path,
-) -> None:
-    migration = plan_provider_migration(
-        repo,
-        provider_migration_diagnosis(repo, codex_home, plugin_root),
-    )
-    report["providerMigration"] = migration
-    if migration["status"] == "blocked":
-        report["ok"] = False
-        report["status"] = "blocked"
-    elif migration["status"] == "planned" and report["status"] in {"current", "not_applicable"}:
-        report["status"] = "migration_pending"
-    report["recommendation"] = recommendation(report["status"], report.get("plugins"))
-
-
-def apply_provider_file_migration(
-    repo: str | Path,
-    *,
-    codex_home: str | Path | None = None,
-    plugin_root: str | Path | None = None,
-    authorized: bool = False,
-) -> dict[str, Any]:
-    repo_path = normalize_path(repo)
-    codex_home_path = normalize_path(codex_home or Path.home() / ".codex")
-    plugin_root_path = normalize_path(plugin_root or default_plugin_root())
-    plugin_root_path = resolve_project_source_plugin_root(repo_path, plugin_root_path)
-    diagnosis = provider_migration_diagnosis(repo_path, codex_home_path, plugin_root_path)
-    return apply_provider_migration(repo_path, diagnosis, authorized=authorized)
-
-
-def rollback_provider_file_migration(
-    repo: str | Path,
-    manifest_path: str | Path,
-    *,
-    authorized: bool = False,
-) -> dict[str, Any]:
-    """Rollback one exact provider manifest after explicit rollback intent."""
-    return rollback_provider_migration(
-        normalize_path(repo),
-        normalize_path(manifest_path),
-        authorized=authorized,
-    )
 
 
 def apply_project_migrations(
@@ -213,12 +144,11 @@ def project_migration_sync_result(
     elif status == "migration-pending":
         detail = f"project migration drift detected; run plugin-project-migration for {plugin['name']}"
     elif status == "blocked":
-        provider_conflicts = report.get("providerMigration", {}).get("conflicts", [])
         plugin_conflicts = [
             str(item.get("reason") or item)
             for item in plugin.get("conflicts", [])
         ]
-        reasons = [str(item) for item in [*provider_conflicts, *plugin_conflicts]]
+        reasons = [str(item) for item in plugin_conflicts]
         detail = "project migration is blocked; resolve: " + (
             "; ".join(reasons[:5]) if reasons else "manual review required"
         )
@@ -524,19 +454,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--codex-home", default=Path.home() / ".codex")
     actions = parser.add_mutually_exclusive_group()
     actions.add_argument("--apply", action="store_true")
-    actions.add_argument(
-        "--apply-provider-files",
-        action="store_true",
-        help="Apply only the separately approved provider/state file migration.",
-    )
-    actions.add_argument(
-        "--rollback-manifest",
-        type=Path,
-        help=(
-            "Explicitly authorize rollback of the exact provider migration manifest; "
-            "hash drift or paths outside its canonical snapshot stop all restoration."
-        ),
-    )
     parser.add_argument("--write-report", action="store_true")
     parser.add_argument("--json", action="store_true")
     return parser.parse_args()
@@ -544,25 +461,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    if args.rollback_manifest:
-        report = rollback_provider_file_migration(
-            args.repo,
-            args.rollback_manifest,
-            authorized=True,
-        )
-        report.setdefault(
-            "recommendation",
-            "Rerun provider migration diagnosis; inspect conflicts before any manual restoration.",
-        )
-    elif args.apply_provider_files:
-        report = apply_provider_file_migration(
-            args.repo,
-            codex_home=args.codex_home,
-            plugin_root=args.plugin_root,
-            authorized=True,
-        )
-        report.setdefault("recommendation", "Review the provider migration manifest and rerun dry-run diagnosis.")
-    elif args.apply:
+    if args.apply:
         report = apply_project_migrations(args.repo, args.plugin_root, args.codex_home)
     else:
         report = sync_project_migrations(args.repo, args.plugin_root, args.codex_home, args.write_report)

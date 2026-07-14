@@ -42,12 +42,6 @@
           },
           {
             "type": "command",
-            "command": "python3 \"$PLUGIN_ROOT/scripts/pre_next_phase_checkpoint_policy.py\"",
-            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\pre_next_phase_checkpoint_policy.py\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
             "command": "python3 \"$PLUGIN_ROOT/scripts/pre_archive_policy.py\"",
             "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\pre_archive_policy.py\"",
             "timeout": 10

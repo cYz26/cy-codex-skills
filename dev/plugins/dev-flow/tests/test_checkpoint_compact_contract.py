@@ -41,10 +41,6 @@ workflow_version: 0.3.0
 project_mode: brownfield
 current_stage: executing
 
-current_phase:
-  id: none
-  status: none
-
 current_change:
   id: none
   status: none

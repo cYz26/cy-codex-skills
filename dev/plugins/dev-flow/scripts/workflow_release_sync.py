@@ -47,7 +47,7 @@ DEFAULT_EXCLUDE = [
     "reports/**",
     ".reports/**",
     ".eval/**",
-    "docs/superpowers/**",
+    "docs/history/**",
     "__pycache__/**",
     ".pytest_cache/**",
     ".mypy_cache/**",
@@ -220,20 +220,23 @@ def _issue_release_apply_authorization(
     # its user-facing report, but a token is never minted from that report
     # alone: current repository state and side-effect policy are re-evaluated
     # here at issuance time.
-    from workflow_provider_registry import default_plugin_root, side_effect_decision
-    from workflow_state import parse_state
+    from workflow_side_effect_policy import default_plugin_root, side_effect_decision
+    from workflow_release_verification import release_promotion_readiness
 
-    verification_passed = bool(
-        parse_state(repo).get("gates", {}).get("verification_passed", False)
-    )
+    readiness = [
+        release_promotion_readiness(repo, target, require_authorization=True)
+        for target in targets
+    ]
     side_effect = side_effect_decision(
         default_plugin_root(),
         "archive_release",
         {"verified_and_explicit_user_request"},
     )
-    if not verification_passed or not side_effect.get("authorized", False):
+    if not all(item["ready"] for item in readiness) or not side_effect.get("authorized", False):
         raise PermissionError(
-            "release apply authorization requires passed promotion verification"
+            "release apply authorization requires passed promotion verification: "
+            "complete source-bound verification "
+            "and durable release authorization"
         )
     now = time.monotonic()
     _prune_release_apply_authorizations(now)

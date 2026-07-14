@@ -39,6 +39,14 @@ def verification_root(repo: Path) -> Path:
     return devflow_root(repo) / "verification"
 
 
+def spec_sync_root(repo: Path) -> Path:
+    return devflow_root(repo) / "spec-sync"
+
+
+def release_verification_root(repo: Path) -> Path:
+    return devflow_root(repo) / "release-verification"
+
+
 def checkpoint_root(repo: Path) -> Path:
     return devflow_root(repo) / "checkpoints"
 
@@ -53,10 +61,6 @@ def context_health_root(repo: Path) -> Path:
 
 def codebase_root(repo: Path) -> Path:
     return devflow_root(repo) / "codebase"
-
-
-def provider_migration_root(repo: Path) -> Path:
-    return devflow_root(repo) / "provider-migration"
 
 
 def delegation_root(repo: Path) -> Path:

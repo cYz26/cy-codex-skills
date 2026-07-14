@@ -9,7 +9,6 @@ from workflow_constants import resolve_plugin_root
 from workflow_goal_gate import goal_gate_warning
 from workflow_mode_routing import read_workflow_mode_config
 from workflow_paths import repo_path
-from workflow_roadmap_provider import validate_roadmap_bindings
 from workflow_state import parse_state, resolve_state
 
 
@@ -25,7 +24,7 @@ def validate_workflow_state(
     check_required_roots(repo, issues)
     check_agents_guidance(repo, issues, warnings)
     state = read_state_or_issue(repo, issues, warnings)
-    check_phase(repo, state, issues)
+    check_workflow_config(repo, issues)
     check_change(repo, state, issues, warnings)
     check_compact_state(repo, state, issues, warnings)
     check_goal_gate(state, warnings)
@@ -91,8 +90,8 @@ def missing_agents_guidance(text: str) -> list[str]:
         "Validation Commands": "Validation Commands",
         "Final Verification": "Final Verification",
         "Full OpenSpec routing": "Full OpenSpec",
-        "provider draft mapping": "docs/superpowers/specs",
-        "provider plan mapping": "docs/superpowers/plans",
+        "Matt methodology contract": "Matt",
+        "bounded subagent contract": "Agent Task Contract",
         "canonical artifact guidance": "canonical",
         "Workflow Mode Routing": "## Workflow Mode Routing",
         "Plugin Eval Gate": "## Plugin Eval Gate",
@@ -125,11 +124,6 @@ def read_state_or_issue(
             "Legacy DevFlow root state is read-only; migrate to .planning/devflow/STATE.md before the 1.0.0 sunset"
         )
         return resolution["data"]
-    if resolution["status"] == "gsd_owned":
-        issues.append(
-            "Root state is GSD-owned; preserve it and create independent .planning/devflow/STATE.md"
-        )
-        return resolution["data"]
     if resolution["status"] != "namespaced":
         issues.append(
             f"DevFlow state is `{resolution['status']}`; manual migration review is required"
@@ -138,20 +132,10 @@ def read_state_or_issue(
     return parse_state(repo)
 
 
-def check_phase(repo: Path, state: dict[str, Any], issues: list[str]) -> None:
-    del state
+def check_workflow_config(repo: Path, issues: list[str]) -> None:
     config = read_workflow_mode_config(repo)
     if not config.get("valid", True):
         issues.extend(f"Invalid .dev-flow.json: {error}" for error in config.get("config_errors", []))
-        return
-    report = validate_roadmap_bindings(
-        repo,
-        config.get("roadmap_bindings", {}),
-        str(config.get("roadmap_provider", "none")),
-    )
-    if not report["ready"]:
-        reasons = ", ".join(report["blockingReasons"]) or report["status"]
-        issues.append(f"Roadmap binding validation requires manual review: {reasons}")
 
 
 def check_change(
@@ -178,6 +162,8 @@ def check_archive_gate(state: dict[str, Any], issues: list[str]) -> None:
     gates = state.get("gates", {})
     if bool(gates.get("archive_allowed")) and not archive_requirements_met(gates):
         issues.append("archive_allowed is true but one or more archive gates are false")
+    if bool(gates.get("release_allowed")) and not archive_requirements_met(gates):
+        issues.append("release_allowed is true but one or more release gates are false")
 
 
 def archive_requirements_met(gates: dict[str, Any]) -> bool:

@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import json
 import re
 import shlex
 import subprocess
 from pathlib import Path
 from typing import Any
 
-from workflow_mode_routing import read_workflow_mode_config
-from workflow_roadmap_provider import validate_roadmap_bindings
+from workflow_mode_routing import read_devflow_config_document, read_workflow_mode_config
+from workflow_spec_sync_evidence import verify_spec_sync
 from workflow_state import parse_state
 
 
@@ -24,21 +23,22 @@ STATE_GATE_KEYS = (
 
 
 def read_archive_policy(repo: Path) -> dict[str, Any]:
-    config_path = repo / ".dev-flow.json"
+    document = read_devflow_config_document(repo)
     configured = None
-    if config_path.exists():
-        try:
-            data = json.loads(config_path.read_text())
-        except json.JSONDecodeError:
-            data = {}
+    if document["valid"]:
+        data = document["data"]
         archive = data.get("archive") if isinstance(data.get("archive"), dict) else {}
         configured = archive.get("policy")
     if configured in ARCHIVE_POLICIES:
-        return {"policy": configured, "source": str(config_path)}
+        return {"policy": configured, "source": document["source"]}
     report = {"policy": DEFAULT_ARCHIVE_POLICY, "source": "default"}
+    if document["present"] and not document["valid"]:
+        report["source"] = document["source"]
+        report["configStatus"] = "invalid"
+        report["configErrors"] = document["config_errors"]
     if configured:
         report["ignoredPolicy"] = configured
-        report["source"] = str(config_path)
+        report["source"] = document["source"]
     return report
 
 
@@ -69,6 +69,17 @@ def archive_status(
         blockers.append(risk("missing_change", "No OpenSpec change id was provided."))
     else:
         blockers.extend(change_artifact_risks(repo, change_id))
+        sync = verify_spec_sync(repo, change_id)
+        if not sync["ready"]:
+            blockers.append(
+                risk(
+                    "specs_not_synchronized",
+                    "Current hash-bound OpenSpec sync evidence is required before archive.",
+                    syncStatus=sync["status"],
+                    evidencePath=sync["path"],
+                    missing=sync.get("missing", []),
+                )
+            )
 
     failed_gates = failed_state_gates(state)
     if failed_gates:
@@ -81,21 +92,21 @@ def archive_status(
         )
 
     if change_id and change_id != "none":
-        blockers.extend(roadmap_binding_archive_risks(repo, change_id, state))
-
-    if change_id and change_id != "none":
-        risks.extend(task_risks(repo, change_id))
+        blockers.extend(task_risks(repo, change_id))
         risks.extend(dirty_worktree_risks(repo, change_id))
 
     all_risks = [*blockers, *risks]
     ready = not blockers
-    effective_allow_risk = allow_risk or bool(state.get("gates", {}).get("archive_allowed"))
+    durable_archive_authorization = bool(
+        state.get("gates", {}).get("archive_allowed")
+    )
     approval_required = archive_approval_required(
         policy["policy"],
         explicit_request=explicit_request,
+        durable_authorization=durable_archive_authorization,
         has_risks=bool(risks),
         has_blockers=bool(blockers),
-        allow_risk=effective_allow_risk,
+        allow_risk=allow_risk,
     )
     can_archive = ready and not approval_required
     return {
@@ -110,7 +121,8 @@ def archive_status(
         "risks": all_risks,
         "stateGates": state.get("gates", {}),
         "explicitRequest": bool(explicit_request),
-        "allowRisk": bool(effective_allow_risk),
+        "durableArchiveAuthorization": durable_archive_authorization,
+        "allowRisk": bool(allow_risk),
         "nextAction": archive_next_action(ready, approval_required, risks, blockers),
     }
 
@@ -143,54 +155,6 @@ def task_risks(repo: Path, change: str) -> list[dict[str, Any]]:
     if incomplete == 0:
         return []
     return [risk("incomplete_tasks", "OpenSpec tasks are incomplete.", count=incomplete)]
-
-
-def roadmap_binding_archive_risks(
-    repo: Path,
-    change: str,
-    state: dict[str, Any],
-) -> list[dict[str, Any]]:
-    config = read_workflow_mode_config(repo)
-    if not config.get("valid", True):
-        return [
-            risk(
-                "invalid_workflow_config",
-                "Roadmap binding checks cannot run against malformed .dev-flow.json.",
-                errors=config.get("config_errors", []),
-            )
-        ]
-    bindings = config.get("roadmap_bindings", {})
-    binding = bindings.get(change) if isinstance(bindings, dict) else None
-    if config.get("roadmap_provider") != "gsd" or not isinstance(binding, dict):
-        return []
-    if binding.get("status") != "active":
-        return []
-
-    results: list[dict[str, Any]] = []
-    binding_report = validate_roadmap_bindings(repo, {change: binding}, "gsd")
-    if not binding_report["ready"]:
-        results.append(
-            risk(
-                "roadmap_binding_invalid",
-                "The active GSD roadmap binding requires manual review.",
-                reasons=binding_report["blockingReasons"],
-            )
-        )
-    gates = state.get("gates", {}) if isinstance(state.get("gates"), dict) else {}
-    verification_matches = (
-        gates.get("gsd_verification_passed") is True
-        and str(gates.get("gsd_verification_change")) == change
-        and str(gates.get("gsd_verification_phase")) == str(binding.get("phase_id"))
-    )
-    if not verification_matches:
-        results.append(
-            risk(
-                "gsd_verification_required",
-                "The bound GSD phase must have recorded verification before archive.",
-                phase=binding.get("phase_id"),
-            )
-        )
-    return results
 
 
 def dirty_worktree_risks(repo: Path, change: str) -> list[dict[str, Any]]:
@@ -250,15 +214,14 @@ def archive_approval_required(
     policy: str,
     *,
     explicit_request: bool,
+    durable_authorization: bool,
     has_risks: bool,
     has_blockers: bool,
     allow_risk: bool,
 ) -> bool:
     if has_blockers:
         return True
-    if policy == "manual":
-        return not allow_risk
-    if not explicit_request:
+    if not explicit_request or not durable_authorization:
         return True
     if has_risks and not allow_risk:
         return True

@@ -51,7 +51,7 @@ class PlanningOwnershipTests(unittest.TestCase):
             repo / ".planning" / "devflow" / "plugin-project-migration",
         )
 
-    def test_write_guard_rejects_gsd_root_casefold_and_outside_paths(self):
+    def test_write_guard_rejects_unowned_root_casefold_and_outside_paths(self):
         module = self.planning_module()
         repo = self.repo()
 
@@ -95,22 +95,6 @@ class PlanningOwnershipTests(unittest.TestCase):
                 "2026-07-10T00:00:00+00:00",
                 None,
                 {},
-            )
-
-        self.assertEqual(list(outside.rglob("*")), [])
-
-    def test_provider_lock_writer_rejects_symlinked_namespace_parent(self):
-        module = self.planning_module()
-        activation = importlib.import_module("workflow_provider_activation")
-        repo, outside = self.repo_with_external_devflow_parent()
-        diagnosis = {"selection": {}, "selectedProviders": [], "providers": {}}
-
-        with self.assertRaises(module.PlanningOwnershipError):
-            activation.persist_provider_lock(
-                diagnosis,
-                repo,
-                apply=True,
-                persist_selection=True,
             )
 
         self.assertEqual(list(outside.rglob("*")), [])
@@ -196,27 +180,19 @@ class PlanningOwnershipTests(unittest.TestCase):
         self.assertEqual(resolution["data"], {})
         self.assertEqual(resolution["sunsetRelease"], "1.0.0")
 
-    def test_gsd_and_mixed_root_state_are_never_devflow_input(self):
+    def test_unknown_root_state_is_never_devflow_input(self):
         module = self.planning_module()
         state = importlib.import_module("workflow_state")
-        gsd_repo = self.repo()
-        mixed_repo = self.repo()
-        self.write_state(gsd_repo / ".planning" / "STATE.md", "gsd_state_version: 1")
-        self.write_state(
-            mixed_repo / ".planning" / "STATE.md",
-            "workflow_version: 0.3.0\ngsd_state_version: 1",
-        )
+        unknown_repo = self.repo()
+        self.write_state(unknown_repo / ".planning" / "STATE.md", "foreign_state_version: 1")
 
-        gsd = state.resolve_state(gsd_repo)
-        mixed = state.resolve_state(mixed_repo)
+        unknown = state.resolve_state(unknown_repo)
 
-        self.assertEqual(gsd["status"], "gsd_owned")
-        self.assertEqual(gsd["data"], {})
-        self.assertEqual(mixed["status"], "manual_review_required")
-        self.assertEqual(mixed["data"], {})
+        self.assertEqual(unknown["status"], "manual_review_required")
+        self.assertEqual(unknown["data"], {})
         with self.assertRaises(module.PlanningOwnershipError) as caught:
-            state.write_state(gsd_repo, state.default_state_values("brownfield", "x"))
-        self.assertEqual(caught.exception.code, "gsd_owned")
+            state.write_state(unknown_repo, state.default_state_values("brownfield", "x"))
+        self.assertEqual(caught.exception.code, "manual_review_required")
 
 
 if __name__ == "__main__":

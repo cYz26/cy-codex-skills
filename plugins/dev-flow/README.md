@@ -1,352 +1,215 @@
 # DevFlow
 
-DevFlow is the Codex workflow router for setup, planning, OpenSpec changes,
-context health, verification, and plugin maintenance. Runtime code is packaged
-under `scripts/`; detailed procedure stays in individual skills.
+DevFlow is a Codex-first workflow router built around one active control plane:
+DevFlow plus OpenSpec. It owns intake, planning gates, project-local skill
+activation, execution ledgers, evidence, review, archive readiness, and release
+verification.
 
-## Core Capabilities
+MattPocock skills supply small engineering primitives inside that control plane;
+they do not create an alternate workflow.
 
-- `project-setup`, `feature-intake`, `change-plan`, and
-  `project-orchestrator` route common project work.
-- `ai-native-tech-plan`, `context-health-check`, `checkpoint-compact`,
-  `plugin-project-migration`, and `codex-updater` cover explicit specialist
-  workflows.
-- Workflow mode routing selects Full OpenSpec, Lightweight Ledger, or Prototype
-  Mode before execution. Full OpenSpec remains mandatory for behavior, API,
-  data, migration, integration, permission, error-handling, and compatibility
-  changes; `.dev-flow.json` can enable Lightweight Ledger only for low-risk
-  work.
-- Hooks use `$PLUGIN_ROOT` / `%PLUGIN_ROOT%` instead of versioned installed
-  cache paths and support `off`, `warn`, and `block` modes. Diagnostics
-  preserve the Codex hook event schema while reporting the current stage,
-  failed gates, next action, and recommended skill or command. Stop uses a
-  single read-only `devflow_stop_hook.py` entrypoint.
-- Agent Reach is deprecated and not recommended for DevFlow automation.
+## Active Architecture
 
-## Provider Profiles
+- OpenSpec owns behavior-level proposal, design, specs, tasks, sync, and
+  archive.
+- DevFlow owns routing, execution orchestration, namespaced state, evidence,
+  validation, and release gates.
+- `TASK_LEDGER.md` and `.planning/devflow/**` are the durable execution
+  control plane.
+- `.dev-flow.json` selects only workflow mode and optional low-risk/hook/
+  archive settings. It has no methodology or roadmap selector.
 
-DevFlow defaults to `core + none`: native methodology and no roadmap provider.
-Optional `lean-matt`, `strict-superpowers`, and `gsd` selections implement
-stable capability IDs from `docs/provider_profiles.json`; they do not replace
-OpenSpec, DevFlow evidence, review, or release gates. Configure
-`workflow.methodology_profile` and `workflow.roadmap_provider` in
-`.dev-flow.json`.
-
-Resolution uses explicit selector, matching lock, then unique discovery. One
-source root is bound per provider. Diagnosis is read-only; activation,
-migration, provider lock persistence, and dependency changes require explicit
-apply. See `docs/provider-profile-migration.md` for mappings, planning ownership,
-tracking states, migration, and rollback.
-
-Pass current route requirements explicitly to diagnostics and activation:
-
-```bash
-python3 scripts/check_dependencies.py --repo . \
-  --capability test-first-execution --json
-python3 scripts/activate_project_dependencies.py --repo . \
-  --capability test-first-execution --dry-run --json
-```
-
-Repeat `--capability` for delegated execution, review, completion proof, goal
-definition, or selected roadmap lifecycle. Activation installs or links only
-the selected profile and triggered conditional skills. Missing external
-providers use the pinned source record; GSD's first content lock is created
-only after a successful authorized pinned installer run and post-install
-diagnosis. Matt's setup skill configures its alternate project workflow and is
-not used as a DevFlow installer or canonical control plane.
-
-For comparison or migration previews, both commands accept
-`--methodology-profile` and `--roadmap-provider`; repeat `--provider-source
-<provider-id>=<source-id>` for portable source selection. These overrides are
-read-only unless activation receives both `--apply` and
-`--persist-provider-selection`.
-
-## OpenSpec 1.6 Boundary
-
-DevFlow pins released OpenSpec 1.6.0 and Node `>=20.19.0`. Its core Codex
-workflows are `openspec-propose`, `openspec-explore`,
-`openspec-apply-change`, `openspec-update-change`, `openspec-sync-specs`, and
-`openspec-archive-change`.
-
-Project activation generates those six official skills in an isolated
-temporary project with isolated XDG configuration and Codex home, verifies the
-exact 1.6 output, then transactionally copies it into `.agents/skills`.
-Activation never changes user-global OpenSpec profile/delivery or global OPSX
-prompts. Official global commands remain an optional user-managed OpenSpec UX,
-not a DevFlow readiness dependency. Preview before apply:
-
-```bash
-python3 scripts/activate_project_dependencies.py --repo <project> \
-  --refresh-project-skills --dry-run --json
-python3 scripts/activate_project_dependencies.py --repo <project> \
-  --refresh-project-skills --apply --json
-```
-
-For arbitrary OpenSpec schemas or stores, resolve paths from `openspec status
---change <id> --json` and `openspec instructions <artifact> --change <id>
---json`; use returned `artifactPaths` and `actionContext` instead of inventing
-paths. Planning-only revision routes to `openspec-update-change`; approved
-implementation remains `openspec-apply-change`.
-
-## Contract-First Control Plane
-
-DevFlow setup and migration validate these root files:
-
-- `AGENTS.md` routes Codex to the workflow and required skills.
-- `ENGINEERING_POLICY.md` records durable engineering, dependency, testing,
-  evidence, review, and release policy.
-- `TASK_LEDGER.md` records the Goal Contract, task decomposition, owner,
-  write set, evidence requirements, review gate, status, and execution log.
-- `EVIDENCE_TEMPLATE.md` defines evidence records for TDD, verification,
-  changed files, risks, and reviewer notes.
-- `REVIEW_CHECKLIST.md` defines correctness, verification, scope, release, and
-  archive readiness checks.
-
-Non-trivial execution needs a Goal Contract and task ledger entry before worker
-or subagent execution. Verification and archive readiness need evidence and
-review results plus a knowledge-update decision: `none`, `AGENTS.md`,
-`ENGINEERING_POLICY.md`, or a checked-in docs path.
-
-## Workflow Modes
-
-Configure lightweight routing in `.dev-flow.json`:
+Minimal configuration:
 
 ```json
 {
   "workflow": {
-    "lightweight_ledger": {
-      "enabled": true
-    }
+    "mode": "full-openspec"
   }
 }
 ```
 
-Lightweight ledgers must include Target State, Scope / Non-Goals, Validation
-Commands, Execution Log, and Completion Claim. Prototype Mode is only for an
-explicit spike, prototype, proof of concept, or demo request, and the output
-must be marked non-production with cleanup or promotion criteria.
+Workflow mode routing selects Full OpenSpec, Lightweight Ledger, or Prototype
+Mode. Full OpenSpec is mandatory for behavior, API, data, persistence,
+integration, migration, permission, error handling, and compatibility changes.
 
-Hook modes live under `hook.mode` in `.dev-flow.json` and accept `off`, `warn`,
-or `block`. Warn mode exits successfully while still emitting diagnostics; block
-mode exits non-zero for blocking diagnostics; off mode emits no model-visible
-diagnostic.
+## Matt Engineering Primitives
 
-## Skill Routing Ledger
+DevFlow pins `mattpocock/skills` release `v1.1.0` at commit
+`d574778f94cf620fcc8ce741584093bc650a61d3`. The vendored source, license, and
+every resource hash are recorded in `docs/dependency-provenance.json`.
 
-Design, research, architecture, product-shape, and technical-plan requests must
-record a Skill Routing Ledger before the final artifact. The ledger records the
-request kind, workflow mode, capability evidence, stable required capability
-IDs, OpenSpec/roadmap route, and the reason for every skipped gate. If unresolved
-Open Questions remain, decision resolution cannot be skipped; keep the artifact
-as draft until the questions are resolved.
+Only six skills are allowed:
 
-Decision grilling is the narrow ambiguity-resolution protocol inside decision
-resolution. Use `scripts/workflow_decision_grilling.py --json` to classify
-the gate when needed. The protocol is: inspect local evidence first, ask one
-question at a time, provide a recommended answer, walk dependent decision
-branches, and record resolved decisions in OpenSpec, the selected roadmap, or DevFlow ledger
-artifacts.
+| Capability | Matt skill |
+|---|---|
+| decision resolution | `grilling` |
+| test-first execution | `tdd` |
+| root-cause diagnosis | `diagnosing-bugs` |
+| change review | `code-review` |
+| architecture alternatives | `codebase-design` |
+| domain concepts and invariants | `domain-modeling` |
 
-## Safe Provider Cleanup
+DevFlow/OpenSpec retain implementation planning, orchestration, completion
+proof, and canonical writes. Skills that create a separate workflow, setup,
+spec system, ticket system, or implementation queue are intentionally excluded.
 
-Provider deactivation removes only verified project-local skill links. Preview
-the exact removal plan first and save its JSON, including `planDigest` and the
-per-link rollback commands:
+Static mappings live in `scripts/workflow_methodology.py`. Only triggered
+Matt skills are copied to a project's `.agents/skills/`; a global installation
+does not satisfy readiness.
 
-```bash
-python3 scripts/activate_project_dependencies.py --repo <project> \
-  --skip-official-installs \
-  --deactivate-provider <provider-id> --dry-run --json \
-  > provider-cleanup-dry-run.json
-```
-
-Apply only that reviewed plan by naming the provider, authorizing cleanup, and
-passing the matching digest from the dry-run output:
+Inspect current requirements:
 
 ```bash
-python3 scripts/activate_project_dependencies.py --repo <project> \
-  --skip-official-installs \
-  --deactivate-provider <provider-id> \
-  --authorize-provider-cleanup <provider-id> \
-  --provider-cleanup-plan <planDigest> --apply --json \
-  > provider-cleanup-apply.json
+python3 scripts/check_dependencies.py --repo . \
+  --capability test-first-execution --json
 ```
 
-Keep both JSON reports as verification and rollback evidence. Cleanup preserves
-unverified paths and never deletes global provider configuration, installed
-plugin caches, or provider source caches. Disable a global plugin separately
-when that independently authorized configuration change is required.
-
-## Goal Workflow
-
-DevFlow routes goal-backed work to `define-goal`. Apply the Goal Suitability
-Gate during intake or planning, before context-health drift appears. Route to
-`define-goal` when the user asks to create, set, refine, or use a goal, or when
-the development task is long-running, multi-slice, migration or release
-oriented, broad-refactor oriented, cross-context, subagent/delegation backed, or
-otherwise likely to lose its definition of done. `define-goal` owns the active
-goal check, objective quality bar, verification evidence, scope boundaries, and
-stop conditions before goal creation.
-
-Use implementation complexity and recovery cost as Goal Suitability inputs.
-Score +2 for multiple OpenSpec changes, +2 for multiple capability slices, +2
-for language such as "continue", "依次", "持续", "until human", or
-"直到需要人工介入", +1 for data model, persistence, integration, migration,
-AI/API, or platform collection surfaces, +1 for archive/release gates, and +1
-for expected interruption or context compaction. Score 3 or higher requires a
-Goal Mode Prompt and a pause for `/goal <objective>` or an explicit skip reason;
-score 1-2 recommends a goal; score 0 does not require one.
-
-Before a goal is created, apply the Goal Quality Gate: the candidate objective
-must name the outcome, verification evidence, scope boundaries, non-goals,
-success threshold, and stop conditions. Use
-`scripts/validate_goal_quality.py --objective "<objective>" --json` when a
-machine-readable check is useful.
-
-After `define-goal` shapes the objective, set it in a Codex app, IDE, or CLI
-composer with `/goal <objective>`. Use `/goal` to view the current goal and
-`/goal pause`, `/goal resume`, or `/goal clear` to control it. If `/goal` is
-not available, enable `features.goals` in Codex config or run
-`codex features enable goals`.
-
-Ordinary narrow implementation work does not require a Codex goal just because
-it has multiple steps. Context-health goal statuses are a repair path after
-drift is discovered, not the primary trigger for goal-backed execution. DevFlow
-owns OpenSpec changes, ledgers, checkpoints, context-health reports, and
-verification evidence. DevFlow does not call goal tools from hooks or scripts,
-and it does not rely on a top-level CLI `goal` subcommand.
-
-## Archive Automation
-
-Archive policy lives under `archive.policy` in `.dev-flow.json` and defaults to
-`confirm-on-risk`:
-
-```json
-{
-  "archive": {
-    "policy": "confirm-on-risk"
-  }
-}
-```
-
-Supported policies are:
-
-- `confirm-on-risk`: archive can proceed after explicit archive intent when the
-  change is ready and no risk is present; risk requires confirmation.
-- `manual`: archive always requires an explicit approval gate.
-- `auto-after-explicit-request`: if the user already asked to archive after
-  verification, clean archive can proceed once readiness is true.
-
-Inspect readiness without mutating files:
+Preview project-local activation:
 
 ```bash
-python3 dev/plugins/dev-flow/scripts/archive_status.py --repo . --change <change> --json
+python3 scripts/activate_project_dependencies.py --repo . \
+  --capability test-first-execution --dry-run --json
 ```
 
-The pre-archive hook guards mutating archive operations such as `openspec
-archive`, `openspec-archive-change`, `mv`/`git mv` into
-`openspec/changes/archive`, and `rm`/`git rm` of active changes. Read-only
-status, validation, grep, and file inspection commands are not archive-gated.
-Under `confirm-on-risk`, risky archive mutations are blocked even when general
-hook mode is `warn`; set `hook.mode` to `off` only when intentionally opting out
-of DevFlow archive protection.
+Repeat `--capability` for every capability required by the current task.
+Unknown capabilities fail closed.
 
-## Dependency Provenance
+## OpenSpec 1.6 Boundary
 
-External workflow dependency records are maintained in
-`dev/plugins/dev-flow/docs/dependency-provenance.json`. Dependency reports read
-that catalog and include each dependency's expected version, installed version,
-binary path, install command, smoke command/result, source, last verified date,
-and status (`verified`, `dependency_drift`, `missing`, or `smoke_failed`).
-Read-only checks report drift without running installers; mutating install and
-update commands remain behind explicit apply mode.
+DevFlow pins OpenSpec 1.6.0 and Node `>=20.19.0`. It generates exactly six
+official Codex skills in an isolated temporary project:
 
-The provenance schema records every supported provider source, selector, ref,
-and verification command. Readiness checks only the selected methodology and
-roadmap providers. Hook requirements come from the selected source manifest,
-not a version heuristic; DevFlow never trusts provider hooks automatically.
+- `openspec-propose`
+- `openspec-explore`
+- `openspec-apply-change`
+- `openspec-update-change`
+- `openspec-sync-specs`
+- `openspec-archive-change`
 
-## Routing and Capability Gates
+The generated tree is validated before a transactional copy to
+`.agents/skills/`. Activation does not modify user-global OpenSpec
+configuration or global prompts.
 
-Workflow routing is machine-readable in `docs/routing.matrix.json`.
-Capability implementations are machine-readable in
-`docs/provider_profiles.json`. The legacy `docs/superpowers_gate_matrix.json`
-remains a compatibility shim. OpenSpec, `TASK_LEDGER.md`, and
-`.planning/devflow/**` remain canonical DevFlow state and evidence; a selected
-roadmap provider owns only its declared roadmap paths.
+For arbitrary OpenSpec schemas, resolve artifact paths from
+`openspec status --change <id> --json` and
+`openspec instructions <artifact> --change <id> --json`.
 
-## Provider Artifact Promotion
+## Contract-First Control Plane
 
-Provider outputs, including compatibility paths under `docs/superpowers/`, are
-drafts or method evidence. Promote approved content into OpenSpec, the selected
-roadmap plan, `TASK_LEDGER.md`, or `.planning/devflow/verification/` before it
-can satisfy archive or release readiness.
+DevFlow setup and migration validate:
 
-## Plugin Project Migration
+- `AGENTS.md`
+- `ENGINEERING_POLICY.md`
+- `TASK_LEDGER.md`
+- `EVIDENCE_TEMPLATE.md`
+- `REVIEW_CHECKLIST.md`
+- `.planning/devflow/STATE.md`
 
-`plugin-project-migration` detects drift after plugin or skill runtime updates.
-The automatic path is sync-only: hooks and updater checks can remind, but they
-do not edit `AGENTS.md`, `.agents/skills`, legacy `.codex/skills`, OpenSpec,
-planning files, or scripts.
-Reviewed apply mode refreshes declared project-local skill symlinks only when
-targets are missing or already symlinks.
-
-## Release Promotion
-
-Develop plugins and standalone skills under `dev/`. At verified workflow
-boundaries, run explicit release promotion to copy allowlisted runtime assets to
-their release counterparts and then perform release validation. Stop hooks only
-run read-only release-promotion checks. After fresh verification has been
-recorded, use
-`release_promotion_gate.py --repo . --apply --json` for the authorized DevFlow
-sync. Direct `sync_release_assets.py --apply` calls are intentionally denied.
-Use
-`sync_release_assets.py --eval-target <path> --json` to resolve the
-release-first Plugin Eval target.
-
-The packaged runtime archive is audited by
-`scripts/devflow_runtime.MANIFEST.json`, `scripts/devflow_runtime.sha256`, and
-`scripts/devflow_runtime.SOURCE_COMMIT`. Verify the release runtime with:
-
-```bash
-python3 plugins/dev-flow/scripts/verify_release_runtime.py --plugin-root plugins/dev-flow --json
-```
-
-## Repair Solution Discipline
-
-For bugs, workflow repair, and mechanism failures, start from systemic repair:
-root cause, affected contracts, durable prevention, tests, docs, compatibility,
-and verification. Execution may still choose systemic, minimal, staged, or
-deferred repair based on current risk and validation cost.
+A non-trivial change records Target State, Completion Contract, Capability
+Slices, Execution Ledger, Acceptance Criteria, Validation Commands, risks, and
+Final Verification before implementation.
 
 ## SubAgent Strategy
 
-DevFlow is the policy/router layer for SubAgents. It recommends delegation for
-independent domains, disjoint write sets, repeated investigation pressure,
-repeated command failures, or bounded review needs. DevFlow does not spawn subagents from scripts or hooks, and Codex should not spawn them without
-explicit user authorization or an approved delegated workflow.
+DevFlow is the policy/router layer for delegation; scripts and hooks do not
+spawn subagents. An approved ledger item plus a validated Agent Task Contract
+defines Goal, Scope, Constraints, Verification, Evidence, and Human Gate.
 
-Before delegated agent, subagent, worker, or parallel execution starts, create
-and validate an Agent Task Contract. The contract records Goal, Scope,
-Constraints, Verification, Evidence, and Human Gate sections so the main agent
-can review the handoff before dispatch. Use
-`scripts/validate_agent_task_contract.py --contract <path> --json` to check the
-contract. Ordinary narrow main-agent work does not need this gate solely
-because it has multiple steps.
+- Every worker has a unique ID and explicit write set.
+- Active contracts may not contain exact or parent/child path overlap.
+- Root control-plane files, OpenSpec, `.planning/devflow/**`, release metadata,
+  generated `plugins/**`, integration, and final proof remain main-owned.
+- Workers stop rather than expanding scope, mutating shared files, adding
+  dependencies, deleting ambiguous data, or performing external effects.
+- The main agent reviews worker diffs and reruns integrated validation.
+- Each worker returns `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or
+  `BLOCKED`, together with files, commands, tests, risks, and review needs.
 
-When authorized, resolve the `execution-orchestration` capability from the
-selected profile. The main agent owns OpenSpec artifacts,
-`.planning/devflow/`, shared docs,
-and final integration unless shared files are explicitly serialized. Each
-SubAgent result reports status (`DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`), files changed or inspected, commands or tests run, residual
-risks, and review needs.
-
-## Verification
-
-Run:
+Validate one or more contracts:
 
 ```bash
-python3 -m unittest discover -s dev/plugins/dev-flow/tests
-python3 -m unittest discover -s plugins/dev-flow/tests
-node /Users/cY/.codex/plugins/cache/openai-curated/plugin-eval/45fe2bdd/scripts/plugin-eval.js analyze plugins/dev-flow --format markdown
+python3 scripts/validate_agent_task_contract.py \
+  --contract .planning/agent-tasks/task-a.md \
+  --contract .planning/agent-tasks/task-b.md --json
 ```
+
+## Legacy Configuration Inspector
+
+Current readers reject retired workflow-selection keys. They do not infer,
+activate, install, migrate, or clean up old integrations.
+
+Use the isolated read-only inspector:
+
+```bash
+python3 scripts/inspect_legacy_workflow_config.py --repo . --json
+```
+
+The inspector classifies old configuration and filesystem artifacts,
+distinguishes generated candidates from preserved user/history paths, and
+recommends the minimal target configuration. It has no mutation or network
+path. See `docs/legacy-workflow-config.md`.
+
+## Hooks and Side Effects
+
+Hooks use `$PLUGIN_ROOT` / `%PLUGIN_ROOT%`, support `off`, `warn`, and
+`block`, and preserve Codex hook schemas. Stop uses one read-only
+`devflow_stop_hook.py` entrypoint.
+
+Side-effect policy is machine-readable in `docs/side_effect_policy.json` and
+default-deny. Install/update, project migration, destructive cleanup, release
+promotion, archive, goal state, Git commit, and remote publication each require
+their own authorization.
+
+## Goal Workflow
+
+Use `define-goal` for user-requested goals and for long-running,
+migration/release, broad-refactor, cross-context, or delegation-backed work.
+A valid goal names outcome, verification evidence, scope, non-goals, success
+threshold, and stop conditions. Hooks may recommend a goal but never call goal
+tools.
+
+## Plugin Project Migration
+
+`plugin-project-migration` reports project-local DevFlow skill/control-plane
+drift. Its default path is read-only. Reviewed apply mode refreshes declared
+DevFlow skill links and missing control-plane files; it does not interpret or
+apply retired workflow configuration. Use the legacy inspector separately.
+
+## Archive Policy
+
+Archive policy defaults to `confirm-on-risk`. Inspect readiness without
+mutation:
+
+```bash
+python3 scripts/archive_status.py --repo . --change <change> --json
+```
+
+Archive requires complete tasks, synchronized specs, recorded verification,
+explicit archive intent, and authorization. Read-only status and validation
+commands are never archive mutations.
+
+## Release Promotion
+
+Develop managed plugin assets under `dev/plugins/dev-flow/`. Release promotion
+copies allowlisted assets, builds the deterministic runtime archive, and removes
+stale generated files. Direct release apply is denied; use the promotion gate
+only after verification is recorded.
+
+```bash
+python3 dev/plugins/dev-flow/scripts/release_promotion_gate.py \
+  --repo . --apply --json
+python3 plugins/dev-flow/scripts/verify_release_runtime.py \
+  --plugin-root plugins/dev-flow --json
+```
+
+Run packaged tests and Plugin Eval against `plugins/dev-flow` before claiming
+release readiness. Installed cache refresh and project migration remain
+separate, explicit actions.
+
+## Repair Discipline
+
+For bugs and workflow failures, identify the root cause and affected contracts,
+then cover durable prevention, regression tests, docs, compatibility, and
+verification. Choose systemic, minimal, staged, or deferred execution based on
+risk and the approved scope, never by hiding a failing check.

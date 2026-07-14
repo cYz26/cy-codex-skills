@@ -23,8 +23,8 @@ def main() -> int:
     report = archive_status(
         repo,
         change,
-        explicit_request=True,
-        allow_risk=bool(gates.get("archive_allowed", False)),
+        explicit_request=bool(gates.get("archive_allowed", False)),
+        allow_risk=False,
     )
     if not report["canArchive"]:
         return hook_response(

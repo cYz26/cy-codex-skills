@@ -21,7 +21,7 @@ class ContextToolAuditTests(unittest.TestCase):
                 [
                     'model = "gpt-5"',
                     "",
-                    '[plugins."superpowers@openai-curated"]',
+                    '[plugins."sample-plugin@local"]',
                     "enabled = true",
                     "",
                     '[plugins."unused-plugin@local"]',
@@ -30,7 +30,7 @@ class ContextToolAuditTests(unittest.TestCase):
             )
             + "\n"
         )
-        self.write_skill(home / "skills" / "test-driven-development" / "SKILL.md")
+        self.write_skill(home / "skills" / "sample-global-skill" / "SKILL.md")
         self.write_skill(
             home
             / "plugins"
@@ -80,13 +80,13 @@ class ContextToolAuditTests(unittest.TestCase):
         self.assertIn("javascript", report["projectSignals"])
         self.assertIn("react", report["projectSignals"])
         global_plugins = {item["key"] for item in report["inventory"]["globalPlugins"]}
-        self.assertIn("superpowers@openai-curated", global_plugins)
+        self.assertIn("sample-plugin@local", global_plugins)
         global_skills = {item["name"] for item in report["inventory"]["globalSkills"]}
-        self.assertIn("test-driven-development", global_skills)
+        self.assertIn("sample-global-skill", global_skills)
         action_ids = {item["id"] for item in report["actions"]}
-        self.assertIn("disable-global-plugin-superpowers-openai-curated", action_ids)
+        self.assertIn("disable-global-plugin-sample-plugin-local", action_ids)
         self.assertIn("disable-global-plugin-unused-plugin-local", action_ids)
-        self.assertIn("disable-global-skill-test-driven-development", action_ids)
+        self.assertIn("disable-global-skill-sample-global-skill", action_ids)
         self.assertIn("install-project-skill-react-best-practices", action_ids)
 
     def test_apply_actions_dry_run_does_not_change_files(self):
@@ -97,7 +97,7 @@ class ContextToolAuditTests(unittest.TestCase):
 
         result = apply_context_tool_actions(
             report,
-            ["disable-global-plugin-superpowers-openai-curated", "install-project-skill-react-best-practices"],
+            ["disable-global-plugin-sample-plugin-local", "install-project-skill-react-best-practices"],
             apply=False,
             timestamp="20260518-120000",
         )
@@ -117,7 +117,7 @@ class ContextToolAuditTests(unittest.TestCase):
 
         result = apply_context_tool_actions(
             report,
-            ["disable-global-plugin-superpowers-openai-curated", "install-project-skill-react-best-practices"],
+            ["disable-global-plugin-sample-plugin-local", "install-project-skill-react-best-practices"],
             apply=True,
             timestamp="20260518-120000",
         )
@@ -125,7 +125,7 @@ class ContextToolAuditTests(unittest.TestCase):
         self.assertTrue(result["ok"], result)
         self.assertFalse(result["dryRun"])
         config_text = (codex_home / "config.toml").read_text()
-        self.assertIn('[plugins."superpowers@openai-curated"]', config_text)
+        self.assertIn('[plugins."sample-plugin@local"]', config_text)
         self.assertIn("enabled = false", config_text)
         self.assertIn('[plugins."unused-plugin@local"]', config_text)
         self.assertIn("enabled = true", config_text)

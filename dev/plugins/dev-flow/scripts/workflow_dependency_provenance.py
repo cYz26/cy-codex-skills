@@ -83,17 +83,23 @@ def dependency_provenance_report(
     repo: Path | None = None,
     *,
     catalog_only_names: set[str] | None = None,
+    included_names: set[str] | None = None,
 ) -> dict[str, Any]:
     data = load_dependency_provenance(plugin_root)
     source = dependency_provenance_source_path(plugin_root)
     catalog_only = set(catalog_only_names or ())
+    records = [
+        record
+        for record in data["dependencies"]
+        if included_names is None or record.get("name") in included_names
+    ]
     dependencies = [
         (
             catalog_only_dependency(record, source, data.get("lastVerified"))
             if record.get("name") in catalog_only
             else evaluate_dependency(record, source, data.get("lastVerified"), repo)
         )
-        for record in data["dependencies"]
+        for record in records
     ]
     return {
         "provenance": {

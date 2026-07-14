@@ -26,6 +26,10 @@ ENTRYPOINT_SCAN_ROOTS = (
     SOURCE_SCRIPTS.parent / "README.md",
     SOURCE_SCRIPTS.parent / "skills",
 )
+PUBLIC_ENTRYPOINT_NAMES = {
+    "validate_goal_quality.py",
+    "workflow_decision_grilling.py",
+}
 
 
 LAUNCHER = """from __future__ import annotations
@@ -90,7 +94,7 @@ def iter_source_scripts() -> list[Path]:
 
 
 def referenced_entrypoint_names() -> set[str]:
-    names: set[str] = set()
+    names = set(PUBLIC_ENTRYPOINT_NAMES)
     for root in ENTRYPOINT_SCAN_ROOTS:
         paths = [root] if root.is_file() else sorted(root.rglob("*.md"))
         for path in paths:

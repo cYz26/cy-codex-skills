@@ -1,6 +1,154 @@
 # Task Ledger
 
-## Active Change: DevFlow Skill Portfolio Optimization
+## Active Change: Simplify DevFlow to Matt-native Methodology
+
+### Goal Contract
+
+- goal_id: Codex goal `019f5e9f-b2eb-7070-96c1-37ae2143bbcd`
+- objective: Implement and verify one active DevFlow/OpenSpec control plane with
+  the pinned six-skill MattPocock engineering pack, bounded subagent execution,
+  and an isolated read-only legacy provider inspector while removing every
+  active Superpowers/GSD runtime, routing, config, fixture, readiness, release,
+  and documentation dependency.
+- scope_in: DevFlow development source/tests/docs/templates/provenance,
+  generated release, root workflow control plane, the new OpenSpec change,
+  explicit legacy inspection of this checkout, and the separately authorized
+  targeted activation of exactly six Matt skills in this project's
+  `.agents/skills`.
+- scope_out: broader Matt workflow skills, roadmap replacement, production
+  dependencies, ignored legacy installation cleanup, installed-cache refresh,
+  broad current-project migration, OpenSpec skill regeneration, other-project
+  migration, archive, unrequested commit, and push.
+- acceptance_criteria: active config has no provider selection; static
+  capabilities use only DevFlow/OpenSpec and the six pinned Matt primitives;
+  normal diagnostics expose no Superpowers/GSD surface; legacy inspection is
+  deterministic/read-only/import-isolated; subagent write ownership is
+  validated; source/package/runtime/OpenSpec/workflow/eval/review gates pass.
+- validation_commands: focused RED/GREEN suites, full Python 3.12 development
+  and package discovery, strict change/all OpenSpec validation, release
+  promotion/current/runtime checks, workflow validation, forbidden-reference
+  and import checks, release-target Plugin Eval, and `git diff --check`.
+- stop_conditions: stop on a newly discovered compatibility break beyond the
+  approved provider removal, destructive migration, dependency addition,
+  ambiguous historical/user-data deletion, scope-changing product decision,
+  or an in-scope failure that cannot be repaired safely.
+- knowledge_update_target: none
+
+### Tasks
+
+| task_id | summary | owner | write_set | contract_path | required_evidence | review_gate | status |
+|---|---|---|---|---|---|---|---|
+| DF-MN-1 | Target contract, upstream pin, active-surface audit, and Full OpenSpec plan | main + audit agents | OpenSpec, ledger, checkpoint | `.planning/agent-tasks/20260714-simplify-devflow-matt-native-audit.md`; `.planning/agent-tasks/20260714-simplify-devflow-matt-capability-audit.md`; `.planning/agent-tasks/20260714-simplify-devflow-migration-test-audit.md` | strict change validation, source/hash matrix, replace/remove/migrate/preserve map | no unresolved decision | done |
+| DF-MN-2 | RED public-seam contracts for methodology, config, legacy inspection, agents, and forbidden active references | main | development tests | not-delegated | observed target failures before production edits | TDD seam review | done |
+| DF-MN-3 | Static methodology, side-effect policy, readiness, and project-local Matt activation | main + methodology-hardening | development scripts/docs/data/tests | `.planning/agent-tasks/20260714-simplify-devflow-methodology-hardening.md` | focused GREEN capability and activation tests | standards + spec review | done |
+| DF-MN-4 | Control-plane simplification, legacy inspector, and active Superpowers/GSD removal | main | runtime/config/hooks/state/archive/docs/tests | not-delegated | focused GREEN plus import/forbidden-reference proof | compatibility review | done |
+| DF-MN-5 | Generated release alignment and full verification | main | generated `plugins/dev-flow/**`, evidence | not-delegated | full dev/package/runtime/OpenSpec/workflow/Eval results | separate durable release authorization | done |
+| DF-MN-6 | Independent two-axis review and durable closeout | main + review agents | review/evidence/ledger/state | `.planning/agent-tasks/20260714-simplify-devflow-final-review.md`; `.planning/agent-tasks/20260714-simplify-devflow-final-spec-review.md` | findings disposition and rerun evidence | no archive/push/cache/migration | done |
+
+### Execution Log
+
+- 2026-07-14: The user approved complete active Superpowers/GSD removal, one
+  DevFlow/OpenSpec plus Matt path, an isolated read-only legacy migrator, and a
+  bounded subagent strategy. A quality-gated Codex goal was created.
+- 2026-07-14: Two read-only agents mapped the active provider call graph and
+  independently verified Matt `v1.1.0` at commit
+  `d574778f94cf620fcc8ce741584093bc650a61d3`, the six existing skill hashes,
+  and the exclusion of flow-owning skills such as `implement` and `to-spec`.
+- 2026-07-14: `simplify-devflow-matt-native` proposal, design, three delta
+  specs, and tasks were completed with no open questions and passed strict
+  OpenSpec validation. Production implementation starts with public-seam RED
+  tests; shared artifacts and generated release remain main-agent-owned.
+- 2026-07-14: The source implementation replaced provider/profile/roadmap
+  selection with a static six-skill Matt methodology, minimal fail-closed
+  config, trusted project-local dependency checks, exact OpenSpec 1.6 local
+  skills, and deterministic read-only legacy inspection. Active
+  Superpowers/GSD modules, fixtures, benchmarks, phase gates, and maintained
+  guidance were removed from development source.
+- 2026-07-14: Bounded subagent execution was enforced through validated worker
+  ids, exact disjoint write sets, protected primary-agent paths, evidence and
+  stop conditions. One contracted worker hardened methodology/project-skill
+  trust; independent Standards and Spec reviews found and drove fixes for
+  symlink/nonregular trees, rollback preservation, fail-closed config/state,
+  complete release receipts, and shared-file ownership.
+- 2026-07-14: Focused release and archive regression suites passed 35/35 and
+  18/18 after the final source hardening. The checked-in release remains stale
+  by design, so complete development discovery has the single expected
+  release-smoke failure and runtime verification reports drift until separately
+  authorized promotion. Current-project Matt activation is also still an
+  explicit write boundary; no silent skill migration or legacy cleanup ran.
+- 2026-07-14: The canonical pre-promotion runner passed 298/298 tests across
+  17 source modules; strict OpenSpec passed 50/50, workflow-state validation
+  returned zero issues and only the expected pending-compact advisory, and
+  `git diff --check` passed. A current
+  source receipt was recorded with SHA-256
+  `7d68b75270734cb0afa7d9eb59f9b83ee8369451c7dfcd0de90aae2e007f26ae`;
+  release dry-run reports `pending`, ready with no blockers, but no durable
+  release authorization.
+- 2026-07-14: A contracted read-only activation audit confirmed all six Matt
+  project skills are missing (not drifted), the pinned vendored source is
+  ready, and a dry-run would copy exactly those six skills. The active Goal
+  excludes active-project migration, so current-project activation and GSD
+  cleanup are retained as out-of-scope residuals rather than completion gates.
+- 2026-07-14: Completion and active-surface audits found two source gaps and an
+  evidence-schema gap. The inspector now recognizes `.codex/config.toml`
+  registrations without exposing values; maintained release logic uses a
+  generic `docs/history/**` quarantine; development and release tests enforce
+  exact legacy-name allowlists; all 13 current-change agent contracts pass
+  batch validation with unique workers and disjoint writes.
+- 2026-07-14: Source-only Plugin Eval scored 68/D with one development-tree
+  token-cost failure, active budget 10,324 tokens, deferred cost 263,920
+  tokens, and four warnings. That diagnostic is deferred
+  because trimming tests/history would be destructive and out of scope; the
+  generated release target remains the required final zero-failure Eval after
+  authorized promotion.
+- 2026-07-14: Final source re-review passed. The expanded legacy matcher covers
+  retired provider/profile/selector/binding/phase identifiers and the only
+  remaining hits outside the source allowlist are in the intentionally stale
+  generated release. Completion evidence now passes 13/13 contract, scope-out,
+  receipt/hash, and authorization-only-gate checks.
+- 2026-07-14: A disposable copy of the current worktree completed real release
+  promotion without touching the live checkout. The simulated promoted tree
+  passed 332/332 development tests, 5/5 packaged tests, 282/282 runtime checks,
+  OpenSpec 50/50, workflow/diff validation, release Eval 86/B with zero
+  failures, and a second idempotent apply (`status=current`). Live release
+  promotion remains separately authorization-gated.
+- 2026-07-14: No release promotion, installed-cache refresh, other-project
+  migration, active-project migration, destructive legacy cleanup, archive,
+  commit, or push is included in the current authorization. Source verification
+  evidence is frozen before requesting the remaining release apply decision.
+- 2026-07-14: The missing live release authorization repeated across the Goal's
+  required continuation threshold after all safe source and disposable-release
+  work was exhausted. Goal `019f5e9f-b2eb-7070-96c1-37ae2143bbcd` was marked
+  blocked; explicit `授权发布同步` is the sole resume condition.
+- 2026-07-14: The user resumed the Goal and separately approved live release
+  sync plus the current project's targeted six-skill Matt refresh. The release
+  gate promoted `dev/plugins/dev-flow` to `plugins/dev-flow`; a check and second
+  apply both returned `current` with no changed, missing, stale, or deleted
+  managed paths.
+- 2026-07-14: Project refresh diagnostics ran before and after apply. With
+  `--skip-official-installs` and six explicit capabilities, dry-run planned and
+  apply copied only `grilling`, `tdd`, `diagnosing-bugs`, `code-review`,
+  `codebase-design`, and `domain-modeling`. OpenSpec remained `current` with
+  `changed=false`; ignored GSD history was preserved.
+- 2026-07-14: Live post-promotion verification passed 332/332 development
+  tests, 5/5 packaged tests, 282/282 runtime checks, strict OpenSpec 50/50,
+  workflow validation with zero issues, 29/29 forbidden-reference checks,
+  9/9 legacy-isolation checks, release parity/idempotence, and `git diff
+  --check`. Release-target Plugin Eval scored 86/B with zero failures; its
+  three static token-budget warnings are recorded for measured-usage follow-up.
+- 2026-07-14: Local-reference dry-run confirmed the installed DevFlow cache
+  still differs from the newly promoted release. Cache refresh, broad project
+  migration, GSD cleanup, archive, commit, and push remain outside the granted
+  actions.
+- 2026-07-14: Independent Standards review passed. Spec review found one P2
+  packaged-document allowlist exception; RED tests reproduced it, the legacy
+  document was generalized, both allowlists were tightened, the new
+  source-bound receipt was promoted, and all final suites were rerun. Targeted
+  Standards and Spec re-reviews both passed with no unresolved finding. Final
+  evidence is recorded at
+  `.planning/devflow/verification/20260714214817-simplify-devflow-matt-native-final.md`.
+
+## Previous Completed Change: DevFlow Skill Portfolio Optimization
 
 ### Goal Contract
 
@@ -168,9 +316,13 @@
   the still-active verified change and phase; no migration or cleanup was
   bypassed.
 
-## Previous Completed Change: Provider Architecture
+## Historical Snapshot: Superseded Provider Architecture
 
-## Goal Contract
+> Historical evidence from the 2026-07-13 provider-architecture change. This
+> section is superseded by the active Matt-native change above and MUST NOT be
+> used as current configuration, routing, dependency, or execution guidance.
+
+### Goal Contract
 
 - goal_id: openspec:optimize-devflow-provider-architecture (no active Codex goal)
 - objective: Implement the approved DevFlow provider architecture with an
@@ -197,7 +349,7 @@
   idempotence check, updater/cache-drift checks, and `git diff --check`.
 - knowledge_update_target: none
 
-## Tasks
+### Tasks
 
 Use `contract_path` for delegated agent, subagent, worker, or parallel
 execution. Use `not-delegated` for ordinary main-agent tasks.
@@ -218,7 +370,7 @@ execution. Use `not-delegated` for ordinary main-agent tasks.
 
 Agent Task Contract template: `AGENT_TASK_CONTRACT.md`.
 
-## Execution Log
+### Execution Log
 
 - 2026-07-10: Source architecture implemented with TDD and cross-agent review.
 - 2026-07-10: Live dependency, migration, release, refresh, and benchmark apply
@@ -292,12 +444,12 @@ Agent Task Contract template: `AGENT_TASK_CONTRACT.md`.
   pushed to `origin`. Local `main` and `origin/main` were verified aligned; this
   ledger closeout is the only post-verification documentation change.
 
-## Final Result
+### Historical Final Result (Superseded)
 
-DevFlow now defaults to an independent `core + none` control plane. Matt is an
-optional project-local six-skill methodology profile, Superpowers is an
-optional strict profile with manifest-driven hooks, and GSD is required only
-when explicitly selected as the roadmap provider. Release and installed-cache
-parity are verified, and remote submission to `origin/main` is complete.
-OpenSpec archive is intentionally not performed without its separate
-authorization.
+At that historical fixed point, DevFlow defaulted to an independent `core +
+none` control plane. Matt was an optional project-local six-skill methodology
+profile, Superpowers was an optional strict profile with manifest-driven hooks,
+and GSD was required only when explicitly selected as the roadmap provider.
+Release and installed-cache parity were verified, and remote submission to
+`origin/main` was complete. OpenSpec archive was intentionally not performed
+without its separate authorization.

@@ -12,7 +12,6 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Create a durable checkpoint before compacting context.")
     parser.add_argument("--repo", required=True)
     parser.add_argument("--boundary", required=True)
-    parser.add_argument("--phase")
     parser.add_argument("--change")
     parser.add_argument("--next-stage", default="next_stage")
     parser.add_argument("--output")

@@ -3,7 +3,6 @@ checkpoint_id: {{checkpoint_id}}
 created_at: {{created_at}}
 boundary: {{boundary}}
 project_mode: {{project_mode}}
-phase_id: {{phase_id}}
 change_id: {{change_id}}
 compact_recommended: {{compact_recommended}}
 compact_status: {{compact_status}}
@@ -60,7 +59,7 @@ The next stage should start by reading:
 2. `.planning/devflow/STATE.md`
 3. this checkpoint file
 4. relevant OpenSpec change files
-5. relevant phase plan files
+5. relevant verification and task-ledger files
 
 Then proceed to: `{{next_stage}}`.
 

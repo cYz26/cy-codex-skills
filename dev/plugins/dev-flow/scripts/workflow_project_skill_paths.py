@@ -152,6 +152,10 @@ def layout_next_action(status: str) -> str:
         return "Resolve the conflict with manual selection before migration."
     if status == "manual_review_required":
         return "Review unmanaged legacy skill manually; DevFlow will not migrate it automatically."
+    if status == "authoritative_source_install_required":
+        return "Install the triggered skill from its pinned DevFlow vendor source; preserve the legacy path."
+    if status == "legacy_preserved_authoritative_source":
+        return "Use the verified project-local copy and preserve the legacy path for separate review."
     return "No skill layout action needed."
 
 
@@ -160,8 +164,10 @@ def migrate_project_skill_layout(
     managed_skills: Iterable[str],
     dry_run: bool,
     script_path: Path | None = None,
+    authoritative_source_skills: Iterable[str] = (),
 ) -> dict[str, Any]:
     managed = set(managed_skills)
+    authoritative = set(authoritative_source_skills)
     items = []
     for skill in sorted(managed):
         official = official_project_skill_dir(repo, skill)
@@ -169,6 +175,14 @@ def migrate_project_skill_layout(
         if not skill_dir_exists(legacy):
             continue
         official_exists = skill_dir_exists(official)
+        if skill in authoritative:
+            status = (
+                "legacy_preserved_authoritative_source"
+                if official_exists
+                else "authoritative_source_install_required"
+            )
+            items.append(migration_item(skill, status, official, legacy))
+            continue
         if official_exists and skill_trees_match(official, legacy):
             items.append(migration_item(skill, "legacy_duplicate", official, legacy))
             continue
@@ -239,6 +253,10 @@ def migration_status(items: list[dict[str, Any]], ok: bool) -> str:
         return "applied"
     if "would_migrate" in statuses:
         return "migration_available"
+    if "authoritative_source_install_required" in statuses:
+        return "source_install_required"
+    if "legacy_preserved_authoritative_source" in statuses:
+        return "legacy_preserved"
     if statuses:
         return aggregate_layout_status(items)
     return "current"

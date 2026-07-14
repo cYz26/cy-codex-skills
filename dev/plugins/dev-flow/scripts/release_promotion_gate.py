@@ -9,32 +9,42 @@ from pathlib import Path
 from workflow_hooks import hook_response
 from workflow_paths import repo_path
 from workflow_release_sync import _issue_release_apply_authorization, sync_release_assets
-from workflow_state import parse_state
-from workflow_provider_registry import default_plugin_root, side_effect_decision
+from workflow_side_effect_policy import default_plugin_root, side_effect_decision
+from workflow_release_verification import release_promotion_readiness
 
 
 def run_gate(repo: Path, apply: bool = False, target: str = "dev-flow") -> dict:
     repo = repo_path(repo)
-    state = parse_state(repo)
-    gates = state.get("gates", {})
+    readiness = release_promotion_readiness(
+        repo,
+        target,
+        require_authorization=False,
+    )
     authorization = side_effect_decision(
         default_plugin_root(),
         "archive_release",
         {"verified_and_explicit_user_request"} if apply else set(),
     )
-    if not gates.get("verification_passed", False):
+    if not readiness["ready"]:
         return {
             "status": "not_applicable",
-            "message": "Release promotion waits for recorded verification.",
+            "message": "Release promotion waits for complete source-bound verification.",
             "assets": [],
             "sideEffect": authorization,
+            "releaseReadiness": readiness,
         }
-    if apply and not authorization["authorized"]:
+    apply_readiness = release_promotion_readiness(
+        repo,
+        target,
+        require_authorization=True,
+    )
+    if apply and (not authorization["authorized"] or not apply_readiness["ready"]):
         return {
             "status": "authorization_required",
             "message": "Release promotion requires explicit archive/release authorization.",
             "assets": [],
             "sideEffect": authorization,
+            "releaseReadiness": apply_readiness,
         }
     apply_authorization = (
         _issue_release_apply_authorization(repo, [target])
@@ -63,6 +73,7 @@ def run_gate(repo: Path, apply: bool = False, target: str = "dev-flow") -> dict:
         "message": message,
         "qualityGates": quality_gates(report),
         "sideEffect": authorization,
+        "releaseReadiness": apply_readiness if apply else readiness,
     }
 
 

@@ -10,9 +10,10 @@ Complete the active OpenSpec change before production implementation.
 ## Capability Routing
 
 Resolve `decision-resolution`, `implementation-planning`, and when needed
-`architecture-guidance` from `docs/provider_profiles.json`. Provider notes are
-inputs; OpenSpec is canonical. Mapping details live in
-`docs/provider-profile-migration.md`.
+`architecture-guidance` from `scripts/workflow_methodology.py`. Add
+`domain-language-modeling` only when domain concepts or invariants are in
+scope. Use only the triggered Matt primitives; DevFlow planning remains
+authoritative and OpenSpec is canonical.
 
 ## Procedure
 
@@ -35,9 +36,8 @@ inputs; OpenSpec is canonical. Mapping details live in
    validation.
 
 For repair, record the systemic solution first and explain any smaller approved
-execution path. Legacy `docs/superpowers/specs/` or
-`docs/superpowers/plans/` content is promoted into the active change before it
-can satisfy a gate.
+execution path. Methodology notes must be promoted into the active change
+before they can satisfy a gate.
 
 Planning is complete when every scenario has a task and validator, no required
 decision is open, and the next executable ledger item is explicit. Do not edit

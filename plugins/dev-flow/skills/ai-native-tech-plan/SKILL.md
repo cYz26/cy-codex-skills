@@ -19,10 +19,13 @@ artifact is draft, not final; resolve them before committing to the plan.
 
 ## Capability Routing
 
-Resolve `decision-resolution`, `implementation-planning`, and
-`architecture-guidance` through `docs/provider_profiles.json`. Record the
-chosen profile and evidence, but keep provider procedure in
-`docs/provider-profile-migration.md`. The plan itself stays provider-neutral.
+Resolve `decision-resolution`, `implementation-planning`,
+`architecture-guidance`, and when domain language is in scope
+`domain-language-modeling` through the static DevFlow contract in
+`scripts/workflow_methodology.py`. Use `grilling` for unresolved decisions;
+DevFlow owns implementation planning; architecture work may use
+`codebase-design`, while domain concepts and invariants explicitly add
+`domain-modeling`. Record evidence and triggered skills in the Skill Routing Ledger.
 
 ## Required Shape
 
@@ -39,8 +42,7 @@ chosen profile and evidence, but keep provider procedure in
 10. Review Checklist and Final Verification.
 
 Required behavior does not belong in MVP, Future Work, or a later delivery
-phase. Roadmap phases may sequence work but cannot redefine technical
-completion.
+phase.
 
 ## Workflow Gates
 
@@ -54,11 +56,11 @@ Add a SubAgent Strategy for independent Capability Slices. Record authorization
 state, disjoint write sets, Agent Task Contract path, main-agent-owned
 artifacts, and fallback. No worker starts before that contract is valid.
 
-## Compatibility Artifact Mapping
+## Canonical Artifact Mapping
 
-Provider planning notes, including legacy `docs/superpowers/plans/`, are review
-inputs. Promote approved content into OpenSpec `tasks.md`, the selected roadmap
-plan, or the DevFlow Execution Ledger; canonical files win conflicts.
+Methodology notes are review inputs. Promote approved decisions into OpenSpec
+or the DevFlow Execution Ledger before they satisfy a gate; canonical files
+win conflicts.
 
 ## Output Resources
 

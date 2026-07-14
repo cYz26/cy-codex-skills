@@ -16,11 +16,10 @@ active ledger before choosing a workflow action.
    `docs/routing.matrix.json`. Full OpenSpec is mandatory for behavior, API,
    data, persistence, integration, migration, permission, error-handling, or
    compatibility work.
-3. Run dependency diagnosis. Resolve the configured methodology profile and
-   roadmap provider before proposing activation; diagnosis is read-only. Pass
-   each capability needed by the current route explicitly, for example:
+3. Run dependency diagnosis. Pass each capability needed by the current route
+   explicitly, for example:
    `python3 scripts/check_dependencies.py --repo <repo> --capability implementation-planning --json`.
-   If a selected capability is missing, preview activation with the same
+   If a required capability is missing, preview activation with the same
    repeatable `--capability` flags before any `--apply`.
 4. Route current or external capability uncertainty through
    `capability-research` and its Capability Evidence Gate.
@@ -31,13 +30,13 @@ active ledger before choosing a workflow action.
 
 ## Capability Routing
 
-Route stable capability IDs from `docs/provider_profiles.json`, never a
-provider name: `decision-resolution`, `implementation-planning`,
+Route stable capability IDs from `scripts/workflow_methodology.py`:
+`decision-resolution`, `implementation-planning`,
 `test-first-execution`, `root-cause-diagnosis`, `change-review`,
-`completion-proof`, `execution-orchestration`, and `architecture-guidance`.
-The resolved profile supplies the implementation; OpenSpec and DevFlow still
-own canonical artifacts and evidence. Provider-specific mappings and migration
-rules live in `docs/provider-profile-migration.md`.
+`completion-proof`, `execution-orchestration`, `architecture-guidance`, and
+when domain language is in scope `domain-language-modeling`.
+Only triggered Matt primitives are project-local requirements; OpenSpec and
+DevFlow own canonical artifacts and evidence.
 
 ## Goal Gate
 
@@ -49,21 +48,18 @@ goal mode but do not call goal tools.
 
 ## SubAgent Decision Gate
 
-Recommend a split without spawning when independent domains or disjoint write
-sets make delegation useful but authority is absent. With explicit user
-authorization, create a validated Agent Task Contract containing Goal,
-Scope, Constraints, Verification, Evidence, and Human Gate. The main agent owns
-OpenSpec, `.planning/devflow/`, shared docs, and final integration unless the
-contract serializes those writes. Each result reports status (`DONE`,
+Delegate when independent domains or disjoint write sets make parallel work
+materially useful. First create a validated Agent Task Contract containing
+Goal, Scope, Constraints, Verification, Evidence, and Human Gate. The main agent owns
+OpenSpec, `.planning/devflow/`, shared docs, generated release paths, and final
+integration without delegation exceptions. Each result reports status (`DONE`,
 `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`), files changed or
 inspected, commands, risks, and review needs.
 
-## Compatibility Artifact Mapping
+## Canonical Artifact Mapping
 
-Provider drafts are inputs only. Promote approved methodology notes, including
-legacy `docs/superpowers/specs/` and `docs/superpowers/plans/`, into the active
-OpenSpec change, selected roadmap-provider plan, or DevFlow ledger before they
-satisfy a gate.
+Methodology notes are inputs only. Promote approved content into the active
+OpenSpec change or DevFlow ledger before it satisfies a gate.
 
 ## Completion
 

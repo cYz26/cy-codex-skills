@@ -16,7 +16,6 @@ REQUIRED_FRONTMATTER_KEYS = {
     "created_at",
     "boundary",
     "project_mode",
-    "phase_id",
     "change_id",
     "compact_recommended",
     "compact_status",

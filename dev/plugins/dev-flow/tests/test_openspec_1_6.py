@@ -38,15 +38,7 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
     def make_repo(self) -> Path:
         repo = Path(tempfile.mkdtemp(prefix="devflow-openspec-16-repo-"))
         (repo / ".dev-flow.json").write_text(
-            json.dumps(
-                {
-                    "workflow": {
-                        "mode": "full-openspec",
-                        "methodology_profile": "core",
-                        "roadmap_provider": "none",
-                    }
-                }
-            )
+            json.dumps({"workflow": {"mode": "full-openspec"}})
             + "\n"
         )
         return repo
@@ -165,7 +157,7 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
 
         run.assert_not_called()
         self.assertTrue(report["ok"], report)
-        record = next(item for item in report["commands"] if item.get("provider") == "openspec")
+        record = next(item for item in report["commands"] if item.get("sourceKind") == "openspec")
         self.assertEqual(record["kind"], "isolated-skill-generation")
         self.assertTrue(record["skipped"])
         self.assertEqual(record["generation"]["status"], "planned")
@@ -176,7 +168,7 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
         statuses = {
             item["status"]
             for item in report["local_skills"]["items"]
-            if item["provider"] == "openspec"
+            if item["sourceKind"] == "openspec"
         }
         self.assertEqual(statuses, {"would-copy-after-openspec-generation"})
         self.assertEqual(before, sorted(str(path.relative_to(repo)) for path in repo.rglob("*")))
@@ -206,6 +198,7 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
                 plugin_root=PLUGIN_ROOT,
                 codex_home=codex_home,
                 refresh_project_skills=True,
+                authorizations={"explicit_named_dependency_request"},
             )
 
         self.assertTrue(report["ok"], report)
@@ -221,6 +214,57 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
             self.assertTrue((target / "SKILL.md").is_file(), report)
             self.assertFalse(target.is_symlink())
             self.assertIn('generatedBy: "1.6.0"', (target / "SKILL.md").read_text())
+
+    def test_skip_official_install_fails_closed_when_six_skills_are_missing(self):
+        repo = self.make_repo()
+        codex_home = self.make_codex_home()
+
+        report = activation.activate_project_dependencies(
+            repo,
+            skip_official_installs=True,
+            plugin_root=PLUGIN_ROOT,
+            codex_home=codex_home,
+            authorizations={"explicit_named_dependency_request"},
+        )
+
+        self.assertFalse(report["ok"], report)
+        self.assertEqual(report["status"], "blocked")
+        self.assertFalse(report["workflowReady"], report)
+        self.assertEqual(
+            report["local_skills"]["openspec_transaction"]["status"],
+            "project-skills-not-ready",
+        )
+        openspec_items = [
+            item for item in report["local_skills"]["items"]
+            if item["sourceKind"] == "openspec"
+        ]
+        self.assertEqual(len(openspec_items), 6)
+        self.assertTrue(all(not item["ok"] for item in openspec_items))
+
+    def test_skip_official_install_accepts_only_existing_verified_six_skills(self):
+        repo = self.make_repo()
+        codex_home = self.make_codex_home()
+        generated = self.write_generated_skills(repo)
+        project_skills = repo / ".agents" / "skills"
+        for name in EXPECTED_SKILLS:
+            project_skills.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(generated / name, project_skills / name)
+
+        report = activation.activate_project_dependencies(
+            repo,
+            skip_official_installs=True,
+            plugin_root=PLUGIN_ROOT,
+            codex_home=codex_home,
+            authorizations={"explicit_named_dependency_request"},
+        )
+
+        self.assertTrue(report["ok"], report)
+        self.assertEqual(report["status"], "applied")
+        self.assertTrue(report["workflowReady"], report)
+        self.assertEqual(
+            report["local_skills"]["openspec_transaction"]["status"],
+            "current",
+        )
 
     def test_wrong_or_incomplete_generation_fails_before_openspec_target_writes(self):
         for label, skills, version in [
@@ -242,13 +286,51 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
                         plugin_root=PLUGIN_ROOT,
                         codex_home=codex_home,
                         refresh_project_skills=True,
+                        authorizations={"explicit_named_dependency_request"},
                     )
 
                 self.assertFalse(report["ok"], report)
-                command = next(item for item in report["commands"] if item.get("provider") == "openspec")
+                command = next(
+                    item
+                    for item in report["commands"]
+                    if item.get("sourceKind") == "openspec"
+                )
                 self.assertEqual(command["generation"]["status"], "contract_mismatch")
                 self.assertFalse(any(self.generated_target(repo, name).exists() for name in EXPECTED_SKILLS))
                 self.assertFalse(Path(command["generation"]["stagingProject"]).exists())
+
+    def test_generated_source_with_extra_symlink_is_rejected_before_copy(self):
+        repo = self.make_repo()
+        codex_home = self.make_codex_home()
+        staging_project = Path(tempfile.mkdtemp(prefix="devflow-openspec-source-"))
+        source_root = self.write_generated_skills(staging_project)
+        outside = Path(tempfile.mkdtemp(prefix="devflow-openspec-outside-"))
+        (source_root / "openspec-propose" / "extra-link").symlink_to(
+            outside,
+            target_is_directory=True,
+        )
+
+        report = skill_install.ensure_project_local_skills(
+            repo,
+            PLUGIN_ROOT,
+            codex_home,
+            dry_run=False,
+            refresh_existing=True,
+            openspec_skill_root=source_root,
+        )
+
+        self.assertFalse(report["ok"], report)
+        transaction = report["openspec_transaction"]
+        self.assertEqual(transaction["status"], "contract_mismatch")
+        self.assertTrue(
+            any(
+                mismatch["kind"] == "untrusted-skill-tree"
+                and mismatch["skill"] == "openspec-propose"
+                for mismatch in transaction["mismatches"]
+            ),
+            transaction,
+        )
+        self.assertFalse(any(self.generated_target(repo, name).exists() for name in EXPECTED_SKILLS))
 
     def test_command_failure_cleans_staging_and_does_not_mutate_openspec_targets(self):
         repo = self.make_repo()
@@ -264,6 +346,7 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
                 repo,
                 plugin_root=PLUGIN_ROOT,
                 codex_home=codex_home,
+                authorizations={"explicit_named_dependency_request"},
             )
 
         self.assertFalse(report["ok"], report)
@@ -347,6 +430,29 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
         self.assertEqual((custom / "SKILL.md").read_text(), custom_text)
         self.assertFalse(self.generated_target(repo, "openspec-explore").exists())
 
+    def test_invalid_utf8_existing_target_is_a_conflict_not_an_exception(self):
+        repo = self.make_repo()
+        codex_home = self.make_codex_home()
+        staging_project = Path(tempfile.mkdtemp(prefix="devflow-openspec-source-"))
+        source_root = self.write_generated_skills(staging_project)
+        corrupt = self.generated_target(repo, "openspec-propose")
+        corrupt.mkdir(parents=True)
+        (corrupt / "SKILL.md").write_bytes(b"\xff\xfe")
+
+        report = skill_install.ensure_project_local_skills(
+            repo,
+            PLUGIN_ROOT,
+            codex_home,
+            dry_run=False,
+            refresh_existing=True,
+            openspec_skill_root=source_root,
+        )
+
+        self.assertFalse(report["ok"], report)
+        item = next(item for item in report["items"] if item["skill"] == "openspec-propose")
+        self.assertEqual(item["status"], "manual-source-conflict")
+        self.assertEqual((corrupt / "SKILL.md").read_bytes(), b"\xff\xfe")
+
     def test_transaction_failure_restores_old_targets_and_removes_partial_copies(self):
         repo = self.make_repo()
         codex_home = self.make_codex_home()
@@ -384,6 +490,54 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
         hidden = list((repo / ".agents" / "skills").glob(".devflow-openspec-*"))
         self.assertEqual(hidden, [])
 
+    def test_transaction_restore_failure_retains_openspec_backup(self):
+        repo = self.make_repo()
+        codex_home = self.make_codex_home()
+        staging_project = Path(tempfile.mkdtemp(prefix="devflow-openspec-source-"))
+        source_root = self.write_generated_skills(staging_project)
+        stale = self.generated_target(repo, "openspec-propose")
+        stale.mkdir(parents=True)
+        old_text = '---\nname: openspec-propose\nmetadata:\n  generatedBy: "1.5.0"\n---\n'
+        (stale / "SKILL.md").write_text(old_text)
+        real_replace = skill_install.replace_path
+
+        def fail_apply_and_restore(source, target):
+            source = Path(source)
+            target = Path(target)
+            if source.parent.name.startswith(".devflow-openspec-backup-"):
+                raise OSError("restore fixture")
+            if (
+                source.parent.name.startswith(".devflow-openspec-stage-")
+                and target.name == "openspec-explore"
+            ):
+                raise OSError("apply fixture")
+            return real_replace(source, target)
+
+        with mock.patch.object(
+            skill_install,
+            "replace_path",
+            side_effect=fail_apply_and_restore,
+        ):
+            report = skill_install.ensure_project_local_skills(
+                repo,
+                PLUGIN_ROOT,
+                codex_home,
+                dry_run=False,
+                refresh_existing=True,
+                openspec_skill_root=source_root,
+            )
+
+        transaction = report["openspec_transaction"]
+        self.assertFalse(report["ok"], report)
+        self.assertEqual(transaction["status"], "rollback-failed")
+        self.assertEqual(transaction["rollbackStatus"], "backup-retained")
+        retained = repo / transaction["retainedBackupPath"]
+        self.assertTrue(retained.is_dir(), transaction)
+        self.assertEqual(
+            (retained / "openspec-propose" / "SKILL.md").read_text(),
+            old_text,
+        )
+
     def test_updater_prefers_cli_version_and_executes_pinned_command(self):
         codex_home = self.make_codex_home()
         stale = codex_home / "skills" / "openspec-propose" / "SKILL.md"
@@ -405,7 +559,12 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
             side_effect=lambda name: name in {"openspec", "npm"},
         ), mock.patch.object(auto_update, "run_command", side_effect=fake_run):
             self.assertEqual(auto_update.installed_openspec_version(codex_home), "1.6.0")
-            results = auto_update.run_external_updaters(codex_home, apply=True, repo=self.make_repo())
+            results = auto_update.run_external_updaters(
+                codex_home,
+                apply=True,
+                repo=self.make_repo(),
+                authorizations={"explicit_named_dependency_request"},
+            )
 
         openspec = next(item for item in results if item["name"] == "openspec-cli")
         self.assertEqual(openspec["status"], "updated-or-unchanged")

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from workflow_dependencies import dependency_report
 from workflow_constants import resolve_plugin_root
-from workflow_provider_registry import CAPABILITY_IDS, default_plugin_root, load_provider_registry
+from workflow_methodology import CAPABILITY_IDS
 
 
 def main() -> int:
@@ -17,24 +17,6 @@ def main() -> int:
     parser.add_argument("--codex-home")
     parser.add_argument("--config")
     parser.add_argument("--strict", action="store_true", help="Treat developer helpers as required.")
-    registry = load_provider_registry(default_plugin_root())
-    parser.add_argument(
-        "--methodology-profile",
-        choices=sorted(registry["methodologyProfiles"]),
-        help="Temporarily diagnose one methodology profile without changing project config.",
-    )
-    parser.add_argument(
-        "--roadmap-provider",
-        choices=sorted(registry["roadmapProviders"]),
-        help="Temporarily diagnose one roadmap provider without changing project config.",
-    )
-    parser.add_argument(
-        "--provider-source",
-        action="append",
-        default=[],
-        metavar="PROVIDER=SOURCE_ID",
-        help="Temporarily bind one provider source. Repeat for multiple selected providers.",
-    )
     parser.add_argument(
         "--capability",
         action="append",
@@ -51,9 +33,6 @@ def main() -> int:
         args.strict,
         Path(args.repo).expanduser().resolve() if args.repo else None,
         set(args.capability),
-        args.methodology_profile,
-        args.roadmap_provider,
-        args.provider_source,
     )
     if args.json:
         print(json.dumps(report, indent=2))

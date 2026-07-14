@@ -71,7 +71,6 @@ def collect_workflow_truth(repo: Path, state: dict[str, Any]) -> dict[str, Any]:
     return {
         "current_stage": state.get("current_stage", "unknown"),
         "current_change": change_id,
-        "current_phase": state.get("current_phase", {}).get("id", "none"),
         "compact_status": state.get("context_management", {}).get(
             "compact_status",
             "unknown",

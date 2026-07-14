@@ -4,10 +4,26 @@
 
 Describe the final delegated deliverable in one or two concrete sentences.
 
+## Worker ID
+
+`<worker-id>`
+
+Use one repository-task-unique ID for this worker. Read-only explorers and
+reviewers require an ID too.
+
 ## Scope
 
-- Allowed: list the exact files, directories, or read-only areas the worker may
-  inspect or modify.
+- Allowed write set for worker `<worker-id>` only:
+  - `<exact-repository-relative-path>`
+- The write-set owner must match this contract's Worker ID. Use one contract per
+  worker. Write sets must be disjoint; repeat `--contract` when validating
+  multiple contracts. Worker IDs must be unique across all files.
+- Allowed read-only scope: list the exact files or directories the worker may
+  inspect without modifying.
+- Primary-owned shared paths: never assign root control-plane files,
+  `.planning/devflow/**`, `openspec/**`, any nested `.codex-plugin/**`, or
+  generated `plugins/**` release paths to a worker. The primary agent owns
+  integration, final verification, and the completion claim.
 - Forbidden: list boundaries the worker must not touch, including shared
   workflow files, release assets, unrelated modules, secrets, destructive
   commands, or any path outside the named scope.

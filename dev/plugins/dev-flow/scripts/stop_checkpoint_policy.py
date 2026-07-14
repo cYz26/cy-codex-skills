@@ -51,8 +51,7 @@ def main() -> int:
 
 def needs_checkpoint(state: dict, context: dict) -> bool:
     gates = state.get("gates", {})
-    stage = state.get("current_stage")
-    boundary_reached = bool(gates.get("verification_passed")) or stage == "phase_shipped"
+    boundary_reached = bool(gates.get("verification_passed"))
     return boundary_reached and context.get("last_checkpoint_id") in (None, "", "none")
 
 

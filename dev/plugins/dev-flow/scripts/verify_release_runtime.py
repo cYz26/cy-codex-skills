@@ -32,7 +32,7 @@ def verify_release_runtime(plugin_root: Path, repo_root: Path | None = None) -> 
     check_sha_file(scripts_root / SHA256_NAME, archive_sha, checks)
     check_source_commit(scripts_root / SOURCE_COMMIT_NAME, manifest, checks)
     check_sources(repo_root, manifest, checks)
-    check_provider_defaults(plugin_root, checks)
+    check_methodology_contract(plugin_root, checks)
 
     ok = all(check["ok"] for check in checks)
     return {
@@ -165,18 +165,69 @@ def check_sources(repo_root: Path, manifest: dict[str, Any], checks: list[dict[s
         )
 
 
-def check_provider_defaults(plugin_root: Path, checks: list[dict[str, Any]]) -> None:
-    path = plugin_root / "docs" / "provider_profiles.json"
+def check_methodology_contract(plugin_root: Path, checks: list[dict[str, Any]]) -> None:
+    path = plugin_root / "docs" / "dependency-provenance.json"
     if not path.exists():
-        add_check(checks, "provider defaults are core plus none", False, str(path))
+        add_check(checks, "methodology contract exists", False, str(path))
         return
     try:
-        defaults = json.loads(path.read_text()).get("defaults", {})
+        document = json.loads(path.read_text())
     except (OSError, json.JSONDecodeError) as error:
-        add_check(checks, "provider defaults are core plus none", False, str(error))
+        add_check(checks, "methodology contract parses", False, str(error))
         return
-    ok = defaults == {"methodologyProfile": "core", "roadmapProvider": "none"}
-    add_check(checks, "provider defaults are core plus none", ok, json.dumps(defaults, sort_keys=True))
+    methodology = document.get("methodology", {})
+    expected_skills = [
+        "grilling",
+        "tdd",
+        "diagnosing-bugs",
+        "code-review",
+        "codebase-design",
+        "domain-modeling",
+    ]
+    identity = {
+        "name": methodology.get("name"),
+        "repository": methodology.get("repository"),
+        "ref": methodology.get("ref"),
+        "commit": methodology.get("commit"),
+    }
+    identity_ok = identity == {
+        "name": "mattpocock-skills",
+        "repository": "mattpocock/skills",
+        "ref": "v1.1.0",
+        "commit": "d574778f94cf620fcc8ce741584093bc650a61d3",
+    }
+    add_check(
+        checks,
+        "methodology identity is pinned",
+        identity_ok,
+        json.dumps(identity, sort_keys=True),
+    )
+    skill_hashes = methodology.get("skillHashes", {})
+    add_check(
+        checks,
+        "methodology skill set is exact",
+        list(skill_hashes) == expected_skills,
+        json.dumps(list(skill_hashes)),
+    )
+    vendor_root = plugin_root / "vendor" / "mattpocock-skills"
+    file_hashes = methodology.get("fileHashes", {})
+    for relative, expected_sha in file_hashes.items():
+        source = vendor_root / str(relative)
+        actual_sha = file_sha256(source) if source.is_file() else None
+        add_check(
+            checks,
+            f"methodology file sha256 matches: {relative}",
+            actual_sha == expected_sha,
+            f"expected {expected_sha}, actual {actual_sha or 'missing'}",
+        )
+    license_path = plugin_root / str(methodology.get("licensePath") or "")
+    license_sha = file_sha256(license_path) if license_path.is_file() else None
+    add_check(
+        checks,
+        "methodology license sha256 matches",
+        license_sha == methodology.get("licenseSha256"),
+        f"expected {methodology.get('licenseSha256') or 'missing'}, actual {license_sha or 'missing'}",
+    )
 
 
 def infer_repo_root(plugin_root: Path) -> Path:

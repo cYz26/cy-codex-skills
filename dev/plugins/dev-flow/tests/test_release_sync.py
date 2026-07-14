@@ -18,6 +18,12 @@ sys.path.insert(0, str(SCRIPTS))
 from release_promotion_gate import quality_gates, run_gate
 import workflow_release_sync
 from workflow_release_sync import release_eval_target, sync_release_assets
+from workflow_release_verification import (
+    DEVFLOW_PREPROMOTION_COMMAND,
+    record_release_verification,
+    release_promotion_readiness,
+    release_source_snapshot,
+)
 
 
 class ReleaseSyncTests(unittest.TestCase):
@@ -27,7 +33,9 @@ class ReleaseSyncTests(unittest.TestCase):
         return repo
 
     def apply_with_internal_test_authorization(self, repo, targets):
-        self.write_state(repo, verification_passed=True)
+        self.write_state(repo, verification_passed=True, release_allowed=True)
+        for target in targets:
+            self.write_release_verification(repo, target)
         authorization = workflow_release_sync._issue_release_apply_authorization(
             repo,
             targets,
@@ -54,8 +62,8 @@ class ReleaseSyncTests(unittest.TestCase):
         (dev_root / "scripts" / "tool.py").write_text("print('dev')\n")
         (dev_root / "docs").mkdir()
         (dev_root / "docs" / "dependency-provenance.json").write_text('{"schemaVersion":2}\n')
-        (dev_root / "docs" / "superpowers" / "plans").mkdir(parents=True)
-        (dev_root / "docs" / "superpowers" / "plans" / "draft.md").write_text("draft\n")
+        (dev_root / "docs" / "history").mkdir(parents=True)
+        (dev_root / "docs" / "history" / "draft.md").write_text("draft\n")
         (dev_root / "tests").mkdir()
         (dev_root / "tests" / "test_dev_only.py").write_text("SHOULD_NOT_RELEASE = True\n")
         (dev_root / "log").mkdir()
@@ -79,21 +87,62 @@ class ReleaseSyncTests(unittest.TestCase):
             (release_root / "SKILL.md").write_text("old\n")
         return dev_root, release_root
 
-    def write_state(self, repo, *, verification_passed):
+    def write_state(
+        self,
+        repo,
+        *,
+        verification_passed,
+        release_allowed=False,
+        implementation_done=True,
+        change_status="verified",
+    ):
         (repo / ".planning" / "devflow").mkdir(parents=True, exist_ok=True)
         value = "true" if verification_passed else "false"
+        release_value = "true" if release_allowed else "false"
+        implementation_value = "true" if implementation_done else "false"
         (repo / ".planning" / "devflow" / "STATE.md").write_text(
             f"""---
 workflow_version: 0.3.0
 current_stage: executing
+current_change:
+  id: release-fixture
+  status: {change_status}
 gates:
+  spec_approved: true
+  plan_written: true
+  implementation_done: {implementation_value}
   verification_passed: {value}
+  state_updated: true
+  release_allowed: {release_value}
 context_management:
   compact_status: not_needed
 ---
 # State
 """
         )
+
+    def write_release_verification(self, repo, target="sample"):
+        development_command = (
+            DEVFLOW_PREPROMOTION_COMMAND
+            if target == "dev-flow"
+            else (
+                "PYTHONDONTWRITEBYTECODE=1 python3.12 -m unittest discover "
+                f"-s dev/plugins/{target}/tests -p 'test_*.py'"
+            )
+        )
+        report = record_release_verification(
+            repo,
+            target,
+            "release-fixture",
+            development_command=development_command,
+            development_result="pass",
+            openspec_command="openspec validate --all --strict",
+            openspec_result="pass",
+            diff_command="git diff --check",
+            diff_result="pass",
+        )
+        self.assertTrue(report["ok"], report)
+        return report
 
     def load_runtime_packager(self):
         path = PLUGIN_ROOT.parents[2] / "dev" / "scripts" / "package_devflow_release_runtime.py"
@@ -128,14 +177,48 @@ context_management:
                 }
             )
         )
+        (repo / "dev" / "scripts").mkdir(parents=True, exist_ok=True)
+        (repo / "dev" / "scripts" / "package_devflow_release_runtime.py").write_text(
+            "# fixture packager\n"
+        )
+        (repo / "dev" / "scripts" / "run_devflow_prepromotion_tests.py").write_text(
+            "# fixture pre-promotion suite\n"
+        )
         (release_root / "docs").mkdir(parents=True)
-        (release_root / "docs" / "provider_profiles.json").write_text(
+        vendor_root = release_root / "vendor" / "mattpocock-skills"
+        skill_names = [
+            "grilling",
+            "tdd",
+            "diagnosing-bugs",
+            "code-review",
+            "codebase-design",
+            "domain-modeling",
+        ]
+        file_hashes = {}
+        skill_hashes = {}
+        for skill_name in skill_names:
+            skill_path = vendor_root / skill_name / "SKILL.md"
+            skill_path.parent.mkdir(parents=True, exist_ok=True)
+            skill_path.write_text(f"# {skill_name}\n")
+            digest = hashlib.sha256(skill_path.read_bytes()).hexdigest()
+            file_hashes[f"{skill_name}/SKILL.md"] = digest
+            skill_hashes[skill_name] = digest
+        license_path = vendor_root / "UPSTREAM_LICENSE.txt"
+        license_path.write_text("MIT\n")
+        (release_root / "docs" / "dependency-provenance.json").write_text(
             json.dumps(
                 {
-                    "defaults": {
-                        "methodologyProfile": "core",
-                        "roadmapProvider": "none",
-                    }
+                    "schemaVersion": 3,
+                    "methodology": {
+                        "name": "mattpocock-skills",
+                        "repository": "mattpocock/skills",
+                        "ref": "v1.1.0",
+                        "commit": "d574778f94cf620fcc8ce741584093bc650a61d3",
+                        "skillHashes": skill_hashes,
+                        "fileHashes": file_hashes,
+                        "licensePath": "vendor/mattpocock-skills/UPSTREAM_LICENSE.txt",
+                        "licenseSha256": hashlib.sha256(license_path.read_bytes()).hexdigest(),
+                    },
                 }
             )
         )
@@ -248,7 +331,8 @@ context_management:
         self.assertTrue(json.loads(ok.stdout)["ok"])
         check_names = {check["name"] for check in json.loads(ok.stdout)["checks"]}
         self.assertIn("runtime archive members match manifest sources", check_names)
-        self.assertIn("provider defaults are core plus none", check_names)
+        self.assertIn("methodology identity is pinned", check_names)
+        self.assertIn("methodology skill set is exact", check_names)
 
         with (release_scripts / "devflow_runtime.pyz").open("ab") as archive:
             archive.write(b"drift")
@@ -285,7 +369,7 @@ context_management:
         self.assertEqual(asset["kind"], "plugin")
         self.assertIn("skills/demo/SKILL.md", asset["changedFiles"])
         self.assertIn("docs/dependency-provenance.json", asset["changedFiles"])
-        self.assertNotIn("docs/superpowers/plans/draft.md", asset["changedFiles"])
+        self.assertNotIn("docs/history/draft.md", asset["changedFiles"])
         self.assertNotIn("tests/test_dev_only.py", asset["changedFiles"])
         self.assertNotIn("log/debug.log", asset["changedFiles"])
 
@@ -300,7 +384,7 @@ context_management:
             (release_root / "docs" / "dependency-provenance.json").read_text(),
             '{"schemaVersion":2}\n',
         )
-        self.assertFalse((release_root / "docs" / "superpowers" / "plans" / "draft.md").exists())
+        self.assertFalse((release_root / "docs" / "history" / "draft.md").exists())
         self.assertFalse((release_root / "tests" / "test_dev_only.py").exists())
         self.assertFalse((release_root / "log" / "debug.log").exists())
 
@@ -533,7 +617,7 @@ context_management:
         source_scripts.mkdir()
         executable_names = (
             "devflow_stop_hook.py",
-            "superpowers_artifact_mapping.py",
+            "inspect_legacy_workflow_config.py",
             "verify_release_runtime.py",
         )
         for name in (*executable_names, "referenced_extra.py", "internal_only.py"):
@@ -563,6 +647,10 @@ context_management:
         shutil.copy2(
             PLUGIN_ROOT.parents[2] / "dev" / "scripts" / "package_devflow_release_runtime.py",
             repo_packager,
+        )
+        shutil.copy2(
+            PLUGIN_ROOT.parents[2] / "dev" / "scripts" / "run_devflow_prepromotion_tests.py",
+            repo / "dev" / "scripts" / "run_devflow_prepromotion_tests.py",
         )
         metadata = json.loads((source_root / ".codex-plugin" / "release-sync.json").read_text())
         packager = self.load_runtime_packager()
@@ -640,7 +728,8 @@ context_management:
         (release_root / "docs" / "dependency-provenance.json").write_text('{"schemaVersion":2}\n')
         (release_root / "scripts").mkdir(exist_ok=True)
         (release_root / "scripts" / "generated.py").write_text("generated\n")
-        self.write_state(repo, verification_passed=True)
+        self.write_state(repo, verification_passed=True, release_allowed=True)
+        self.write_release_verification(repo, "sample")
 
         report = run_gate(repo, apply=True, target="sample")
 
@@ -671,7 +760,8 @@ context_management:
         self.assertEqual(before["status"], "not_applicable", before)
         self.assertEqual((release_root / "skills" / "demo" / "SKILL.md").read_text(), "old\n")
 
-        self.write_state(repo, verification_passed=True)
+        self.write_state(repo, verification_passed=True, release_allowed=True)
+        self.write_release_verification(repo, "sample")
         after = run_gate(repo, apply=True, target="sample")
 
         self.assertEqual(after["status"], "synced", after)
@@ -687,10 +777,135 @@ context_management:
             "---\nname: demo\ndescription: dev\n---\n",
         )
 
+    def test_focused_test_list_cannot_create_release_verification(self):
+        repo = self.make_repo()
+        self.write_plugin(repo)
+
+        report = record_release_verification(
+            repo,
+            "sample",
+            "release-fixture",
+            development_command=(
+                "python3.12 -m unittest dev.plugins.sample.tests.test_one "
+                "test_two test_three test_four test_five"
+            ),
+            development_result="pass",
+            openspec_command="openspec validate --all --strict",
+            openspec_result="pass",
+            diff_command="git diff --check",
+            diff_result="pass",
+        )
+
+        self.assertFalse(report["ok"], report)
+        self.assertTrue(
+            any("canonical complete test command" in error for error in report["errors"]),
+            report,
+        )
+
+    def test_release_source_snapshot_rejects_missing_declared_build_helper(self):
+        repo = self.make_repo()
+        self.write_plugin(
+            repo,
+            sync_config={
+                "buildCommands": [["{python}", "dev/scripts/missing-build-helper.py"]],
+            },
+        )
+
+        snapshot = release_source_snapshot(repo, "sample")
+
+        self.assertFalse(snapshot["ready"], snapshot)
+        self.assertIn(
+            "dev/scripts/missing-build-helper.py",
+            snapshot["untrustedPaths"],
+        )
+
+    def test_release_readiness_requires_implementation_done_and_verified_change(self):
+        for state_overrides, blocker in (
+            ({"implementation_done": False}, "implementation_done"),
+            ({"change_status": "executing"}, "current_change_verified"),
+        ):
+            with self.subTest(blocker=blocker):
+                repo = self.make_repo()
+                self.write_plugin(repo)
+                self.write_state(
+                    repo,
+                    verification_passed=True,
+                    release_allowed=True,
+                    **state_overrides,
+                )
+                self.write_release_verification(repo)
+
+                readiness = release_promotion_readiness(
+                    repo,
+                    "sample",
+                    require_authorization=True,
+                )
+
+                self.assertFalse(readiness["ready"], readiness)
+                self.assertIn(blocker, readiness["blockers"])
+
+    def test_release_readiness_rejects_stale_source_evidence(self):
+        repo = self.make_repo()
+        dev_root, _ = self.write_plugin(repo)
+        self.write_state(repo, verification_passed=True, release_allowed=True)
+        self.write_release_verification(repo)
+        (dev_root / "skills" / "demo" / "SKILL.md").write_text("changed after receipt\n")
+
+        readiness = release_promotion_readiness(
+            repo,
+            "sample",
+            require_authorization=True,
+        )
+
+        self.assertFalse(readiness["ready"], readiness)
+        self.assertEqual(readiness["evidence"]["status"], "stale_evidence")
+
+    def test_apply_flag_without_durable_release_authorization_cannot_mutate(self):
+        repo = self.make_repo()
+        _, release_root = self.write_plugin(repo)
+        self.write_state(repo, verification_passed=True, release_allowed=False)
+        self.write_release_verification(repo)
+
+        report = run_gate(repo, apply=True, target="sample")
+
+        self.assertEqual(report["status"], "authorization_required", report)
+        self.assertIn(
+            "durable_release_authorization",
+            report["releaseReadiness"]["blockers"],
+        )
+        self.assertEqual(
+            (release_root / "skills" / "demo" / "SKILL.md").read_text(),
+            "old\n",
+        )
+
+    def test_symlinked_external_state_cannot_authorize_release(self):
+        repo = self.make_repo()
+        _, release_root = self.write_plugin(repo)
+        self.write_state(repo, verification_passed=True, release_allowed=True)
+        self.write_release_verification(repo)
+        outside = Path(tempfile.mkdtemp(prefix="devflow-release-state-outside-"))
+        self.addCleanup(lambda: shutil.rmtree(outside, ignore_errors=True))
+        planning = repo / ".planning"
+        planning.replace(outside / "planning")
+        planning.symlink_to(outside / "planning", target_is_directory=True)
+
+        report = run_gate(repo, apply=True, target="sample")
+
+        self.assertEqual(report["status"], "not_applicable", report)
+        self.assertIn(
+            "trusted_namespaced_state",
+            report["releaseReadiness"]["blockers"],
+        )
+        self.assertEqual(
+            (release_root / "skills" / "demo" / "SKILL.md").read_text(),
+            "old\n",
+        )
+
     def test_release_promotion_gate_is_dry_run_by_default(self):
         repo = self.make_repo()
         _, release_root = self.write_plugin(repo)
         self.write_state(repo, verification_passed=True)
+        self.write_release_verification(repo, "sample")
 
         report = run_gate(repo, target="sample")
 
@@ -702,7 +917,7 @@ context_management:
     def test_devflow_metadata_builds_packaged_runtime_instead_of_copying_raw_scripts(self):
         metadata = json.loads((PLUGIN_ROOT / ".codex-plugin" / "release-sync.json").read_text())
 
-        self.assertEqual(metadata["include"], ["tests/test_packaged_runtime.py"])
+        self.assertEqual(metadata["include"], ["tests/test_packaged_runtime.py", "vendor/**"])
         self.assertEqual(metadata["defaultExcludeOverrides"], ["tests/**"])
         self.assertIn("scripts/**", metadata["exclude"])
         self.assertEqual(metadata["buildCommands"], [["{python}", "dev/scripts/package_devflow_release_runtime.py"]])
@@ -717,6 +932,8 @@ context_management:
         self.assertIn("scripts/devflow_runtime.sha256", metadata["managedOutputs"])
         self.assertIn("scripts/devflow_runtime.SOURCE_COMMIT", metadata["managedOutputs"])
         self.assertIn("scripts/devflow_launcher.py", metadata["managedOutputs"])
+        self.assertIn("scripts/record_release_verification.py", metadata["managedOutputs"])
+        self.assertIn("scripts/record_spec_sync.py", metadata["managedOutputs"])
 
     def test_devflow_stop_hook_uses_single_read_only_stop_entrypoint(self):
         hooks = json.loads((PLUGIN_ROOT / "hooks.json").read_text())["hooks"]
@@ -800,8 +1017,11 @@ context_management:
         _, other_release = self.write_plugin(repo, "other")
         other_repo = self.make_repo()
         _, other_repo_release = self.write_plugin(other_repo, "sample")
-        self.write_state(repo, verification_passed=True)
-        self.write_state(other_repo, verification_passed=True)
+        self.write_state(repo, verification_passed=True, release_allowed=True)
+        self.write_state(other_repo, verification_passed=True, release_allowed=True)
+        self.write_release_verification(repo, "sample")
+        self.write_release_verification(repo, "other")
+        self.write_release_verification(other_repo, "sample")
 
         repo_grant = workflow_release_sync._issue_release_apply_authorization(
             repo,
@@ -860,7 +1080,8 @@ context_management:
     def test_release_apply_authorization_expires_before_mutation(self):
         repo = self.make_repo()
         _, release_root = self.write_plugin(repo, "sample")
-        self.write_state(repo, verification_passed=True)
+        self.write_state(repo, verification_passed=True, release_allowed=True)
+        self.write_release_verification(repo, "sample")
 
         with mock.patch.object(
             workflow_release_sync.time,

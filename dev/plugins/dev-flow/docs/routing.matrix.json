@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "capabilityRegistry": "provider_profiles.json#/capabilities",
+  "capabilityRegistry": "workflow_methodology.py#CAPABILITY_ROUTES",
   "routes": [
     {
       "id": "mandatory-full-openspec",
@@ -32,6 +32,10 @@
         {
           "capability": "execution-orchestration",
           "when": "approved work is delegated, parallelized, or isolated"
+        },
+        {
+          "capability": "domain-language-modeling",
+          "when": "domain concepts, vocabulary, invariants, or bounded contexts are in scope"
         }
       ],
       "recommendedSkillWhenReady": "openspec-apply-change",
@@ -56,6 +60,10 @@
         {
           "capability": "execution-orchestration",
           "when": "approved work is delegated, parallelized, or isolated"
+        },
+        {
+          "capability": "domain-language-modeling",
+          "when": "domain concepts, vocabulary, invariants, or bounded contexts are in scope"
         }
       ],
       "recommendedSkillWhenReady": "execute-task"
@@ -70,7 +78,12 @@
         "architecture-guidance",
         "completion-proof"
       ],
-      "conditionalCapabilities": [],
+      "conditionalCapabilities": [
+        {
+          "capability": "domain-language-modeling",
+          "when": "domain concepts, vocabulary, invariants, or bounded contexts are in scope"
+        }
+      ],
       "recommendedSkillWhenReady": "feature-intake"
     }
   ]

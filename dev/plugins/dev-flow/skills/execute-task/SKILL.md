@@ -9,13 +9,12 @@ Execute one approved ledger item and leave fresh evidence.
 
 ## Capability Routing
 
-Always resolve `test-first-execution` from `docs/provider_profiles.json`.
+Always resolve `test-first-execution` from `scripts/workflow_methodology.py`.
 Resolve `root-cause-diagnosis` only for a hard bug, regression, or unexpected
 behavior. Resolve `execution-orchestration` only when approved work is
-delegated, parallelized, or isolated. The selected implementation may add
-discipline, but it cannot replace OpenSpec tasks, DevFlow evidence, or the
-Completion Contract. Provider details live in
-`docs/provider-profile-migration.md`.
+delegated, parallelized, or isolated. Matt primitives add engineering
+discipline but cannot replace OpenSpec tasks, DevFlow evidence, or the
+Completion Contract.
 
 Before editing, run selection-scoped diagnosis with the capabilities actually
 triggered by the item, for example:
@@ -27,8 +26,8 @@ python3 scripts/check_dependencies.py --repo <repo> \
 ```
 
 Use the same flags with `activate_project_dependencies.py` when activation is
-needed. This is dry-run by default; provider installation, project links, and
-lock persistence occur only in explicit apply mode.
+needed. This is dry-run by default; project-local skill writes occur only in
+explicit apply mode.
 
 ## Procedure
 

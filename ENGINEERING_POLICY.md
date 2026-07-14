@@ -2,30 +2,69 @@
 
 ## Purpose
 
-This file holds durable engineering rules that are too detailed for
-`AGENTS.md`. `AGENTS.md` routes agents here when the current task needs
-contract-first execution, testing, evidence, review, dependency, or release
-policy.
+This file records durable engineering rules used by DevFlow for contract-first
+execution, testing, evidence, dependency, review, and release decisions.
 
 ## Contract-First Execution
 
-- Define the Goal Contract before non-trivial execution.
-- Keep required behavior in OpenSpec, the selected roadmap-provider plan, or
-  `TASK_LEDGER.md`; GSD phase plans apply only when the GSD overlay is selected.
-- Treat all external methodology artifacts as drafts or method evidence until
-  promoted into the canonical control plane.
-- Do not run hidden installers, hook trust actions, release sync apply, or
-  archive operations from hooks.
+- Define the Goal Contract before long-running, migration/release, broad,
+  delegation-backed, or cross-context work.
+- Keep required behavior in OpenSpec and execution state in `TASK_LEDGER.md`
+  plus `.planning/devflow/**`.
+- Matt skills provide engineering primitives only; their notes are drafts until
+  promoted into an approved canonical artifact.
+- Hooks remain read-only with respect to installers, dependency activation,
+  project migration, release sync apply, archive, and Git operations.
+- Unknown capability IDs, stale required resources, ambiguous ownership, and
+  retired workflow keys fail closed.
 
 ## Testing and Evidence
 
-- Use TDD for feature, bug, refactor, and behavior changes.
-- Record red/green evidence when TDD is required.
-- Run fresh validation before completion claims.
-- Store DevFlow verification evidence under `.planning/devflow/verification/`.
+- Use TDD for features, bugs, refactors, business logic, and risky behavior.
+- Record the observed RED failure and final GREEN result, or document why TDD
+  does not apply.
+- Prefer public-seam tests and characterization coverage before risky
+  brownfield edits.
+- Run fresh focused and broad validation before completion claims.
+- Store DevFlow verification evidence below
+  `.planning/devflow/verification/` and link it from the active ledger item.
 
-## Dependencies and Release
+## Bounded Subagents
 
-- Record dependency provenance and source channels.
-- Keep release assets synced from the managed dev source.
-- Run release runtime verification before release readiness claims.
+- Validate an Agent Task Contract before delegating implementation.
+- Assign unique workers disjoint write sets; exact and parent/child overlaps are
+  invalid.
+- Reserve shared control-plane, OpenSpec, DevFlow state, release metadata,
+  generated release, integration, and final proof for the main agent.
+- Workers report commands, test logs, changed files, unverified areas, and
+  residual risks, then wait for integration review.
+- A worker must stop before scope expansion, dependency changes, ambiguous
+  cleanup, public-contract changes, or unapproved external effects.
+
+## Dependencies and Source Integrity
+
+- Record repository, immutable commit, release ref, license, and file hashes for
+  vendored methodology resources.
+- Install or update dependencies only after explicit authorization.
+- Do not let global installations satisfy project-local readiness.
+- Treat secret-bearing configuration as data to inspect safely; never echo
+  tokens or credentials in reports.
+
+## Release
+
+- Develop managed plugin and skill sources under `dev/`; generate release
+  counterparts through the release promotion gate.
+- Run release runtime verification, source/release parity checks, packaged
+  tests, and release-target Plugin Eval before readiness.
+- Release apply, installed-cache refresh, project migration, archive, commit,
+  push, and PR creation remain distinct authorization boundaries.
+
+## Review and Completion
+
+- Review correctness, compatibility, scope, evidence, generated artifacts,
+  dependency changes, and remaining risks.
+- Do not weaken or delete a current test only to hide a regression; remove a
+  test when its production contract is explicitly retired and replace any
+  still-relevant coverage.
+- Mark a ledger item done only after its required evidence passes.
+- A completion claim names exact commands/results and any residual risk.

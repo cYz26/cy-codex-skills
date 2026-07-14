@@ -13,25 +13,11 @@ import sys
 from typing import Any
 
 from workflow_context_config import read_config as read_toml_config
-import workflow_provider_profiles as provider_profiles
 from workflow_dependency_catalog import OPENSPEC_WORKFLOW_SKILLS
 from plugin_project_migration import project_migration_sync_result
 from workflow_constants import resolve_plugin_root
 from workflow_dependency_provenance import dependency_provenance_fields, dependency_update_command
-from workflow_dependency_plugin_checks import (
-    find_plugin_roots,
-    read_json,
-    source_channel_for_root,
-    version_tuple,
-)
-from workflow_provider_profiles import (
-    load_provider_registry,
-    matching_superpowers_source,
-    resolve_provider_selection,
-    superpowers_candidate_hashes_match,
-    superpowers_hook_policy_valid,
-)
-from workflow_provider_registry import default_plugin_root as provider_registry_root, side_effect_decision
+from workflow_side_effect_policy import side_effect_decision
 
 
 def parse_args() -> argparse.Namespace:
@@ -62,7 +48,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--skip-external-updaters",
         action="store_true",
-        help="Do not run known external updaters such as Lark, GSD, or OpenSpec.",
+        help="Do not run known external updaters such as Lark or OpenSpec.",
     )
     parser.add_argument(
         "--repo",
@@ -125,38 +111,6 @@ def npm_latest_version(package: str) -> str | None:
     if not result["ok"]:
         return None
     return parse_jsonish_version(result["stdout"])
-
-
-def read_first_existing(paths: list[Path]) -> str | None:
-    for path in paths:
-        if path.exists():
-            value = path.read_text().strip()
-            if value:
-                return value
-    return None
-
-
-def installed_gsd_core_version(codex_home: Path, repo: Path | None = None) -> str | None:
-    paths: list[Path] = []
-    if repo is not None:
-        paths.append(repo / ".codex" / "gsd-core" / "VERSION")
-    paths.append(codex_home / "gsd-core" / "VERSION")
-    return read_first_existing(paths)
-
-
-def has_gsd_core(codex_home: Path, repo: Path | None = None) -> bool:
-    if installed_gsd_core_version(codex_home, repo):
-        return True
-    if repo is not None and (repo / ".codex" / "skills" / "gsd-update" / "SKILL.md").exists():
-        return True
-    return (codex_home / "gsd-core" / "VERSION").exists()
-
-
-def gsd_core_update_command(repo: Path | None) -> list[str]:
-    command = dependency_update_command("gsd-core")
-    if repo is None:
-        return ["--global" if part == "--local" else part for part in command]
-    return command
 
 
 def installed_openspec_version(codex_home: Path) -> str | None:
@@ -600,141 +554,6 @@ def migration_sync_repo(value: str | None) -> Path | None:
     return None
 
 
-def superpowers_update_result(
-    codex_home: Path,
-    apply: bool,
-    source_record: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    if not isinstance(source_record, dict):
-        return item(
-            "external-updater",
-            "superpowers",
-            "source-selection-required",
-            "Select and persist one authoritative Superpowers source before updating.",
-        )
-    source_channel = str(source_record.get("source_channel") or "")
-    target_version = str(source_record.get("version") or "")
-    if not source_channel or not target_version:
-        return item(
-            "external-updater",
-            "superpowers",
-            "source-selection-required",
-            "Selected Superpowers source has no pinned channel/version.",
-            sourceId=source_record.get("source_id"),
-        )
-    channel_roots = [
-        root
-        for root in find_plugin_roots(codex_home, "superpowers")
-        if source_channel_for_root(codex_home, root) == source_channel
-    ]
-    versions = [str(read_json(root / ".codex-plugin" / "plugin.json").get("version") or "") for root in channel_roots]
-    current = max(versions, key=version_tuple) if versions else None
-    plugin_root = next(
-        (
-            root
-            for root in channel_roots
-            if str(read_json(root / ".codex-plugin" / "plugin.json").get("version") or "") == current
-        ),
-        None,
-    )
-    install_command = list(source_record.get("updateCommand") or [])
-    if not install_command:
-        return item(
-            "external-updater",
-            "superpowers",
-            "source-selection-required",
-            "Selected Superpowers source has no authoritative update command.",
-            sourceId=source_record.get("source_id"),
-        )
-    candidate = (
-        {
-            "root": str(plugin_root),
-            "sourceChannel": source_channel,
-            "version": current,
-            "manifestDigest": hashlib.sha256(
-                (plugin_root / ".codex-plugin" / "plugin.json").read_bytes()
-            ).hexdigest(),
-        }
-        if plugin_root and current == target_version
-        else None
-    )
-    manifest = read_json(plugin_root / ".codex-plugin" / "plugin.json") if plugin_root else {}
-    strict_profile = load_provider_registry()["methodologyProfiles"]["strict-superpowers"]
-    integrity_skills = list(strict_profile["requiredSkills"])
-    if plugin_root:
-        integrity_skills.extend(
-            skill
-            for skill in strict_profile["conditionalSkills"]
-            if (plugin_root / "skills" / skill / "SKILL.md").is_file()
-        )
-    content_ready = bool(
-        candidate
-        and superpowers_candidate_hashes_match(
-            candidate,
-            source_record,
-            integrity_skills,
-        )
-        and superpowers_hook_policy_valid(plugin_root, manifest, source_record)
-    )
-    needs_update = current != target_version or not content_ready
-    provenance = dependency_provenance_fields("superpowers", command_name="updateCommand")
-    fields = {
-        **provenance,
-        "current": current,
-        "latest": target_version,
-        "recommendedVersion": target_version,
-        "sourceId": source_record.get("source_id"),
-        "sourceChannel": source_channel,
-        "pluginRoot": str(plugin_root) if plugin_root else None,
-        "installCommand": install_command,
-        "updateAvailable": needs_update,
-        "contentReady": content_ready,
-    }
-
-    config = read_config(codex_home)
-    if source_record.get("requiresExistingMarketplace") and source_channel not in config.get(
-        "marketplaces", {}
-    ):
-        return item(
-            "external-updater",
-            "superpowers",
-            "source-registration-required",
-            f"Marketplace {source_channel} must be registered explicitly before update.",
-            **fields,
-        )
-
-    if not apply:
-        status = "update-available" if needs_update else "unchanged"
-        if needs_update:
-            detail = f"read-only check; apply would run {' '.join(install_command)}"
-        else:
-            detail = f"Selected Superpowers source is pinned at {target_version}"
-        return item("external-updater", "superpowers", status, detail, **fields)
-
-    if not needs_update:
-        return item(
-            "external-updater",
-            "superpowers",
-            "unchanged",
-            f"Selected Superpowers source is pinned at {target_version}",
-            **fields,
-        )
-
-    if not executable_exists("codex"):
-        return item(
-            "external-updater",
-            "superpowers",
-            "skipped",
-            "codex executable not available",
-            **fields,
-        )
-
-    result = run_command(install_command, timeout=600)
-    status = "updated-or-unchanged" if result["ok"] else "failed"
-    detail = short_output(result)
-    return item("external-updater", "superpowers", status, detail, **fields)
-
-
 def run_external_updaters(
     codex_home: Path,
     apply: bool,
@@ -742,30 +561,20 @@ def run_external_updaters(
     authorizations: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
-    granted = (
-        set(authorizations)
-        if authorizations is not None
-        else ({"explicit_named_dependency_request"} if apply else set())
-    )
+    granted = set(authorizations or set())
     authorization = side_effect_decision(
-        provider_registry_root(),
-        "dependency.install_update",
-        granted,
+        resolve_plugin_root(), "dependency.install_update", granted
     )
     if apply and not authorization["authorized"]:
         return [
             item(
                 "external-updater",
-                "selected-providers",
+                "external-dependencies",
                 "authorization-required",
                 f"side-effect policy: {authorization['denial']}",
                 sideEffect=authorization,
             )
         ]
-    selection = resolve_provider_selection(repo, codex_home, read_config(codex_home)) if repo else None
-    methodology = selection.get("effectiveMethodologyProfile") if selection else "core"
-    roadmap = selection.get("effectiveRoadmapProvider") if selection else "none"
-
     has_lark_skills = (Path.home() / ".agents" / "skills" / "lark-shared" / "SKILL.md").exists()
     if executable_exists("lark-cli") or has_lark_skills:
         if not apply:
@@ -784,39 +593,6 @@ def run_external_updaters(
             results.append(item("external-updater", "lark-cli-and-skills", status, detail))
         else:
             results.append(item("external-updater", "lark-cli-and-skills", "skipped", "npm or npx not available"))
-
-    if methodology == "strict-superpowers":
-        binding = selection.get("providerSelectors", {}).get("superpowers", {})
-        if not binding:
-            binding = selection.get("providerLock", {}).get("providers", {}).get("superpowers", {})
-        source = matching_superpowers_source(
-            binding,
-            provider_profiles.trusted_provider_sources("superpowers"),
-        )
-        results.append(superpowers_update_result(codex_home, apply, source))
-
-    if roadmap == "gsd":
-        command = gsd_core_update_command(repo)
-        scope_detail = " ".join(command)
-        provenance = dependency_provenance_fields("gsd-core", command_name="updateCommand")
-        if not apply:
-            current = installed_gsd_core_version(codex_home, repo)
-            latest = str(provenance.get("expectedVersion") or "") or None
-            version_item = version_check_item(
-                "external-updater",
-                "gsd-core",
-                current,
-                latest,
-                f"read-only check; apply would run {scope_detail}",
-            )
-            version_item.update(provenance)
-            results.append(version_item)
-        elif executable_exists("npx"):
-            result = run_command(command, cwd=repo, timeout=900)
-            status = "updated-or-unchanged" if result["ok"] else "failed"
-            results.append(item("external-updater", "gsd-core", status, short_output(result), **provenance))
-        else:
-            results.append(item("external-updater", "gsd-core", "skipped", "npx not available", **provenance))
 
     has_openspec = any(
         (codex_home / "skills" / skill / "SKILL.md").exists()
@@ -928,7 +704,14 @@ def main() -> int:
         results.append(update_git_repo(repo, name, args.apply))
 
     if not args.skip_external_updaters:
-        results.extend(run_external_updaters(codex_home, args.apply, repo=target_repo))
+        results.extend(
+            run_external_updaters(
+                codex_home,
+                args.apply,
+                repo=target_repo,
+                authorizations={"explicit_named_dependency_request"} if args.apply else set(),
+            )
+        )
 
     results.extend(sync_curated_skills(codex_home, curated_root, skill_safety, backup_root, args.apply))
     if not args.skip_openai_curated_cache:

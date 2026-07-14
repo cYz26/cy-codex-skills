@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import subprocess
@@ -10,143 +11,173 @@ from pathlib import Path
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 LOCAL_ARCHIVE = PLUGIN_ROOT / "scripts" / "devflow_runtime.pyz"
-PACKAGED = LOCAL_ARCHIVE.is_file()
-if PACKAGED:
+if LOCAL_ARCHIVE.is_file():
     RUNTIME_ARCHIVE = LOCAL_ARCHIVE
-    os.environ.setdefault("DEVFLOW_PLUGIN_ROOT", str(PLUGIN_ROOT))
-    sys.path.insert(0, str(RUNTIME_ARCHIVE))
+    RELEASE_PLUGIN_ROOT = PLUGIN_ROOT
 else:
     REPO_ROOT = PLUGIN_ROOT.parents[2]
-    RUNTIME_ARCHIVE = REPO_ROOT / "plugins" / "dev-flow" / "scripts" / "devflow_runtime.pyz"
-    sys.path.insert(0, str(PLUGIN_ROOT / "scripts"))
+    RELEASE_PLUGIN_ROOT = REPO_ROOT / "plugins" / "dev-flow"
+    RUNTIME_ARCHIVE = RELEASE_PLUGIN_ROOT / "scripts" / "devflow_runtime.pyz"
 
-RELEASE_PLUGIN_ROOT = (
-    PLUGIN_ROOT if PACKAGED else REPO_ROOT / "plugins" / "dev-flow"
+MATT_SKILLS = (
+    "grilling",
+    "tdd",
+    "diagnosing-bugs",
+    "code-review",
+    "codebase-design",
+    "domain-modeling",
 )
+CURRENT_RUNTIME_MODULES = {
+    "workflow_archive_policy.py",
+    "workflow_dependencies.py",
+    "workflow_dependency_provenance.py",
+    "workflow_methodology.py",
+    "workflow_planning_paths.py",
+    "workflow_project_activation.py",
+    "workflow_release_sync.py",
+    "workflow_side_effect_policy.py",
+}
+REMOVED_RUNTIME_MEMBERS = {
+    "aggregate_provider_benchmark.py",
+    "archive_roadmap_binding.py",
+    "run_provider_benchmark.py",
+    "superpowers_artifact_mapping.py",
+    "workflow_dependency_plugin_checks.py",
+    "workflow_provider_activation.py",
+    "workflow_provider_deactivation.py",
+    "workflow_provider_migration.py",
+    "workflow_provider_profiles.py",
+    "workflow_provider_registry.py",
+    "workflow_roadmap_provider.py",
+    "workflow_superpowers_gates.py",
+}
 
 
-from workflow_dependency_provenance import default_plugin_root as provenance_plugin_root
-from workflow_planning_paths import current_plugin_version
-from workflow_provider_profiles import diagnose_provider_selection, resolve_provider_selection
-from workflow_dependency_catalog import PROJECT_ORCHESTRATOR_SKILLS
-from workflow_routing_matrix import default_plugin_root as routing_plugin_root
-from workflow_superpowers_gates import default_plugin_root as gate_plugin_root
+def file_digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def runtime_module_text(name):
+def runtime_module_text(name: str) -> str:
     with zipfile.ZipFile(RUNTIME_ARCHIVE) as archive:
         return archive.read(name).decode("utf-8")
 
 
-def make_core_repo(root, methodology, roadmap):
-    repo = root / f"{methodology}-{roadmap}"
-    (repo / "openspec").mkdir(parents=True)
-    (repo / "openspec" / "config.yaml").write_text("schema: spec-driven\n")
-    (repo / ".dev-flow.json").write_text(
-        json.dumps(
-            {
-                "workflow": {
-                    "methodology_profile": methodology,
-                    "roadmap_provider": roadmap,
-                }
-            }
-        )
-    )
-    skill_root = repo / ".agents" / "skills"
-    skill_root.mkdir(parents=True)
-    for skill in PROJECT_ORCHESTRATOR_SKILLS:
-        (skill_root / skill).symlink_to(PLUGIN_ROOT / "skills" / skill, target_is_directory=True)
-    return repo
-
-
 class PackagedRuntimeTests(unittest.TestCase):
-    def test_provider_defaults(self):
-        profiles = json.loads((PLUGIN_ROOT / "docs" / "provider_profiles.json").read_text())
+    def test_packaged_runtime_imports_current_matt_native_modules(self):
+        module_names = sorted(name.removesuffix(".py") for name in CURRENT_RUNTIME_MODULES)
+        code = """
+import importlib
+import json
+import sys
 
-        self.assertEqual(profiles["defaults"]["methodologyProfile"], "core")
-        self.assertEqual(profiles["defaults"]["roadmapProvider"], "none")
-        self.assertEqual(
-            set(profiles["methodologyProfiles"]),
-            {"core", "lean-matt", "strict-superpowers"},
-        )
-        self.assertEqual(set(profiles["roadmapProviders"]), {"none", "gsd"})
-
-    def test_provider_provenance(self):
-        provenance = json.loads(
-            (PLUGIN_ROOT / "docs" / "dependency-provenance.json").read_text()
-        )
-        gsd = provenance["providerSources"]["gsd-core-1-6-1"]
-        matt = provenance["providerSources"]["mattpocock-skills-v1-1-0"]
-
-        self.assertEqual(gsd["package"], "@opengsd/gsd-core")
-        self.assertEqual(gsd["version"], "1.6.1")
-        self.assertEqual(matt["ref"], "v1.1.0")
-        self.assertEqual(len(matt["skillHashes"]), 6)
-        self.assertNotIn("--global", matt["installCommand"])
-
-    def test_provider_roadmap_matrix(self):
-        methodology_providers = {
-            "core": [],
-            "lean-matt": ["mattpocock-skills"],
-            "strict-superpowers": ["superpowers"],
-        }
-        roadmap_providers = {"none": [], "gsd": ["gsd"]}
+archive, *module_names = sys.argv[1:]
+sys.path.insert(0, archive)
+modules = {name: importlib.import_module(name) for name in module_names}
+methodology = modules["workflow_methodology"].methodology_manifest()
+print(json.dumps({
+    "controlPlane": methodology["controlPlane"],
+    "moduleFiles": {name: module.__file__ for name, module in modules.items()},
+    "pluginRoot": str(modules["workflow_dependency_provenance"].default_plugin_root()),
+    "policyRoot": str(modules["workflow_side_effect_policy"].default_plugin_root()),
+    "version": modules["workflow_planning_paths"].current_plugin_version(),
+}, sort_keys=True))
+"""
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            home = root / "codex-home"
-            home.mkdir()
-            for methodology, methodology_selected in methodology_providers.items():
-                for roadmap, roadmap_selected in roadmap_providers.items():
-                    repo = make_core_repo(root, methodology, roadmap)
-                    selection = resolve_provider_selection(repo, home, {})
-                    report = diagnose_provider_selection(selection, repo, home)
+            result = subprocess.run(
+                [sys.executable, "-c", code, str(RUNTIME_ARCHIVE), *module_names],
+                cwd=temporary,
+                env={
+                    **os.environ,
+                    "DEVFLOW_PLUGIN_ROOT": str(RELEASE_PLUGIN_ROOT),
+                    "PYTHONDONTWRITEBYTECODE": "1",
+                },
+                text=True,
+                capture_output=True,
+                check=False,
+            )
 
-                    with self.subTest(methodology=methodology, roadmap=roadmap):
-                        self.assertTrue(report["coreReady"])
-                        self.assertEqual(
-                            report["selectedProviders"],
-                            methodology_selected + roadmap_selected,
-                        )
-                        self.assertEqual(report["methodologyReady"], methodology == "core")
-                        self.assertEqual(report["roadmapReady"], roadmap == "none")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        manifest = json.loads(
+            (RELEASE_PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text()
+        )
+        self.assertEqual(report["controlPlane"], "devflow-openspec")
+        self.assertEqual(report["pluginRoot"], str(RELEASE_PLUGIN_ROOT.resolve()))
+        self.assertEqual(report["policyRoot"], str(RELEASE_PLUGIN_ROOT.resolve()))
+        self.assertEqual(report["version"], manifest["version"])
+        for module_file in report["moduleFiles"].values():
+            self.assertTrue(
+                module_file.startswith(f"{RUNTIME_ARCHIVE}/"),
+                module_file,
+            )
 
-    def test_runtime_members(self):
+    def test_packaged_methodology_provenance_and_vendor_resources_are_complete(self):
+        provenance = json.loads(
+            (RELEASE_PLUGIN_ROOT / "docs" / "dependency-provenance.json").read_text()
+        )
+
+        self.assertEqual(provenance["schemaVersion"], 3)
+        self.assertNotIn("providerSources", provenance)
+        methodology = provenance["methodology"]
+        self.assertEqual(methodology["name"], "mattpocock-skills")
+        self.assertEqual(methodology["repository"], "mattpocock/skills")
+        self.assertEqual(methodology["ref"], "v1.1.0")
+        self.assertEqual(
+            methodology["commit"],
+            "d574778f94cf620fcc8ce741584093bc650a61d3",
+        )
+        self.assertEqual(tuple(methodology["skillHashes"]), MATT_SKILLS)
+        self.assertNotIn("--global", methodology["installCommand"])
+        self.assertEqual(
+            {item["name"] for item in provenance["dependencies"]},
+            {"openspec-cli", "plugin-eval"},
+        )
+
+        vendor_root = RELEASE_PLUGIN_ROOT / "vendor" / "mattpocock-skills"
+        license_path = RELEASE_PLUGIN_ROOT / methodology["licensePath"]
+        self.assertEqual(file_digest(license_path), methodology["licenseSha256"])
+        file_hashes = methodology["fileHashes"]
+        actual_files = {
+            path.relative_to(vendor_root).as_posix()
+            for path in vendor_root.rglob("*")
+            if path.is_file()
+        }
+        expected_files = set(file_hashes) | {
+            license_path.relative_to(vendor_root).as_posix()
+        }
+        self.assertEqual(actual_files, expected_files)
+        for relative, expected_digest in file_hashes.items():
+            path = vendor_root / relative
+            self.assertFalse(path.is_symlink(), relative)
+            self.assertEqual(file_digest(path), expected_digest, relative)
+        for skill, expected_digest in methodology["skillHashes"].items():
+            self.assertEqual(file_hashes[f"{skill}/SKILL.md"], expected_digest)
+
+        serialized = json.dumps(provenance, sort_keys=True).lower()
+        self.assertNotIn("superpowers", serialized)
+        self.assertNotIn("gsd", serialized)
+
+    def test_runtime_archive_contains_current_modules_and_no_removed_provider_modules(self):
         with zipfile.ZipFile(RUNTIME_ARCHIVE) as archive:
             members = set(archive.namelist())
 
-        self.assertIn("workflow_provider_profiles.py", members)
-        self.assertIn("workflow_provider_deactivation.py", members)
-        self.assertIn("workflow_provider_migration.py", members)
-        self.assertIn("workflow_roadmap_provider.py", members)
-        self.assertIn("workflow_release_sync.py", members)
-
-    def test_runtime_asset_roots(self):
-        manifest = json.loads((PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text())
-
-        self.assertEqual(provenance_plugin_root(), PLUGIN_ROOT)
-        self.assertEqual(routing_plugin_root(), PLUGIN_ROOT)
-        self.assertEqual(gate_plugin_root(), PLUGIN_ROOT)
-        self.assertEqual(current_plugin_version(), manifest["version"])
-
-    def test_release_entrypoints(self):
-        self.assertTrue((PLUGIN_ROOT / "scripts" / "check_dependencies.py").is_file())
-        self.assertTrue((PLUGIN_ROOT / "scripts" / "archive_roadmap_binding.py").is_file())
-        self.assertTrue((PLUGIN_ROOT / "scripts" / "verify_release_runtime.py").is_file())
-
-    def test_provider_cleanup_cli_help_from_release_wrapper(self):
-        entrypoint = RELEASE_PLUGIN_ROOT / "scripts" / "activate_project_dependencies.py"
-        result = subprocess.run(
-            [sys.executable, str(entrypoint), "--help"],
-            cwd=RELEASE_PLUGIN_ROOT,
-            text=True,
-            capture_output=True,
-            check=False,
+        self.assertTrue(
+            CURRENT_RUNTIME_MODULES.issubset(members),
+            f"missing current runtime members: {sorted(CURRENT_RUNTIME_MODULES - members)}",
+        )
+        self.assertTrue(
+            REMOVED_RUNTIME_MEMBERS.isdisjoint(members),
+            f"obsolete runtime members remain: {sorted(REMOVED_RUNTIME_MEMBERS & members)}",
         )
 
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("--deactivate-provider", result.stdout)
-        self.assertIn("--authorize-provider-cleanup", result.stdout)
-        self.assertIn("--provider-cleanup-plan", result.stdout)
+    def test_current_release_entrypoints_exist(self):
+        for relative in (
+            "scripts/activate_project_dependencies.py",
+            "scripts/check_dependencies.py",
+            "scripts/verify_release_runtime.py",
+        ):
+            with self.subTest(relative=relative):
+                self.assertTrue((RELEASE_PLUGIN_ROOT / relative).is_file())
 
     def test_agent_kb_is_absent(self):
         workflow_lib = runtime_module_text("workflow_lib.py")

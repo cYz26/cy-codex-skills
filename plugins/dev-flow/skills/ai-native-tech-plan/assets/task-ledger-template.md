@@ -17,7 +17,8 @@
 - decision-grilling: required/used/skipped - <reason>
 - implementation-planning: required/used/skipped/pending - <reason>
 - architecture-guidance: required/used/skipped - <reason>
-- openspec/roadmap: required/used/skipped - <reason>
+- domain-language-modeling: required/used/skipped - <reason>
+- openspec-routing: required/used/skipped - <reason>
 - Open Questions: <none | unresolved questions require decision-resolution plus decision-grilling or explicit draft status>
 
 ## Target State

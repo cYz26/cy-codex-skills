@@ -54,12 +54,13 @@ Every project refresh checks durable workflow-rule drift. If dry-run produces
 evidence, not guidance. Preserve project rules and keep task scope in OpenSpec
 or the Execution Ledger. The project reference owns merge and validation.
 
-## 4. Provider Cleanup Boundary
+## 4. Legacy Configuration Boundary
 
-Provider cleanup is separate from ordinary refresh and always explicit. Before
-planning or applying it, read `references/provider-cleanup.md`; require its
-dry-run report, named provider authorization, matching plan digest, preservation
-rules, and rollback evidence. Never infer cleanup from an upgrade.
+If diagnostics report retired workflow keys or legacy integration files, run
+the read-only `inspect_legacy_workflow_config.py` report. Ordinary refresh does
+not interpret, migrate, or remove them. Any cleanup is a separate action with
+an exact file list, ownership review, rollback evidence, and explicit
+authorization.
 
 ## Final Evidence
 

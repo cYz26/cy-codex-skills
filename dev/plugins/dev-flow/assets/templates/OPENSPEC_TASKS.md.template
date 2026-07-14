@@ -2,7 +2,9 @@
 
 ## Target State
 
-Implement the complete approved behavior for `{{change_id}}`, not a partial delivery. Keep GSD phases as workflow governance and use the slices below as executable technical checkpoints.
+Implement the complete approved behavior for `{{change_id}}`, not a partial
+delivery. Use the capability slices below as independently verifiable technical
+checkpoints; OpenSpec remains the canonical plan.
 
 ## Completion Contract
 

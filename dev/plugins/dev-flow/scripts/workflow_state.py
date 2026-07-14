@@ -42,38 +42,58 @@ def resolve_state(repo: Path, current_version: str | None = None) -> dict[str, A
     namespaced = state_path(repo)
     legacy = legacy_state_path(repo)
     version = current_version or current_plugin_version()
-    if namespaced.exists():
+    if path_lexists(namespaced):
+        if not trusted_repo_regular_file(repo, namespaced):
+            return state_resolution(
+                "untrusted",
+                {},
+                namespaced,
+                namespaced,
+                False,
+                next_action="restore_repository_local_state",
+            )
+        try:
+            namespaced_text = namespaced.read_text()
+        except (OSError, UnicodeError):
+            return state_resolution(
+                "unreadable",
+                {},
+                namespaced,
+                namespaced,
+                False,
+                next_action="restore_readable_repository_state",
+            )
         return state_resolution(
             "namespaced",
-            parse_state_text(namespaced.read_text()),
+            parse_state_text(namespaced_text),
             namespaced,
             namespaced,
             True,
         )
-    if not legacy.exists():
+    if not path_lexists(legacy):
         return state_resolution("missing", {}, None, namespaced, True)
-    text = legacy.read_text()
+    if not trusted_repo_regular_file(repo, legacy):
+        return state_resolution(
+            "untrusted",
+            {},
+            legacy,
+            namespaced,
+            False,
+            next_action="review_untrusted_legacy_state",
+        )
+    try:
+        text = legacy.read_text()
+    except (OSError, UnicodeError):
+        return state_resolution(
+            "unreadable",
+            {},
+            legacy,
+            namespaced,
+            False,
+            next_action="review_unreadable_legacy_state",
+        )
     frontmatter, _ = parse_frontmatter(text)
     has_devflow = "workflow_version:" in frontmatter
-    has_gsd = "gsd_state_version:" in frontmatter
-    if has_devflow and has_gsd:
-        return state_resolution(
-            "manual_review_required",
-            {},
-            legacy,
-            namespaced,
-            False,
-            next_action="review_mixed_state_markers",
-        )
-    if has_gsd:
-        return state_resolution(
-            "gsd_owned",
-            {},
-            legacy,
-            namespaced,
-            False,
-            next_action="use_gsd_state_adapter",
-        )
     if has_devflow:
         if version_at_or_after(version, LEGACY_STATE_SUNSET_RELEASE):
             return state_resolution(
@@ -122,11 +142,30 @@ def state_resolution(
     }
 
 
+def path_lexists(path: Path) -> bool:
+    return path.exists() or path.is_symlink()
+
+
+def trusted_repo_regular_file(repo: Path, path: Path) -> bool:
+    repo = Path(repo).resolve()
+    candidate = Path(path).absolute()
+    try:
+        relative = candidate.relative_to(repo)
+    except ValueError:
+        return False
+    current = repo
+    for part in relative.parts:
+        current = current / part
+        if current.is_symlink():
+            return False
+    return candidate.is_file()
+
+
 def parse_state_line(state: dict[str, Any], raw_line: str, current_section: Optional[str]) -> Optional[str]:
     line = raw_line.rstrip()
     if not line:
         return current_section
-    if line.startswith(("current_phase:", "current_change:", "context_management:", "context_health:")):
+    if line.startswith(("current_change:", "context_management:", "context_health:")):
         section = line.split(":", 1)[0]
         state[section] = {}
         return section
@@ -189,7 +228,6 @@ def default_state_values(project_mode: str, change_id: str, change_status: str =
     return {
         "project_mode": project_mode,
         "current_stage": "planning",
-        "phase_id": "none",
         "change_id": change_id,
         "change_status": change_status,
         "plan_written": True,
@@ -214,8 +252,6 @@ def default_state_values(project_mode: str, change_id: str, change_status: str =
         "goal_gate_status": "not_required",
         "goal_gate_reason": "none",
         "goal_gate_suggested_goal": "none",
-        "gsd_verification_change": "none",
-        "gsd_verification_phase": "none",
     }
 
 
@@ -250,7 +286,6 @@ def state_write_path(repo: Path) -> Path:
         code = {
             "legacy_read_only": "migration_required",
             "legacy_expired": "migration_required",
-            "gsd_owned": "gsd_owned",
             "manual_review_required": "manual_review_required",
         }.get(status, "owner_mismatch")
         raise PlanningOwnershipError(code, path, f"DevFlow state write blocked: {status}")
@@ -259,7 +294,6 @@ def state_write_path(repo: Path) -> Path:
 
 
 def merged_state_values(existing: dict[str, Any], overrides: dict[str, Any]) -> dict[str, Any]:
-    phase = existing.get("current_phase", {})
     change = existing.get("current_change", {})
     gates = existing.get("gates", {})
     values = default_state_values(
@@ -268,14 +302,7 @@ def merged_state_values(existing: dict[str, Any], overrides: dict[str, Any]) -> 
         str(overrides.get("change_status", change.get("status", "planned"))),
     )
     values["current_stage"] = str(overrides.get("current_stage", existing.get("current_stage", "planning")))
-    values["phase_id"] = str(overrides.get("phase_id", phase.get("id", "none")))
     values["plan_written"] = bool(overrides.get("plan_written", gates.get("plan_written", True)))
-    values["gsd_verification_change"] = str(
-        overrides.get("gsd_verification_change", gates.get("gsd_verification_change", "none"))
-    )
-    values["gsd_verification_phase"] = str(
-        overrides.get("gsd_verification_phase", gates.get("gsd_verification_phase", "none"))
-    )
     values["status_text"] = str(
         overrides.get(
             "status_text",
@@ -343,11 +370,9 @@ def merged_gates(gates: dict[str, Any], overrides: dict[str, Any]) -> dict[str, 
         "tests_baseline_known": False,
         "implementation_done": False,
         "verification_passed": False,
-        "gsd_verification_passed": False,
-        "gsd_verification_change": "none",
-        "gsd_verification_phase": "none",
         "state_updated": True,
         "archive_allowed": False,
+        "release_allowed": False,
     }
     return {key: overrides.get(key, gates.get(key, fallback)) for key, fallback in defaults.items()}
 

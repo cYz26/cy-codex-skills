@@ -51,10 +51,6 @@ workflow_version: 0.3.0
 project_mode: brownfield
 current_stage: executing
 
-current_phase:
-  id: 01-foundation
-  status: planning
-
 current_change:
   id: add-context-health-check
   status: planned

@@ -1,34 +1,40 @@
 # Artifact Ownership
 
-DevFlow keeps canonical behavior and evidence separate from optional
-methodology-provider drafts. Git tracking is reported independently; ignored
-planning artifacts must not be described as checked in.
+DevFlow has one active canonical control plane. Git tracking is reported
+independently; ignored planning files must not be described as checked in.
 
 ## Canonical
 
-- OpenSpec: `openspec/changes/<change-id>/`
-- DevFlow state and support artifacts: `.planning/devflow/**`
-- DevFlow evidence: `.planning/devflow/verification/**`
-- GSD, only when selected: root `.planning/STATE.md`, `PROJECT.md`,
-  `ROADMAP.md`, `config.json`, `phases/**`, `milestones/**`, `todos/**`, and
-  root `codebase/**`
-- Contract ledger: `TASK_LEDGER.md`
-- Engineering policy: `ENGINEERING_POLICY.md`
+- Behavior proposal, design, specs, and tasks:
+  `openspec/changes/<change-id>/`
+- Execution contract and status: `TASK_LEDGER.md`
+- DevFlow state and checkpoints: `.planning/devflow/**`
+- Verification evidence: `.planning/devflow/verification/**`
+- Durable engineering policy: `AGENTS.md` and `ENGINEERING_POLICY.md`
 
-## Provider Draft Or Method Evidence
+Only approved main-agent or explicitly serialized writes may update canonical
+artifacts. Matt skills can inform decisions, tests, diagnosis, review,
+architecture, and domain modeling, but their scratch output is not canonical by
+itself.
 
-- `docs/superpowers/specs/*`
-- `docs/superpowers/plans/*`
-- Superpowers SDD reports
-- Superpowers review notes
-- Matt grilling, diagnosis, architecture, and review notes outside an approved
-  canonical write set
-- personal Codex memories
+## Delegated Work
 
-Draft or method evidence must be promoted into a canonical target before it can
-satisfy verification, archive, or release readiness.
+Worker output is admissible only when it follows a validated Agent Task
+Contract, stays inside its disjoint write set, reports verification evidence,
+and passes main-agent integration review. Workers do not own OpenSpec, root
+control-plane files, `.planning/devflow/**`, release metadata, or generated
+release assets.
 
-Provider availability or skill invocation never satisfies canonical evidence
-by itself. Only the approved DevFlow/OpenSpec promoter may write canonical
-planning or review output; provider routing remains subject to the
-machine-readable side-effect policy and the outer user/project authority.
+## Historical and Legacy Evidence
+
+- `docs/history/**` is source-only historical evidence. Release sync
+  excludes it, active runtime modules do not import it, and no current gate
+  reads it.
+- Retired configuration and local filesystem markers are inspection inputs for
+  `inspect_legacy_workflow_config.py` only.
+- Personal memories and chat summaries are context, never repository truth.
+
+Historical or method evidence must be promoted into a canonical target before
+it can satisfy implementation, verification, archive, or release readiness.
+Ambiguous user-authored or historical files are preserved until a separately
+authorized migration names exact paths and rollback evidence.

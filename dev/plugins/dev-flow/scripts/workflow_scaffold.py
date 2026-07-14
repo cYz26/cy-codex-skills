@@ -105,10 +105,6 @@ def write_base_files(writer: WritePlan, project_mode: str, force_agents: bool) -
             {
                 "workflow": {
                     "mode": "full-openspec",
-                    "methodology_profile": "core",
-                    "roadmap_provider": "none",
-                    "provider_selectors": {},
-                    "roadmap_bindings": {},
                 }
             },
             indent=2,

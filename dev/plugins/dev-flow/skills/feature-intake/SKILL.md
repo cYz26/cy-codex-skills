@@ -26,19 +26,18 @@ Classify the request and produce a routing decision before planning or code.
 
 ## Capability Routing
 
-Record required stable IDs, not provider skill names. Intake normally needs
-`decision-resolution`; architecture work adds `architecture-guidance`; a
-non-trivial plan adds `implementation-planning`. Resolve implementations from
-`docs/provider_profiles.json`. Provider details are deferred to
-`docs/provider-profile-migration.md`.
+Record required stable IDs, not skill names. Intake normally needs
+`decision-resolution`; architecture work adds `architecture-guidance`; domain
+concepts or invariants add `domain-language-modeling`; a non-trivial plan adds
+`implementation-planning`. Resolve implementations from `scripts/workflow_methodology.py`.
 
 ## Skill Routing Ledger
 
 For research, design, architecture, product shape, or technical planning,
 record kind, workflow mode, capability-research, decision resolution,
-implementation planning, OpenSpec routing, roadmap routing, and a reason for
-every skip. Open Questions make decision resolution required and the artifact
-draft until resolved.
+decision grilling, implementation planning, architecture guidance, OpenSpec
+routing, domain-language-modeling, and a reason for every skip. Open Questions
+make decision resolution required and the artifact draft until resolved.
 
 Route technical-plan structure to `ai-native-tech-plan`, unclear OpenSpec
 behavior to `openspec-explore`, ready behavior intent to `openspec-propose`,
