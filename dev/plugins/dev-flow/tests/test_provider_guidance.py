@@ -98,8 +98,11 @@ class ProviderGuidanceTests(unittest.TestCase):
         delegation = (PLUGIN_ROOT / "skills" / "claude-code-delegate" / "SKILL.md").read_text()
         hook_contract = (PLUGIN_ROOT / "docs" / "hook-contract.md").read_text()
         refresh = (PLUGIN_ROOT / "skills" / "dev-flow-refresh" / "SKILL.md").read_text()
+        project_refresh = (
+            PLUGIN_ROOT / "skills" / "dev-flow-refresh" / "references" / "project-refresh.md"
+        ).read_text()
         normalized_delegation = " ".join(delegation.split())
-        normalized_refresh = " ".join(refresh.split())
+        normalized_project_refresh = " ".join(project_refresh.split())
 
         self.assertIn("optional strict methodology provider", upgrade)
         self.assertNotIn("methodology dependency", upgrade)
@@ -107,17 +110,22 @@ class ProviderGuidanceTests(unittest.TestCase):
         self.assertNotIn("Keep OpenSpec, GSD, Superpowers", delegation)
         self.assertIn("provider-neutral ledger completion status", hook_contract)
         self.assertNotIn("Superpowers completion/ledger status", hook_contract)
-        self.assertIn("Methodology Artifact Mapping", normalized_refresh)
-        self.assertNotIn("Superpowers Artifact Mapping", refresh)
+        self.assertIn("references/project-refresh.md", refresh)
+        self.assertIn("Methodology Artifact Mapping", normalized_project_refresh)
+        self.assertNotIn("Superpowers Artifact Mapping", refresh + project_refresh)
 
     def test_refresh_guidance_documents_safe_provider_cleanup(self):
         readme = (PLUGIN_ROOT / "README.md").read_text()
         refresh = (PLUGIN_ROOT / "skills" / "dev-flow-refresh" / "SKILL.md").read_text()
+        cleanup = (
+            PLUGIN_ROOT / "skills" / "dev-flow-refresh" / "references" / "provider-cleanup.md"
+        ).read_text()
         normalized_readme = " ".join(readme.split())
 
         self.assertNotIn("inside brainstorming", readme)
         self.assertIn("inside decision resolution", normalized_readme)
-        for text in (readme, refresh):
+        self.assertIn("references/provider-cleanup.md", refresh)
+        for text in (readme, cleanup):
             self.assertIn("--deactivate-provider", text)
             self.assertIn("planDigest", text)
             self.assertIn("--authorize-provider-cleanup", text)
@@ -135,6 +143,9 @@ class ProviderGuidanceTests(unittest.TestCase):
         execute = (PLUGIN_ROOT / "skills" / "execute-task" / "SKILL.md").read_text()
         verify = (PLUGIN_ROOT / "skills" / "verify-and-archive" / "SKILL.md").read_text()
         refresh = (PLUGIN_ROOT / "skills" / "dev-flow-refresh" / "SKILL.md").read_text()
+        project_refresh = (
+            PLUGIN_ROOT / "skills" / "dev-flow-refresh" / "references" / "project-refresh.md"
+        ).read_text()
         matrix = json.loads((PLUGIN_ROOT / "docs" / "routing.matrix.json").read_text())
         full = next(route for route in matrix["routes"] if route["id"] == "mandatory-full-openspec")
         normalized_readme = " ".join(readme.split())
@@ -149,8 +160,35 @@ class ProviderGuidanceTests(unittest.TestCase):
             self.assertIn("artifactPaths", text)
             self.assertIn("actionContext", text)
         self.assertIn("non-zero", verify)
-        self.assertIn("isolated OpenSpec", refresh)
-        self.assertNotIn("openspec init --tools codex", refresh)
+        self.assertIn("references/project-refresh.md", refresh)
+        self.assertIn("isolated OpenSpec", project_refresh)
+        self.assertNotIn("openspec init --tools codex", refresh + project_refresh)
+
+    def test_conditional_references_preserve_delegation_and_diagnostic_gates(self):
+        context_health = (
+            PLUGIN_ROOT / "skills" / "context-health-check" / "SKILL.md"
+        ).read_text()
+        goal_and_delegation = (
+            PLUGIN_ROOT
+            / "skills"
+            / "context-health-check"
+            / "references"
+            / "goal-and-delegation.md"
+        ).read_text()
+        refresh = (PLUGIN_ROOT / "skills" / "dev-flow-refresh" / "SKILL.md").read_text()
+
+        for text in (context_health, goal_and_delegation):
+            self.assertIn(
+                "explicit user authorization or an approved delegated workflow",
+                " ".join(text.split()),
+            )
+        self.assertIn("recording any delegation disposition", " ".join(context_health.split()))
+        self.assertIn(
+            "contract is scope evidence, not authorization",
+            " ".join(goal_and_delegation.split()),
+        )
+        self.assertIn("before running its read-only diagnostics", " ".join(refresh.split()))
+        self.assertIn("Project writes require explicit intent", refresh)
 
     def test_guidance_pruning_reduces_static_word_budget(self):
         words = 0

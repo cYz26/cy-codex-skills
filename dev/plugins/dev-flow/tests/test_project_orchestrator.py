@@ -18,6 +18,54 @@ DEV_MARKETPLACE = REPO_ROOT / ".agents" / "plugins" / "marketplace.dev.json"
 RELEASE_PLUGIN_ROOT = REPO_ROOT / "plugins" / "dev-flow"
 PLUGIN_ID = "dev-flow"
 DISPLAY_NAME = "DevFlow"
+EXPECTED_DEVFLOW_SKILLS = {
+    "ai-native-tech-plan",
+    "capability-research",
+    "change-plan",
+    "checkpoint-compact",
+    "claude-code-delegate",
+    "codex-updater",
+    "context-health-check",
+    "context-tool-audit",
+    "dev-flow-refresh",
+    "execute-task",
+    "feature-intake",
+    "plugin-project-migration",
+    "project-orchestrator",
+    "project-setup",
+    "verify-and-archive",
+    "workflow-doctor",
+}
+REMOVED_SKILL_RESOURCES = {
+    Path("ai-native-tech-plan/assets/review-checklist.md"),
+    Path("ai-native-tech-plan/references/agents-md-snippet.md"),
+    Path("ai-native-tech-plan/references/planning-principles.md"),
+    Path("checkpoint-compact/references/boundary-rules.md"),
+    Path("checkpoint-compact/references/compact-policy.md"),
+    Path("checkpoint-compact/references/recovery-playbook.md"),
+}
+REQUIRED_SKILL_RESOURCES = {
+    Path("ai-native-tech-plan/assets/task-ledger-template.md"),
+    Path("ai-native-tech-plan/references/goal-prompt-template.md"),
+    Path("context-health-check/references/goal-and-delegation.md"),
+    Path("context-health-check/references/session-recovery.md"),
+    Path("dev-flow-refresh/references/project-refresh.md"),
+    Path("dev-flow-refresh/references/provider-cleanup.md"),
+    Path("plugin-project-migration/references/provider-migration-and-rollback.md"),
+    Path("verify-and-archive/references/roadmap-archive.md"),
+}
+RESOURCE_USAGE_MARKERS = {
+    Path("ai-native-tech-plan/assets/task-ledger-template.md"): "When creating a durable task ledger",
+    Path("ai-native-tech-plan/references/goal-prompt-template.md"): "only when the Goal Suitability Gate",
+    Path("context-health-check/references/goal-and-delegation.md"): "recording any delegation disposition",
+    Path("context-health-check/references/session-recovery.md"): "work that predates DevFlow events",
+    Path("dev-flow-refresh/references/project-refresh.md"): "before running its read-only diagnostics",
+    Path("dev-flow-refresh/references/provider-cleanup.md"): "Provider cleanup is separate",
+    Path(
+        "plugin-project-migration/references/provider-migration-and-rollback.md"
+    ): "Provider-file migration and destructive rollback",
+    Path("verify-and-archive/references/roadmap-archive.md"): "roadmap-lifecycle` resolves to a selected binding",
+}
 
 
 def registered_plugin_path(marketplace_path, plugin_name):
@@ -155,30 +203,66 @@ class ProjectOrchestratorTests(unittest.TestCase):
         self.assertEqual(dev_entry["category"], "Coding")
 
     def test_all_expected_skills_have_codex_frontmatter(self):
-        expected = {
-            "capability-research",
-            "project-orchestrator",
-            "project-setup",
-            "checkpoint-compact",
-            "feature-intake",
-            "change-plan",
-            "execute-task",
-            "verify-and-archive",
-            "workflow-doctor",
-            "context-tool-audit",
-            "ai-native-tech-plan",
-            "claude-code-delegate",
-            "context-health-check",
-            "codex-updater",
-            "plugin-project-migration",
-            "dev-flow-refresh",
-        }
-        self.assertEqual({path.name for path in (PLUGIN_ROOT / "skills").iterdir() if path.is_dir()}, expected)
-        for skill in expected:
+        self.assertEqual(
+            {path.name for path in (PLUGIN_ROOT / "skills").iterdir() if path.is_dir()},
+            EXPECTED_DEVFLOW_SKILLS,
+        )
+        for skill in EXPECTED_DEVFLOW_SKILLS:
             text = (PLUGIN_ROOT / "skills" / skill / "SKILL.md").read_text()
             self.assertTrue(text.startswith("---\n"), skill)
             self.assertIn(f"name: {skill}", text)
             self.assertRegex(text, r"description: .+")
+
+    def test_skill_portfolio_matches_catalog_and_project_migration_manifest(self):
+        scripts = PLUGIN_ROOT / "scripts"
+        sys.path.insert(0, str(scripts))
+        try:
+            from workflow_dependency_catalog import PROJECT_ORCHESTRATOR_SKILLS
+        finally:
+            sys.path.remove(str(scripts))
+
+        migration = json.loads(
+            (PLUGIN_ROOT / ".codex-plugin" / "project-migration.json").read_text()
+        )
+        source_skills = {
+            path.name for path in (PLUGIN_ROOT / "skills").iterdir() if path.is_dir()
+        }
+
+        self.assertEqual(source_skills, EXPECTED_DEVFLOW_SKILLS)
+        self.assertEqual(set(PROJECT_ORCHESTRATOR_SKILLS), EXPECTED_DEVFLOW_SKILLS)
+        self.assertEqual(set(migration["projectLocalSkills"]), EXPECTED_DEVFLOW_SKILLS)
+
+    def test_skill_supporting_resources_are_directly_reachable(self):
+        skills_root = PLUGIN_ROOT / "skills"
+        for skill_name in EXPECTED_DEVFLOW_SKILLS:
+            skill_root = skills_root / skill_name
+            skill_text = (skill_root / "SKILL.md").read_text()
+            resources = [
+                path
+                for directory in ("assets", "references")
+                for path in (skill_root / directory).rglob("*")
+                if path.is_file()
+            ]
+            for resource in resources:
+                relative = resource.relative_to(skill_root).as_posix()
+                with self.subTest(skill=skill_name, resource=relative):
+                    self.assertIn(relative, skill_text)
+
+        self.assertEqual(set(RESOURCE_USAGE_MARKERS), REQUIRED_SKILL_RESOURCES)
+        for relative, marker in RESOURCE_USAGE_MARKERS.items():
+            skill_name = relative.parts[0]
+            skill_text = (skills_root / skill_name / "SKILL.md").read_text()
+            with self.subTest(skill=skill_name, usage_marker=str(relative)):
+                self.assertIn(normalized_text(marker), normalized_text(skill_text))
+
+    def test_skill_supporting_resource_cleanup_contract(self):
+        skills_root = PLUGIN_ROOT / "skills"
+        for relative in REQUIRED_SKILL_RESOURCES:
+            with self.subTest(required=str(relative)):
+                self.assertTrue((skills_root / relative).is_file())
+        for relative in REMOVED_SKILL_RESOURCES:
+            with self.subTest(removed=str(relative)):
+                self.assertFalse((skills_root / relative).exists())
 
     def test_capability_research_gate_is_packaged_and_routed(self):
         skill = (PLUGIN_ROOT / "skills" / "capability-research" / "SKILL.md").read_text()
@@ -316,6 +400,19 @@ class ProjectOrchestratorTests(unittest.TestCase):
             self.assertLessEqual(len(description.removeprefix("description: ")), expectation["max_chars"], skill)
             for term in expectation["terms"]:
                 self.assertIn(term, description, f"{skill} description should retain {term}")
+
+    def test_dev_flow_refresh_description_preserves_independent_refresh_triggers(self):
+        text = (PLUGIN_ROOT / "skills" / "dev-flow-refresh" / "SKILL.md").read_text()
+        description = next(line for line in text.splitlines() if line.startswith("description: "))
+
+        self.assertEqual(
+            description,
+            (
+                "description: Use when DevFlow has upgraded, when refreshing the local/global "
+                "DevFlow plugin installation or installed cache, or when refreshing DevFlow "
+                "project-local workflow configuration across active projects."
+            ),
+        )
 
     def test_detect_project_mode_greenfield_brownfield_and_uncertain(self):
         empty = self.make_repo("greenfield-empty")
@@ -689,6 +786,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
                 "Agent Task Contract",
                 "read-only explorer",
                 "Human Gate",
+                "explicit user authorization or an approved delegated workflow",
             ],
             "feature-intake": [
                 "Agent Task Contract",

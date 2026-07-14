@@ -659,7 +659,7 @@ context_health:
 
         for rel_path in [
             "skills/ai-native-tech-plan/references/goal-prompt-template.md",
-            "skills/context-health-check/SKILL.md",
+            "skills/context-health-check/references/goal-and-delegation.md",
         ]:
             text = (PLUGIN_ROOT / rel_path).read_text()
             normalized = normalized_text(text)

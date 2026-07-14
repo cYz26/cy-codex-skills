@@ -5,194 +5,66 @@ description: Use when DevFlow has upgraded, when refreshing the local/global Dev
 
 # DevFlow Refresh
 
-Use this skill to refresh DevFlow itself and then refresh projects that use
-DevFlow. The required order is global before project: first make the
-local/global DevFlow plugin and installed cache current, then handle each
-project-local configuration refresh.
+Refresh DevFlow, then its active projects. This skill owns that sequence and
+evidence; `codex-updater` owns full inventory/update,
+`plugin-project-migration` migration apply, `project-setup` first-time setup,
+and `workflow-doctor` root-cause diagnosis.
 
-## Global DevFlow Refresh
+## 1. Global Before Project
 
 Start with the targeted local plugin refresh unless the user explicitly asks
-for a broader updater workflow:
+for the broader `codex-updater` workflow:
 
 ```bash
 codex plugin add dev-flow@cy-codex-skills --json
 ```
 
 Verify source/cache freshness before claiming the global refresh is complete.
-Use the first existing checker:
+Use the first checker that exists in the current repository:
 
 ```bash
 python3 dev/plugins/dev-flow/scripts/doctor_workflow.py --repo <repo> --check-cache-drift --json
 python3 dev/scripts/codex_auto_update_plugins_skills.py --json
 ```
 
-If the user asked for the full Codex plugin/skill updater flow, use
-`codex-updater` first. Keep its dry-run/apply boundary authoritative.
+Do not claim cache freshness from the install command alone.
 
-## Project Discovery
+## 2. Discover and Diagnose Projects
 
-Refresh only projects that actually use DevFlow. A project qualifies when it
-has one of these markers:
+Refresh only named projects or active projects with a DevFlow marker such as
+`AGENTS.md`, `.planning/devflow/STATE.md`, `openspec/config.yaml`, migration
+state, or DevFlow links under `.agents/skills`.
 
-- `AGENTS.md` with DevFlow guidance
-- `.planning/devflow/STATE.md`
-- `openspec/config.yaml`
-- `.planning/devflow/plugin-project-migration/state.json`
-- `.agents/skills` entries pointing to DevFlow skills
+After global freshness is established, whenever a specific project qualifies
+for refresh, read `references/project-refresh.md` before running its read-only
+diagnostics or making any project write. It owns the exact
+`plugin_project_migration.py`, `validate_workflow_state.py`,
+`doctor_workflow.py`, `scaffold_workflow.py`, and `git status` sequence, plus
+the guarded `activate_project_dependencies.py` apply paths and legacy
+`.codex/skills` handling.
 
-If the user names projects, use that list. Otherwise inspect likely active repo
-roots and report which projects were included or skipped.
+Project writes require explicit intent. Do not overwrite `AGENTS.md`, resolve
+conflicts, remove legacy links, or apply a
+project migration merely because diagnostics found drift.
 
-## Read-Only Project Diagnostics
+## 3. AGENTS Drift Gate
 
-For each project, run diagnostics before applying changes:
+Every project refresh checks durable workflow-rule drift. If dry-run produces
+`AGENTS.md.generated`, compare it with active `AGENTS.md`; it is merge-required
+evidence, not guidance. Preserve project rules and keep task scope in OpenSpec
+or the Execution Ledger. The project reference owns merge and validation.
 
-```bash
-python3 dev/plugins/dev-flow/scripts/plugin_project_migration.py --repo <project> --json
-python3 dev/plugins/dev-flow/scripts/validate_workflow_state.py --repo <project> --json
-python3 dev/plugins/dev-flow/scripts/doctor_workflow.py --repo <project> --check-cache-drift --json
-python3 dev/plugins/dev-flow/scripts/scaffold_workflow.py --repo <project> --mode auto --dry-run --json
-git -C <project> status -sb
-```
+## 4. Provider Cleanup Boundary
 
-For non-git projects, say that `git status` is unavailable and list changed
-workflow files by path.
+Provider cleanup is separate from ordinary refresh and always explicit. Before
+planning or applying it, read `references/provider-cleanup.md`; require its
+dry-run report, named provider authorization, matching plan digest, preservation
+rules, and rollback evidence. Never infer cleanup from an upgrade.
 
-## Safe Project Refresh
+## Final Evidence
 
-Apply only the safe refreshes that the latest user request already authorizes.
-
-Refresh official OpenSpec skills through DevFlow's isolated OpenSpec staging
-path. Dry-run invokes no CLI and writes nothing; apply verifies the exact six
-1.6 skills, copies them transactionally, and excludes real global OpenSpec
-configuration and OPSX prompts:
-
-```bash
-python3 dev/plugins/dev-flow/scripts/activate_project_dependencies.py \
-  --repo <project> --codex-home <codex-home> \
-  --refresh-project-skills --dry-run --json
-python3 dev/plugins/dev-flow/scripts/activate_project_dependencies.py \
-  --repo <project> --codex-home <codex-home> \
-  --refresh-project-skills --apply --json
-```
-
-Refresh stale project-local DevFlow skill links:
-
-```bash
-python3 dev/plugins/dev-flow/scripts/activate_project_dependencies.py \
-  --repo <project> \
-  --codex-home <codex-home> \
-  --skip-official-installs \
-  --refresh-project-skills \
-  --apply \
-  --json
-```
-
-If official skill layout migration has no conflicts, run dry-run first and
-then apply only when project migration is in scope:
-
-```bash
-python3 dev/plugins/dev-flow/scripts/activate_project_dependencies.py \
-  --repo <project> \
-  --skip-official-installs \
-  --migrate-official-skill-layout \
-  --dry-run \
-  --json
-```
-
-Do not auto-clean legacy `.codex/skills` duplicates, conflicts, or
-manual-review items. Report them separately and require explicit approval before
-cleanup or conflict resolution.
-
-## Safe Provider Cleanup
-
-Provider cleanup is a separate, explicit operation from ordinary refresh. Start
-with a dry-run and save the complete JSON report; it contains the exact verified
-project-local links, `planDigest`, preservation decisions, and per-link rollback
-commands:
-
-```bash
-python3 dev/plugins/dev-flow/scripts/activate_project_dependencies.py \
-  --repo <project> \
-  --skip-official-installs \
-  --deactivate-provider <provider-id> \
-  --dry-run \
-  --json > provider-cleanup-dry-run.json
-```
-
-After reviewing that exact plan, apply it only with the named authorization and
-the matching digest:
-
-```bash
-python3 dev/plugins/dev-flow/scripts/activate_project_dependencies.py \
-  --repo <project> \
-  --skip-official-installs \
-  --deactivate-provider <provider-id> \
-  --authorize-provider-cleanup <provider-id> \
-  --provider-cleanup-plan <planDigest> \
-  --apply \
-  --json > provider-cleanup-apply.json
-```
-
-Retain both JSON files as verification and rollback evidence. Rerun the dry-run
-after apply to confirm that no verified candidates remain. Preserve every
-unverified, copied, or manual-review path. Provider cleanup never deletes global
-provider configuration, installed plugin caches, or source caches; disabling a
-global plugin is a separate configuration change with its own authorization.
-
-## AGENTS.md Boundary
-
-Do not overwrite active `AGENTS.md` as part of ordinary skill-link refresh.
-
-## AGENTS Drift Gate
-
-AGENTS drift review is a required project refresh gate. Every DevFlow upgrade
-must evaluate whether durable workflow rules changed for each project. Do not
-rely only on `validate_workflow_state.py ok=true`;
-validation checks required markers, while `scaffold_workflow.py --dry-run`
-surfaces new template guidance that may need to be merged.
-
-Compare the dry-run `AGENTS.md.generated` candidate with the active
-`AGENTS.md` whenever it appears. Durable workflow rules include Workflow
-Ownership, Project Control Plane, Methodology Artifact Mapping, GSD/OpenSpec
-routing, Decision and Planning Flow, Goal Workflow, AI Coding Planning Rules,
-Workflow Mode Routing, Plugin Eval Gate, and Local Reference Update Reminder.
-
-Skill links, installed cache freshness, control-plane file creation, and
-official skill-layout migration do not by themselves require `AGENTS.md`
-changes.
-
-Treat `AGENTS.md.generated` as a merge-required candidate, not as active
-guidance. Update active `AGENTS.md` only when durable DevFlow workflow rules
-changed or `validate_workflow_state.py` reports missing guidance. Merge the
-durable rules, preserve project-specific rules, delete or resolve the generated
-file, and rerun validation.
-
-Keep task-specific slice boundaries, temporary non-goals, and current execution
-details in OpenSpec, GSD, `.planning`, or `TASK_LEDGER.md`, not in `AGENTS.md`.
-
-## Final Verification
-
-After global or project refresh actions, rerun:
-
-```bash
-python3 dev/plugins/dev-flow/scripts/validate_workflow_state.py --repo <project> --json
-python3 dev/plugins/dev-flow/scripts/doctor_workflow.py --repo <project> --check-cache-drift --json
-python3 dev/plugins/dev-flow/scripts/plugin_project_migration.py --repo <project> --json
-git -C <project> status -sb
-```
-
-Report:
-
-- global DevFlow refresh command and cache/source result
-- projects refreshed, skipped, and why
-- files changed or generated
-- AGENTS status: unchanged, merged, generated-deferred, or conflict
-- AGENTS evidence: scaffold dry-run result, validation result, and whether
-  `AGENTS.md.generated` remains
-- validation and doctor results
-- remaining `migration_pending`, duplicate, conflict, or manual-review items
-- residual risk when AGENTS merge is deferred: the project may not inherit the
-  latest DevFlow durable workflow rules
-- whether Codex restart or a new session is needed to load project-local skills
+Rerun validation, cache-drift diagnosis, migration sync, and `git status` per
+project. Report global status, included/skipped projects, changed/generated
+files, conflicts, manual review, and restart need. Report `AGENTS status` as
+`unchanged`, `merged`, `generated-deferred`, or `conflict`; deferred means the
+current durable workflow rules may be stale.

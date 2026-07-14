@@ -1,12 +1,12 @@
 ---
 name: project-setup
-description: Use when initializing or refreshing DevFlow workflow files in a project.
+description: Use when initializing DevFlow workflow files or restoring a missing project control plane.
 ---
 
 # Project Setup
 
-Initialize DevFlow without inventing roadmap artifacts or overwriting project
-guidance.
+Initialize a missing DevFlow control plane without inventing roadmap artifacts.
+Route established-project upgrades to `dev-flow-refresh`.
 
 ## Capability Routing
 

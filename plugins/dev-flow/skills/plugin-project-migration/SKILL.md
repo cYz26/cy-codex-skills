@@ -5,8 +5,8 @@ description: Use when plugin or skill runtime updates may require project-local 
 
 # Plugin Project Migration
 
-Use this Skill to inspect and apply project-local migrations after Codex
-plugins or skills update.
+Inspect and, when explicitly authorized, apply project-local migrations after
+Codex plugins or skills update.
 
 ## Boundary
 
@@ -18,7 +18,7 @@ they do not edit `AGENTS.md`, `.agents/skills`, legacy `.codex/skills`,
 Project mutation requires explicit user intent to migrate/apply. Provider-file
 migration and rollback are separate approvals from ordinary project migration.
 
-## Sync Procedure
+## Sync
 
 1. Run the sync script from the DevFlow plugin root:
 
@@ -26,7 +26,7 @@ migration and rollback are separate approvals from ordinary project migration.
 python3 scripts/plugin_project_migration.py --repo <repo> --json
 ```
 
-2. Review:
+Review:
    - active migration-aware plugins;
    - runtime plugin version;
    - stored project migration version;
@@ -34,10 +34,10 @@ python3 scripts/plugin_project_migration.py --repo <repo> --json
    - conflicts;
    - recommended next action.
 
-3. If the report is `migration_pending`, ask before applying unless the user
-   already explicitly requested migration.
+If the report is `migration_pending`, stop before writes unless the user already
+requested migration.
 
-## Migrate Procedure
+## Ordinary Apply
 
 Run ordinary project apply only when the user explicitly authorizes migration:
 
@@ -52,41 +52,14 @@ preview and then explicitly apply `activate_project_dependencies.py
 --refresh-project-skills`. It copies verified 1.6 skills transactionally;
 legacy `.codex/skills` remain migration inputs and are not auto-deleted.
 
-Apply provider selection/state files only after reviewing the separate dry-run
-`providerMigration` report:
+## Provider Files and Rollback
 
-```bash
-python3 scripts/plugin_project_migration.py \
-  --repo <repo> \
-  --apply-provider-files \
-  --json
-```
-
-This snapshots every exact target and records its manifest below
-`.planning/devflow/provider-migration/snapshots/<migration-id>/manifest.json`.
-It does not install or update provider dependencies.
-
-## Rollback Procedure
-
-Rollback is destructive cleanup and is never inferred from sync, diagnosis, or
-a failed migration. Obtain the exact `manifestPath` from the successful apply
-result, review its target list, then run only after the user explicitly asks to
-restore that file list:
-
-```bash
-python3 scripts/plugin_project_migration.py \
-  --repo <repo> \
-  --rollback-manifest <absolute-manifest-path> \
-  --json
-```
-
-Supplying `--rollback-manifest` is the CLI authorization for the side-effect
-policy `destructive.cleanup: explicit_file_list_and_rollback`. It is mutually
-exclusive with `--apply` and `--apply-provider-files`. Rollback validates the
-canonical manifest/checkpoint location, target and snapshot hashes, and every
-target's current post-migration hash before the first restore. Any drift stops
-without writes. A restore failure compensates already-restored targets back to
-their verified post-migration state and requires review.
+Provider-file migration and destructive rollback are not ordinary apply. Before
+either action, read
+`references/provider-migration-and-rollback.md`. That reference owns the
+`--apply-provider-files` snapshot contract, the exact `--rollback-manifest`
+authorization, pre-write hash checks, compensation behavior, and evidence.
+Never infer either operation from sync, diagnosis, or a failed migration.
 
 ## Safety Rules
 
@@ -94,8 +67,6 @@ their verified post-migration state and requires review.
 - Default invocation is dry-run; never add a rollback manifest automatically.
 - Do not replace non-symlink project-local skill directories.
 - Do not overwrite user content outside declared managed targets.
-- Never copy a manifest or snapshot to a different migration directory before
-  rollback; canonical containment is part of the verification contract.
 - Stop and report conflicts when a managed target has local content.
 - Report generated files, conflicts, and validation commands before claiming
   migration is complete.

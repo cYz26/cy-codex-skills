@@ -1,6 +1,87 @@
 # Task Ledger
 
-## Active Change: OpenSpec 1.6 Integration
+## Active Change: DevFlow Skill Portfolio Optimization
+
+### Goal Contract
+
+- goal_id: Codex goal `019f5b76-7521-7d11-aa82-624f0392a461`
+- objective: Review and optimize every DevFlow plugin skill, classify each by
+  ownership/reachability/compatibility, remove only evidence-backed dead
+  resources, keep source and release coherent, and finish with focused/full
+  tests, strict OpenSpec, runtime checks, zero-failure release Plugin Eval, and
+  a lower active invoke budget.
+- scope_in: `dev/plugins/dev-flow/skills/**`, focused DevFlow tests, generated
+  `plugins/dev-flow/**`, change evidence, root ledger, and DevFlow state.
+- scope_out: public skill retirement, invocation-policy changes, provider or
+  dependency changes, live/paid benchmarks, installed-cache refresh, project
+  migration, archive, commit, and push.
+- acceptance_criteria: sixteen public skills remain; six duplicated unlinked
+  resources are removed; every retained/new resource is directly linked;
+  release invoke cost is at most 10,000 tokens with zero Plugin Eval failures
+  and score at least 86/B; all required validation passes.
+- validation_commands: focused RED/GREEN and quick validation, complete
+  development/package discovery, strict OpenSpec, release promotion/current,
+  runtime verification, workflow validation, release-target Plugin Eval,
+  updater dry-run, and `git diff --check`.
+- stop_conditions: stop on ambiguous public consumers, removal requiring a
+  retirement migration, invocation-policy changes, dependency/provider scope,
+  failed validation that cannot be fixed in scope, or any external apply gate.
+- knowledge_update_target: none
+
+### Tasks
+
+| task_id | summary | owner | write_set | contract_path | required_evidence | review_gate | status |
+|---|---|---|---|---|---|---|---|
+| DF-SP-1 | Portfolio/reference/eval/compatibility audit and Full OpenSpec plan | main + audit agents | OpenSpec and audit contract | `.planning/agent-tasks/20260713-devflow-skill-portfolio-audit.md` | 16-skill matrix, official docs, baseline Eval, strict validation | no unresolved public deletion | done |
+| DF-SP-2 | RED portfolio and resource-reachability contracts | main | focused DevFlow tests | not-delegated | expected failing tests before edits | TDD review | done |
+| DF-SP-3 | Progressive-disclosure rewrites and six-file cleanup | main | source skills | not-delegated | GREEN tests and 16 quick validators | skill correctness review | done |
+| DF-SP-4 | Budget iteration and broad source verification | main | source skills/tests/evidence | not-delegated | invoke <=10000, full source suite, strict OpenSpec | Plugin Eval gate | done |
+| DF-SP-5 | Generated release and runtime verification | main | generated `plugins/dev-flow/**` | not-delegated | promotion/current, packaged suite, runtime hash, release Eval | release gate | done |
+| DF-SP-6 | Independent review and durable closeout | main + reviewers | evidence, ledger, state | `.planning/agent-tasks/20260713-devflow-skill-portfolio-review.md` | findings disposition, workflow and diff checks | no archive/commit/push | done |
+
+### Execution Log
+
+- 2026-07-13: Selected `core + none`; intake classified the request as a Full
+  OpenSpec compatibility-changing plugin refactor and created an active Codex
+  goal with explicit evidence, scope, non-goals, and stop conditions.
+- 2026-07-13: Three read-only agents audited references, Plugin Eval, and
+  packaging/compatibility. All sixteen skills are public, required, installed,
+  and not safe to delete directly. Six unlinked duplicated resources are safe
+  cleanup candidates; `dev-flow-refresh` is the primary main-body optimization.
+- 2026-07-13: Official Codex docs confirmed progressive disclosure and that
+  disabling implicit invocation removes natural-language triggering. The plan
+  therefore preserves fifteen implicit skills plus explicit-only
+  `claude-code-delegate`.
+- 2026-07-13: Release baseline is 86/B, medium risk, zero failures, trigger 385,
+  invoke 11,996, deferred 27,397, active 12,381. All sixteen individual skills
+  are 100/A. The new OpenSpec change is complete and strictly valid.
+- 2026-07-13: Portfolio RED ran 71 tests with 20 expected resource-contract
+  failures. The source implementation then linked or added eight conditional
+  resources, removed only six approved duplicates, preserved all sixteen public
+  names, and passed 71/71 plus all sixteen quick validators.
+- 2026-07-13: Three independent closeout reviews returned one clean release
+  verdict and four actionable P1/P2 concerns. The implementation restored the
+  explicit delegation-authority gate, routes project diagnostics through their
+  reference, asserts branch-specific resource use, and records exact TDD and
+  two-target Plugin Eval evidence.
+- 2026-07-14: Independent pre-commit scope review found that the compressed
+  `dev-flow-refresh` description accidentally made a DevFlow upgrade a
+  prerequisite for project refresh. A focused RED/GREEN contract now protects
+  the three independent refresh triggers in both source and release metadata.
+- 2026-07-14: Final development discovery passed 455/455 in 66.339 seconds.
+  Generated release promotion is current, packaged discovery passed 8/8,
+  runtime verification reports `verified`, and source/release Skill trees are
+  byte-identical.
+- 2026-07-14: Final release Plugin Eval is 86/B with zero failures: trigger 390,
+  invoke 9,906, deferred 28,435, explicit-only 799, total 38,731. Active cost is
+  10,296, down 2,085 from baseline without changing invocation policy.
+- 2026-07-14: The local-reference updater remained dry-run-only. Release assets
+  and project skill layout are current; the installed DevFlow cache still needs
+  an explicit refresh, and project migration remains blocked by the active
+  phase/change. No cache, migration, archive, or push was applied; the local
+  commit was authorized separately after implementation closeout.
+
+## Previous Completed Change: OpenSpec 1.6 Integration
 
 ### Goal Contract
 

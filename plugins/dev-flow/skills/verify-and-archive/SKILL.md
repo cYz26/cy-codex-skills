@@ -43,32 +43,15 @@ archive intent, and no unresolved worktree or compatibility risk. Run
 `openspec-sync-specs` before `openspec-archive-change` when delta specs exist.
 Any non-zero OpenSpec validate, sync, or archive result is a blocking failure;
 record it and leave the change active rather than bypassing the gate.
+
+## Roadmap Binding
+
 An active roadmap binding is archived only after both OpenSpec and its bound
-phase gates pass. For a selected GSD binding, ingest the canonical UAT artifact
-after `gsd-verify-work`:
-
-```bash
-python3 dev/plugins/dev-flow/scripts/record_verification.py \
-  --repo <repo> --gsd-change <change> --gsd-phase <phase> --json
-```
-
-This command resolves `.planning/phases/<phase-dir>/<phase-num>-UAT.md` through
-the pinned read-only GSD adapter, verifies complete/pass/no-gap state, and
-records its hash. Caller-provided command text or result claims are not GSD
-evidence. After OpenSpec is verified and actually archived, preview then
-explicitly persist the roadmap-binding lifecycle transition:
-
-```bash
-python3 dev/plugins/dev-flow/scripts/archive_roadmap_binding.py \
-  --repo <repo> --change <change> --json
-python3 dev/plugins/dev-flow/scripts/archive_roadmap_binding.py \
-  --repo <repo> --change <change> --apply \
-  --authorize-archive-binding --json
-```
-
-The first command is always read-only. The second requires canonical-write and
-archive authorization and re-checks OpenSpec archive, DevFlow state, and the
-current UAT hash before atomically updating `.dev-flow.json`.
+roadmap gates pass. When `roadmap-lifecycle` resolves to a selected binding,
+read `references/roadmap-archive.md` before recording or changing it. The
+reference defines canonical UAT ingestion, read-only preview, and the separate
+explicit binding-archive authorization. Caller-provided result claims are not
+roadmap evidence.
 
 If the status reports risk, present it and obtain confirmation. Archive and
 release are separate approvals. After verification or archive, checkpoint under

@@ -9,7 +9,7 @@
     "dev/scripts/package_devflow_release_runtime.py"
   ],
   "schemaVersion": 1,
-  "sourceCommit": "fed507d94edfd2f88743040b51b000b96713ee43",
+  "sourceCommit": "7ede993d2f468cc7fbf5fbe2c89144d896ebf725",
   "sources": [
     {
       "bytes": 8469,

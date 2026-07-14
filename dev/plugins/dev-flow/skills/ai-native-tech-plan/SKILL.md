@@ -60,6 +60,13 @@ Provider planning notes, including legacy `docs/superpowers/plans/`, are review
 inputs. Promote approved content into OpenSpec `tasks.md`, the selected roadmap
 plan, or the DevFlow Execution Ledger; canonical files win conflicts.
 
+## Output Resources
+
+When creating a durable task ledger, copy and adapt
+`assets/task-ledger-template.md`; do not invent a second planning source. Read
+`references/goal-prompt-template.md` only when the Goal Suitability Gate says
+the plan needs Goal Mode or a recovery Continue Prompt.
+
 ## Completion
 
 The plan is complete when every required behavior maps to a slice, criterion,
