@@ -4,7 +4,7 @@ Repository for maintained Codex plugins, archived legacy standalone skills, and 
 
 ## Active plugin surfaces
 
-Development-stage Codex plugins live under `dev/plugins/`; release-ready plugins live under `plugins/`. Project-local workflow skills are activated through `.codex/skills/`.
+Development-stage Codex plugins live under `dev/plugins/`; release-ready plugins live under `plugins/`. Project-local workflow skills are activated through `.agents/skills/`; `.codex/skills/` is retained only as a legacy compatibility surface.
 
 ## Development plugins
 
@@ -12,6 +12,7 @@ Development-stage plugin source paths:
 
 - `dev/plugins/agent-kb`
 - `dev/plugins/dev-flow`
+- `dev/plugins/lark-feishu-ops`
 
 ## Release plugins
 

@@ -37,14 +37,23 @@ SKILL_INCLUDE = [
 ]
 DEFAULT_EXCLUDE = [
     "tests/**",
+    "**/tests/**",
     "test/**",
+    "**/test/**",
     "fixtures/**",
+    "**/fixtures/**",
     "fixture/**",
+    "**/fixture/**",
     "log/**",
+    "**/log/**",
     "logs/**",
+    "**/logs/**",
     "eval/**",
+    "**/eval/**",
     "evals/**",
+    "**/evals/**",
     "reports/**",
+    "**/reports/**",
     ".reports/**",
     ".eval/**",
     "docs/history/**",
@@ -864,6 +873,10 @@ def matches_any(path: str, patterns: list[str]) -> bool:
 def matches(path: str, pattern: str) -> bool:
     if pattern.endswith("/**"):
         prefix = pattern[:-3]
+        if any(marker in prefix for marker in ("*", "?", "[")):
+            parts = Path(path).parts
+            ancestors = ["/".join(parts[:index]) for index in range(1, len(parts) + 1)]
+            return any(fnmatch.fnmatchcase(ancestor, prefix) for ancestor in ancestors)
         return path == prefix or path.startswith(f"{prefix}/")
     return fnmatch.fnmatchcase(path, pattern)
 

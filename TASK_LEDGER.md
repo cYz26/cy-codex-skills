@@ -1,6 +1,152 @@
 # Task Ledger
 
-## Active Change: Simplify DevFlow to Matt-native Methodology
+## Active Change: Harden Lark Feishu Ops Runtime Contracts
+
+### Goal Contract
+
+- goal_id: OpenSpec change `harden-lark-feishu-ops-runtime-contracts` (no
+  Codex goal requested)
+- objective: Upgrade every reachable local Lark CLI installation to official
+  1.0.69 and deliver a versioned Lark Feishu Ops 0.2.0 plugin whose delegation,
+  guidance, continuity, doctor, sync, source/release, and verification
+  contracts are fail-closed, privacy-safe, current with official CLI/Codex
+  behavior, and proven from development plus generated-release seams.
+- scope_in: both reachable local `lark-cli` executables and read-only
+  post-upgrade checks; `dev/plugins/lark-feishu-ops/**`; generated
+  `plugins/lark-feishu-ops/**`; focused target-selection changes to the existing
+  DevFlow release-promotion facade/tests; target-specific release metadata; Lark plugin
+  tests/docs/evals; this OpenSpec change; root ledger/state/checkpoint/evidence;
+  release-target Plugin Eval and independent review.
+- scope_out: Feishu data mutation; auth/profile changes; global official Lark
+  skill unload; installed Codex plugin cache refresh; other-project migration;
+  production dependencies; unrelated plugin/runtime refactors; destructive
+  binary removal; OpenSpec archive; commit; push; PR creation.
+- acceptance_criteria: both reachable CLI paths report 1.0.69 with the NVM-first
+  path canonical and read-only health/embedded-skill checks passing; unknown,
+  raw, mutating, and caller-downgraded actions cannot run direct; arbitrary
+  guidance paths are rejected; persisted continuity is bounded metadata-only
+  with lifecycle/freshness/security controls; doctor and sync report current
+  binaries, skills, roots, versions, homes, JSON and full asset parity; dev
+  source and generated 0.2.0 release are current; all focused/full/OpenSpec/
+  workflow/release/eval/review gates pass with Plugin Eval zero failures and at
+  least 91/B.
+- validation_commands: exact CLI path/version/update/skills/doctor/auth smoke;
+  Python 3.12 focused and complete development discovery; syntax compilation;
+  skill/plugin validation; target release sync dry-run/apply/current; packaged
+  runtime smoke; strict change/all OpenSpec; workflow/checkpoint validation;
+  fixture-secret scan; release-target Plugin Eval; updater dry-run; independent
+  standards/spec review; `git diff --check`.
+- success_threshold: every OpenSpec task complete, every acceptance scenario
+  covered by passing observable tests, no in-scope P1/P2 finding, no unapproved
+  external side effect, release Eval score >=91/B with zero failures, and all
+  generated runtime assets current.
+- stop_conditions: stop on package ownership that requires destructive removal,
+  authentication or Feishu-resource mutation, dependency addition, public name
+  change, private-data migration, unrelated dirty-file overlap, release gate
+  failure without safe rollback, or a new scope-changing decision.
+- knowledge_update_target: none
+
+### Tasks
+
+| task_id | summary | owner | write_set | contract_path | required_evidence | review_gate | status |
+|---|---|---|---|---|---|---|---|
+| LFO-1 | Current capability evidence, read-only audits, Full OpenSpec, baseline, and planning checkpoint | main + read-only auditors | OpenSpec, ledger, state, checkpoint, evidence | `.planning/agent-tasks/20260715-lark-feishu-ops-cli-upgrade-audit.md`; `.planning/agent-tasks/20260715-lark-feishu-ops-release-audit.md`; `.planning/agent-tasks/20260715-lark-feishu-ops-security-test-audit.md` | official/local matrix, validated contracts, strict change validation, clean baseline | no unresolved question | done |
+| LFO-2 | Reversible upgrade and alignment of all reachable Lark CLI executables | main | user-global CLI installations only | not-delegated | path/version/owner before-after, rollback commands, embedded-skill/read-only smoke | no auth/profile or Feishu mutation | done |
+| LFO-3 | Canonical development source, release metadata, and RED public-seam contracts | main | `dev/plugins/lark-feishu-ops/**` | not-delegated | no-apply release drift and observed RED suites | TDD seam review | done |
+| LFO-4 | Fail-closed policy, strict runtime adapter, trusted embedded guidance, and dynamic domains | main | development scripts/tests | not-delegated | focused GREEN risk/guidance/runtime tests | security + compatibility review | done |
+| LFO-5 | Metadata-only continuity, secure persistence, lifecycle, purge, and freshness | main | development scripts/tests | not-delegated | focused GREEN privacy/lifecycle/storage tests | privacy review | done |
+| LFO-6 | Multi-binary doctor, current/legacy skill roots, provenance, strict JSON, and full sync parity | main | development scripts/tests | not-delegated | focused GREEN doctor/sync tests and CLI smoke | readiness review | done |
+| LFO-7 | Skill/protocol/docs/eval/version updates, target-aware promotion gate, and generated 0.2.0 release | main | development source, focused DevFlow release-gate facade/tests, and generated `plugins/lark-feishu-ops/**` | not-delegated | validators, DevFlow compatibility suite, source receipt, release apply/current, packaged smoke | release authorization and diff review | done |
+| LFO-8 | Integrated verification, Plugin Eval, independent two-axis review, and durable closeout | main + review agents | evidence, ledger, state | review contracts created after implementation | full command matrix, findings disposition, clean diff | no archive/cache/commit/push | done |
+
+### Execution Log
+
+- 2026-07-15: The user approved upgrading Lark CLI to the official latest
+  version and implementing the complete systemic plugin optimization previously
+  recommended. Installed-cache refresh, global skill unload, archive, commit,
+  push, and PR creation remain explicit separate effects.
+- 2026-07-15: Intake classified the work as a Full OpenSpec integration,
+  security, compatibility, migration, and plugin-release change. Official and
+  local evidence confirmed latest Lark CLI 1.0.69, two reachable stale versions,
+  27 embedded skills, current `.agents/skills` discovery, native Codex subagent
+  lifecycle, and the existing fail-open/privacy/readiness defects.
+- 2026-07-15: Three read-only audit contracts passed the DevFlow contract
+  validator. The proposal, design, three capability specs, and dependency-
+  ordered tasks for `harden-lark-feishu-ops-runtime-contracts` are complete,
+  have no open questions, and pass strict OpenSpec validation. Production work
+  begins with reversible CLI alignment and public-seam RED tests.
+- 2026-07-15: Baseline verification passed 47/47 existing plugin tests, plugin
+  and skill validation, strict OpenSpec 51/51, workflow validation, and
+  `git diff --check`; release Plugin Eval scored 91/B with zero failures and two
+  warnings. Public probes reproduced every planned P1/P2 behavior gap.
+- 2026-07-15: Both npm-global Lark CLI owners were upgraded by absolute pinned
+  commands: NVM 1.0.63 -> 1.0.69 and Homebrew-prefix 1.0.60 -> 1.0.69. The
+  canonical official updater synchronized 27 skills to 1.0.69; both update
+  checks are current/in-sync, read-only doctor and verified auth checks pass,
+  and no auth/profile or Feishu resource mutation occurred.
+- 2026-07-15: Canonical development source and public-seam RED contracts were
+  established. The observed RED baseline was 29 agent-context assertion
+  failures, 22 doctor failures, and eight sync/release failures with no fixture
+  errors; the target-aware promotion-gate tests followed their own RED-to-GREEN
+  cycle.
+- 2026-07-15: Shared runtime, fail-closed policy, and schema-v2 metadata state
+  modules now back the stable facades. Agent-context GREEN is 20/20, including
+  embedded CLI guidance, unknown/write/high-risk routing, 0600 atomic bounded
+  state, sensitive-domain no-cache, purge, pruning, lifecycle, and freshness.
+  Sync GREEN is 7/7; Doctor behavior is GREEN with the remaining prompt parity
+  update delegated in the documentation write set.
+- 2026-07-15: The integrated development source is pre-promotion ready. All
+  70 Lark plugin tests and 39 focused DevFlow release tests pass; Python syntax,
+  plugin/skill structure, strict OpenSpec 51/51, workflow state, fixture scan,
+  and `git diff --check` pass. Source Plugin Eval improved to 81/C after fixing
+  its trigger description. Its remaining development-tree token finding comes
+  from deliberately retained tests/evals, while the complexity warning is an
+  evaluator whole-file decision count rather than an identified oversized
+  function; the generated release remains the authoritative >=91/B gate.
+- 2026-07-15: Read-only release planning reports exactly the expected 0.2.0
+  runtime/document changes plus removal of old release-only tests, evals, and
+  bytecode. The user's request to complete the approved optimization is durable
+  release authorization for only `lark-feishu-ops`; installed-cache refresh,
+  global skill unload, archive, commit, push, and PR creation remain excluded.
+- 2026-07-15: The issuer-gated promotion facade now preserves the `dev-flow`
+  default while selecting target-specific verification profiles. Built-in Lark
+  promotion reports its nine-test generated-package command; other targets
+  fail closed before authorization/sync unless release metadata declares a
+  valid verification command. The authorized 0.2.0 Lark release was promoted,
+  inspected, and a second target check is `current` with source receipt
+  SHA-256 `811eadebb53040adb330302a798741c0990449383528e87278d7625a62b70a9b`.
+- 2026-07-15: Fresh integrated verification passed 90/90 Lark development
+  tests, 339/339 DevFlow tests, 9/9 release-package tests, the offline packaged
+  self-test, 19-file AST parsing, plugin/skill validators, strict OpenSpec
+  51/51, release parity, workflow validation, fixture/privacy checks, and
+  `git diff --check`. Both absolute Lark CLI paths report 1.0.69 and official
+  update status is `already_up_to_date` with 27 skills in sync.
+- 2026-07-15: Release-target Plugin Eval scored 91/B with zero failures. The
+  two warnings are retained with explicit disposition: deferred supporting
+  text is deliberately on-demand, while the Python heuristic reports maximum
+  complexity 238 together with `py_function_count: 0`, so it identifies no
+  actionable function. Release coverage artifacts remain absent by design;
+  behavior is covered by the development and packaged suites.
+- 2026-07-15: Independent final Standards and Spec/Security reviews passed
+  with no remaining actionable P0-P3 finding. The updater dry-run reports the
+  installed 0.1.0 plugin cache differs from repository release 0.2.0 and would
+  refresh; no apply ran. Doctor core readiness passes but its aggregate status
+  remains WARN because 27 verified official global Lark skills remain exposed.
+  No cache refresh, global skill unload, auth/profile change, Feishu mutation,
+  destructive rollback, archive, commit, push, or PR action was performed.
+- 2026-07-15: The user separately authorized the local global plugin-cache
+  refresh and remote Git publication. The first sync-mediated refresh exposed a
+  stale `codex-switch` shim targeting the removed `/Applications/Codex.app`
+  path and made no cache change. The verified official ChatGPT app CLI at
+  `/Applications/ChatGPT.app/Contents/Resources/codex` 0.144.2 then installed
+  `lark-feishu-ops@cy-codex-skills` 0.2.0 by absolute path. Post-refresh
+  verification reports `matches-source`, 17/17 runtime files byte-identical,
+  no changed/missing/unexpected files, and no refresh recommendation. The 27
+  verified official global Lark skills remain intentionally loaded because the
+  user authorized refresh, not unload; auth/profile and Feishu resources remain
+  unchanged.
+
+## Previous Verified Change: Simplify DevFlow to Matt-native Methodology
 
 ### Goal Contract
 

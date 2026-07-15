@@ -1,0 +1,63 @@
+{
+  "version": "1.0",
+  "plugin_version": "0.2.0",
+  "skill": "lark-feishu-ops",
+  "fixture_policy": "reserved-synthetic-only",
+  "cases": [
+    {
+      "id": "trigger-synthetic-doc-fetch",
+      "prompt": "读取保留域名下的合成测试文档并返回摘要：https://lark-synthetic.example.invalid/docx/doc-synthetic-001",
+      "expected": "trigger"
+    },
+    {
+      "id": "trigger-synthetic-doc-review-with-parent-judgment",
+      "prompt": "用 FeishuOps 读取合成文档 doc-synthetic-002，返回证据包供主线程判断其中的 Harness 说明是否完整。",
+      "expected": "trigger"
+    },
+    {
+      "id": "trigger-explicit-feishuops-fork-none",
+      "prompt": "必须通过新的 FeishuOps subagent 查询 synthetic-note-003，使用 fork_turns: none，不要让主线程直接执行。",
+      "expected": "trigger"
+    },
+    {
+      "id": "trigger-synthetic-cross-domain-escalation",
+      "prompt": "读取 synthetic-doc-004 中引用的 synthetic-base-004 和 synthetic-note-004，先返回 next_resources，不要静默扩展。",
+      "expected": "trigger"
+    },
+    {
+      "id": "trigger-unknown-action-fail-closed",
+      "prompt": "对 synthetic-doc-005 执行未注册的 docs.synthetic-transform；不要把未知动作当作直接只读操作。",
+      "expected": "trigger"
+    },
+    {
+      "id": "trigger-metadata-only-no-cache",
+      "prompt": "查询 synthetic-mailbox-006，但 cache_policy 设为 disabled；结果只返回必要证据，不持久化正文或联系人数据。",
+      "expected": "trigger"
+    },
+    {
+      "id": "trigger-continuity-purge",
+      "prompt": "清理当前合成测试仓库的 Lark Feishu Ops continuity metadata，并返回机器可读 purge 结果。",
+      "expected": "trigger"
+    },
+    {
+      "id": "trigger-global-unload-review",
+      "prompt": "检查 Lark CLI 依赖和全局 lark skills 暴露，只报告需要确认的卸载动作，不要直接执行。",
+      "expected": "trigger"
+    },
+    {
+      "id": "trigger-synthetic-im-send",
+      "prompt": "准备向 synthetic-chat-008 发送合成测试消息；在任何发送前保留确认边界。",
+      "expected": "trigger"
+    },
+    {
+      "id": "non-trigger-product-review",
+      "prompt": "评审一份本地合成 PRD 的产品逻辑，不需要操作飞书。",
+      "expected": "do_not_trigger"
+    },
+    {
+      "id": "non-trigger-app-code",
+      "prompt": "修改本地 Android Compose 示例页面里的按钮样式。",
+      "expected": "do_not_trigger"
+    }
+  ]
+}

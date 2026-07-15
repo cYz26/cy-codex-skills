@@ -27,9 +27,9 @@ Top-level skill directories remain the release source because the restore flow a
 
 1. Create or iterate on a skill in `dev/skills/<skill-name>/`.
 2. Keep tests, scratch files, eval output, and drafts inside the dev skill directory.
-3. Promote by running `sync_release_assets.py --apply` after dev validation
-   has passed, or let the DevFlow release promotion gate run at the verified
-   stop boundary.
+3. Record complete source-bound verification. Before promotion, add an explicit
+   release-gate target profile that names the skill's release validation;
+   unprofiled targets fail closed and direct sync apply is denied.
 4. Verify the promoted skill from the top-level directory.
 5. Update `README.md` when adding, renaming, or retiring a release skill.
 
@@ -48,9 +48,9 @@ Do not promote local logs, generated output, test caches, or one-off evaluation 
 
 1. Create or iterate on a plugin in `dev/plugins/<plugin-name>/`.
 2. Keep plugin tests, fixtures, evals, logs, and local reports in the dev plugin directory.
-3. Promote by running `sync_release_assets.py --apply` after dev validation
-   has passed, or let the DevFlow release promotion gate run at the verified
-   stop boundary.
+3. Record complete source-bound verification, then promote through a supported
+   release-gate target profile; unprofiled targets fail closed and direct sync
+   apply is denied.
 4. Point `.agents/plugins/marketplace.json` at `./plugins/<plugin-name>`.
 5. If local development needs marketplace testing, create `.agents/plugins/marketplace.dev.json` and point it at `./dev/plugins/<plugin-name>`.
 
@@ -81,12 +81,44 @@ true`. The sync is allowlist-based, with optional per-asset metadata in
 `.codex-plugin/release-sync.json` or `release-sync.json` for custom excludes,
 build commands, and managed release outputs.
 
-Use the explicit CLI when preparing a commit or evaluating a target manually:
+Use the explicit CLIs when checking drift, promoting an authorized target, or
+evaluating its release counterpart:
 
 ```bash
-python3 dev/plugins/dev-flow/scripts/sync_release_assets.py --apply --json
+python3 dev/plugins/dev-flow/scripts/sync_release_assets.py \
+  --target <plugin-or-skill-name> --json
+python3 dev/plugins/dev-flow/scripts/release_promotion_gate.py \
+  --target lark-feishu-ops --apply --json
 python3 dev/plugins/dev-flow/scripts/sync_release_assets.py --eval-target dev/plugins/dev-flow --json
 ```
+
+Read-only sync and release-counterpart resolution remain generic across plugins
+and standalone skills. The mutation-capable promotion gate has built-in
+verification profiles for `dev-flow` and `lark-feishu-ops`. Other assets must
+declare their own non-mutating packaged/runtime check in release-sync metadata:
+
+```json
+{
+  "releaseVerificationName": "release package verification",
+  "releaseVerificationCommand": [
+    "{python}", "-B", "{source}/verification/test_release.py",
+    "--release-root", "{release}"
+  ]
+}
+```
+
+`{python}`, `{repo}`, `{source}`, and `{release}` are replaced with the resolved
+target paths. The command is reported for post-promotion execution; the gate
+does not execute it implicitly. A missing or malformed command returns
+`unsupported_target` before authorization is issued or release files are
+changed. This prevents a standalone skill or non-Python plugin from receiving a
+fabricated Python unittest command.
+
+For a profiled target, the promotion gate binds its short-lived one-time
+authorization to the current repository, selected target, durable workflow
+state, and fresh source receipt. Its `qualityGates` output names the verified
+packaged/runtime command and Plugin Eval command that must pass after promotion.
+Omitting `--target` keeps the historical `dev-flow` default for compatibility.
 
 Plugin Eval should use the release asset as the primary target when one exists:
 
@@ -105,7 +137,8 @@ Plugin Eval should use the release asset as the primary target when one exists:
 ## Promotion Checklist
 
 1. Confirm the dev source has no unrelated dirty changes.
-2. Run `sync_release_assets.py --apply`.
+2. Run a dry-run sync, record verification, and use the named profiled target;
+   add a target profile first when the gate reports `unsupported_target`.
 3. Check that release sources contain no `log/`, `__pycache__/`, generated reports, or scratch files.
 4. Run the asset-specific release validation command and Plugin Eval against the release path.
 5. Review the diff for accidental deletes, path changes, or marketplace drift.
@@ -142,7 +175,7 @@ python3 dev/plugins/dev-flow/scripts/codex_plugin_preflight.py \
 
 When promoting it:
 
-1. Run `python3 dev/plugins/dev-flow/scripts/sync_release_assets.py --apply`.
+1. Run `python3 dev/plugins/dev-flow/scripts/release_promotion_gate.py --target dev-flow --apply --json`.
 2. Keep `.agents/plugins/marketplace.json` pointed at `./plugins/dev-flow`.
 3. Keep `.agents/plugins/marketplace.dev.json` pointed at `./dev/plugins/dev-flow` for local development testing.
 4. Keep tests and fixtures in the dev copy.

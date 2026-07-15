@@ -54,8 +54,21 @@ class ReleaseSyncTests(unittest.TestCase):
         (dev_root / ".codex-plugin" / "plugin.json").write_text(
             json.dumps({"name": name, "skills": "./skills/", "hooks": "./hooks.json"})
         )
+        release_sync = {
+            "releaseVerificationName": "release package verification",
+            "releaseVerificationCommand": [
+                "{python}",
+                "-B",
+                "{source}/tests/test_release_package.py",
+                "--release-root",
+                "{release}",
+            ],
+        }
         if sync_config is not None:
-            (dev_root / ".codex-plugin" / "release-sync.json").write_text(json.dumps(sync_config))
+            release_sync.update(sync_config)
+        (dev_root / ".codex-plugin" / "release-sync.json").write_text(
+            json.dumps(release_sync)
+        )
         (dev_root / "skills" / "demo").mkdir(parents=True)
         (dev_root / "skills" / "demo" / "SKILL.md").write_text("---\nname: demo\ndescription: dev\n---\n")
         (dev_root / "scripts").mkdir()
@@ -66,6 +79,9 @@ class ReleaseSyncTests(unittest.TestCase):
         (dev_root / "docs" / "history" / "draft.md").write_text("draft\n")
         (dev_root / "tests").mkdir()
         (dev_root / "tests" / "test_dev_only.py").write_text("SHOULD_NOT_RELEASE = True\n")
+        (dev_root / "tests" / "test_release_package.py").write_text(
+            "# synthetic release verification fixture\n"
+        )
         (dev_root / "log").mkdir()
         (dev_root / "log" / "debug.log").write_text("local\n")
         if release:
@@ -768,9 +784,10 @@ context_management:
         self.assertIn("release validation", after["message"])
         self.assertIn("qualityGates", after)
         gate_commands = {gate["name"]: " ".join(gate["command"]) for gate in after["qualityGates"]}
-        self.assertIn("release runtime verification", gate_commands)
+        self.assertIn("release package verification", gate_commands)
         self.assertIn("Plugin Eval release", gate_commands)
-        self.assertIn("verify_release_runtime.py", gate_commands["release runtime verification"])
+        self.assertIn("test_release_package.py", gate_commands["release package verification"])
+        self.assertIn(str(release_root), gate_commands["release package verification"])
         self.assertIn("plugin-eval", gate_commands["Plugin Eval release"])
         self.assertEqual(
             (release_root / "skills" / "demo" / "SKILL.md").read_text(),
