@@ -59,28 +59,30 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   PATH-based Codex operation
 - Human Disposition: `pending`
 
-### DF-IFL-003: GitHub PR channel requires authentication
+### DF-IFL-003: GitHub PR channel unavailable; direct main publication authorized
 
 - Finding ID: `DF-IFL-003`
-- Disposition: `BLOCKED_AWAITING_HUMAN`
-- Severity: medium publication blocker; no source, release, archive, or local
+- Disposition: `CONTINUE_WITH_MINIMAL_GUARD`
+- Severity: resolved publication decision; no source, release, archive, or local
   repository corruption risk
 - Evidence: SSH fetch/push to `git@github.com:cYz26/cy-codex-skills.git`
   works, but `gh auth status` reports no authenticated host; no GitHub connector
   is available; and the selected browser is prohibited from accessing
   `github.com` by enterprise network policy
-- Affected Contract: `DF-IFL-9` requires a ready PR and merge to `main`
-- Impact: the reviewed closeout commit can be pushed to the feature branch, but
-  Codex cannot create or merge the required PR in the current external state
-- Current Mitigation: keep `main` unchanged, push only the existing feature
-  branch, and preserve all fresh verification and merge-ready evidence
-- Disposition Reason: bypassing the requested PR with a direct `main` push would
-  change the publication method and review boundary without explicit approval
-- Recommended Follow-up: authenticate GitHub CLI with `gh auth login`, then ask
-  Codex to continue; alternatively, explicitly approve direct local merge and
-  SSH push to `main` without a PR
-- Follow-up Trigger: authenticated `gh` state or explicit approval to omit PR
-- Human Disposition: `pending`
+- Affected Contract: `DF-IFL-9` requires reviewed publication and a merge to
+  `main`; the user has replaced the PR route with a direct fast-forward merge
+- Impact: GitHub CLI still cannot create a PR, but that unavailable channel no
+  longer blocks the explicitly authorized direct `main` publication
+- Current Mitigation: rerun the fresh completion gates, require a clean and
+  non-divergent branch, fast-forward local `main`, push by SSH, and verify
+  `main == origin/main`
+- Disposition Reason: on 2026-07-18 the user explicitly instructed Codex to
+  merge and push to remote `main`, thereby approving omission of the PR without
+  changing the reviewed source scope
+- Recommended Follow-up: authenticate GitHub CLI before a future change whose
+  review contract still requires a PR; no follow-up is required for this closeout
+- Follow-up Trigger: the next explicitly PR-required publication
+- Human Disposition: `accepted`
 
 ## Active Change: Add Incidental Finding Lifecycle
 
@@ -107,8 +109,9 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 - final_closeout_scope: separately authorized hash-bound OpenSpec spec sync and
   archive; recoverable cleanup of the project-local GSD runtime, registrations,
   hooks, generated adapters, and obsolete empty skill layout after exact
-  ownership inspection; fresh verification; a ready PR; merge to `main`; and
-  final local/remote/source/release/cache parity checks.
+  ownership inspection; fresh verification; a user-authorized reviewed direct
+  fast-forward merge to `main`; and final local/remote/source/release/cache
+  parity checks.
 - final_closeout_non_goals: deletion of `.planning` history or the GSD migration
   journal; removal of the current DevFlow provider lock or `.codex/README.md`;
   repair of the workstation `codex-switch` shim; the plugin-wide budget
@@ -144,7 +147,7 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 | DF-IFL-6 | Release-target Eval and integrated final verification | main | release/evidence/ledger/state | not-delegated | full DevFlow tests, packaged/runtime checks, release Plugin Eval findings and disposition, validators | no failed or unreviewed actionable release gate | done |
 | DF-IFL-7 | Refresh installed DevFlow and this project's references | main | `/Users/cY/.codex/plugins/cache/cy-codex-skills/dev-flow/**`; project DevFlow reference paths only when diagnostics require | not-delegated | source/cache parity plus pre/post migration, workflow, doctor, scaffold, and Git diagnostics | no legacy cleanup or unrelated updater apply | done |
 | DF-IFL-8 | Final review, commit, and remote push | main | Git index and current branch | not-delegated | reviewed staged set, `git diff --cached --check`, commit, push, 0 ahead/0 behind | explicit Git publication authorization | done |
-| DF-IFL-9 | Authorized archive, recoverable legacy cleanup, PR, and main merge | main | `openspec/specs/**`, archived change artifacts, ledger/state/evidence, exact ignored GSD runtime paths, GitHub PR, and `main` | not-delegated | hash-bound sync receipt, archive gate, rollback inventory, fresh integrated verification, merged PR, clean `main == origin/main` | explicit archive/cleanup/PR/merge authorization and no ambiguous deletion | in_progress |
+| DF-IFL-9 | Authorized archive, recoverable legacy cleanup, and main merge | main | `openspec/specs/**`, archived change artifacts, ledger/state/evidence, exact ignored GSD runtime paths, Git refs, and `main` | not-delegated | hash-bound sync receipt, archive gate, rollback inventory, fresh integrated verification, reviewed fast-forward merge, clean `main == origin/main` | explicit archive/cleanup/direct-merge authorization and no ambiguous deletion | in_progress |
 
 ### Execution Log
 
@@ -247,6 +250,10 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   closeout will be committed and pushed only to the current feature branch;
   PR creation and `main` mutation stop pending GitHub authentication or an
   explicit decision to omit the requested PR.
+- 2026-07-18: The user explicitly resolved `DF-IFL-003` by instructing Codex to
+  merge and push to remote `main`. The publication contract now permits a
+  direct fast-forward merge without a PR, while retaining the clean-worktree,
+  fresh-verification, reviewed-scope, SSH-push, and remote-parity guards.
 
 ## Previous Verified Change: Harden Lark Feishu Ops Runtime Contracts
 
