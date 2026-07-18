@@ -59,6 +59,29 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   PATH-based Codex operation
 - Human Disposition: `pending`
 
+### DF-IFL-003: GitHub PR channel requires authentication
+
+- Finding ID: `DF-IFL-003`
+- Disposition: `BLOCKED_AWAITING_HUMAN`
+- Severity: medium publication blocker; no source, release, archive, or local
+  repository corruption risk
+- Evidence: SSH fetch/push to `git@github.com:cYz26/cy-codex-skills.git`
+  works, but `gh auth status` reports no authenticated host; no GitHub connector
+  is available; and the selected browser is prohibited from accessing
+  `github.com` by enterprise network policy
+- Affected Contract: `DF-IFL-9` requires a ready PR and merge to `main`
+- Impact: the reviewed closeout commit can be pushed to the feature branch, but
+  Codex cannot create or merge the required PR in the current external state
+- Current Mitigation: keep `main` unchanged, push only the existing feature
+  branch, and preserve all fresh verification and merge-ready evidence
+- Disposition Reason: bypassing the requested PR with a direct `main` push would
+  change the publication method and review boundary without explicit approval
+- Recommended Follow-up: authenticate GitHub CLI with `gh auth login`, then ask
+  Codex to continue; alternatively, explicitly approve direct local merge and
+  SSH push to `main` without a PR
+- Follow-up Trigger: authenticated `gh` state or explicit approval to omit PR
+- Human Disposition: `pending`
+
 ## Active Change: Add Incidental Finding Lifecycle
 
 ### Goal Contract
@@ -81,6 +104,15 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 - release_follow_through_non_goals: OpenSpec archive; legacy `.codex/skills`
   cleanup; broad marketplace, Codex, OpenSpec, or Lark CLI updates; PR creation;
   merge to `main`; unrelated worktree cleanup.
+- final_closeout_scope: separately authorized hash-bound OpenSpec spec sync and
+  archive; recoverable cleanup of the project-local GSD runtime, registrations,
+  hooks, generated adapters, and obsolete empty skill layout after exact
+  ownership inspection; fresh verification; a ready PR; merge to `main`; and
+  final local/remote/source/release/cache parity checks.
+- final_closeout_non_goals: deletion of `.planning` history or the GSD migration
+  journal; removal of the current DevFlow provider lock or `.codex/README.md`;
+  repair of the workstation `codex-switch` shim; the plugin-wide budget
+  refactor recorded by `DF-IFL-001`; or any unrelated cleanup.
 - acceptance_criteria: all public surfaces use the same three dispositions;
   non-trivial plans define Critical Path, Incidental Finding Budget, and
   Escalation Triggers; deferred/blocked findings persist in `TASK_LEDGER.md`;
@@ -112,6 +144,7 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 | DF-IFL-6 | Release-target Eval and integrated final verification | main | release/evidence/ledger/state | not-delegated | full DevFlow tests, packaged/runtime checks, release Plugin Eval findings and disposition, validators | no failed or unreviewed actionable release gate | done |
 | DF-IFL-7 | Refresh installed DevFlow and this project's references | main | `/Users/cY/.codex/plugins/cache/cy-codex-skills/dev-flow/**`; project DevFlow reference paths only when diagnostics require | not-delegated | source/cache parity plus pre/post migration, workflow, doctor, scaffold, and Git diagnostics | no legacy cleanup or unrelated updater apply | done |
 | DF-IFL-8 | Final review, commit, and remote push | main | Git index and current branch | not-delegated | reviewed staged set, `git diff --cached --check`, commit, push, 0 ahead/0 behind | explicit Git publication authorization | done |
+| DF-IFL-9 | Authorized archive, recoverable legacy cleanup, PR, and main merge | main | `openspec/specs/**`, archived change artifacts, ledger/state/evidence, exact ignored GSD runtime paths, GitHub PR, and `main` | not-delegated | hash-bound sync receipt, archive gate, rollback inventory, fresh integrated verification, merged PR, clean `main == origin/main` | explicit archive/cleanup/PR/merge authorization and no ambiguous deletion | in_progress |
 
 ### Execution Log
 
@@ -174,6 +207,46 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   finding lifecycle`). It was pushed to
   `origin/codex/simplify-devflow-matt-native`; local and remote refs matched at
   0 ahead / 0 behind before this tracked ledger-close update.
+- 2026-07-18: The user explicitly authorized the remaining OpenSpec archive,
+  legacy cleanup, PR creation, and merge to `main`. Read-only inspection found
+  the OpenSpec change complete with all tasks checked; the main capability spec
+  absent; and the active branch four commits ahead of `origin/main`. Legacy
+  inspection identified the old GSD runtime surface while classifying project
+  history as preserved data. The bounded cleanup will move only exact GSD-owned
+  runtime, registrations, hooks, generated adapters, and the obsolete empty
+  `.codex/skills` layout into a timestamped rollback backup; it will preserve
+  `.planning/**`, `.codex/gsd-migration-journal`, the current DevFlow provider
+  lock, and `.codex/README.md`.
+- 2026-07-18: The canonical main capability spec was created from the validated
+  ADDED delta, strict change and repository validation passed, and hash-bound
+  sync evidence was recorded. With durable user authorization and only the
+  reviewed ledger/spec paths dirty, the archive gate passed with explicit risk
+  confirmation. OpenSpec archived the change as
+  `2026-07-18-add-incidental-finding-lifecycle` using `--skip-specs` because the
+  authoritative sync had already completed; the first non-skipping attempt
+  changed nothing and correctly rejected the duplicate requirements.
+- 2026-07-18: Exact GSD cleanup moved 17 ignored runtime/registration/hook/
+  adapter paths into
+  `/Users/cY/.codex/update-backups/cy-codex-skills/20260718T132127+0800-gsd-legacy-cleanup`.
+  The backup contains checksums and rollback instructions. Post-cleanup
+  inspection reports no active GSD runtime, agents, hooks, config, or legacy
+  project skills; only preserved history plus the current DevFlow provider lock
+  remain. Project migration and official skill layout remain `current`, and
+  dependency readiness still passes.
+- 2026-07-18: Fresh post-archive verification passed 314/314 source-only
+  pre-promotion tests, 348/348 complete DevFlow tests, strict OpenSpec 52/52,
+  workflow-state validation, `git diff --check`, and Doctor with no repair
+  recommendation. Source/release sync is `current`; installed DevFlow cache is
+  `matches-source`; runtime archive SHA-256 remains
+  `2bd429d8dec2ea19980f34f0fdc264b131afddd5136d2ee2726ca5dbb2a971a7`
+  with all 282 runtime checks passing. Release-target Plugin Eval remains 86/B
+  with zero failures and the three warnings already covered by `DF-IFL-001`.
+- 2026-07-18: `DF-IFL-003` records the only remaining completion blocker:
+  GitHub CLI has no authenticated host, no connector is available, and browser
+  access to GitHub is blocked by enterprise network policy. The verified
+  closeout will be committed and pushed only to the current feature branch;
+  PR creation and `main` mutation stop pending GitHub authentication or an
+  explicit decision to omit the requested PR.
 
 ## Previous Verified Change: Harden Lark Feishu Ops Runtime Contracts
 
