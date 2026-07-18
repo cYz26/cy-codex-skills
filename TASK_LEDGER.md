@@ -111,7 +111,7 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 | DF-IFL-5 | Fresh source-bound receipt and authorized release promotion | main | `.planning/devflow/release-verification/**`, `.planning/devflow/STATE.md`, `plugins/dev-flow/**` | not-delegated | canonical pre-promotion suite, strict all-spec validation, diff check, promotion gate and generated-release checks | explicit release authorization | done |
 | DF-IFL-6 | Release-target Eval and integrated final verification | main | release/evidence/ledger/state | not-delegated | full DevFlow tests, packaged/runtime checks, release Plugin Eval findings and disposition, validators | no failed or unreviewed actionable release gate | done |
 | DF-IFL-7 | Refresh installed DevFlow and this project's references | main | `/Users/cY/.codex/plugins/cache/cy-codex-skills/dev-flow/**`; project DevFlow reference paths only when diagnostics require | not-delegated | source/cache parity plus pre/post migration, workflow, doctor, scaffold, and Git diagnostics | no legacy cleanup or unrelated updater apply | done |
-| DF-IFL-8 | Final review, commit, and remote push | main | Git index and current branch | not-delegated | reviewed staged set, `git diff --cached --check`, commit, push, 0 ahead/0 behind | explicit Git publication authorization | pending |
+| DF-IFL-8 | Final review, commit, and remote push | main | Git index and current branch | not-delegated | reviewed staged set, `git diff --cached --check`, commit, push, 0 ahead/0 behind | explicit Git publication authorization | done |
 
 ### Execution Log
 
@@ -167,6 +167,13 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 - 2026-07-18: `DF-IFL-002` records the pre-existing broken PATH Codex shim as a
   non-blocking ownership-boundary follow-up. The verified absolute ChatGPT CLI
   completed the current refresh; no `codex-switch` repair was started.
+- 2026-07-18: The reviewed 43-file source, generated release, regression test,
+  root control-plane, ledger, and forced OpenSpec artifact set passed staged
+  `git diff --check` and was committed as
+  `8194ce56dbc21d5063f8630e3b511db03a07b62b` (`feat(devflow): add incidental
+  finding lifecycle`). It was pushed to
+  `origin/codex/simplify-devflow-matt-native`; local and remote refs matched at
+  0 ahead / 0 behind before this tracked ledger-close update.
 
 ## Previous Verified Change: Harden Lark Feishu Ops Runtime Contracts
 
