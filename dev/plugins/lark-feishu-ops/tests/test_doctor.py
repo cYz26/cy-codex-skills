@@ -220,7 +220,7 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
             }
 
         with (
-            mock.patch.object(lark_feishu_ops_doctor.shutil, "which", return_value="/usr/local/bin/lark-cli"),
+            mock.patch.object(lark_feishu_ops_doctor.shutil, "which", return_value="/synthetic/bin/lark-cli"),
             mock.patch.object(lark_feishu_ops_doctor, "run_command", side_effect=fake_run_command),
         ):
             result = lark_feishu_ops_doctor.check_lark_cli(
@@ -449,7 +449,7 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
             }
 
         with (
-            mock.patch.object(lark_feishu_ops_doctor.shutil, "which", return_value="/usr/local/bin/lark-cli"),
+            mock.patch.object(lark_feishu_ops_doctor.shutil, "which", return_value="/synthetic/bin/lark-cli"),
             mock.patch.object(lark_feishu_ops_doctor, "run_command", side_effect=fake_run_command),
         ):
             result = lark_feishu_ops_doctor.check_lark_cli(
@@ -504,7 +504,7 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
             mock.patch.object(
                 lark_feishu_ops_doctor.shutil,
                 "which",
-                return_value="/usr/local/bin/lark-cli",
+                return_value="/synthetic/bin/lark-cli",
             ),
             mock.patch.object(
                 lark_feishu_ops_doctor,
@@ -550,7 +550,7 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
             mock.patch.object(
                 lark_feishu_ops_doctor.shutil,
                 "which",
-                return_value="/usr/local/bin/lark-cli",
+                return_value="/synthetic/bin/lark-cli",
             ),
             mock.patch.object(
                 lark_feishu_ops_doctor,
@@ -600,7 +600,7 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
             }
 
         with (
-            mock.patch.object(lark_feishu_ops_doctor.shutil, "which", return_value="/usr/local/bin/lark-cli"),
+            mock.patch.object(lark_feishu_ops_doctor.shutil, "which", return_value="/synthetic/bin/lark-cli"),
             mock.patch.object(lark_feishu_ops_doctor, "run_command", side_effect=fake_run_command),
         ):
             result = lark_feishu_ops_doctor.check_lark_cli(
@@ -639,7 +639,7 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
             }
 
         with (
-            mock.patch.object(lark_feishu_ops_doctor.shutil, "which", return_value="/usr/local/bin/lark-cli"),
+            mock.patch.object(lark_feishu_ops_doctor.shutil, "which", return_value="/synthetic/bin/lark-cli"),
             mock.patch.object(lark_feishu_ops_doctor, "run_command", side_effect=fake_run_command),
         ):
             result = lark_feishu_ops_doctor.check_lark_cli(
@@ -688,7 +688,7 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
             }
 
         with (
-            mock.patch.object(lark_feishu_ops_doctor.shutil, "which", return_value="/usr/local/bin/lark-cli"),
+            mock.patch.object(lark_feishu_ops_doctor.shutil, "which", return_value="/synthetic/bin/lark-cli"),
             mock.patch.object(lark_feishu_ops_doctor, "run_command", side_effect=fake_run_command),
         ):
             result = lark_feishu_ops_doctor.check_lark_cli(
