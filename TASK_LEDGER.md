@@ -921,9 +921,9 @@ three dependency-ordered slices without creating another queue.
 | DF-CEC-1 | Pure continuation decision, active source resolution, and Stop guard | main | source scripts and focused runtime tests | not-delegated | observed RED, six outcomes, Full OpenSpec precedence, focused GREEN | no production write before RED | done |
 | DF-CEC-2 | Orchestrator, checkpoint, and skill contract | main | source skills, compact policy, contract tests | not-delegated | review/handoff default continuation and explicit stop regressions | phase name is not a Human Gate | done |
 | DF-CEC-3 | Durable templates/docs and final verification | main | root/source templates/docs, OpenSpec tasks, local evidence/state | not-delegated | full suite, strict validation, Eval and drift report | release/cache/archive/Git remain unauthorized | done |
-| DF-CEC-4 | Guarded generated-release promotion and post-promotion verification | main | generated `plugins/dev-flow/**`, local release evidence/state | not-delegated | current source receipt, full/package/runtime tests, strict validation, release Eval | explicit release authorization | in_progress |
-| DF-CEC-5 | Reviewed direct-main commit and push | main | Git index and `main` | not-delegated | staged diff review/check, commit, SSH push, 0 ahead/behind | explicit Git publication authorization | todo |
-| DF-CEC-6 | Named cache and current-project configuration refresh | main | installed DevFlow cache and ignored project-local skill/runtime paths | not-delegated | source/cache parity plus pre/post project diagnostics | no tracked project WIP or legacy cleanup | todo |
+| DF-CEC-4 | Guarded generated-release promotion and post-promotion verification | main | generated `plugins/dev-flow/**`, local release evidence/state | not-delegated | current source receipt, full/package/runtime tests, strict validation, release Eval | explicit release authorization | done |
+| DF-CEC-5 | Reviewed direct-main commit and push | main | Git index and `main` | not-delegated | staged diff review/check, commit, SSH push, 0 ahead/behind | explicit Git publication authorization | in_progress |
+| DF-CEC-6 | Named cache and current-project configuration refresh | main | installed DevFlow cache and ignored project-local skill/runtime paths | not-delegated | source/cache parity plus pre/post project diagnostics | no tracked project WIP or legacy cleanup | done |
 
 ### Execution Log
 
@@ -966,3 +966,24 @@ three dependency-ordered slices without creating another queue.
   commit/push on current `main`. OpenSpec archive, legacy cleanup, broad updater
   actions, PR creation, and the current project's independent tracked WIP remain
   out of scope.
+- 2026-07-18: Fresh release preparation passed 326/326 source-only tests,
+  strict OpenSpec 53/53, workflow validation, and diff checks. The source-bound
+  receipt SHA-256 is
+  `504e3d0564d6f5e2f50d16b824b3b352d15a714d211def8562ec152fb0f305c8`.
+  Guarded promotion synchronized 14 allowlisted files and rebuilt four runtime
+  outputs; its second dry-run reported `current`.
+- 2026-07-18: Post-promotion verification passed 360/360 development tests and
+  5/5 packaged tests. Runtime verification covers 129 source records with
+  archive SHA-256
+  `16a27609c9eae29401329e7960ffbf42c84ff07e5e6b716f181e97425fcc12d9`.
+  Release-target Plugin Eval is 86/B with zero failures and three static token-
+  budget warnings already dispositioned by `DF-IFL-001`.
+- 2026-07-18: The reviewed source/control-plane set was committed as
+  `2ae6a63` (`feat(dev-flow): continue approved work until terminal`). The named
+  installed DevFlow cache now matches the generated release byte-for-byte and
+  its runtime verifies with the same archive hash. `game-design-workshop`
+  refresh verified 16 current DevFlow links and exactly six isolated OpenSpec
+  1.6 skills; migration, control plane, skill layout, workflow validation, and
+  Doctor are current/healthy. Scaffold's `AGENTS.md.generated` candidate was
+  deliberately deferred so the refresh did not touch the project's concurrent
+  tracked WIP or legacy configuration.

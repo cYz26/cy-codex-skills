@@ -57,6 +57,21 @@ release are separate approvals. After verification or archive, checkpoint under
 Completion is proven only by commands run in the current worktree and recorded
 results; old claims are not evidence.
 
+## Continuation After Verification
+
+Active-change verification is not overall completion. After evidence passes,
+return to `project-orchestrator` and inspect the overall Target State plus the
+canonical execution source. Continue the next approved task or change without
+routine confirmation. Return `READY_FOR_EXTERNAL_EFFECT` when the only next
+step is release, archive, commit, push, PR, dependency/migration apply, or
+another separately authorized effect; never perform it from verification
+readiness alone. Return `COMPLETE` only when the overall contract, not merely
+the current change, is closed and verified.
+
+Archive preparation is a distinct optional route. Lack of archive authorization
+does not prevent continuing other already approved in-scope work, and an
+archive boundary must not be used as a generic stage-completion pause.
+
 ## Incidental Findings
 
 Before a completion or archive claim, reconcile the tracked Finding Register:

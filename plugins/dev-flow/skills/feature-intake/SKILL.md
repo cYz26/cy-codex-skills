@@ -23,6 +23,10 @@ Classify the request and produce a routing decision before planning or code.
    before the artifact is final. Decision grilling inspects local evidence,
    asks one question at a time, recommends an answer, and records it in the
    canonical artifact.
+6. Record the execution policy. Default approved work to
+   `auto-until-terminal`; list only genuine Human Gates or explicit user-
+   requested per-stage confirmations. Ordinary item, review, verification, and
+   checkpoint boundaries are not confirmation gates.
 
 ## Incidental Finding Intake
 

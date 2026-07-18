@@ -13,6 +13,24 @@
 - Unknown capability IDs, stale required resources, ambiguous ownership, and
   retired workflow keys fail closed.
 
+## Continuous Execution
+
+- Default approved multi-item work to `auto-until-terminal`; a completed item,
+  phase, checkpoint, review, or active change is a technical boundary rather
+  than an implicit human confirmation gate.
+- `execute-task` owns one item and evidence receipt. `project-orchestrator` owns
+  next-item selection and continues until a genuine Human Gate, separately
+  authorized external effect, or verified overall completion.
+- Prefer the active Full OpenSpec task list for remaining-work decisions and
+  fall back to `TASK_LEDGER.md` only when no active OpenSpec list exists. Never
+  merge them into another queue.
+- Record a genuine Human Gate durably before stopping. Missing decisions,
+  expanded authority/scope, severe or unknown risk, and explicit per-stage
+  confirmation qualify; a phase label does not.
+- Stop hooks remain read-only. They may block premature termination and report
+  the continuation outcome, but they do not execute tasks, write workflow
+  state, or perform side effects.
+
 ## Testing and Evidence
 
 - Use TDD for features, bugs, refactors, business logic, and risky behavior.

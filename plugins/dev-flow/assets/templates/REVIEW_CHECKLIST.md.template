@@ -18,6 +18,17 @@
 - [ ] No unmanaged dependency change
 - [ ] Shared canonical files updated only by their owner
 
+## Continuous Execution
+
+- [ ] The active Full OpenSpec task list, or the configured fallback ledger,
+  is the single execution source
+- [ ] No item, phase, review, verification, or checkpoint boundary was treated
+  as a Human Gate without a concrete decision or authority
+- [ ] Every non-terminal completion receipt returned to the orchestrator with
+  the next continuation outcome
+- [ ] External effects remain separately authorized and unexecuted unless the
+  exact gate was approved
+
 ## Incidental Findings
 
 - [ ] Every incidental finding has one lifecycle disposition and a durable

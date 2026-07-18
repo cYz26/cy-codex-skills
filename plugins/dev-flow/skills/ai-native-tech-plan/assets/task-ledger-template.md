@@ -46,6 +46,14 @@
 - [ ] <criterion>
 - [ ] <validation evidence>
 
+## Continuation Policy
+
+- Execution policy: `auto-until-terminal`
+- Canonical execution source: <active OpenSpec tasks | TASK_LEDGER.md>
+- Item completion outcome: <next-item selection rule>
+- Genuine Human Gates: <explicit decisions or authorities; phase labels do not qualify>
+- External-effect gates: <release/archive/Git/dependency/migration/destructive actions>
+
 ## Capability Slices
 
 ### Slice 1: <name>
@@ -80,6 +88,12 @@
 | Time | Slice | Action | Result | Evidence |
 |---|---|---|---|---|
 | <time> | <slice> | <action> | <result> | <evidence> |
+
+## Execution Ledger
+
+| Item | Owner | Write Set | Evidence | Human Gate | Next Outcome | Status |
+|---|---|---|---|---|---|---|
+| <item> | <owner> | <paths> | <required proof> | <none or explicit gate> | <continuation outcome> | todo |
 
 ## Blockers
 
