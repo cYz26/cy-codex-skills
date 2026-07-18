@@ -6,6 +6,25 @@ Implement the complete approved behavior for `{{change_id}}`, not a partial
 delivery. Use the capability slices below as independently verifiable technical
 checkpoints; OpenSpec remains the canonical plan.
 
+## Critical Path
+
+- List the dependency-ordered tasks that directly satisfy the Completion
+  Contract and keep optional hardening outside that path.
+
+## Incidental Finding Budget
+
+- Permit only a bounded minimal guard inside the approved contract and write
+  set. Record every deferred or blocked finding in the `TASK_LEDGER.md`
+  Incidental Finding Register; the register does not authorize follow-up work.
+
+## Escalation Triggers
+
+- Stop and replan or ask the human when a finding expands scope, authority,
+  dependency, schema, migration, public behavior, architecture, external
+  effects, destructive work, or the approved write set.
+- Required behavior and failing acceptance criteria remain on the Critical
+  Path and may not be deferred.
+
 ## Completion Contract
 
 - [ ] Target State is implemented.

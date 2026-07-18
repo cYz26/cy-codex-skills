@@ -46,6 +46,24 @@ explicit apply mode.
 6. Update the task, Execution Ledger, and state only after evidence passes or a
    blocker is recorded.
 
+## Incidental Finding Gate
+
+Before expanding the selected item, classify the finding:
+
+- `CONTINUE_WITH_MINIMAL_GUARD`: run at most one bounded RED/GREEN guard inside
+  the approved contract and write set, then return to the Critical Path.
+- `DEFER_AND_CONTINUE`: record evidence, affected contract, mitigation, reason,
+  and recommended follow-up in the tracked `TASK_LEDGER.md`, then continue only
+  when required behavior and acceptance remain safe.
+- `BLOCKED_AWAITING_HUMAN`: stop mutation for severe harm, material scope or
+  authority expansion, ambiguous ownership, or unresolved product decisions.
+
+Required behavior and failing acceptance criteria cannot be deferred. For
+`BLOCKED_AWAITING_HUMAN`, finish only safe read-only diagnosis, preserve the
+work, record evidence/options/recommendation, and ask the human one concrete
+decision. Promote that answer into OpenSpec or the active ledger before resuming.
+The Finding Register does not authorize follow-up work.
+
 ## Delegated Execution
 
 Delegation requires explicit authority, disjoint write sets, and a validated

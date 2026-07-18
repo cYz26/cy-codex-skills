@@ -35,7 +35,7 @@ before copying them to `.agents/skills/`.
 - `ENGINEERING_POLICY.md`: dependency, testing, evidence, review, and release
   policy.
 - `TASK_LEDGER.md`: Goal Contract, task owner, write set, evidence, review
-  gate, status, and execution log.
+  gate, status, execution log, and the cross-change Incidental Finding Register.
 - `EVIDENCE_TEMPLATE.md`: TDD and verification evidence format.
 - `REVIEW_CHECKLIST.md`: correctness, scope, release, and archive checks.
 - `.planning/devflow/STATE.md`: namespaced workflow state.
@@ -130,6 +130,33 @@ A technical plan contains:
 5. Execution Ledger with owner, write set, evidence, and human gate.
 6. Acceptance Criteria and exact Validation Commands.
 7. Risks, rollback, review, and Final Verification.
+
+## Incidental Finding Lifecycle
+
+Classify every problem discovered outside the active task's required behavior
+before expanding work:
+
+- `CONTINUE_WITH_MINIMAL_GUARD`: the finding blocks safe completion, and one
+  bounded RED/GREEN guard fits the approved contract and write set.
+- `DEFER_AND_CONTINUE`: the finding does not block the Completion Contract and
+  the current mitigation keeps the critical path safe.
+- `BLOCKED_AWAITING_HUMAN`: continuing would expand material scope or authority,
+  risk severe harm, or choose an unresolved product or ownership decision.
+
+Apply fail-closed precedence: `BLOCKED_AWAITING_HUMAN` wins over a possible
+guard or deferral. The required Completion Contract behavior and failing
+acceptance criteria may not be deferred. Record every deferred or blocked
+finding in the tracked `TASK_LEDGER.md` Incidental Finding Register; chat and
+`.planning/devflow/` alone are not durable cross-machine records. The register
+does not authorize follow-up work.
+
+For a severe or ambiguous finding, stop mutation after safe read-only diagnosis,
+record evidence and options, and ask the human one concrete decision. Promote
+that decision into OpenSpec or the active ledger before resuming. A truthful
+completion may disclose non-blocking deferred findings and ask the human to
+accept, reject, or defer the recommended follow-up; it may not automatically
+start that follow-up. An unresolved `BLOCKED_AWAITING_HUMAN` finding blocks
+continuation, completion, verification claims, and archive readiness.
 
 ## Workflow Mode Routing
 

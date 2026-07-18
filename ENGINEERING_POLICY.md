@@ -29,6 +29,22 @@ execution, testing, evidence, dependency, review, and release decisions.
 - Store DevFlow verification evidence below
   `.planning/devflow/verification/` and link it from the active ledger item.
 
+## Severe Finding Human Stop
+
+- Classify a finding as `BLOCKED_AWAITING_HUMAN` before further mutation when
+  continuing could cause data loss or corruption, a security bypass or
+  authority bypass, an irreversible or destructive effect, a public-contract or required-
+  behavior change, a production dependency/schema/migration/external effect,
+  ambiguous ownership, or an unresolved product tradeoff.
+- Finish only safe read-only diagnosis, preserve the current work, and record
+  evidence, impact, safe options, and a recommended decision in
+  `TASK_LEDGER.md`.
+- Ask the human one concrete decision. Promote the answer into OpenSpec or the
+  active ledger before resuming; do not speculate, auto-resume, or perform an
+  unapproved fix.
+- Unknown or ambiguous severity fails closed. An unresolved severe finding
+  blocks continuation, completion claims, verification readiness, and archive.
+
 ## Bounded Subagents
 
 - Validate an Agent Task Contract before delegating implementation.

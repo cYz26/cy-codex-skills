@@ -1,5 +1,30 @@
 # Task Ledger
 
+## Incidental Finding Register
+
+This cross-change register preserves deferred and blocked findings across task,
+context, and machine boundaries. It does not authorize implementation: an
+accepted follow-up still requires normal intake and the applicable approved
+OpenSpec change or ledger item. Human Disposition is one of `pending`,
+`accepted`, `rejected`, or `deferred`.
+
+No incidental findings are currently recorded. Add each finding using all of
+these fields:
+
+### <Finding ID>: <Summary>
+
+- Finding ID: `<stable-id>`
+- Disposition: `CONTINUE_WITH_MINIMAL_GUARD | DEFER_AND_CONTINUE | BLOCKED_AWAITING_HUMAN`
+- Severity: `<severity and rationale>`
+- Evidence: `<command, file, or observed behavior>`
+- Affected Contract: `<Completion Contract item, acceptance criterion, or none>`
+- Impact: `<current and potential impact>`
+- Current Mitigation: `<guard or reason the critical path remains safe>`
+- Disposition Reason: `<why this disposition applies>`
+- Recommended Follow-up: `<normal intake candidate or none>`
+- Follow-up Trigger: `<when reconsideration is required>`
+- Human Disposition: `pending | accepted | rejected | deferred`
+
 ## Goal Contract
 
 - goal_id: pending

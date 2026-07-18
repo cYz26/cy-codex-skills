@@ -110,6 +110,24 @@ A non-trivial change records Target State, Completion Contract, Capability
 Slices, Execution Ledger, Acceptance Criteria, Validation Commands, risks, and
 Final Verification before implementation.
 
+## Incidental Finding Lifecycle
+
+DevFlow protects the current Critical Path with three dispositions:
+
+- `CONTINUE_WITH_MINIMAL_GUARD` permits one bounded in-scope RED/GREEN guard
+  needed for safe completion.
+- `DEFER_AND_CONTINUE` records optional non-blocking work in the tracked
+  `TASK_LEDGER.md` Incidental Finding Register and returns to the active task.
+- `BLOCKED_AWAITING_HUMAN` stops mutation when harm, scope, authority,
+  ownership, or a product decision requires human judgment.
+
+Required Completion Contract behavior cannot be deferred. The register carries
+evidence, mitigation, impact, and a recommended follow-up, but it does not authorize
+implementation or create another execution queue. At current-task
+completion, DevFlow discloses residual findings and asks the human to accept,
+reject, or defer follow-up. It never starts that follow-up automatically; a
+severe blocked finding must be resolved durably before work resumes.
+
 ## SubAgent Strategy
 
 DevFlow is the policy/router layer for delegation; scripts and hooks do not

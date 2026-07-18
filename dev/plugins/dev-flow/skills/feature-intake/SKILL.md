@@ -24,6 +24,23 @@ Classify the request and produce a routing decision before planning or code.
    asks one question at a time, recommends an answer, and records it in the
    canonical artifact.
 
+## Incidental Finding Intake
+
+Before planning an incidental problem as work, classify it against the
+affected Completion Contract:
+
+- `CONTINUE_WITH_MINIMAL_GUARD` only for a bounded guard needed for safe
+  completion inside the approved contract and write set.
+- `DEFER_AND_CONTINUE` only when evidence shows the active required behavior
+  remains safe and the finding can enter the tracked Finding Register.
+- `BLOCKED_AWAITING_HUMAN` for severe harm, material scope or authority
+  expansion, ambiguous ownership, or an unresolved product decision.
+
+Required behavior and failing acceptance criteria cannot be deferred. Record
+deferred and blocked findings in `TASK_LEDGER.md`; the register does not
+authorize a follow-up change. Ask for a concrete human decision before
+planning past a blocked finding.
+
 ## Capability Routing
 
 Record required stable IDs, not skill names. Intake normally needs

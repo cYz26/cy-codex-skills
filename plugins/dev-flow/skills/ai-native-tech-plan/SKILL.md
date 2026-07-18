@@ -33,16 +33,25 @@ DevFlow owns implementation planning; architecture work may use
 2. Scope / Non-Goals — explicit write and compatibility boundaries.
 3. Architecture Decisions — choices, evidence, and rejected alternatives.
 4. Completion Contract — binary acceptance criteria.
-5. Capability Slices — dependency-ordered, production-complete slices; each
+5. Critical Path — dependency-ordered required behavior protected from
+   incidental work.
+6. Incidental Finding Budget — normally one bounded RED/GREEN cycle inside the
+   approved contract and write set.
+7. Escalation Triggers — scope, authority, dependency, schema, migration,
+   public behavior, architecture, external effect, destructive work, or write-
+   set expansion that requires replanning or human approval.
+8. Capability Slices — dependency-ordered, production-complete slices; each
    includes implementation, validation, and cleanup.
-6. Execution Ledger — owner, write set, status, evidence, and human gate.
-7. Validation Commands — focused, broad, runtime, docs, and release checks.
-8. Risks / Rollback — stop conditions and reversible actions.
-9. Goal Mode Prompt and Continue Prompt when recovery risk warrants them.
-10. Review Checklist and Final Verification.
+9. Execution Ledger — owner, write set, status, evidence, and human gate.
+10. Validation Commands — focused, broad, runtime, docs, and release checks.
+11. Risks / Rollback — stop conditions and reversible actions.
+12. Goal Mode Prompt and Continue Prompt when recovery risk warrants them.
+13. Review Checklist and Final Verification.
 
 Required behavior does not belong in MVP, Future Work, or a later delivery
-phase.
+phase. Incidental hardening does not enter the Critical Path unless it affects
+safe completion; classify and record it through the Incidental Finding
+Lifecycle instead of silently expanding the plan.
 
 ## Workflow Gates
 

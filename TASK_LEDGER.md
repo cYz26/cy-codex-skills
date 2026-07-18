@@ -1,6 +1,174 @@
 # Task Ledger
 
-## Active Change: Harden Lark Feishu Ops Runtime Contracts
+## Incidental Finding Register
+
+This cross-change register preserves deferred and blocked findings across task,
+context, and machine boundaries. It does not authorize implementation: an
+accepted follow-up still requires normal intake and the applicable approved
+OpenSpec change or ledger item. Human Disposition is one of `pending`,
+`accepted`, `rejected`, or `deferred`.
+
+### DF-IFL-001: Development-source Plugin Eval static budget remains high
+
+- Finding ID: `DF-IFL-001`
+- Disposition: `DEFER_AND_CONTINUE`
+- Severity: medium diagnostic risk; no failed behavior or runtime contract
+- Evidence: development-source Plugin Eval scored 68/D with one static deferred-
+  cost failure, four warnings, and an 11,463-token active budget; every changed
+  skill remains within the evaluator's good line-count range
+- Affected Contract: none; the current change requires the result and
+  disposition to be recorded but sets no development-source score threshold
+- Impact: the full development tree remains expensive under Plugin Eval's
+  static estimate and may impose avoidable prompt cost in some routes
+- Current Mitigation: lifecycle text is limited to the six public routing
+  skills and generated control-plane templates; no runtime, dependency, hook,
+  or automatic writer was added, and all source tests pass
+- Disposition Reason: reducing the plugin-wide budget or Python complexity
+  requires a separate measurement and architecture effort with an expanded
+  write set, so it is not one bounded guard for this behavior change
+- Recommended Follow-up: intake a separate OpenSpec change to measure real
+  route usage, remove duplicated legacy guidance, and compare source/release
+  Eval results without weakening lifecycle coverage
+- Follow-up Trigger: human acceptance or the next major DevFlow release quality
+  review
+- Human Disposition: `pending`
+
+### DF-IFL-002: PATH Codex shim targets a removed app bundle
+
+- Finding ID: `DF-IFL-002`
+- Disposition: `DEFER_AND_CONTINUE`
+- Severity: low operational tooling risk; no repository or released-runtime
+  contract failure
+- Evidence: `command -v codex` resolves to
+  `/Users/cY/.codex-switch/bin/codex`, whose `codex --version` fails because it
+  execs the missing `/Applications/Codex.app/Contents/Resources/codex`; the
+  verified `/Applications/ChatGPT.app/Contents/Resources/codex` reports
+  `codex-cli 0.145.0-alpha.18` and completed the authorized plugin refresh
+- Affected Contract: none; the release and cache-refresh contract completed
+  through the verified absolute CLI and explicit `CODEX_HOME`
+- Impact: future PATH-based Codex plugin maintenance commands can fail before
+  reaching the live CLI
+- Current Mitigation: use the verified ChatGPT app CLI by absolute path with
+  `CODEX_HOME=/Users/cY/.codex` for bounded plugin operations
+- Disposition Reason: repairing the shim changes `codex-switch` workstation
+  ownership outside this DevFlow release write set and is not required for the
+  current Completion Contract
+- Recommended Follow-up: inspect the live `codex-switch` binding and repair its
+  generated shim through a separately approved `codex-switch` change
+- Follow-up Trigger: the next `codex-switch` maintenance task or any required
+  PATH-based Codex operation
+- Human Disposition: `pending`
+
+## Active Change: Add Incidental Finding Lifecycle
+
+### Goal Contract
+
+- goal_id: OpenSpec change `add-incidental-finding-lifecycle`; release follow-
+  through is tracked by Codex goal `019f7391-c65d-7a91-93cd-b35e1e3d23b4`
+- objective: keep DevFlow on the approved critical path by classifying every
+  incidental problem as a bounded guard, durable deferral, or severe human
+  stop, then disclose residual follow-up without starting it automatically.
+- scope_in: root control-plane guidance; DevFlow development-source skills,
+  templates, README, and public-seam tests; Full OpenSpec artifacts; local
+  verification and read-only source/release/cache drift evidence.
+- scope_out: automatic severity classification or ledger writes; hooks,
+  schemas, dependencies, migrations, new state stores, generated release,
+  installed cache refresh, project migration, archive, commit, push, and PR.
+- release_follow_through_scope: separately authorized DevFlow generated-release
+  promotion, installed `dev-flow` cache refresh, safe refresh of this project's
+  DevFlow references, and commit/push of the confirmed change set on the
+  current branch.
+- release_follow_through_non_goals: OpenSpec archive; legacy `.codex/skills`
+  cleanup; broad marketplace, Codex, OpenSpec, or Lark CLI updates; PR creation;
+  merge to `main`; unrelated worktree cleanup.
+- acceptance_criteria: all public surfaces use the same three dispositions;
+  non-trivial plans define Critical Path, Incidental Finding Budget, and
+  Escalation Triggers; deferred/blocked findings persist in `TASK_LEDGER.md`;
+  severe findings stop for one concrete human decision; required behavior is
+  never deferred; completion discloses findings and requests follow-up
+  disposition without automatic execution.
+- validation_commands: focused lifecycle RED/GREEN tests; complete and pre-
+  promotion DevFlow source suites; strict change/all OpenSpec validation;
+  workflow validation; development-source Plugin Eval; read-only release/cache
+  drift checks; `git diff --check`.
+- success_threshold: every OpenSpec scenario has a passing public-seam test,
+  all source and strict validation passes, no unresolved
+  `BLOCKED_AWAITING_HUMAN` finding remains, and every non-blocking residual is
+  recorded with a human disposition.
+- stop_conditions: stop on required-behavior ambiguity, new runtime/schema/
+  dependency/hook/migration work, release or cache mutation, destructive work,
+  public authority expansion, or an unresolved severe finding.
+- knowledge_update_target: none
+
+### Tasks
+
+| task_id | summary | owner | write_set | contract_path | required_evidence | review_gate | status |
+|---|---|---|---|---|---|---|---|
+| DF-IFL-1 | Intake, Full OpenSpec plan, dependencies, baseline | main | OpenSpec, ledger | not-delegated | strict plan validation and clean 339-test baseline | no open decision | done |
+| DF-IFL-2 | RED/GREEN public lifecycle contract and source guidance | main | root guidance and `dev/plugins/dev-flow/**` | not-delegated | observed RED then 9/9 focused GREEN | contract review | done |
+| DF-IFL-3 | Broad verification, Plugin Eval, and drift inspection | main | read-only checks | not-delegated | 348-test full and 314-test pre-promotion suites, strict validation, Eval report, drift report | no blocked finding | done |
+| DF-IFL-4 | Durable evidence and authorization-aware handoff | main | ledger, state, local evidence | not-delegated | exact results, residual finding, next approval boundary | no release/cache/Git mutation | done |
+| DF-IFL-5 | Fresh source-bound receipt and authorized release promotion | main | `.planning/devflow/release-verification/**`, `.planning/devflow/STATE.md`, `plugins/dev-flow/**` | not-delegated | canonical pre-promotion suite, strict all-spec validation, diff check, promotion gate and generated-release checks | explicit release authorization | done |
+| DF-IFL-6 | Release-target Eval and integrated final verification | main | release/evidence/ledger/state | not-delegated | full DevFlow tests, packaged/runtime checks, release Plugin Eval findings and disposition, validators | no failed or unreviewed actionable release gate | done |
+| DF-IFL-7 | Refresh installed DevFlow and this project's references | main | `/Users/cY/.codex/plugins/cache/cy-codex-skills/dev-flow/**`; project DevFlow reference paths only when diagnostics require | not-delegated | source/cache parity plus pre/post migration, workflow, doctor, scaffold, and Git diagnostics | no legacy cleanup or unrelated updater apply | done |
+| DF-IFL-8 | Final review, commit, and remote push | main | Git index and current branch | not-delegated | reviewed staged set, `git diff --cached --check`, commit, push, 0 ahead/0 behind | explicit Git publication authorization | pending |
+
+### Execution Log
+
+- 2026-07-18: The user asked DevFlow to prevent incidental problems such as a
+  deep Markdown repair from displacing core work, while still recording
+  follow-up and stopping for severe human decisions.
+- 2026-07-18: Full OpenSpec planning established exactly three dispositions,
+  a structural one-cycle finding budget, tracked cross-machine persistence in
+  `TASK_LEDGER.md`, and no runtime classifier, hook, dependency, or second task
+  system. Strict change validation passed before production edits.
+- 2026-07-18: Nine public-seam tests first failed against the missing lifecycle
+  and then passed after the source skills, root/generated control-plane
+  guidance, OpenSpec planning templates, evidence, review, and README were
+  updated.
+- 2026-07-18: Fresh verification passed 348/348 complete development tests and
+  314/314 pre-promotion source tests, strict change plus repository-wide
+  OpenSpec validation (52/52), workflow validation, and `git diff --check`.
+- 2026-07-18: Development-source Plugin Eval remained 68/D with one existing
+  whole-tree static budget failure and four warnings. `DF-IFL-001` records the
+  bounded deferral rather than expanding this behavior change into a plugin-
+  wide token/complexity refactor.
+- 2026-07-18: Read-only release sync reports 14 changed source-to-release files
+  and one stale generated runtime manifest. The installed DevFlow cache still
+  matches the unchanged generated release, and project migration state is
+  current. No promotion, cache refresh, migration, archive, commit, push, or PR
+  action ran.
+- 2026-07-18: The user explicitly requested that the current project changes be
+  organized, committed to the remote, released, and refreshed. This authorizes
+  DevFlow generated-release promotion, targeted installed `dev-flow` cache
+  refresh, safe current-project reference refresh, and commit/push on the
+  current branch. OpenSpec archive, legacy cleanup, broad updater actions, PR
+  creation, and merge to `main` remain outside the authorization.
+- 2026-07-18: `DF-IFL-001` remains a non-blocking `DEFER_AND_CONTINUE`
+  follow-up with Human Disposition `pending`; this release does not start the
+  separate plugin-wide measurement/refactor it recommends.
+- 2026-07-18: Fresh release preparation passed 314/314 pre-promotion tests,
+  strict OpenSpec 52/52, and `git diff --check`; the source-bound receipt SHA-
+  256 is `1f89f190b8581b8df20172e8e96397378dce54303157352123e5091d44edc9a4`.
+  The authorized promotion synchronized 14 release files, rebuilt four runtime
+  outputs, and a second promotion check reported `current`.
+- 2026-07-18: Post-promotion verification passed 348/348 complete DevFlow
+  tests. Runtime verification matched archive SHA-256
+  `2bd429d8dec2ea19980f34f0fdc264b131afddd5136d2ee2726ca5dbb2a971a7`,
+  all archive members, and 128 source records. Release-target Plugin Eval
+  scored 86/B with zero failures; its three static token-budget warnings remain
+  covered by `DF-IFL-001` rather than expanding this release.
+- 2026-07-18: The active Codex cache was refreshed through the verified
+  ChatGPT app CLI and now `matches-source`. Isolated OpenSpec 1.6 generation
+  verified exactly six official skills; project copies were already present,
+  DevFlow skills were already linked, migration/control-plane status remained
+  current, and Doctor remained healthy. Scaffold guidance was inspected but no
+  `AGENTS.md.generated` candidate or legacy cleanup was applied.
+- 2026-07-18: `DF-IFL-002` records the pre-existing broken PATH Codex shim as a
+  non-blocking ownership-boundary follow-up. The verified absolute ChatGPT CLI
+  completed the current refresh; no `codex-switch` repair was started.
+
+## Previous Verified Change: Harden Lark Feishu Ops Runtime Contracts
 
 ### Goal Contract
 

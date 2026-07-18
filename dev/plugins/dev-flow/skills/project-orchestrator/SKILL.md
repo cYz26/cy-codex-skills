@@ -61,6 +61,22 @@ inspected, commands, risks, and review needs.
 Methodology notes are inputs only. Promote approved content into the active
 OpenSpec change or DevFlow ledger before it satisfies a gate.
 
+## Incidental Finding Lifecycle
+
+Route every out-of-path finding without creating a second backlog:
+
+- `CONTINUE_WITH_MINIMAL_GUARD` for a bounded in-scope guard needed for safe
+  completion;
+- `DEFER_AND_CONTINUE` for optional non-blocking work recorded in the tracked
+  `TASK_LEDGER.md` Incidental Finding Register;
+- `BLOCKED_AWAITING_HUMAN` for severe, ambiguous, scope-expanding, authority-
+  expanding, or product-decision work.
+
+Unknown severity fails closed. A blocked finding stops mutation until the
+human answers one concrete question and the decision is durable in OpenSpec or
+the active ledger. The register does not authorize follow-up, and required
+Completion Contract behavior cannot be deferred.
+
 ## Completion
 
 The route is complete when it names workflow mode, required capabilities,

@@ -28,7 +28,8 @@ authoritative and OpenSpec is canonical.
    draft.
 4. Ensure `proposal.md`, `design.md` when needed, delta `specs/`, and `tasks.md`
    cover Target State, Completion Contract, Capability Slices, Execution
-   Ledger, Acceptance Criteria, Validation Commands, risks, and rollback.
+   Ledger, Acceptance Criteria, Validation Commands, risks, rollback, Critical
+   Path, Incidental Finding Budget, and Escalation Triggers.
 5. Route unclear behavior to `openspec-explore`, new ready intent to
    `openspec-propose`, existing-change planning revision to
    `openspec-update-change`, and plan structure to `ai-native-tech-plan`.
@@ -38,6 +39,16 @@ authoritative and OpenSpec is canonical.
 For repair, record the systemic solution first and explain any smaller approved
 execution path. Methodology notes must be promoted into the active change
 before they can satisfy a gate.
+
+## Incidental Finding Lifecycle
+
+Keep required behavior on the Critical Path. A bounded in-scope guard may be
+`CONTINUE_WITH_MINIMAL_GUARD`; optional non-blocking work may be
+`DEFER_AND_CONTINUE`; severe, ambiguous, scope-expanding, or authority-expanding
+work is `BLOCKED_AWAITING_HUMAN`. Record every deferred or blocked finding in
+the tracked `TASK_LEDGER.md` Incidental Finding Register. The register does not
+authorize work, so accepted follow-up still needs normal intake and the
+applicable approved OpenSpec or ledger route.
 
 Planning is complete when every scenario has a task and validator, no required
 decision is open, and the next executable ledger item is explicit. Do not edit

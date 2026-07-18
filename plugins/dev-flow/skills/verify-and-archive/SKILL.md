@@ -57,6 +57,23 @@ release are separate approvals. After verification or archive, checkpoint under
 Completion is proven only by commands run in the current worktree and recorded
 results; old claims are not evidence.
 
+## Incidental Findings
+
+Before a completion or archive claim, reconcile the tracked Finding Register:
+
+- A `DEFER_AND_CONTINUE` record must show why it does not block the active
+  Completion Contract, name current mitigation, and disclose the recommended
+  follow-up.
+- Any unresolved `BLOCKED_AWAITING_HUMAN` finding blocks continuation,
+  completion, verification readiness, release readiness, and archive.
+- The completion claim lists residual findings in recommended order and asks
+  the human to accept, reject, or defer each follow-up.
+
+Follow-up work must not start from the register or completion message. It needs
+normal intake and the applicable approved OpenSpec change or ledger item. A
+pending response to optional follow-up does not invalidate an otherwise proven
+current completion; it leaves the Human Disposition pending.
+
 Before release promotion, run the checked-in complete source-only suite. It
 executes every development module except exactly `test_packaged_runtime.py` and
 `test_release_smoke.py`, which require promoted generated assets, and it rejects

@@ -9,6 +9,27 @@ Describe the complete behavior, internal structure, boundaries, and validation s
 - In scope: behavior required by `{{change_id}}`.
 - Non-goals: unrelated refactors, dependency changes, or compatibility breaks not approved in the proposal.
 
+## Critical Path
+
+- Active path: identify the dependency-ordered behavior that must complete the
+  approved Completion Contract.
+- Protect it from incidental standards, formatting, hardening, or refactor work
+  that does not affect required behavior.
+
+## Incidental Finding Budget
+
+The default budget is one bounded RED/GREEN cycle when a minimal guard is
+needed for safe completion and stays inside the approved contract and write
+set. Otherwise record `DEFER_AND_CONTINUE` in `TASK_LEDGER.md` or stop as
+`BLOCKED_AWAITING_HUMAN`.
+
+## Escalation Triggers
+
+Replan or obtain human approval before continuing when a finding requires a
+new dependency, schema, migration, public contract, architectural component,
+parser or standards-conformance effort, external or destructive effect, or an
+expanded write set. Required Completion Contract behavior cannot be deferred.
+
 ## Architecture Decisions
 
 | Decision | Rationale | Alternatives Considered |
