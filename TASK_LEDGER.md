@@ -147,7 +147,7 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 | DF-IFL-6 | Release-target Eval and integrated final verification | main | release/evidence/ledger/state | not-delegated | full DevFlow tests, packaged/runtime checks, release Plugin Eval findings and disposition, validators | no failed or unreviewed actionable release gate | done |
 | DF-IFL-7 | Refresh installed DevFlow and this project's references | main | `/Users/cY/.codex/plugins/cache/cy-codex-skills/dev-flow/**`; project DevFlow reference paths only when diagnostics require | not-delegated | source/cache parity plus pre/post migration, workflow, doctor, scaffold, and Git diagnostics | no legacy cleanup or unrelated updater apply | done |
 | DF-IFL-8 | Final review, commit, and remote push | main | Git index and current branch | not-delegated | reviewed staged set, `git diff --cached --check`, commit, push, 0 ahead/0 behind | explicit Git publication authorization | done |
-| DF-IFL-9 | Authorized archive, recoverable legacy cleanup, and main merge | main | `openspec/specs/**`, archived change artifacts, ledger/state/evidence, exact ignored GSD runtime paths, Git refs, and `main` | not-delegated | hash-bound sync receipt, archive gate, rollback inventory, fresh integrated verification, reviewed fast-forward merge, clean `main == origin/main` | explicit archive/cleanup/direct-merge authorization and no ambiguous deletion | in_progress |
+| DF-IFL-9 | Authorized archive, recoverable legacy cleanup, and main merge | main | `openspec/specs/**`, archived change artifacts, ledger/state/evidence, exact ignored GSD runtime paths, Git refs, and `main` | not-delegated | hash-bound sync receipt, archive gate, rollback inventory, fresh integrated verification, reviewed fast-forward merge, clean `main == origin/main` | explicit archive/cleanup/direct-merge authorization and no ambiguous deletion | done |
 
 ### Execution Log
 
@@ -254,6 +254,20 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   merge and push to remote `main`. The publication contract now permits a
   direct fast-forward merge without a PR, while retaining the clean-worktree,
   fresh-verification, reviewed-scope, SSH-push, and remote-parity guards.
+- 2026-07-18: Local `main` first matched `origin/main` at
+  `22965a4700db0252a9ae753b3cf1e9e463c1c7a2`, then fast-forwarded without a
+  merge commit to the reviewed feature head
+  `81bb8664b5fbe8efd3e00fc602a584f99943a83c`. Fresh local-main gates passed
+  314/314 pre-promotion tests, 348/348 complete DevFlow tests, strict OpenSpec
+  52/52, all 282 packaged-runtime checks, workflow validation, Doctor, project
+  migration, source/release sync `current`, installed-cache `matches-source`,
+  and `git diff --check`. Release-target Plugin Eval scored 86/B with zero
+  failures and three warnings covered by `DF-IFL-001`.
+- 2026-07-18: The authorized SSH push advanced `origin/main` from `22965a4` to
+  `81bb866`. A fresh fetch then proved local `main`, `origin/main`, and
+  `origin/codex/simplify-devflow-matt-native` all resolved to the same full SHA
+  with 0 ahead / 0 behind. `DF-IFL-9` is complete; this final tracked ledger
+  update records the publication evidence without changing runtime behavior.
 
 ## Previous Verified Change: Harden Lark Feishu Ops Runtime Contracts
 
