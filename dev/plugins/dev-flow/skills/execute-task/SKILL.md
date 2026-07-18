@@ -46,6 +46,21 @@ explicit apply mode.
 6. Update the task, Execution Ledger, and state only after evidence passes or a
    blocker is recorded.
 
+## Completion Receipt and Return
+
+Return a completion receipt for the selected item with item ID, result, changed
+files, RED/GREEN evidence, focused and broader commands, residual risks,
+blocker/Human Gate status, and whether another approved item is dependency-
+ready. Return to `project-orchestrator` after every receipt. Completing one item
+does not end the user request: the orchestrator derives the continuation outcome
+and normally selects the next approved item immediately.
+
+Do not ask for routine confirmation after an item, slice, review, or
+verification boundary. If a genuine Human Gate is reached, record the exact
+decision or authority needed and stop as `AWAIT_HUMAN`; otherwise the receipt is
+eligible for `CONTINUE_NEXT_ITEM`, `CHECKPOINT_AND_CONTINUE`, or
+`VERIFY_ACTIVE_CHANGE`.
+
 ## Incidental Finding Gate
 
 Before expanding the selected item, classify the finding:
@@ -74,6 +89,8 @@ through the main agent. Each worker returns status (`DONE`,
 inspected, tests, risks, and review needs. The main agent reviews the diff and
 reruns validation.
 
-Stop if scope, dependency, migration, public API, or acceptance behavior would
-expand beyond the approved artifact. The item is complete only after its
-validation command passes and its evidence is durable.
+Stop the item if scope, dependency, migration, public API, or acceptance
+behavior would expand beyond the approved artifact. The item is complete only
+after its validation command passes and its evidence is durable; that bounded
+item completion returns control to the orchestrator rather than ending overall
+execution.

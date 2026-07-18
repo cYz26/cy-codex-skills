@@ -34,6 +34,18 @@ checkpoints; OpenSpec remains the canonical plan.
 - [ ] Verification evidence is recorded.
 - [ ] Workflow state is updated.
 
+## Continuation Policy
+
+- Execution policy: `auto-until-terminal`.
+- After each item, return evidence to `project-orchestrator` and derive
+  `CONTINUE_NEXT_ITEM`, `CHECKPOINT_AND_CONTINUE`,
+  `VERIFY_ACTIVE_CHANGE`, `AWAIT_HUMAN`, `READY_FOR_EXTERNAL_EFFECT`, or
+  `COMPLETE`.
+- List genuine Human Gates explicitly. A phase, review, verification, or
+  checkpoint label alone is not a Human Gate.
+- Release, archive, commit, push, PR, dependency/migration apply, destructive
+  work, and other external effects retain their separate authorization.
+
 ## Capability Slices
 
 ### Slice 1: Capability evidence and validation surface
@@ -130,11 +142,11 @@ checkpoints; OpenSpec remains the canonical plan.
 
 ## Execution Ledger
 
-| Slice | Status | Evidence |
-|---|---|---|
-| Capability evidence and validation surface | todo | |
-| Implementation and focused verification | todo | |
-| Broader verification and state update | todo | |
+| Slice | Owner | Write Set | Status | Evidence | Human Gate | Next Outcome |
+|---|---|---|---|---|---|---|
+| Capability evidence and validation surface | main | planning and relevant test paths | todo | | none unless a design decision is unresolved | `CONTINUE_NEXT_ITEM` |
+| Implementation and focused verification | main | relevant source and test paths | todo | | scope/dependency/public-contract expansion | `CONTINUE_NEXT_ITEM` |
+| Broader verification and state update | main | task/evidence/state paths | todo | | external effects remain separate | `VERIFY_ACTIVE_CHANGE` or `COMPLETE` |
 
 ## Acceptance Criteria
 

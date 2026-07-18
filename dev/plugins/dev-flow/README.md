@@ -179,6 +179,20 @@ default-deny. Install/update, project migration, destructive cleanup, release
 promotion, archive, goal state, Git commit, and remote publication each require
 their own authorization.
 
+## Continuous Execution
+
+Approved multi-item work defaults to `auto-until-terminal`. `execute-task`
+completes one item with evidence, then `project-orchestrator` derives the next
+continuation outcome and consumes another approved item, checkpoints and
+continues, verifies the active change, waits at a genuine Human Gate, reports a
+separately authorized external effect, or proves overall completion. Review,
+verification, and checkpoint labels do not themselves require user
+confirmation.
+
+The read-only Stop hook prefers the active Full OpenSpec task list over the
+fallback `TASK_LEDGER.md` and blocks premature completion while executable work
+remains. It does not execute work or bypass the default-deny side-effect policy.
+
 ## Goal Workflow
 
 Use `define-goal` for user-requested goals and for long-running,

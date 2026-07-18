@@ -1199,7 +1199,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
         self.assertTrue(recommendation["recommend_compact"])
         self.assertIn("/compact", recommendation["instruction"])
 
-    def test_checkpoint_compact_is_not_blocking_at_stopping_point(self):
+    def test_checkpoint_explicit_no_continuation_is_a_stopping_point(self):
         repo = self.make_repo("greenfield-empty")
         run_json("scaffold_workflow.py", "--repo", str(repo), "--json")
         previous = self.create_pending_checkpoint(repo)
@@ -1228,12 +1228,13 @@ class ProjectOrchestratorTests(unittest.TestCase):
             "initial-target-state",
             "--next-stage",
             "review_or_archive",
+            "--no-continuation-required",
             "--current-goal",
             "Finish verified work",
             "--completed-work",
             "Verification passed",
             "--decision",
-            "Stop at review boundary",
+            "Stop at an explicitly declared boundary",
             "--risk",
             "No continuation required",
             "--validation-command",
@@ -1268,6 +1269,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
             "verification_passed",
             "--next-stage",
             "review_or_archive",
+            "--no-continuation-required",
             "--json",
         )
         self.assertFalse(recommendation["recommend_compact"])

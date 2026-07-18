@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -11,28 +10,37 @@ from typing import Any
 from release_promotion_gate import run_gate as release_promotion_run_gate
 from workflow_context_health import context_health_check
 from workflow_compact_state import SUPPORTED_COMPACT_STATUSES, supported_compact_statuses_text
+from workflow_continuation import (
+    AWAIT_HUMAN,
+    CHECKPOINT_AND_CONTINUE,
+    COMPLETE,
+    CONTINUE_NEXT_ITEM,
+    READY_FOR_EXTERNAL_EFFECT,
+    VERIFY_ACTIVE_CHANGE,
+    COMPLETE_LEDGER_STATUSES,
+    INCOMPLETE_LEDGER_STATUSES,
+    continuation_decision,
+    ledger_execution_source,
+    markdown_table_cells,
+    markdown_table_column_values,
+)
 from workflow_hooks import hook_response
 from workflow_paths import repo_path
 from workflow_release_sync import sync_release_assets as release_sync_assets
 from workflow_state import parse_state
 
 
-INCOMPLETE_LEDGER_STATUSES = frozenset(
-    {"todo", "in_progress", "planned", "executing", "review", "blocked"}
-)
-COMPLETE_LEDGER_STATUSES = frozenset({"done", "skipped_with_reason"})
-MALFORMED_LEDGER_STATUS = "__malformed__"
-MARKDOWN_TABLE_SEPARATOR = re.compile(r"^:?-{3,}:?$")
-
-
 def run_stop_checks(repo: Path) -> dict[str, Any]:
     repo = repo_path(repo)
+    release_report = release_promotion_run_gate(repo, apply=False)
+    continuation = continuation_stop_check(repo, release_status=release_report.get("status"))
+    action = continuation["action"]
     checks = [
-        context_health_stop_check(repo),
-        verification_stop_check(repo),
-        checkpoint_stop_check(repo),
-        ledger_completion_stop_check(repo),
-        release_promotion_stop_check(repo),
+        contextual_stop_check(context_health_stop_check(repo), action),
+        contextual_verification_stop_check(repo, action),
+        contextual_stop_check(checkpoint_stop_check(repo), action),
+        continuation,
+        contextual_release_promotion_stop_check(repo, release_report, action),
     ]
     failed = [item["id"] for item in checks if not item["ok"]]
     return {
@@ -40,6 +48,62 @@ def run_stop_checks(repo: Path) -> dict[str, Any]:
         "status": "ready" if not failed else "blocked",
         "failedChecks": failed,
         "checks": checks,
+    }
+
+
+def continuation_stop_check(repo: Path, release_status: str | None = None) -> dict[str, Any]:
+    result = continuation_decision(repo, release_status=release_status)
+    return {
+        "id": "execution_continuation",
+        "ok": bool(result["stopAllowed"]),
+        "status": result["action"].lower(),
+        "detail": result["reason"],
+        "action": result["action"],
+        "nextAction": result["nextAction"],
+        "continuationRequired": result["continuationRequired"],
+        "executionSource": result["executionSource"],
+    }
+
+
+def contextual_stop_check(check: dict[str, Any], action: str) -> dict[str, Any]:
+    if action not in {AWAIT_HUMAN, READY_FOR_EXTERNAL_EFFECT}:
+        return check
+    return {
+        **check,
+        "ok": True,
+        "status": f"advisory_at_{action.lower()}",
+        "detail": f"{check['detail']}; reported without blocking a valid {action} boundary",
+    }
+
+
+def contextual_verification_stop_check(repo: Path, action: str) -> dict[str, Any]:
+    if action in {CONTINUE_NEXT_ITEM, CHECKPOINT_AND_CONTINUE, AWAIT_HUMAN}:
+        return {
+            "id": "verification",
+            "ok": True,
+            "status": "not_applicable",
+            "detail": f"final verification is not the current action while continuation outcome is {action}",
+        }
+    return verification_stop_check(repo)
+
+
+def contextual_release_promotion_stop_check(
+    repo: Path,
+    report: dict[str, Any],
+    action: str,
+) -> dict[str, Any]:
+    check = release_promotion_stop_check(repo, report=report)
+    if action not in {AWAIT_HUMAN, READY_FOR_EXTERNAL_EFFECT}:
+        return check
+    return {
+        **check,
+        "ok": True,
+        "status": "authorization_boundary" if action == READY_FOR_EXTERNAL_EFFECT else "not_applicable",
+        "detail": (
+            "release promotion is ready for separate explicit authorization"
+            if action == READY_FOR_EXTERNAL_EFFECT
+            else "release promotion is not required before presenting the Human Gate"
+        ),
     }
 
 
@@ -124,20 +188,9 @@ def ledger_completion_stop_check(repo: Path) -> dict[str, Any]:
             "status": "not_applicable",
             "detail": "no ledger",
         }
-    statuses = markdown_table_column_values(ledger.read_text(), "status")
-    unknown = sorted(
-        {
-            status
-            for status in statuses
-            if status not in INCOMPLETE_LEDGER_STATUSES
-            and status not in COMPLETE_LEDGER_STATUSES
-        }
-    )
-    incomplete = bool(
-        not statuses
-        or unknown
-        or any(status in INCOMPLETE_LEDGER_STATUSES for status in statuses)
-    )
+    source = ledger_execution_source(repo, ledger, ledger.read_text())
+    unknown = source["invalidStatuses"]
+    incomplete = not source["valid"] or bool(source["incomplete"])
     return {
         "id": "ledger_completion",
         "ok": not incomplete,
@@ -145,76 +198,17 @@ def ledger_completion_stop_check(repo: Path) -> dict[str, Any]:
         "detail": (
             "ledger tasks are closed"
             if not incomplete
-            else (
-                f"ledger has invalid task statuses: {', '.join(unknown)}"
-                if unknown
-                else "ledger has incomplete task rows"
-            )
+            else (source["issues"][0] if source["issues"] else "ledger has incomplete task rows")
         ),
         "invalidStatuses": unknown,
     }
 
 
-def markdown_table_column_values(text: str, column_name: str) -> list[str]:
-    """Return normalized values from a named column in Markdown tables only."""
-    lines = text.splitlines()
-    values: list[str] = []
-    index = 0
-    wanted = column_name.strip().lower()
-    while index + 1 < len(lines):
-        header = markdown_table_cells(lines[index])
-        separator = markdown_table_cells(lines[index + 1])
-        if (
-            wanted not in header
-            or len(separator) != len(header)
-            or not all(MARKDOWN_TABLE_SEPARATOR.fullmatch(cell) for cell in separator)
-        ):
-            index += 1
-            continue
-
-        column_index = header.index(wanted)
-        index += 2
-        while index < len(lines):
-            row = markdown_table_cells(lines[index])
-            if not row:
-                break
-            if len(row) != len(header):
-                values.append(MALFORMED_LEDGER_STATUS)
-                break
-            values.append(row[column_index])
-            index += 1
-    return values
-
-
-def markdown_table_cells(line: str) -> list[str]:
-    stripped = line.strip()
-    if "|" not in stripped:
-        return []
-    cells: list[str] = []
-    current: list[str] = []
-    index = 0
-    while index < len(stripped):
-        character = stripped[index]
-        if character == "\\" and index + 1 < len(stripped) and stripped[index + 1] == "|":
-            current.append("|")
-            index += 2
-            continue
-        if character == "|":
-            cells.append("".join(current))
-            current = []
-        else:
-            current.append(character)
-        index += 1
-    cells.append("".join(current))
-    if stripped.startswith("|"):
-        cells = cells[1:]
-    if stripped.endswith("|"):
-        cells = cells[:-1]
-    return [cell.strip().lower() for cell in cells]
-
-
-def release_promotion_stop_check(repo: Path) -> dict[str, Any]:
-    report = release_promotion_run_gate(repo, apply=False)
+def release_promotion_stop_check(
+    repo: Path,
+    report: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    report = report if report is not None else release_promotion_run_gate(repo, apply=False)
     ok = report.get("status") not in {"pending", "synced"}
     return {
         "id": "release_promotion",

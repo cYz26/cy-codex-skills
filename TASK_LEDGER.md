@@ -13,9 +13,11 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 - Finding ID: `DF-IFL-001`
 - Disposition: `DEFER_AND_CONTINUE`
 - Severity: medium diagnostic risk; no failed behavior or runtime contract
-- Evidence: development-source Plugin Eval scored 68/D with one static deferred-
-  cost failure, four warnings, and an 11,463-token active budget; every changed
-  skill remains within the evaluator's good line-count range
+- Evidence: the prior development-source Plugin Eval scored 68/D with one
+  static deferred-cost failure, four warnings, and an 11,463-token active
+  budget. The continuous-execution recheck remains 68/D with the same finding
+  classes, a 12,640-token active budget, and every changed skill still within
+  the evaluator's good line-count range
 - Affected Contract: none; the current change requires the result and
   disposition to be recorded but sets no development-source score threshold
 - Impact: the full development tree remains expensive under Plugin Eval's
@@ -868,3 +870,99 @@ and GSD was required only when explicitly selected as the roadmap provider.
 Release and installed-cache parity were verified, and remote submission to
 `origin/main` was complete. OpenSpec archive was intentionally not performed
 without its separate authorization.
+
+## Active Change: Continuous Execution Contract
+
+### Goal Contract
+
+- goal_id: OpenSpec change `add-continuous-execution-contract`
+- objective: make staged DevFlow implementation continue automatically through
+  approved items, checkpoints, review, and active-change verification until a
+  genuine Human Gate, separate external-effect authorization, or verified
+  overall completion.
+- scope_in: Full OpenSpec artifacts; DevFlow development-source continuation
+  decision, Stop hook, checkpoint policy, public skills, generated project
+  templates, root control-plane guidance, focused tests, and local evidence.
+- scope_out: a second queue or state block; general Markdown parsing; automatic
+  product decisions or side effects; generated release promotion; installed
+  cache/project refresh; archive; commit; push; PR or publication.
+- release_follow_through_scope: separately authorized guarded DevFlow release
+  promotion, named installed-cache refresh, safe project-local skill refresh for
+  `/Users/cY/dev/game-design-workshop`, and direct commit/push of this reviewed
+  change to the current `main` branch.
+- release_follow_through_non_goals: OpenSpec archive; legacy configuration or
+  skill cleanup; broad plugin/updater actions; PR creation; committing the
+  existing `game-design-workshop` WIP; or unrelated repository/workstation
+  repair.
+- acceptance_criteria: six deterministic continuation outcomes; one-item task
+  execution inside an orchestrator loop; active OpenSpec tasks preferred over
+  fallback ledger; review/handoff labels continue by default; explicit Human
+  Gates and external effects stop; premature Stop is read-only and blocked.
+- validation_commands: focused continuation/runtime/orchestrator tests; full
+  development-source discovery; strict change/all OpenSpec validation;
+  workflow validation; `git diff --check`; development-path Plugin Eval;
+  read-only release/cache/reference drift checks.
+- success_threshold: every OpenSpec scenario is covered by a public-seam test,
+  all required source and strict validation passes, and no unresolved
+  `BLOCKED_AWAITING_HUMAN` finding remains.
+- stop_conditions: stop for unresolved product/ownership choice, material
+  scope/write-set/public-contract expansion, new dependency/schema/migration,
+  destructive or external effect, severe/unknown risk, or explicit user
+  confirmation; ordinary phase completion is not a stop condition.
+- knowledge_update_target: none
+
+### Tasks
+
+The active OpenSpec task list is the execution ledger; these rows summarize the
+three dependency-ordered slices without creating another queue.
+
+| task_id | summary | owner | write_set | contract_path | required_evidence | review_gate | status |
+|---|---|---|---|---|---|---|---|
+| DF-CEC-1 | Pure continuation decision, active source resolution, and Stop guard | main | source scripts and focused runtime tests | not-delegated | observed RED, six outcomes, Full OpenSpec precedence, focused GREEN | no production write before RED | done |
+| DF-CEC-2 | Orchestrator, checkpoint, and skill contract | main | source skills, compact policy, contract tests | not-delegated | review/handoff default continuation and explicit stop regressions | phase name is not a Human Gate | done |
+| DF-CEC-3 | Durable templates/docs and final verification | main | root/source templates/docs, OpenSpec tasks, local evidence/state | not-delegated | full suite, strict validation, Eval and drift report | release/cache/archive/Git remain unauthorized | done |
+| DF-CEC-4 | Guarded generated-release promotion and post-promotion verification | main | generated `plugins/dev-flow/**`, local release evidence/state | not-delegated | current source receipt, full/package/runtime tests, strict validation, release Eval | explicit release authorization | in_progress |
+| DF-CEC-5 | Reviewed direct-main commit and push | main | Git index and `main` | not-delegated | staged diff review/check, commit, SSH push, 0 ahead/behind | explicit Git publication authorization | todo |
+| DF-CEC-6 | Named cache and current-project configuration refresh | main | installed DevFlow cache and ignored project-local skill/runtime paths | not-delegated | source/cache parity plus pre/post project diagnostics | no tracked project WIP or legacy cleanup | todo |
+
+### Execution Log
+
+- 2026-07-18: The user confirmed that staged work should continue item by item
+  until final completion unless a genuine decision or authority requires human
+  input, and explicitly requested implementation in DevFlow.
+- 2026-07-18: Local inspection identified two systemic causes: orchestration
+  ended after one bounded `execute-task` call, and compact policy classified
+  review labels as stopping points. The Stop hook also read only the fallback
+  `TASK_LEDGER.md`, not the active Full OpenSpec task list.
+- 2026-07-18: Full OpenSpec planning passed strict validation. Baseline focused
+  suites passed 5 checkpoint, 28 runtime-gate, and 43 orchestrator tests; full
+  development-source discovery passed 348 tests. No production dependency,
+  release, cache, migration, archive, or Git action ran.
+- 2026-07-18: Continuation tests first failed because the pure decision/Stop
+  seam did not exist, then passed 12/12 after implementing six outcomes,
+  Full OpenSpec task preference, strict fallback parsing, explicit Human Gate
+  markers, read-only aggregate Stop behavior, and source guidance.
+- 2026-07-18: The checkpoint regression first proved review, handoff, blank,
+  and new-thread labels were treated as terminal. The policy now continues by
+  default, while an explicit `--no-continuation-required` and unambiguous
+  terminal states preserve intentional stopping behavior. Fresh focused suites
+  pass 12 continuation, 28 runtime-gate, and 43 orchestrator tests.
+- 2026-07-18: Final source verification passed 326/326 pre-promotion tests
+  without skips and 360/360 complete development discovery, strict OpenSpec
+  validation for the change plus 53/53 repository items, workflow validation,
+  and `git diff --check`. The live read-only Stop hook selected the active
+  OpenSpec task source and returned `CONTINUE_NEXT_ITEM` while four tasks
+  remained, proving the core premature-stop path in this worktree.
+- 2026-07-18: Development Plugin Eval remains 68/D with the existing whole-tree
+  static budget/complexity findings; all changed skills remain in the good line-
+  count band. The unchanged release remains 86/B with zero failures. Read-only
+  drift reports 14 source/release files plus the runtime manifest pending; the
+  installed cache matches that unchanged release and project migration is
+  current. No promotion, refresh, migration, archive, commit, or push ran.
+- 2026-07-18: The user explicitly requested that the changes be organized and
+  submitted to the remote and that local configuration be refreshed. This
+  authorizes guarded DevFlow generated-release promotion, named installed-cache
+  refresh, safe `game-design-workshop` project-skill refresh, and direct
+  commit/push on current `main`. OpenSpec archive, legacy cleanup, broad updater
+  actions, PR creation, and the current project's independent tracked WIP remain
+  out of scope.

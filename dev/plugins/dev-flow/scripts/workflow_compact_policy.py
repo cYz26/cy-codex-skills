@@ -18,13 +18,6 @@ MAJOR_BOUNDARIES = {
 }
 SKIP_BOUNDARIES = {"small_task_update", "typo_fix", "docs_only_micro_change"}
 STOPPING_POINT_STAGES = {
-    "",
-    "none",
-    "next_stage",
-    "no_next_action",
-    "not_applicable",
-    "review",
-    "review_or_archive",
     "archive",
     "archived",
     "done",
@@ -35,9 +28,6 @@ STOPPING_POINT_STAGES = {
     "idle",
     "stop",
     "end",
-    "handoff",
-    "handoff_only",
-    "new_thread",
 }
 
 

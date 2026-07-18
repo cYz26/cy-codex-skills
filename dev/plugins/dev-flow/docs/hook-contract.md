@@ -20,8 +20,15 @@ paths.
 - context health
 - verification evidence
 - checkpoint/compact state
-- ledger completion status
+- execution continuation outcome from the active Full OpenSpec task list or
+  fallback task ledger
 - release promotion dry-run status
 
 It does not write release assets, planning state, verification evidence, or
 archive files by default.
+
+The Stop hook blocks premature termination for `CONTINUE_NEXT_ITEM`,
+`CHECKPOINT_AND_CONTINUE`, and `VERIFY_ACTIVE_CHANGE`. It reports an explicit
+`AWAIT_HUMAN`, `READY_FOR_EXTERNAL_EFFECT`, or verified `COMPLETE` boundary
+without authorizing or executing the next action. Full OpenSpec tasks take
+precedence over `TASK_LEDGER.md`; the hook never merges them into a new queue.

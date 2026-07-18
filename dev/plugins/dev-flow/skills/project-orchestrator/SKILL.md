@@ -28,6 +28,36 @@ active ledger before choosing a workflow action.
    `workflow-doctor`.
 6. Route a non-trivial technical plan to `ai-native-tech-plan`.
 
+## Continuous Execution
+
+Use `auto-until-terminal` after implementation is approved. The orchestrator
+owns the enclosing `execute -> evidence -> decide -> continue` loop:
+
+1. Resolve one canonical execution source: the active Full OpenSpec task list,
+   or `TASK_LEDGER.md` only when no active OpenSpec task list exists.
+2. Route exactly one dependency-ready item to `execute-task`.
+3. Read its completion receipt, review the evidence, and update the canonical
+   task plus DevFlow state.
+4. Derive one outcome: `CONTINUE_NEXT_ITEM`, `CHECKPOINT_AND_CONTINUE`,
+   `VERIFY_ACTIVE_CHANGE`, `AWAIT_HUMAN`, `READY_FOR_EXTERNAL_EFFECT`, or
+   `COMPLETE`.
+5. Immediately perform the next approved in-scope action for the first three
+   outcomes. Do not end the user request after an item, slice, review, or
+   active-change boundary.
+
+A phase label is not a Human Gate. Stop only for an unresolved product choice,
+material scope/write-set/public-contract expansion, dependency or migration,
+destructive or external effect, severe/unknown risk, explicit per-stage
+confirmation, or another missing authority. For a genuine interactive gate,
+record the concrete question in the canonical artifact and STATE Next Action,
+and set both `current_stage` and `current_change.status` to `awaiting_human`.
+After the answer is promoted, restore executable state and resume the loop.
+
+Checkpoint/compact is recoverable advice inside the loop. Current-change
+verification proves that change; it does not prove the overall request is done
+when another approved task or change remains. Release, archive, commit, push,
+and PR actions remain separately authorized external effects.
+
 ## Capability Routing
 
 Route stable capability IDs from `scripts/workflow_methodology.py`:
@@ -79,7 +109,7 @@ Completion Contract behavior cannot be deferred.
 
 ## Completion
 
-The route is complete when it names workflow mode, required capabilities,
+Routing is complete when it names workflow mode, required capabilities,
 canonical artifacts, readiness blockers, side-effect approvals, next skill,
-and validation command. Keep setup, planning, and repair read-only until the
-selected action is approved.
+and validation command. The user request is complete only at `COMPLETE`; keep
+setup, planning, and repair read-only until the selected action is approved.

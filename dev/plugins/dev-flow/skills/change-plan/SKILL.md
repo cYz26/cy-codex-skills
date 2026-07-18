@@ -29,7 +29,8 @@ authoritative and OpenSpec is canonical.
 4. Ensure `proposal.md`, `design.md` when needed, delta `specs/`, and `tasks.md`
    cover Target State, Completion Contract, Capability Slices, Execution
    Ledger, Acceptance Criteria, Validation Commands, risks, rollback, Critical
-   Path, Incidental Finding Budget, and Escalation Triggers.
+   Path, Incidental Finding Budget, Escalation Triggers, default continuation
+   policy, and genuine Human Gates.
 5. Route unclear behavior to `openspec-explore`, new ready intent to
    `openspec-propose`, existing-change planning revision to
    `openspec-update-change`, and plan structure to `ai-native-tech-plan`.
@@ -51,5 +52,6 @@ authorize work, so accepted follow-up still needs normal intake and the
 applicable approved OpenSpec or ledger route.
 
 Planning is complete when every scenario has a task and validator, no required
-decision is open, and the next executable ledger item is explicit. Do not edit
-production code in this skill.
+decision is open, the next executable ledger item is explicit, and ordinary
+item/change boundaries route back to the `auto-until-terminal` orchestrator
+loop. Do not edit production code in this skill.

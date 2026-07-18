@@ -197,6 +197,34 @@ Goal, Scope, Constraints, Verification, Evidence, and Human Gate.
 Do not expand scope, add a dependency, or change a public contract without
 updating the canonical plan and approval boundary.
 
+## Continuous Execution
+
+After implementation is approved, use `auto-until-terminal`. `execute-task`
+completes one dependency-ready item and returns evidence; `project-orchestrator`
+then derives `CONTINUE_NEXT_ITEM`, `CHECKPOINT_AND_CONTINUE`,
+`VERIFY_ACTIVE_CHANGE`, `AWAIT_HUMAN`, `READY_FOR_EXTERNAL_EFFECT`, or
+`COMPLETE`. For the first three outcomes, continue immediately through the next
+approved action. Item, slice, review, verification, checkpoint, and active-
+change boundaries do not end the user request.
+
+Prefer the active Full OpenSpec task list as the execution source and use
+`TASK_LEDGER.md` only when it is the configured active ledger. Do not merge the
+two or create another queue. A phase label is not a Human Gate.
+
+Stop only for unresolved product or ownership decisions, material scope/write-
+set/public-contract expansion, dependencies or migrations, destructive or
+external effects, severe or unknown risk, explicit per-stage confirmation, or
+another missing authority. Before asking, record the concrete gate and next
+question durably; use both `current_stage: awaiting_human` and
+`current_change.status: awaiting_human` so read-only Stop policy can distinguish
+a real gate from premature completion. Promote the answer into OpenSpec or the
+active ledger, restore executable state, and resume automatically.
+
+Checkpoint/compact is advisory and recoverable. Active-change verification is
+not overall completion when approved work remains. Release, archive, commit,
+push, PR, install/update, migration apply, and destructive work remain separate
+authorization boundaries and are never implied by automatic continuation.
+
 ## Verification and Archive
 
 Before claiming completion, run fresh focused and broad checks, update the
