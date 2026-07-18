@@ -922,7 +922,7 @@ three dependency-ordered slices without creating another queue.
 | DF-CEC-2 | Orchestrator, checkpoint, and skill contract | main | source skills, compact policy, contract tests | not-delegated | review/handoff default continuation and explicit stop regressions | phase name is not a Human Gate | done |
 | DF-CEC-3 | Durable templates/docs and final verification | main | root/source templates/docs, OpenSpec tasks, local evidence/state | not-delegated | full suite, strict validation, Eval and drift report | release/cache/archive/Git remain unauthorized | done |
 | DF-CEC-4 | Guarded generated-release promotion and post-promotion verification | main | generated `plugins/dev-flow/**`, local release evidence/state | not-delegated | current source receipt, full/package/runtime tests, strict validation, release Eval | explicit release authorization | done |
-| DF-CEC-5 | Reviewed direct-main commit and push | main | Git index and `main` | not-delegated | staged diff review/check, commit, SSH push, 0 ahead/behind | explicit Git publication authorization | in_progress |
+| DF-CEC-5 | Reviewed direct-main commit and push | main | Git index and `main` | not-delegated | staged diff review/check, commit, SSH push, 0 ahead/behind | explicit Git publication authorization | done |
 | DF-CEC-6 | Named cache and current-project configuration refresh | main | installed DevFlow cache and ignored project-local skill/runtime paths | not-delegated | source/cache parity plus pre/post project diagnostics | no tracked project WIP or legacy cleanup | done |
 
 ### Execution Log
@@ -987,3 +987,8 @@ three dependency-ordered slices without creating another queue.
   Doctor are current/healthy. Scaffold's `AGENTS.md.generated` candidate was
   deliberately deferred so the refresh did not touch the project's concurrent
   tracked WIP or legacy configuration.
+- 2026-07-18: The generated release and durable refresh record were committed
+  as `0056e88` (`chore(dev-flow): publish continuous execution runtime`). Both
+  commits were pushed by SSH to `origin/main`; local and remote refs matched
+  before this documentation-only ledger closeout. The consumed release gate is
+  closed again, while OpenSpec archive remains separately unauthorized.
