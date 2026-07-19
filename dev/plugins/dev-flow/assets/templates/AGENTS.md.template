@@ -225,6 +225,14 @@ not overall completion when approved work remains. Release, archive, commit,
 push, PR, install/update, migration apply, and destructive work remain separate
 authorization boundaries and are never implied by automatic continuation.
 
+## Git Transport vs GitHub Control Plane
+
+A gh authentication failure is not Git transport failure. For an explicitly
+`git_transport_preflight.py` check based on `git ls-remote`. Native push uses
+`git.push`; PR/release/settings use `github.control_plane_write`. Allow one
+diagnosis and at most one applicable remediation attempt for the latter, then
+stop that path without blocking native Git. `git.push_pr` is compatibility-only.
+
 ## Verification and Archive
 
 Before claiming completion, run fresh focused and broad checks, update the

@@ -57,6 +57,16 @@ release are separate approvals. After verification or archive, checkpoint under
 Completion is proven only by commands run in the current worktree and recorded
 results; old claims are not evidence.
 
+## Git Transport vs GitHub Control Plane
+
+A gh authentication failure is not Git transport failure. Once push is
+explicitly authorized, verify `git.push` with `git_transport_preflight.py`; its
+`git ls-remote` probe never calls `gh` or pushes. Record its ready/blocked
+status without treating readiness as authorization. GitHub platform writes use
+`github.control_plane_write`: permit one diagnosis and at most one applicable
+remediation attempt, then stop that path without blocking native Git. The
+legacy `git.push_pr` effect is compatibility-only.
+
 ## Continuation After Verification
 
 Active-change verification is not overall completion. After evidence passes,

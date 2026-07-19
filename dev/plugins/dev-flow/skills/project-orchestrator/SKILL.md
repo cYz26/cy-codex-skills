@@ -58,6 +58,16 @@ verification proves that change; it does not prove the overall request is done
 when another approved task or change remains. Release, archive, commit, push,
 and PR actions remain separately authorized external effects.
 
+## Git Transport vs GitHub Control Plane
+
+A gh authentication failure is not Git transport failure. For an explicitly
+authorized push, use `git.push` and run `git_transport_preflight.py`; it probes
+the configured remote with `git ls-remote`, never calls `gh`, and never pushes.
+GitHub PR/release/settings use `github.control_plane_write`. Permit one
+diagnosis and at most one applicable remediation attempt, then stop that
+platform path without blocking native Git. `git.push_pr` is compatibility-only;
+details and the exact command live in `docs/git_transport_routing.md`.
+
 ## Capability Routing
 
 Route stable capability IDs from `scripts/workflow_methodology.py`:

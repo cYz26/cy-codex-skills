@@ -26,9 +26,22 @@
       "authorization": "explicit_user_request",
       "denial": "leave_uncommitted"
     },
-    "git.push_pr": {
+    "git.push": {
       "authorization": "explicit_user_request",
       "denial": "do_not_contact_remote"
+    },
+    "git.push_pr": {
+      "authorization": "explicit_user_request",
+      "denial": "do_not_contact_remote",
+      "compatibilityAlias": true,
+      "replacementEffects": [
+        "git.push",
+        "github.control_plane_write"
+      ]
+    },
+    "github.control_plane_write": {
+      "authorization": "explicit_user_request_and_credentials",
+      "denial": "await_credentials"
     },
     "tracker.read": {
       "authorization": "task_scope_and_credentials",

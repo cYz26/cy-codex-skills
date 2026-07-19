@@ -207,6 +207,43 @@ class MethodologyContractTests(unittest.TestCase):
         self.assertTrue(allowed["authorized"])
         self.assertEqual(unknown["reason"], "unknown_effect_default_denied")
 
+    def test_git_push_and_github_control_plane_have_independent_authorization(self):
+        from workflow_side_effect_policy import (
+            load_side_effect_policy,
+            side_effect_decision,
+        )
+
+        policy = load_side_effect_policy(PLUGIN_ROOT)
+        self.assertIn("git.push", policy["effects"])
+        self.assertIn("github.control_plane_write", policy["effects"])
+        self.assertIn("git.push_pr", policy["effects"])
+
+        push = side_effect_decision(
+            PLUGIN_ROOT,
+            "git.push",
+            {"explicit_user_request"},
+        )
+        github_without_credentials = side_effect_decision(
+            PLUGIN_ROOT,
+            "github.control_plane_write",
+            {"explicit_user_request"},
+        )
+        github_with_credentials = side_effect_decision(
+            PLUGIN_ROOT,
+            "github.control_plane_write",
+            {"explicit_user_request_and_credentials"},
+        )
+        legacy = side_effect_decision(
+            PLUGIN_ROOT,
+            "git.push_pr",
+            {"explicit_user_request"},
+        )
+
+        self.assertTrue(push["authorized"])
+        self.assertFalse(github_without_credentials["authorized"])
+        self.assertTrue(github_with_credentials["authorized"])
+        self.assertTrue(legacy["authorized"])
+
     def test_matt_readiness_uses_required_project_copy_and_all_resource_hashes(self):
         from workflow_methodology import diagnose_methodology
 

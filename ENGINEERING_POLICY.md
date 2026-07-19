@@ -36,6 +36,19 @@ execution, testing, evidence, dependency, review, and release decisions.
   the continuation outcome, but they do not execute tasks, write workflow
   state, or perform side effects.
 
+## Git Transport vs GitHub Control Plane
+
+- Route commits and pushes through native Git; route pull requests, GitHub
+  releases, and repository settings through the GitHub control plane.
+- A gh authentication failure is not Git transport failure. Validate an
+  authorized push path with the configured remote and read-only `git ls-remote`
+  preflight, independent of GitHub CLI login state.
+- Keep `git.push` and `github.control_plane_write` as separate default-deny
+  authorization effects. Transport readiness never grants push authorization.
+- Bound GitHub credential recovery to one diagnosis and at most one applicable
+  remediation attempt, then stop that platform path without blocking an
+  independently authorized native Git operation.
+
 ## Testing and Evidence
 
 - Use TDD for features, bugs, refactors, business logic, and risky behavior.

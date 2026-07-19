@@ -38,6 +38,7 @@
     "scripts/devflow_runtime.sha256",
     "scripts/devflow_stop_hook.py",
     "scripts/doctor_workflow.py",
+    "scripts/git_transport_preflight.py",
     "scripts/inspect_legacy_workflow_config.py",
     "scripts/inspect_repo.py",
     "scripts/lint_ai_plan.py",

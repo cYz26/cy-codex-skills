@@ -824,6 +824,36 @@ class ProjectOrchestratorTests(unittest.TestCase):
                 for phrase in expectations:
                     self.assertIn(normalized_text(phrase), normalized)
 
+    def test_git_transport_and_github_control_plane_guidance_are_independent(self):
+        surfaces = {
+            "project-orchestrator": PLUGIN_ROOT
+            / "skills"
+            / "project-orchestrator"
+            / "SKILL.md",
+            "verify-and-archive": PLUGIN_ROOT
+            / "skills"
+            / "verify-and-archive"
+            / "SKILL.md",
+            "root-agents": REPO_ROOT / "AGENTS.md",
+            "generated-agents": PLUGIN_ROOT
+            / "assets"
+            / "templates"
+            / "AGENTS.md.template",
+        }
+        phrases = [
+            "Git Transport vs GitHub Control Plane",
+            "gh authentication failure is not Git transport failure",
+            "git ls-remote",
+            "one diagnosis and at most one applicable remediation attempt",
+            "github.control_plane_write",
+        ]
+
+        for label, path in surfaces.items():
+            text = normalized_text(path.read_text())
+            with self.subTest(surface=label):
+                for phrase in phrases:
+                    self.assertIn(normalized_text(phrase), text)
+
     def test_devflow_hooks_and_scripts_do_not_spawn_subagents(self):
         forbidden = ["spawn_agent", "Task("]
         scan_roots = [
