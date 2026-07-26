@@ -854,6 +854,55 @@ class ProjectOrchestratorTests(unittest.TestCase):
                 for phrase in phrases:
                     self.assertIn(normalized_text(phrase), text)
 
+    def test_release_publication_guidance_prefers_repository_actions(self):
+        detailed_surfaces = {
+            "routing-reference": PLUGIN_ROOT / "docs" / "git_transport_routing.md",
+            "project-orchestrator": PLUGIN_ROOT
+            / "skills"
+            / "project-orchestrator"
+            / "SKILL.md",
+            "verify-and-archive": PLUGIN_ROOT
+            / "skills"
+            / "verify-and-archive"
+            / "SKILL.md",
+        }
+        detailed_phrases = [
+            "github_actions",
+            "github_cli",
+            "human_web",
+            "workflow exists in the immutable tag target",
+            "GITHUB_TOKEN",
+            "least privilege",
+            "publication readback",
+            "preserve the tag",
+            "local promotion",
+        ]
+        summary_surfaces = {
+            "root-agents": REPO_ROOT / "AGENTS.md",
+            "generated-agents": PLUGIN_ROOT
+            / "assets"
+            / "templates"
+            / "AGENTS.md.template",
+        }
+        summary_phrases = [
+            "validated repository GitHub Actions",
+            "local gh authentication",
+            "publication readback",
+            "preserve the tag",
+        ]
+
+        for label, path in detailed_surfaces.items():
+            text = normalized_text(path.read_text())
+            with self.subTest(surface=label):
+                for phrase in detailed_phrases:
+                    self.assertIn(normalized_text(phrase), text)
+
+        for label, path in summary_surfaces.items():
+            text = normalized_text(path.read_text())
+            with self.subTest(surface=label):
+                for phrase in summary_phrases:
+                    self.assertIn(normalized_text(phrase), text)
+
     def test_devflow_hooks_and_scripts_do_not_spawn_subagents(self):
         forbidden = ["spawn_agent", "Task("]
         scan_roots = [

@@ -62,6 +62,42 @@ class GitTransportPreflightTests(unittest.TestCase):
         self.assertEqual(pull_request["effect"], "github.control_plane_write")
         self.assertTrue(pull_request["requiresGh"])
 
+    def test_release_route_prefers_repository_actions_without_local_gh(self):
+        from workflow_git import route_repository_operation
+
+        release = route_repository_operation("release")
+
+        self.assertEqual(release["capability"], "github_control_plane")
+        self.assertEqual(release["effect"], "github.control_plane_write")
+        self.assertFalse(release["requiresGh"])
+        self.assertTrue(release["directControlPlaneRequiresGh"])
+        self.assertEqual(
+            release["preferredExecutionPaths"],
+            ["github_actions", "github_cli", "human_web"],
+        )
+        self.assertEqual(
+            release["requiredEffects"],
+            ["git.push", "github.control_plane_write"],
+        )
+        self.assertTrue(release["workflowMustBeInTriggerCommit"])
+        self.assertTrue(release["immutableTriggerRequired"])
+        self.assertTrue(release["leastPrivilegeTokenRequired"])
+        self.assertTrue(release["postPublicationReadbackRequired"])
+        self.assertTrue(release["localPromotionBlockedUntilReadback"])
+        self.assertTrue(release["preserveTriggerOnFailure"])
+
+    def test_non_release_control_plane_route_does_not_gain_actions_first_behavior(self):
+        from workflow_git import route_repository_operation
+
+        pull_request = route_repository_operation("pull-request")
+        repository_settings = route_repository_operation("repository-settings")
+
+        for route in (pull_request, repository_settings):
+            with self.subTest(operation=route["operation"]):
+                self.assertTrue(route["requiresGh"])
+                self.assertNotIn("preferredExecutionPaths", route)
+                self.assertNotIn("requiredEffects", route)
+
     def test_github_recovery_budget_stops_after_one_diagnosis_and_remediation(self):
         from workflow_git import github_control_plane_recovery_decision
 

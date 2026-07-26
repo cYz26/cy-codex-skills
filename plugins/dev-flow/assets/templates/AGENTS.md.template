@@ -228,10 +228,14 @@ authorization boundaries and are never implied by automatic continuation.
 ## Git Transport vs GitHub Control Plane
 
 A gh authentication failure is not Git transport failure. For an explicitly
-`git_transport_preflight.py` check based on `git ls-remote`. Native push uses
-`git.push`; PR/release/settings use `github.control_plane_write`. Allow one
-diagnosis and at most one applicable remediation attempt for the latter, then
-stop that path without blocking native Git. `git.push_pr` is compatibility-only.
+authorized push, use `git_transport_preflight.py` based on `git ls-remote`.
+Native push uses `git.push`; PR/release/settings use
+`github.control_plane_write`. For deterministic tag-bound releases, prefer
+validated repository GitHub Actions over local gh authentication, require
+publication readback before local promotion, and preserve the tag if
+publication fails. Allow one diagnosis and at most one applicable remediation
+attempt for a direct GitHub control-plane fallback, then stop that path without
+blocking native Git. `git.push_pr` is compatibility-only.
 
 ## Verification and Archive
 

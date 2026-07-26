@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-07-26
+goal: Make DevFlow choose SSH plus validated repository Actions before local
+  GitHub CLI authentication for auditable release publication.

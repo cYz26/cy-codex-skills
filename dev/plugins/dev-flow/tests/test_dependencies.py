@@ -350,6 +350,35 @@ class DependencyTests(unittest.TestCase):
         self.assertEqual(methodology["repository"], "mattpocock/skills")
         self.assertEqual(methodology["ref"], "v1.1.0")
         self.assertEqual(
+            methodology["installCommand"],
+            [
+                "npx",
+                "-y",
+                "skills@1.5.20",
+                "add",
+                "https://github.com/mattpocock/skills/tree/v1.1.0",
+                "--skill",
+                "grilling",
+                "--skill",
+                "tdd",
+                "--skill",
+                "diagnosing-bugs",
+                "--skill",
+                "code-review",
+                "--skill",
+                "codebase-design",
+                "--skill",
+                "domain-modeling",
+                "--agent",
+                "codex",
+                "--yes",
+            ],
+        )
+        self.assertEqual(
+            methodology["runtimeRequirements"],
+            {"node": ">=22.20.0"},
+        )
+        self.assertEqual(
             list(methodology["skillHashes"]),
             [
                 "grilling",

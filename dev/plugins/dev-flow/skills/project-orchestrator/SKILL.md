@@ -63,10 +63,24 @@ and PR actions remain separately authorized external effects.
 A gh authentication failure is not Git transport failure. For an explicitly
 authorized push, use `git.push` and run `git_transport_preflight.py`; it probes
 the configured remote with `git ls-remote`, never calls `gh`, and never pushes.
-GitHub PR/release/settings use `github.control_plane_write`. Permit one
-diagnosis and at most one applicable remediation attempt, then stop that
-platform path without blocking native Git. `git.push_pr` is compatibility-only;
-details and the exact command live in `docs/git_transport_routing.md`.
+GitHub PR/release/settings use `github.control_plane_write`.
+
+For a deterministic immutable-tag release, prefer `github_actions`, then
+`github_cli`, then `human_web`. The Actions path is eligible only when the
+reviewed workflow exists in the immutable tag target, repository policy permits
+it, and `GITHUB_TOKEN` has explicit least privilege permissions. Verify release
+identity and conflicts before the separately authorized tag push. Require
+publication readback of the expected tag, target, published state, draft state,
+and prerelease state before local promotion. If the pushed workflow fails or
+readback is unavailable, preserve the tag and recover against the same reviewed
+identity rather than deleting or retargeting it.
+
+Actions-first applies only to deterministic tag-bound releases. Pull requests
+and repository settings retain the direct GitHub control-plane route. For
+`github_cli`, permit one diagnosis and at most one applicable remediation
+attempt, then stop that platform path without blocking native Git. `git.push_pr`
+is compatibility-only; details and the exact command live in
+`docs/git_transport_routing.md`.
 
 ## Capability Routing
 

@@ -63,7 +63,24 @@ A gh authentication failure is not Git transport failure. Once push is
 explicitly authorized, verify `git.push` with `git_transport_preflight.py`; its
 `git ls-remote` probe never calls `gh` or pushes. Record its ready/blocked
 status without treating readiness as authorization. GitHub platform writes use
-`github.control_plane_write`: permit one diagnosis and at most one applicable
+`github.control_plane_write`.
+
+For a deterministic immutable-tag release, verify the ordered publication
+paths `github_actions`, `github_cli`, and `human_web`. Select Actions only when
+the reviewed workflow exists in the immutable tag target, repository policy
+permits it, and `GITHUB_TOKEN` has explicit least privilege permissions. Record
+the workflow identity, expected tag target, release inputs, conflict checks,
+and separate authorization for `git.push` and `github.control_plane_write`.
+
+Do not infer publication from tag transport or workflow dispatch. Require
+publication readback of the expected tag, target, published state, draft state,
+and prerelease state before local promotion. If a private repository has no
+authenticated read path, require named-human confirmation of the successful
+workflow and published Release. If Actions fails after push, preserve the tag,
+block local promotion, and recover against the same reviewed identity.
+
+Actions-first does not apply to pull requests or repository settings. For the
+direct `github_cli` fallback, permit one diagnosis and at most one applicable
 remediation attempt, then stop that path without blocking native Git. The
 legacy `git.push_pr` effect is compatibility-only.
 

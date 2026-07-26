@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "lastVerified": "2026-07-14",
+  "lastVerified": "2026-07-23",
   "methodology": {
     "name": "mattpocock-skills",
     "kind": "git-skill-pack",
@@ -18,7 +18,7 @@
     "installCommand": [
       "npx",
       "-y",
-      "skills@1.5.9",
+      "skills@1.5.20",
       "add",
       "https://github.com/mattpocock/skills/tree/v1.1.0",
       "--skill",
@@ -39,6 +39,9 @@
     ],
     "environment": {
       "CODEX_HOME": "{codexHome}"
+    },
+    "runtimeRequirements": {
+      "node": ">=22.20.0"
     },
     "skillHashes": {
       "grilling": "5a35925d03a391bcfa46940868b649b72dba89ec9c19525e785bbb6bd3a7f478",

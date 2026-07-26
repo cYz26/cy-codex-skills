@@ -45,7 +45,23 @@ _REPOSITORY_OPERATION_ROUTES = {
     "release": {
         "capability": "github_control_plane",
         "effect": "github.control_plane_write",
-        "requiresGh": True,
+        "requiresGh": False,
+        "directControlPlaneRequiresGh": True,
+        "preferredExecutionPaths": [
+            "github_actions",
+            "github_cli",
+            "human_web",
+        ],
+        "requiredEffects": [
+            "git.push",
+            "github.control_plane_write",
+        ],
+        "workflowMustBeInTriggerCommit": True,
+        "immutableTriggerRequired": True,
+        "leastPrivilegeTokenRequired": True,
+        "postPublicationReadbackRequired": True,
+        "localPromotionBlockedUntilReadback": True,
+        "preserveTriggerOnFailure": True,
     },
     "repository-settings": {
         "capability": "github_control_plane",
