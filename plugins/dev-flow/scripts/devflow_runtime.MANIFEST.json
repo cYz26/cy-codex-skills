@@ -1,15 +1,15 @@
 {
   "archive": {
-    "bytes": 207212,
+    "bytes": 208523,
     "path": "scripts/devflow_runtime.pyz",
-    "sha256": "ae3668b5030bb644353b9a69d698636fbeeb8196cc18ea79a9ce767f97c86071"
+    "sha256": "7ba28cbc2c9c387566db1b00e31d6d715aaebfe9528758d9662c209c6d2ac24b"
   },
   "buildCommand": [
     "/opt/homebrew/opt/python@3.12/bin/python3.12",
     "dev/scripts/package_devflow_release_runtime.py"
   ],
   "schemaVersion": 1,
-  "sourceCommit": "4be56bc50655946c50e2f3dd4e710b6891482165",
+  "sourceCommit": "90f0d38c347c70e551005d60b406e8097d9504a5",
   "sources": [
     {
       "bytes": 2660,
@@ -112,9 +112,9 @@
       "sha256": "f76b2b24f3614700ca7b84bd9c5966197113ff0d05ed3e8053f187c172871d8e"
     },
     {
-      "bytes": 5485,
+      "bytes": 5569,
       "path": "dev/plugins/dev-flow/scripts/generated_artifact_lifecycle.py",
-      "sha256": "913e5d57ff0b25213ad54c86c2db7617bf6118947c2e4bf5138d4bc45e4058cb"
+      "sha256": "fbece2c30441fb6c2dd17400521f7a23b22fc0a72597b836665e875071669b50"
     },
     {
       "bytes": 1778,
@@ -547,9 +547,9 @@
       "sha256": "1925ea4435c717f559514ddb34d4f69016eea6dec01ba3892f3d4f001cd0b0f3"
     },
     {
-      "bytes": 104059,
+      "bytes": 112212,
       "path": "dev/plugins/dev-flow/scripts/workflow_generated_artifacts.py",
-      "sha256": "dcc4f8a0a47b34e01266b2432e38a9c5409aa77b944a6977cebdfec9e18daa8f"
+      "sha256": "a2ee5da707a50c8d5e70235a607c2a49d941935e8d0bc4eb304c1a7df7ca8897"
     },
     {
       "bytes": 14407,

@@ -96,7 +96,16 @@ class PackagedRuntimeTests(unittest.TestCase):
             ".devflow-generated/packaged-task/run-1",
         )
         self.assertEqual(prepared.returncode, 0, prepared.stderr)
-        contract_path = repo / "contract.json"
+        contract = json.loads(prepared.stdout)
+        contract_path = (
+            repo
+            / ".planning"
+            / "devflow"
+            / "generated-artifacts"
+            / "contracts"
+            / f"{contract['contractId']}.contract.json"
+        )
+        contract_path.parent.mkdir(parents=True)
         contract_path.write_text(prepared.stdout)
         artifact = (
             repo
