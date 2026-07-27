@@ -134,7 +134,7 @@
 - [x] 9.3 GREEN: replace automatic final unlink/rmdir with exclusive atomic
   movement into protected recoverable quarantine, add exact receipt mappings,
   and use no-replace restoration that never overwrites a racing replacement.
-- [ ] 9.4 Regenerate the source-bound release, rerun focused/broad/runtime,
+- [x] 9.4 Regenerate the source-bound release, rerun focused/broad/runtime,
   Plugin Eval, OpenSpec, and cache gates, refresh only the two authorized
   DevFlow caches, then obtain passing Spec and Standards reviews.
 

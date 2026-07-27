@@ -270,8 +270,8 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 
 - authoritative_queue: OpenSpec change
   `automate-owned-generated-artifact-cleanup`
-- status: final fail-closed review repair implemented at 33/34; item 9.4
-  release/refresh/final verification remains pending; intentionally unarchived
+- status: verified at 34/34; final fail-closed repair, release, remote
+  submission, and named local refresh are complete; intentionally unarchived
 - scope: DevFlow source, generated `dev-flow` release, and only the official
   plus internal `dev-flow@cy-codex-skills` caches
 - current_source_evidence: source and release lifecycle 60/60, complete
@@ -279,8 +279,7 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   repository-wide OpenSpec 57/57, workflow validation, and `git diff --check`
   pass; release runtime passes 290 checks and Plugin Eval is 86/B with zero
   failures; final Spec and Standards reviews pass
-- pending_evidence: generated-release commit, remote push, and both named cache
-  refresh/parity checks
+- pending_evidence: none inside the authorized Completion Contract
 - verification_evidence:
   `.planning/devflow/verification/20260727-generated-artifact-lifecycle-final.md`
 - release_receipt_sha256:
@@ -290,8 +289,8 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 - final_source_commit:
   `ab1d2ba9f633fab20b333dc217c032dc7be7fcda`
 - exclusions_preserved: no other plugin, global configuration, project
-  migration, legacy cleanup, pre-existing artifact deletion, push, PR, spec
-  sync, or archive
+  migration, legacy cleanup, pre-existing artifact deletion, PR, spec sync, or
+  archive
 - residuals: `DF-IFL-001`, `DF-IFL-002`, `DF-IFL-004`, `DF-IFL-005`,
   `DF-IFL-006`, `DF-IFL-008`, and `DF-IFL-009` remain non-blocking and do not
   authorize follow-up work
@@ -381,6 +380,18 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   failures and the same three accepted static token-budget warnings. Final
   Spec and Standards reviews pass; only generated-release commit, remote push,
   and the two named cache refresh/parity checks remain.
+- 2026-07-27: Generated release commit `d3240dc` and all preceding lifecycle
+  commits were pushed by SSH to `origin/main`; local and remote refs matched
+  `0/0`. The verified ChatGPT.app Codex CLI refreshed only
+  `dev-flow@cy-codex-skills` in `/Users/cY/.codex` and
+  `/Users/cY/.codex-switch/homes/internal`. Both installed caches are
+  byte-for-byte equal to release, report updater `matches-source`, pass
+  lifecycle 60/60 and runtime 290/290 with the same archive SHA-256, and
+  report project migration/skill layout `current` plus Doctor `healthy`.
+  OpenSpec item 9.4 and the authorized Completion Contract are complete; the
+  unrelated Git-transport evidence edit remains untouched, and archive,
+  legacy cleanup, PR, broad updater apply, and consumer-project mutation
+  remain outside scope.
 
 ## Active Change: Add Incidental Finding Lifecycle
 
