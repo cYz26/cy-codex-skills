@@ -1451,6 +1451,74 @@ class GeneratedArtifactInspectionTests(GeneratedArtifactTestSupport, unittest.Te
             ),
         )
 
+    def test_terminal_cleanup_rejects_tampered_manifest_identity_mapping(self):
+        from workflow_generated_artifacts import (
+            apply_cleanup,
+            plan_cleanup,
+            validate_terminal_cleanup,
+        )
+
+        repo = self.make_repo()
+        contract = self.prepare(repo)
+        self.create_isolated_output(repo, contract)
+        manifest = self.observe(repo, contract)
+        plan = plan_cleanup(repo, contract, manifest)
+        receipt = apply_cleanup(repo, contract, manifest, plan)
+        forged_receipt = deepcopy(receipt)
+        record = forged_receipt["quarantined"][0]
+        record["manifestIdentitySha256"] = "0" * 64
+
+        self.assertIn(
+            f"terminal_quarantine_manifest_identity_mismatch:{record['source']}",
+            validate_terminal_cleanup(
+                repo,
+                contract,
+                manifest,
+                plan,
+                forged_receipt,
+            ),
+        )
+
+    def test_terminal_cleanup_rejects_wrong_quarantine_destination_mapping(self):
+        from workflow_generated_artifacts import (
+            apply_cleanup,
+            capture_identity,
+            document_sha256,
+            plan_cleanup,
+            validate_terminal_cleanup,
+        )
+
+        repo = self.make_repo()
+        contract = self.prepare(repo)
+        self.create_isolated_output(repo, contract)
+        manifest = self.observe(repo, contract)
+        plan = plan_cleanup(repo, contract, manifest)
+        receipt = apply_cleanup(repo, contract, manifest, plan)
+        forged_receipt = deepcopy(receipt)
+        record = forged_receipt["quarantined"][0]
+        original_destination = repo / record["destination"]
+        wrong_destination = (
+            PurePosixPath(record["destination"]).parent
+            / "wrong-destination.quarantine"
+        )
+        original_destination.rename(repo / wrong_destination)
+        record["destination"] = wrong_destination.as_posix()
+        wrong_identity = capture_identity(repo, repo / wrong_destination)
+        record["device"] = wrong_identity["device"]
+        record["inode"] = wrong_identity["inode"]
+        record["quarantineIdentitySha256"] = document_sha256(wrong_identity)
+
+        self.assertIn(
+            f"terminal_quarantine_destination_mismatch:{record['source']}",
+            validate_terminal_cleanup(
+                repo,
+                contract,
+                manifest,
+                plan,
+                forged_receipt,
+            ),
+        )
+
     def test_terminal_cleanup_rejects_auto_clean_for_retained_contract(self):
         from workflow_generated_artifacts import (
             AUTO_CLEAN,

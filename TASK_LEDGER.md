@@ -274,21 +274,21 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   release/refresh/final verification remains pending; intentionally unarchived
 - scope: DevFlow source, generated `dev-flow` release, and only the official
   plus internal `dev-flow@cy-codex-skills` caches
-- current_source_evidence: lifecycle 60/60 and the complete pre-promotion source
-  suite pass after the final receipt-binding repair; strict active and
+- current_source_evidence: source and release lifecycle 60/60, complete
+  pre-promotion source suite, focused integration 139/139, strict active and
   repository-wide OpenSpec 57/57, workflow validation, and `git diff --check`
-  pass
-- pending_evidence: repaired source commit, regenerated release, complete
-  source/release/cache/runtime/Plugin Eval verification, both named refreshes,
-  remote push, and passing final Spec re-review
+  pass; release runtime passes 290 checks and Plugin Eval is 86/B with zero
+  failures; final Spec and Standards reviews pass
+- pending_evidence: generated-release commit, remote push, and both named cache
+  refresh/parity checks
 - verification_evidence:
   `.planning/devflow/verification/20260727-generated-artifact-lifecycle-final.md`
 - release_receipt_sha256:
-  `1cb720f4441ec9036a5b9d02dccaaa0aab9887058d752ca094f71dc128463422`
-- prior_runtime_archive_sha256:
-  `ae3668b5030bb644353b9a69d698636fbeeb8196cc18ea79a9ce767f97c86071`
-- prior_implementation_commit:
-  `4be56bc50655946c50e2f3dd4e710b6891482165`
+  `8b5bd27afa7a71537adcaf651fdae9361ee2ba3eb098ef37986844f337379a1c`
+- runtime_archive_sha256:
+  `bd03233b2b05cb5cc853502b02ede26e80c18a9cf7a84f512154a81ce76ba073`
+- final_source_commit:
+  `ab1d2ba9f633fab20b333dc217c032dc7be7fcda`
 - exclusions_preserved: no other plugin, global configuration, project
   migration, legacy cleanup, pre-existing artifact deletion, push, PR, spec
   sync, or archive
@@ -370,6 +370,17 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   descriptor, exclusive-move, and no-replace-restore mechanisms; item 9.4
   remains open for regenerated release, caches, push, and passing Spec
   re-review.
+- 2026-07-27: The proof-chain repair was committed as `ab1d2ba`; fresh
+  source-bound verification SHA-256 is
+  `8b5bd27afa7a71537adcaf651fdae9361ee2ba3eb098ef37986844f337379a1c`.
+  The regenerated release is `current`, source and release lifecycle suites
+  pass 60/60, focused integration passes 139/139, and runtime verification
+  passes 290 checks with archive SHA-256
+  `bd03233b2b05cb5cc853502b02ede26e80c18a9cf7a84f512154a81ce76ba073`
+  bound to `ab1d2ba`. Release-target Plugin Eval remains 86/B with zero
+  failures and the same three accepted static token-budget warnings. Final
+  Spec and Standards reviews pass; only generated-release commit, remote push,
+  and the two named cache refresh/parity checks remain.
 
 ## Active Change: Add Incidental Finding Lifecycle
 
