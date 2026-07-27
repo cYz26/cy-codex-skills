@@ -37,6 +37,19 @@ reviewers require an ID too.
   constraints.
 - Performance: list latency, memory, token, or runtime limits when relevant.
 
+## Generated Artifact Contract
+
+This optional section must be deleted when the worker creates no disposable filesystem
+artifacts. Otherwise the main agent must seal the referenced standalone
+contract before the owning command runs.
+
+- Contract: `<repository-relative-generated-artifact-contract.json>`
+- The worker result references the immutable manifest, plan, and cleanup
+  receipt.
+- G41 post-validation requires `cleanup_complete=true`; a missing,
+  post-creation, self-authored, or drifted contract never grants cleanup
+  authority.
+
 ## Verification
 
 List exact commands the worker must run, for example:

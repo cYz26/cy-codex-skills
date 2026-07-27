@@ -27,6 +27,7 @@ ENTRYPOINT_SCAN_ROOTS = (
     SOURCE_SCRIPTS.parent / "skills",
 )
 PUBLIC_ENTRYPOINT_NAMES = {
+    "generated_artifact_lifecycle.py",
     "validate_goal_quality.py",
     "workflow_decision_grilling.py",
 }

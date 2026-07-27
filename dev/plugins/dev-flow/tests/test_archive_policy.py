@@ -323,17 +323,28 @@ context_health:
         self.assertEqual(result.stdout.strip(), "")
 
     def test_pre_archive_policy_blocks_incomplete_archive(self):
+        repo = self.make_repo(tasks_complete=False)
         result = self.run_pre_archive_policy(
-            self.make_repo(tasks_complete=False),
+            repo,
             "openspec archive demo --yes",
         )
-        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.returncode, 0)
         payload = json.loads(result.stdout)
-        diagnostic = payload["hookSpecificOutput"]["diagnostic"]
-        self.assertEqual(diagnostic["decision"], "block")
+        self.assertEqual(set(payload), {"hookSpecificOutput"})
+        self.assertEqual(
+            set(payload["hookSpecificOutput"]),
+            {
+                "hookEventName",
+                "permissionDecision",
+                "permissionDecisionReason",
+                "additionalContext",
+            },
+        )
+        self.assertEqual(payload["hookSpecificOutput"]["permissionDecision"], "deny")
+        report = archive_status(repo, "demo", explicit_request=False, allow_risk=False)
         self.assertIn(
             "incomplete_tasks",
-            {risk["code"] for risk in diagnostic["archiveStatus"]["risks"]},
+            {risk["code"] for risk in report["risks"]},
         )
 
     def test_archive_hook_off_mode_disables_output(self):
@@ -354,14 +365,16 @@ context_health:
         self.assertEqual(result.stdout.strip(), "")
 
     def test_clean_archive_command_without_durable_authorization_is_blocked(self):
+        repo = self.make_repo(archive_allowed=False)
         result = self.run_pre_archive_policy(
-            self.make_repo(archive_allowed=False),
+            repo,
             "openspec archive demo --yes",
         )
 
-        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.returncode, 0)
         payload = json.loads(result.stdout)
-        status = payload["hookSpecificOutput"]["diagnostic"]["archiveStatus"]
+        self.assertEqual(payload["hookSpecificOutput"]["permissionDecision"], "deny")
+        status = archive_status(repo, "demo", explicit_request=False, allow_risk=False)
         self.assertFalse(status["durableArchiveAuthorization"])
         self.assertTrue(status["approvalRequired"])
 

@@ -16,6 +16,7 @@ from typing import Any
 PLUGIN_INCLUDE = [
     ".codex-plugin/**",
     "docs/**",
+    "schemas/**",
     "skills/**",
     "hooks.json",
     "scripts/**",

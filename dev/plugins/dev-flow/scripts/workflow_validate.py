@@ -7,6 +7,7 @@ from plugin_preflight_hooks import hook_cache_drift_issues
 from workflow_compact_state import check_compact_state
 from workflow_constants import resolve_plugin_root
 from workflow_goal_gate import goal_gate_warning
+from workflow_generated_artifacts import inspect_generated_artifact_lifecycle
 from workflow_mode_routing import read_workflow_mode_config
 from workflow_paths import repo_path
 from workflow_state import parse_state, resolve_state
@@ -30,12 +31,15 @@ def validate_workflow_state(
     check_goal_gate(state, warnings)
     check_hook_cache_drift(issues, plugin_root=plugin_root, codex_home=codex_home)
     check_archive_gate(state, issues)
+    generated_artifacts = inspect_generated_artifact_lifecycle(repo)
+    check_generated_artifacts(generated_artifacts, issues, warnings)
     return {
         "ok": not issues,
         "issues": issues,
         "warnings": warnings,
         "state": state,
         "gates": state.get("gates", {}),
+        "generatedArtifacts": generated_artifacts,
     }
 
 
@@ -193,3 +197,20 @@ def check_hook_cache_drift(
         return
     root = plugin_root or resolve_plugin_root()
     issues.extend(hook_cache_drift_issues(root, codex_home=codex_home))
+
+
+def check_generated_artifacts(
+    report: dict[str, Any],
+    issues: list[str],
+    warnings: list[str],
+) -> None:
+    issues.extend(
+        f"Generated Artifact Lifecycle: {issue}"
+        for issue in report.get("issues", [])
+    )
+    warnings.extend(
+        "Generated Artifact Lifecycle "
+        f"`{record['contractId']}` is {record['decision']}: "
+        f"{record['nextAction']}"
+        for record in report.get("unresolved", [])
+    )

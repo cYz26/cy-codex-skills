@@ -608,6 +608,40 @@ context_health:
         self.assertIn("workflow_agent_task_contract.py", names)
         self.assertIn("validate_agent_task_contract.py", names)
 
+    def test_generated_artifact_release_contract_is_declared(self):
+        from workflow_release_sync import PLUGIN_INCLUDE
+
+        metadata = json.loads(
+            (PLUGIN_ROOT / ".codex-plugin" / "release-sync.json").read_text()
+        )
+        self.assertIn("schemas/**", PLUGIN_INCLUDE)
+        self.assertIn(
+            "scripts/generated_artifact_lifecycle.py",
+            metadata["managedOutputs"],
+        )
+        self.assertIn(
+            "scripts/record_task_evidence.py",
+            metadata["managedOutputs"],
+        )
+        self.assertNotIn(
+            "tests/test_generated_artifact_lifecycle.py",
+            metadata["include"],
+        )
+        for relative in (
+            "schemas/generated-artifact-contract.schema.json",
+            "schemas/generated-artifact-manifest.schema.json",
+            "schemas/generated-artifact-cleanup-receipt.schema.json",
+            "docs/generated-artifact-lifecycle.md",
+        ):
+            self.assertTrue((PLUGIN_ROOT / relative).is_file(), relative)
+        lifecycle_test = (
+            PLUGIN_ROOT / "tests" / "test_generated_artifact_lifecycle.py"
+        ).read_text()
+        self.assertIn(
+            'os.environ.get("DEVFLOW_PLUGIN_ROOT"',
+            lifecycle_test,
+        )
+
     def test_release_legacy_names_are_confined_to_inspector_runtime_and_negative_test(self):
         legacy_name = re.compile(
             r"(?:"

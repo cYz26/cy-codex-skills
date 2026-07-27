@@ -31,7 +31,7 @@ def main() -> int:
     message = migration_reminder(repo=repo, plugin_root=plugin_root, codex_home=args.codex_home)
     if not message:
         return 0
-    return hook_response(repo, message)
+    return hook_response(repo, message, event_name="UserPromptSubmit")
 
 
 if __name__ == "__main__":

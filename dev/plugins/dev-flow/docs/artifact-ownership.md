@@ -25,6 +25,20 @@ and passes main-agent integration review. Workers do not own OpenSpec, root
 control-plane files, `.planning/devflow/**`, release metadata, or generated
 release assets.
 
+## Generated Filesystem Artifacts
+
+A Generated Artifact Contract is a standalone, registration-only ownership
+record sealed before the owning command creates output. Store the contract,
+observed manifest, fresh plan, and terminal cleanup receipt under
+`.planning/devflow/generated-artifacts/`; these documents are main-agent-owned
+evidence even when the output belongs to a worker.
+
+A pre-existing or unregistered path never becomes task-owned because of its
+name, extension, ignore status, apparent cache/build purpose, or a
+post-creation contract. Automatic cleanup is limited to exact manifest entries
+under a fresh `AUTO_CLEAN` plan. Tracked, protected, shared, escaped, occupied,
+symlinked, hardlinked, or drifted targets require a Human Gate.
+
 ## Historical and Legacy Evidence
 
 - `docs/history/**` is source-only historical evidence. Release sync

@@ -50,6 +50,18 @@ SCOPE_BOUNDARY = re.compile(
 )
 INLINE_CODE = re.compile(r"`([^`]+)`")
 WORKER_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
+GENERATED_ARTIFACT_SECTION = "Generated Artifact Contract"
+GENERATED_ARTIFACT_CONTRACT_REFERENCE = re.compile(
+    r"^\s*(?:[-*]\s*)?Contract:\s*`([^`]+)`\s*$",
+    re.IGNORECASE,
+)
+WORKER_GENERATED_ARTIFACT_FIELDS = {
+    "contractPath",
+    "manifestPath",
+    "planPath",
+    "cleanupReceiptPath",
+    "cleanup_complete",
+}
 
 PRIMARY_MANAGED_FILES = {
     ".dev-flow.json",
@@ -84,7 +96,11 @@ def parse_agent_task_contract(text: str) -> dict[str, str]:
     return {section: "\n".join(lines).strip() for section, lines in sections.items()}
 
 
-def validate_agent_task_contract_file(path: Path) -> dict[str, Any]:
+def validate_agent_task_contract_file(
+    path: Path,
+    *,
+    repo: Path | None = None,
+) -> dict[str, Any]:
     path = Path(path).expanduser()
     if not path.exists():
         return {
@@ -93,14 +109,40 @@ def validate_agent_task_contract_file(path: Path) -> dict[str, Any]:
             "missingSections": REQUIRED_SECTIONS,
             "errors": [f"Contract file not found: {path}"],
             "sections": {},
+            "validationManifest": validation_manifest(
+                worker_id=None,
+                reference=None,
+            ),
         }
     report = validate_agent_task_contract_text(path.read_text())
     report["path"] = str(path)
+    reference = report["validationManifest"]["generatedArtifact"]["contractPath"]
+    if reference is not None:
+        repository = Path(repo).expanduser().resolve() if repo is not None else find_repo_root(path)
+        reference_errors = validate_generated_artifact_contract_reference(
+            repository,
+            reference,
+            worker_id=parse_worker_id(report["sections"].get("Worker ID", "")),
+            manifest=report["validationManifest"],
+        )
+        report["errors"].extend(reference_errors)
+        report["errors"] = sorted(set(report["errors"]))
+        report["ok"] = not report["errors"] and not report["missingSections"]
+        if reference_errors:
+            report["validationManifest"]["gates"]["G41"]["status"] = "invalid"
+            report["validationManifest"]["gates"]["G41"]["errors"] = reference_errors
     return report
 
 
-def validate_agent_task_contract_files(paths: list[Path]) -> dict[str, Any]:
-    reports = [validate_agent_task_contract_file(path) for path in paths]
+def validate_agent_task_contract_files(
+    paths: list[Path],
+    *,
+    repo: Path | None = None,
+) -> dict[str, Any]:
+    reports = [
+        validate_agent_task_contract_file(path, repo=repo)
+        for path in paths
+    ]
     scopes: list[dict[str, str]] = []
     worker_contracts: dict[str, list[str]] = {}
     worker_display_names: dict[str, str] = {}
@@ -192,12 +234,278 @@ def validate_agent_task_contract_text(text: str) -> dict[str, Any]:
         human_gate_errors = validate_human_gate(sections["Human Gate"])
         errors.extend(human_gate_errors)
 
+    reference, reference_errors = parse_generated_artifact_contract_reference(
+        sections.get(GENERATED_ARTIFACT_SECTION),
+    )
+    errors.extend(reference_errors)
+    visible_sections = {
+        section: sections.get(section, "")
+        for section in REQUIRED_SECTIONS
+    }
+    if GENERATED_ARTIFACT_SECTION in sections:
+        visible_sections[GENERATED_ARTIFACT_SECTION] = sections[
+            GENERATED_ARTIFACT_SECTION
+        ]
+
     return {
         "ok": not errors and not missing,
         "missingSections": missing,
         "errors": errors,
-        "sections": {section: sections.get(section, "") for section in REQUIRED_SECTIONS},
+        "sections": visible_sections,
+        "validationManifest": validation_manifest(
+            worker_id=worker_id,
+            reference=reference,
+        ),
     }
+
+
+def parse_generated_artifact_contract_reference(
+    section: str | None,
+) -> tuple[str | None, list[str]]:
+    if section is None:
+        return None, []
+    references = [
+        match.group(1).strip()
+        for line in section.splitlines()
+        if (match := GENERATED_ARTIFACT_CONTRACT_REFERENCE.match(line))
+    ]
+    if len(references) != 1:
+        return None, [
+            "Generated Artifact Contract must contain exactly one "
+            "`Contract: `<repository-relative-path>`` reference."
+        ]
+    reference = references[0]
+    if not is_safe_document_reference(reference):
+        return None, [
+            "Generated Artifact Contract reference must be a normalized "
+            f"repository-relative JSON path: `{reference}`."
+        ]
+    return reference, []
+
+
+def validation_manifest(
+    *,
+    worker_id: str | None,
+    reference: str | None,
+) -> dict[str, Any]:
+    required = reference is not None
+    return {
+        "schema": "agent-task-contract-validation/v1",
+        "workerId": worker_id,
+        "generatedArtifact": {
+            "referenced": required,
+            "contractPath": reference,
+            "contractSha256": None,
+        },
+        "gates": {
+            "G41": {
+                "required": required,
+                "status": "pending" if required else "not_applicable",
+                "errors": [],
+            }
+        },
+    }
+
+
+def validate_generated_artifact_contract_reference(
+    repo: Path,
+    reference: str,
+    *,
+    worker_id: str | None,
+    manifest: dict[str, Any],
+) -> list[str]:
+    from workflow_generated_artifacts import (
+        document_sha256,
+        validate_contract,
+    )
+
+    document, errors = load_lifecycle_document(
+        repo,
+        reference,
+        label="generated_artifact_contract",
+    )
+    if document is None:
+        return errors
+    contract_errors = validate_contract(
+        repo,
+        document,
+        require_current_baseline=True,
+    )
+    errors.extend(
+        f"generated_artifact_contract:{error}"
+        for error in contract_errors
+    )
+    owner_id = document.get("owner", {}).get("id")
+    if worker_id and owner_id != worker_id:
+        errors.append("generated_artifact_contract_owner_mismatch")
+    if not errors:
+        manifest["generatedArtifact"]["contractSha256"] = document_sha256(document)
+    return sorted(set(errors))
+
+
+def validate_agent_task_worker_result(
+    repo: Path,
+    contract_report: dict[str, Any],
+    worker_result: Any,
+) -> dict[str, Any]:
+    from workflow_generated_artifacts import (
+        document_sha256,
+        validate_contract,
+        validate_terminal_cleanup,
+    )
+
+    repo = Path(repo).expanduser().resolve()
+    validation = contract_report.get("validationManifest", {})
+    generated_contract = validation.get("generatedArtifact", {})
+    reference = generated_contract.get("contractPath")
+    required = bool(validation.get("gates", {}).get("G41", {}).get("required"))
+    errors: list[str] = []
+
+    if not required:
+        if isinstance(worker_result, dict) and "generatedArtifacts" in worker_result:
+            errors.append("worker_result_generated_artifact_reference_without_contract")
+        return {
+            "ok": not errors,
+            "gate": "G41",
+            "status": "failed" if errors else "not_applicable",
+            "cleanupComplete": False,
+            "errors": errors,
+        }
+
+    if not contract_report.get("ok"):
+        errors.append("agent_task_contract_invalid")
+    if not isinstance(worker_result, dict):
+        return g41_result(["worker_result_not_object"])
+
+    worker_id = parse_worker_id(
+        contract_report.get("sections", {}).get("Worker ID", "")
+    )
+    if worker_result.get("workerId") != worker_id:
+        errors.append("worker_id_mismatch")
+    generated = worker_result.get("generatedArtifacts")
+    if not isinstance(generated, dict):
+        return g41_result(errors + ["worker_result_generated_artifacts_missing"])
+    errors.extend(
+        f"worker_result_generated_artifacts_unknown_field:{field}"
+        for field in sorted(set(generated) - WORKER_GENERATED_ARTIFACT_FIELDS)
+    )
+    errors.extend(
+        f"worker_result_generated_artifacts_missing_field:{field}"
+        for field in sorted(WORKER_GENERATED_ARTIFACT_FIELDS - set(generated))
+    )
+    if generated.get("contractPath") != reference:
+        errors.append("worker_result_contract_reference_mismatch")
+    cleanup_complete = generated.get("cleanup_complete")
+    if cleanup_complete is not True:
+        errors.append("cleanup_complete_not_true")
+
+    documents: dict[str, dict[str, Any] | None] = {}
+    reference_fields = (
+        ("contract", "contractPath"),
+        ("manifest", "manifestPath"),
+        ("plan", "planPath"),
+        ("cleanup_receipt", "cleanupReceiptPath"),
+    )
+    for label, field in reference_fields:
+        value = generated.get(field)
+        if not is_safe_document_reference(value):
+            errors.append(f"{label}_reference_invalid")
+            documents[label] = None
+            continue
+        document, load_errors = load_lifecycle_document(
+            repo,
+            value,
+            label=label,
+        )
+        documents[label] = document
+        errors.extend(load_errors)
+
+    contract = documents.get("contract")
+    artifact_manifest = documents.get("manifest")
+    plan = documents.get("plan")
+    receipt = documents.get("cleanup_receipt")
+    if contract is not None:
+        errors.extend(
+            f"contract:{error}"
+            for error in validate_contract(repo, contract)
+        )
+        recorded_sha = generated_contract.get("contractSha256")
+        if recorded_sha and document_sha256(contract) != recorded_sha:
+            errors.append("contract_changed_after_validation")
+        if worker_id and contract.get("owner", {}).get("id") != worker_id:
+            errors.append("contract_owner_mismatch")
+    if (
+        contract is not None
+        and artifact_manifest is not None
+        and plan is not None
+        and receipt is not None
+    ):
+        errors.extend(
+            validate_terminal_cleanup(
+                repo,
+                contract,
+                artifact_manifest,
+                plan,
+                receipt,
+            )
+        )
+
+    return g41_result(errors)
+
+
+def g41_result(errors: list[str]) -> dict[str, Any]:
+    unique_errors = sorted(set(errors))
+    return {
+        "ok": not unique_errors,
+        "gate": "G41",
+        "status": "failed" if unique_errors else "passed",
+        "cleanupComplete": not unique_errors,
+        "errors": unique_errors,
+    }
+
+
+def load_lifecycle_document(
+    repo: Path,
+    reference: str,
+    *,
+    label: str,
+) -> tuple[dict[str, Any] | None, list[str]]:
+    from workflow_generated_artifacts import (
+        GeneratedArtifactError,
+        load_immutable_document,
+        local_path,
+    )
+
+    try:
+        path = local_path(repo, reference, require_exists=False)
+    except GeneratedArtifactError:
+        return None, [f"{label}_reference_invalid"]
+    if not path.exists():
+        return None, [f"{label}_missing"]
+    try:
+        return load_immutable_document(path), []
+    except GeneratedArtifactError as error:
+        return None, [f"{label}:{error.code}"]
+
+
+def is_safe_document_reference(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and value.endswith(".json")
+        and is_safe_write_path(value)
+    )
+
+
+def find_repo_root(path: Path) -> Path:
+    start = path.absolute().parent
+    for candidate in (start, *start.parents):
+        if (
+            (candidate / ".git").exists()
+            or (candidate / ".dev-flow.json").is_file()
+            or (candidate / "AGENTS.md").is_file()
+        ):
+            return candidate.resolve()
+    return start.resolve()
 
 
 def placeholder_content(value: str) -> bool:

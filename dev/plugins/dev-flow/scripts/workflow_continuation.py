@@ -97,6 +97,51 @@ def decision(action: str, reason: str, next_action: str) -> dict[str, Any]:
     }
 
 
+def generated_artifact_orchestration(
+    repo: Path,
+    contract: dict[str, Any],
+    manifest: dict[str, Any],
+    proposed_plan: dict[str, Any] | None,
+) -> dict[str, Any]:
+    from workflow_generated_artifacts import (
+        AUTO_CLEAN,
+        HUMAN_GATE,
+        RETAIN,
+        WAIT_OWNER,
+        plan_cleanup,
+    )
+
+    fresh_plan = plan_cleanup(repo, contract, manifest)
+    if proposed_plan is not None and proposed_plan != fresh_plan:
+        return {
+            "decision": HUMAN_GATE,
+            "action": AWAIT_HUMAN,
+            "applyAllowed": False,
+            "requiresExplicitApply": True,
+            "receiptRequired": False,
+            "reasons": ["stale_or_self_authored_plan"],
+            "plan": fresh_plan,
+        }
+
+    artifact_decision = fresh_plan["decision"]
+    routes = {
+        AUTO_CLEAN: ("APPLY_GENERATED_ARTIFACT_CLEANUP", True, True),
+        WAIT_OWNER: ("WAIT_OWNER", False, False),
+        RETAIN: ("RECORD_RETENTION", False, False),
+        HUMAN_GATE: (AWAIT_HUMAN, False, False),
+    }
+    action, apply_allowed, receipt_required = routes[artifact_decision]
+    return {
+        "decision": artifact_decision,
+        "action": action,
+        "applyAllowed": apply_allowed,
+        "requiresExplicitApply": True,
+        "receiptRequired": receipt_required,
+        "reasons": list(fresh_plan["reasons"]),
+        "plan": fresh_plan,
+    }
+
+
 def continuation_decision(
     repo: Path,
     *,

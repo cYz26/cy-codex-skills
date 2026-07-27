@@ -31,6 +31,7 @@ CURRENT_RUNTIME_MODULES = {
     "workflow_archive_policy.py",
     "workflow_dependencies.py",
     "workflow_dependency_provenance.py",
+    "workflow_generated_artifacts.py",
     "workflow_methodology.py",
     "workflow_planning_paths.py",
     "workflow_project_activation.py",
@@ -63,6 +64,91 @@ def runtime_module_text(name: str) -> str:
 
 
 class PackagedRuntimeTests(unittest.TestCase):
+    def run_lifecycle_cli(self, cli, repo, environment, *arguments):
+        return subprocess.run(
+            [sys.executable, str(cli), *map(str, arguments)],
+            cwd=repo,
+            env=environment,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+    def prepare_packaged_lifecycle(self, cli, repo, environment):
+        prepared = self.run_lifecycle_cli(
+            cli,
+            repo,
+            environment,
+            "prepare",
+            "--repo",
+            repo,
+            "--task-id",
+            "packaged-task",
+            "--run-id",
+            "run-1",
+            "--owner-id",
+            "main",
+            "--owner-pid",
+            "999999999",
+            "--command-json",
+            '["python3","build.py"]',
+            "--isolated-root",
+            ".devflow-generated/packaged-task/run-1",
+        )
+        self.assertEqual(prepared.returncode, 0, prepared.stderr)
+        contract_path = repo / "contract.json"
+        contract_path.write_text(prepared.stdout)
+        artifact = (
+            repo
+            / ".devflow-generated"
+            / "packaged-task"
+            / "run-1"
+            / "output.bin"
+        )
+        artifact.parent.mkdir(parents=True)
+        artifact.write_bytes(b"packaged")
+        return contract_path, artifact
+
+    def observe_and_plan_packaged_lifecycle(
+        self,
+        cli,
+        repo,
+        environment,
+        contract_path,
+    ):
+        observed = self.run_lifecycle_cli(
+            cli,
+            repo,
+            environment,
+            "observe",
+            "--repo",
+            repo,
+            "--contract",
+            contract_path,
+            "--exit-code",
+            "0",
+        )
+        self.assertEqual(observed.returncode, 0, observed.stderr)
+        manifest_path = repo / "manifest.json"
+        manifest_path.write_text(observed.stdout)
+        planned = self.run_lifecycle_cli(
+            cli,
+            repo,
+            environment,
+            "plan",
+            "--repo",
+            repo,
+            "--contract",
+            contract_path,
+            "--manifest",
+            manifest_path,
+        )
+        self.assertEqual(planned.returncode, 0, planned.stderr)
+        self.assertEqual(json.loads(planned.stdout)["decision"], "AUTO_CLEAN")
+        plan_path = repo / "plan.json"
+        plan_path.write_text(planned.stdout)
+        return manifest_path, plan_path
+
     def test_packaged_runtime_imports_current_matt_native_modules(self):
         module_names = sorted(name.removesuffix(".py") for name in CURRENT_RUNTIME_MODULES)
         code = """
@@ -203,10 +289,71 @@ print(json.dumps({
         for relative in (
             "scripts/activate_project_dependencies.py",
             "scripts/check_dependencies.py",
+            "scripts/generated_artifact_lifecycle.py",
+            "scripts/record_task_evidence.py",
             "scripts/verify_release_runtime.py",
         ):
             with self.subTest(relative=relative):
                 self.assertTrue((RELEASE_PLUGIN_ROOT / relative).is_file())
+
+    def test_packaged_generated_artifact_lifecycle_exact_apply_smoke(self):
+        cli = RELEASE_PLUGIN_ROOT / "scripts" / "generated_artifact_lifecycle.py"
+        with tempfile.TemporaryDirectory(prefix="packaged-artifact-", dir="/tmp") as temporary:
+            repo = Path(temporary)
+            subprocess.run(
+                ["git", "init", "-q"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            preserved = repo / "user-config.json"
+            preserved.write_text('{"preserve":true}\n')
+            environment = {
+                **os.environ,
+                "DEVFLOW_PLUGIN_ROOT": str(RELEASE_PLUGIN_ROOT),
+                "PYTHONDONTWRITEBYTECODE": "1",
+            }
+            contract_path, artifact = self.prepare_packaged_lifecycle(
+                cli,
+                repo,
+                environment,
+            )
+            manifest_path, plan_path = self.observe_and_plan_packaged_lifecycle(
+                cli,
+                repo,
+                environment,
+                contract_path,
+            )
+            applied = self.run_lifecycle_cli(
+                cli,
+                repo,
+                environment,
+                "cleanup",
+                "--repo",
+                repo,
+                "--contract",
+                contract_path,
+                "--manifest",
+                manifest_path,
+                "--plan",
+                plan_path,
+                "--apply",
+            )
+
+            self.assertEqual(applied.returncode, 0, applied.stderr)
+            self.assertEqual(json.loads(applied.stdout)["status"], "complete")
+            self.assertFalse(artifact.exists())
+            self.assertEqual(preserved.read_text(), '{"preserve":true}\n')
+
+        for relative in (
+            "schemas/generated-artifact-contract.schema.json",
+            "schemas/generated-artifact-manifest.schema.json",
+            "schemas/generated-artifact-cleanup-receipt.schema.json",
+            "docs/generated-artifact-lifecycle.md",
+            "assets/templates/AGENT_TASK_CONTRACT.md.template",
+        ):
+            self.assertTrue((RELEASE_PLUGIN_ROOT / relative).is_file(), relative)
 
     def test_agent_kb_is_absent(self):
         workflow_lib = runtime_module_text("workflow_lib.py")

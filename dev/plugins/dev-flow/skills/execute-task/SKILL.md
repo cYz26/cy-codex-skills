@@ -46,6 +46,28 @@ explicit apply mode.
 6. Update the task, Execution Ledger, and state only after evidence passes or a
    blocker is recorded.
 
+## Generated Artifact Contract
+
+When the selected item will create disposable filesystem output, seal a
+Generated Artifact Contract before the owning command runs. Prefer one
+task/run-specific isolated root. A contract written after output exists,
+self-authored worker evidence, filenames, extensions, ignore rules, or apparent
+cache/build semantics never grant cleanup authority.
+
+After the owner exits, run read-only observation and planning. Only a fresh
+`AUTO_CLEAN` plan may proceed to explicit `cleanup --apply`; `WAIT_OWNER`
+retries later, `RETAIN` preserves the output, and `HUMAN_GATE` stops automatic
+reclamation. Keep the immutable contract, manifest, plan, and cleanup receipt
+under `.planning/devflow/` and pass their references to
+`record_task_evidence.py`.
+
+For a referenced Agent Task Contract, rerun
+`validate_agent_task_contract.py --worker-result <canonical-result.json>`.
+G41 passes only when the worker result references a bound terminal cleanup
+receipt and sets `cleanup_complete` to true. Without a Generated Artifact
+Contract, existing validation behavior remains unchanged and no cleanup
+authority is inferred.
+
 ## Completion Receipt and Return
 
 Return a completion receipt for the selected item with item ID, result, changed

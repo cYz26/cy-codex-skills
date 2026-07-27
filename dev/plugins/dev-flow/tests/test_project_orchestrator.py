@@ -805,6 +805,126 @@ class ProjectOrchestratorTests(unittest.TestCase):
         self.assertIn("contract_path", ledger)
         self.assertIn("AGENT_TASK_CONTRACT.md", ledger)
 
+    def test_generated_artifact_cleanup_is_routed_through_execution_receipts(self):
+        expectations = {
+            "project-orchestrator": [
+                "Generated Artifact Lifecycle",
+                "fresh `AUTO_CLEAN`",
+                "owning process exits",
+                "`cleanup --apply`",
+                "cleanup receipt",
+                "`WAIT_OWNER`",
+            ],
+            "execute-task": [
+                "Generated Artifact Contract",
+                "before the owning command",
+                "record_task_evidence.py",
+                "G41",
+                "cleanup_complete",
+                "cleanup receipt",
+            ],
+        }
+        for skill_name, phrases in expectations.items():
+            text = normalized_text(
+                (PLUGIN_ROOT / "skills" / skill_name / "SKILL.md").read_text()
+            )
+            with self.subTest(skill=skill_name):
+                for phrase in phrases:
+                    self.assertIn(normalized_text(phrase), text)
+
+    def test_generated_artifact_registration_rule_is_in_every_control_plane_template(self):
+        expectations = {
+            PLUGIN_ROOT / "assets" / "templates" / "AGENTS.md.template": [
+                "Generated Artifact Lifecycle",
+                "before creation",
+                "registration",
+                "`AUTO_CLEAN`",
+            ],
+            PLUGIN_ROOT / "assets" / "templates" / "ENGINEERING_POLICY.md.template": [
+                "Generated Artifact Contract",
+                "pre-creation",
+                "retroactive",
+                "exact paths",
+            ],
+            PLUGIN_ROOT / "assets" / "templates" / "AGENT_TASK_CONTRACT.md.template": [
+                "## Generated Artifact Contract",
+                "optional",
+                "G41",
+                "cleanup_complete",
+            ],
+            PLUGIN_ROOT / "assets" / "templates" / "TASK_LEDGER.md.template": [
+                "generated_artifact_contract",
+                "registration-only",
+                "cleanup receipt",
+            ],
+            PLUGIN_ROOT / "assets" / "templates" / "REVIEW_CHECKLIST.md.template": [
+                "Generated Artifact Lifecycle",
+                "pre-creation",
+                "`WAIT_OWNER`",
+                "no wildcard or recursive deletion",
+            ],
+            PLUGIN_ROOT / "skills" / "ai-native-tech-plan" / "SKILL.md": [
+                "Generated Artifact Strategy",
+                "pre-creation",
+                "isolated root",
+                "retention",
+            ],
+            PLUGIN_ROOT
+            / "skills"
+            / "ai-native-tech-plan"
+            / "assets"
+            / "task-ledger-template.md": [
+                "## Generated Artifact Strategy",
+                "registration-only",
+                "manifest",
+                "cleanup receipt",
+            ],
+        }
+        for path, phrases in expectations.items():
+            text = normalized_text(path.read_text())
+            with self.subTest(path=path.name):
+                for phrase in phrases:
+                    self.assertIn(normalized_text(phrase), text)
+
+    def test_generated_artifact_runtime_and_hook_docs_distinguish_all_routes(self):
+        expectations = {
+            PLUGIN_ROOT / "README.md": [
+                "## Generated Artifact Lifecycle",
+                "`WAIT_OWNER`",
+                "automatic task-owned reclamation",
+                "retained evidence",
+                "destructive Human Gate",
+            ],
+            PLUGIN_ROOT / "docs" / "hook-contract.md": [
+                "generated artifact lifecycle",
+                "exact next action",
+                "never invokes `cleanup --apply`",
+            ],
+            PLUGIN_ROOT / "docs" / "artifact-ownership.md": [
+                "Generated Artifact Contract",
+                "registration-only",
+                "pre-existing",
+                "terminal cleanup receipt",
+            ],
+            PLUGIN_ROOT / "docs" / "generated-artifact-lifecycle.md": [
+                "`prepare`",
+                "`observe`",
+                "`plan`",
+                "`cleanup --apply`",
+                "`AUTO_CLEAN`",
+                "`WAIT_OWNER`",
+                "`RETAIN`",
+                "`HUMAN_GATE`",
+                "G41",
+            ],
+        }
+        for path, phrases in expectations.items():
+            self.assertTrue(path.is_file(), path)
+            text = normalized_text(path.read_text())
+            with self.subTest(path=path.name):
+                for phrase in phrases:
+                    self.assertIn(normalized_text(phrase), text)
+
     def test_subagent_strategy_is_documented_in_dev_and_release_readmes(self):
         expectations = [
             "## SubAgent Strategy",
@@ -1428,7 +1548,12 @@ class ProjectOrchestratorTests(unittest.TestCase):
             capture_output=True,
             check=False,
         )
-        self.assertEqual(blocked.returncode, 1)
+        self.assertEqual(blocked.returncode, 0)
+        blocked_payload = json.loads(blocked.stdout)
+        self.assertEqual(
+            blocked_payload["hookSpecificOutput"]["permissionDecision"],
+            "deny",
+        )
 
         (repo / ".dev-flow.json").write_text(json.dumps({"hook": {"mode": "off"}}))
         off = run_script("pre_edit_policy.py", input_text=payload)

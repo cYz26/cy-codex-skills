@@ -17,7 +17,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 from workflow_doctor import doctor_workflow
 from workflow_goal_gate import goal_complexity_score
-from workflow_hooks import hook_mode, hook_response
+from workflow_hooks import hook_diagnostic, hook_mode, hook_response
 from workflow_mode_routing import read_workflow_mode_config
 from workflow_state import parse_state, update_state
 from workflow_validate import validate_workflow_state
@@ -325,16 +325,20 @@ goal_gate:
 
         self.assertEqual(exit_code, 0)
         payload = json.loads(stdout.getvalue())
+        self.assertEqual(set(payload), {"decision", "reason"})
         self.assertEqual(payload["decision"], "block")
         self.assertEqual(payload["reason"], "DevFlow: context health is medium.")
-        diagnostic = payload.get("diagnostic")
-        self.assertIsInstance(diagnostic, dict)
+        diagnostic = hook_diagnostic(
+            repo,
+            "Stop",
+            "block",
+            "DevFlow: context health is medium.",
+        )
         self.assertEqual(diagnostic["hook_name"], "Stop")
         self.assertEqual(diagnostic["current_stage"], "executing")
         self.assertIn("verification_passed", diagnostic["failed_gates"])
         self.assertEqual(diagnostic["recommended_skill"], "context-health-check")
         self.assertIn("context-health-check", diagnostic["next_action"])
-        self.assertNotIn("hookSpecificOutput", payload)
 
     def test_hooks_use_plugin_root_paths_windows_commands_and_single_stop_entrypoint(self):
         hooks = json.loads((PLUGIN_ROOT / "hooks.json").read_text())["hooks"]
@@ -361,17 +365,64 @@ goal_gate:
         adapter = importlib.import_module("hook_response_adapter")
 
         pre = adapter.deny_pre_tool_use("blocked", {"failed_gates": ["spec_approved"]})
-        self.assertEqual(pre["decision"], "deny")
-        self.assertEqual(pre["reason"], "blocked")
+        self.assertEqual(set(pre), {"hookSpecificOutput"})
+        self.assertEqual(
+            set(pre["hookSpecificOutput"]),
+            {
+                "hookEventName",
+                "permissionDecision",
+                "permissionDecisionReason",
+                "additionalContext",
+            },
+        )
         self.assertEqual(pre["hookSpecificOutput"]["hookEventName"], "PreToolUse")
+        self.assertEqual(pre["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertEqual(pre["hookSpecificOutput"]["permissionDecisionReason"], "blocked")
 
         stop = adapter.block_stop_continue("continue", {"failed_gates": ["verification_passed"]})
+        self.assertEqual(set(stop), {"decision", "reason"})
         self.assertEqual(stop["decision"], "block")
         self.assertEqual(stop["reason"], "continue")
-        self.assertNotIn("hookSpecificOutput", stop)
 
         advisory = adapter.advisory("PostToolUse", "note", {"status": "warn"})
+        self.assertEqual(set(advisory), {"hookSpecificOutput"})
+        self.assertEqual(
+            set(advisory["hookSpecificOutput"]),
+            {"hookEventName", "additionalContext"},
+        )
         self.assertEqual(advisory["hookSpecificOutput"]["hookEventName"], "PostToolUse")
+
+    def test_project_migration_hook_emits_user_prompt_submit_schema(self):
+        module = importlib.import_module("plugin_project_migration_check")
+        repo = self.make_repo()
+        stdout = io.StringIO()
+
+        with mock.patch.object(
+            module,
+            "migration_reminder",
+            return_value="DevFlow: project migration drift detected.",
+        ), mock.patch.object(
+            sys,
+            "argv",
+            ["plugin_project_migration_check.py", "--event", "user_prompt_submit"],
+        ), mock.patch.object(
+            sys,
+            "stdin",
+            io.StringIO(json.dumps({"cwd": str(repo)})),
+        ), contextlib.redirect_stdout(stdout):
+            exit_code = module.main()
+
+        self.assertEqual(exit_code, 0)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(set(payload), {"hookSpecificOutput"})
+        self.assertEqual(
+            set(payload["hookSpecificOutput"]),
+            {"hookEventName", "additionalContext"},
+        )
+        self.assertEqual(
+            payload["hookSpecificOutput"]["hookEventName"],
+            "UserPromptSubmit",
+        )
 
     def test_devflow_stop_hook_aggregates_read_only_checks_without_release_apply(self):
         module = importlib.import_module("devflow_stop_hook")
@@ -391,6 +442,33 @@ goal_gate:
         self.assertIn("release_promotion", report["failedChecks"])
         gate.assert_called_once_with(repo.resolve(), apply=False)
         sync.assert_not_called()
+
+    def test_devflow_stop_hook_stays_silent_without_workflow_state(self):
+        module = importlib.import_module("devflow_stop_hook")
+        repo = self.make_repo()
+        stdout = io.StringIO()
+
+        with mock.patch.object(
+            module,
+            "context_health_check",
+            return_value={"risk": "low", "decision": "continue"},
+        ), mock.patch.object(
+            module,
+            "release_promotion_run_gate",
+            return_value={"status": "not_applicable", "message": "not applicable"},
+        ), mock.patch.object(
+            sys,
+            "argv",
+            ["devflow_stop_hook.py", "--repo", str(repo)],
+        ), mock.patch.object(
+            sys,
+            "stdin",
+            io.StringIO(""),
+        ), contextlib.redirect_stdout(stdout):
+            exit_code = module.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stdout.getvalue(), "")
 
     def test_stop_hook_uses_ledger_completion_check(self):
         module = importlib.import_module("devflow_stop_hook")
@@ -472,19 +550,28 @@ goal_gate:
 
         self.assertEqual(exit_code, 0)
         payload = json.loads(stdout.getvalue())
+        self.assertEqual(set(payload), {"hookSpecificOutput"})
+        self.assertEqual(
+            set(payload["hookSpecificOutput"]),
+            {"hookEventName", "additionalContext"},
+        )
         self.assertEqual(payload["hookSpecificOutput"]["hookEventName"], "PreToolUse")
         self.assertEqual(
             payload["hookSpecificOutput"]["additionalContext"],
             "DevFlow: production edit warning.",
         )
-        diagnostic = payload["hookSpecificOutput"].get("diagnostic")
-        self.assertIsInstance(diagnostic, dict)
+        diagnostic = hook_diagnostic(
+            repo,
+            "PreToolUse",
+            "warn",
+            "DevFlow: production edit warning.",
+        )
         self.assertEqual(diagnostic["hook_name"], "PreToolUse")
         self.assertEqual(diagnostic["current_stage"], "executing")
         self.assertIn("feature-intake", diagnostic["next_action"])
         self.assertEqual(diagnostic["recommended_skill"], "feature-intake")
 
-    def test_hook_response_preserves_block_mode_exit_code_with_json_output(self):
+    def test_hook_response_uses_exit_zero_for_block_mode_json_output(self):
         repo = self.make_repo()
         self.write_state(repo)
         (repo / ".dev-flow.json").write_text(json.dumps({"hook": {"mode": "block"}}))
@@ -493,33 +580,30 @@ goal_gate:
         with contextlib.redirect_stdout(stdout):
             exit_code = hook_response(repo, "DevFlow: verification is required.", event_name="Stop")
 
-        self.assertEqual(exit_code, 1)
-        payload = json.loads(stdout.getvalue())
-        self.assertEqual(payload["decision"], "block")
-        self.assertEqual(payload["reason"], "DevFlow: verification is required.")
-        diagnostic = payload.get("diagnostic")
-        self.assertIsInstance(diagnostic, dict)
-        self.assertIn("verification_passed", diagnostic["failed_gates"])
-        self.assertEqual(diagnostic["recommended_skill"], "verify-and-archive")
-        self.assertNotIn("hookSpecificOutput", payload)
-
-    def test_hook_response_reports_legacy_skill_layout_next_action(self):
-        repo = self.make_repo()
-        self.write_state(repo)
-        stdout = io.StringIO()
-
-        with contextlib.redirect_stdout(stdout):
-            exit_code = hook_response(
-                repo,
-                "DevFlow: legacy skill layout detected under .codex/skills. "
-                "Run migration dry-run before applying changes.",
-                event_name="PreToolUse",
-            )
-
         self.assertEqual(exit_code, 0)
         payload = json.loads(stdout.getvalue())
-        diagnostic = payload["hookSpecificOutput"].get("diagnostic")
-        self.assertIsInstance(diagnostic, dict)
+        self.assertEqual(set(payload), {"decision", "reason"})
+        self.assertEqual(payload["decision"], "block")
+        self.assertEqual(payload["reason"], "DevFlow: verification is required.")
+        diagnostic = hook_diagnostic(
+            repo,
+            "Stop",
+            "block",
+            "DevFlow: verification is required.",
+        )
+        self.assertIn("verification_passed", diagnostic["failed_gates"])
+        self.assertEqual(diagnostic["recommended_skill"], "verify-and-archive")
+
+    def test_hook_diagnostic_reports_legacy_skill_layout_next_action(self):
+        repo = self.make_repo()
+        self.write_state(repo)
+        diagnostic = hook_diagnostic(
+            repo,
+            "PreToolUse",
+            "warn",
+            "DevFlow: legacy skill layout detected under .codex/skills. "
+            "Run migration dry-run before applying changes.",
+        )
         self.assertEqual(diagnostic["legacy_skill_layout_status"], "legacy_detected")
         self.assertEqual(diagnostic["recommended_skill"], "plugin-project-migration")
         self.assertIn("--dry-run", diagnostic["recommended_command"])

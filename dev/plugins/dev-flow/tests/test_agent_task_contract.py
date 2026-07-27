@@ -78,6 +78,254 @@ class AgentTaskContractTests(unittest.TestCase):
         self.assertTrue(report["ok"], report)
         self.assertEqual(report["missingSections"], [])
         self.assertEqual(report["errors"], [])
+        self.assertEqual(
+            report["validationManifest"]["gates"]["G41"],
+            {
+                "required": False,
+                "status": "not_applicable",
+                "errors": [],
+            },
+        )
+
+    def test_optional_generated_artifact_reference_adds_pending_g41(self):
+        from workflow_agent_task_contract import validate_agent_task_contract_text
+
+        contract = (
+            VALID_CONTRACT
+            + "\n## Generated Artifact Contract\n\n"
+            "- Contract: `.planning/devflow/generated-artifacts/parser-run.contract.json`\n"
+        )
+
+        report = validate_agent_task_contract_text(contract)
+
+        self.assertTrue(report["ok"], report)
+        self.assertEqual(
+            report["validationManifest"]["generatedArtifact"],
+            {
+                "referenced": True,
+                "contractPath": (
+                    ".planning/devflow/generated-artifacts/"
+                    "parser-run.contract.json"
+                ),
+                "contractSha256": None,
+            },
+        )
+        self.assertEqual(
+            report["validationManifest"]["gates"]["G41"],
+            {
+                "required": True,
+                "status": "pending",
+                "errors": [],
+            },
+        )
+
+    def test_g41_post_validation_requires_bound_terminal_cleanup_receipt(self):
+        from workflow_agent_task_contract import (
+            validate_agent_task_contract_file,
+            validate_agent_task_worker_result,
+        )
+        from workflow_generated_artifacts import (
+            apply_cleanup,
+            canonical_document_bytes,
+            cleanup_receipt,
+            observe_artifacts,
+            plan_cleanup,
+            prepare_contract,
+        )
+
+        temporary = tempfile.TemporaryDirectory(prefix="agent-artifact-", dir="/tmp")
+        self.addCleanup(temporary.cleanup)
+        repo = Path(temporary.name)
+        subprocess.run(
+            ["git", "init", "-q"],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        lifecycle_root = repo / ".planning" / "devflow" / "generated-artifacts"
+        lifecycle_root.mkdir(parents=True)
+        contract_path = lifecycle_root / "parser-run.contract.json"
+        manifest_path = lifecycle_root / "parser-run.manifest.json"
+        plan_path = lifecycle_root / "parser-run.plan.json"
+        receipt_path = lifecycle_root / "parser-run.receipt.json"
+        artifact_root = ".devflow-generated/parser/run-1"
+        contract = prepare_contract(
+            repo=repo,
+            task_id="task-1",
+            run_id="run-1",
+            owner_id="parser",
+            owner_pid=999_999_999,
+            command=["python3", "build.py"],
+            isolated_roots=[artifact_root],
+            adjacent_outputs=[],
+        )
+        contract_path.write_bytes(canonical_document_bytes(contract))
+        agent_contract_path = repo / "agent-task.md"
+        agent_contract_path.write_text(
+            VALID_CONTRACT
+            + "\n## Generated Artifact Contract\n\n"
+            "- Contract: "
+            "`.planning/devflow/generated-artifacts/parser-run.contract.json`\n"
+        )
+        validation = validate_agent_task_contract_file(
+            agent_contract_path,
+            repo=repo,
+        )
+        self.assertTrue(validation["ok"], validation)
+
+        artifact = repo / artifact_root / "output.bin"
+        artifact.parent.mkdir(parents=True)
+        artifact.write_bytes(b"generated")
+        manifest = observe_artifacts(
+            repo,
+            contract,
+            exit_code=0,
+        )
+        plan = plan_cleanup(repo, contract, manifest)
+        manifest_path.write_bytes(canonical_document_bytes(manifest))
+        plan_path.write_bytes(canonical_document_bytes(plan))
+
+        unresolved = validate_agent_task_worker_result(
+            repo,
+            validation,
+            {
+                "workerId": "parser",
+                "generatedArtifacts": {
+                    "contractPath": contract_path.relative_to(repo).as_posix(),
+                    "manifestPath": manifest_path.relative_to(repo).as_posix(),
+                    "planPath": plan_path.relative_to(repo).as_posix(),
+                    "cleanupReceiptPath": receipt_path.relative_to(repo).as_posix(),
+                    "cleanup_complete": True,
+                },
+            },
+        )
+
+        self.assertEqual(
+            validation["validationManifest"]["generatedArtifact"]["contractSha256"],
+            manifest["contractSha256"],
+        )
+        self.assertFalse(unresolved["ok"], unresolved)
+        self.assertEqual(unresolved["gate"], "G41")
+        self.assertIn("cleanup_receipt_missing", unresolved["errors"])
+        self.assertTrue(artifact.exists())
+
+        forged_plan = {**plan, "entries": []}
+        forged_receipt = cleanup_receipt(
+            contract,
+            manifest,
+            forged_plan,
+            decision="AUTO_CLEAN",
+            status="complete",
+            removed=[],
+            remaining=[],
+            failure=None,
+        )
+        plan_path.write_bytes(canonical_document_bytes(forged_plan))
+        receipt_path.write_bytes(canonical_document_bytes(forged_receipt))
+        forged = validate_agent_task_worker_result(
+            repo,
+            validation,
+            {
+                "workerId": "parser",
+                "generatedArtifacts": {
+                    "contractPath": contract_path.relative_to(repo).as_posix(),
+                    "manifestPath": manifest_path.relative_to(repo).as_posix(),
+                    "planPath": plan_path.relative_to(repo).as_posix(),
+                    "cleanupReceiptPath": receipt_path.relative_to(repo).as_posix(),
+                    "cleanup_complete": True,
+                },
+            },
+        )
+
+        self.assertFalse(forged["ok"], forged)
+        self.assertIn("plan:plan_entries_manifest_mismatch", forged["errors"])
+        self.assertTrue(
+            any(
+                error.startswith("generated_artifact_remaining:")
+                for error in forged["errors"]
+            ),
+            forged,
+        )
+        self.assertTrue(artifact.exists())
+
+        plan_path.write_bytes(canonical_document_bytes(plan))
+        receipt = apply_cleanup(repo, contract, manifest, plan)
+        receipt_path.write_bytes(canonical_document_bytes(receipt))
+        worker_result = {
+            "workerId": "parser",
+            "generatedArtifacts": {
+                "contractPath": contract_path.relative_to(repo).as_posix(),
+                "manifestPath": manifest_path.relative_to(repo).as_posix(),
+                "planPath": plan_path.relative_to(repo).as_posix(),
+                "cleanupReceiptPath": receipt_path.relative_to(repo).as_posix(),
+                "cleanup_complete": True,
+            },
+        }
+
+        post_validation = validate_agent_task_worker_result(
+            repo,
+            validation,
+            worker_result,
+        )
+
+        self.assertTrue(post_validation["ok"], post_validation)
+        self.assertEqual(post_validation["status"], "passed")
+        self.assertTrue(post_validation["cleanupComplete"])
+        self.assertFalse(artifact.exists())
+
+        worker_result_path = repo / "worker-result.json"
+        worker_result_path.write_bytes(canonical_document_bytes(worker_result))
+        cli = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPTS / "validate_agent_task_contract.py"),
+                "--repo",
+                str(repo),
+                "--contract",
+                str(agent_contract_path),
+                "--worker-result",
+                str(worker_result_path),
+                "--json",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(cli.returncode, 0, cli.stderr)
+        cli_report = json.loads(cli.stdout)
+        self.assertTrue(cli_report["ok"], cli_report)
+        self.assertEqual(cli_report["postValidation"]["status"], "passed")
+
+    def test_g41_rejects_self_authored_or_mismatched_worker_result(self):
+        from workflow_agent_task_contract import (
+            validate_agent_task_contract_text,
+            validate_agent_task_worker_result,
+        )
+
+        report = validate_agent_task_contract_text(
+            VALID_CONTRACT
+            + "\n## Generated Artifact Contract\n\n"
+            "- Contract: `.planning/devflow/generated-artifacts/parser.contract.json`\n"
+        )
+        result = validate_agent_task_worker_result(
+            Path.cwd(),
+            report,
+            {
+                "workerId": "other-worker",
+                "generatedArtifacts": {
+                    "contractPath": "self-authored.contract.json",
+                    "manifestPath": "self-authored.manifest.json",
+                    "planPath": "self-authored.plan.json",
+                    "cleanupReceiptPath": "self-authored.receipt.json",
+                    "cleanup_complete": True,
+                },
+            },
+        )
+
+        self.assertFalse(result["ok"], result)
+        self.assertIn("worker_id_mismatch", result["errors"])
+        self.assertIn("worker_result_contract_reference_mismatch", result["errors"])
 
     def test_validator_rejects_overlapping_worker_write_sets(self):
         from workflow_agent_task_contract import validate_agent_task_contract_text

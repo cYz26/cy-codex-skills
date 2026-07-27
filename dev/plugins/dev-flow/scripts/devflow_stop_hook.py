@@ -25,18 +25,35 @@ from workflow_continuation import (
     markdown_table_column_values,
 )
 from workflow_hooks import hook_response
+from workflow_generated_artifacts import inspect_generated_artifact_lifecycle
 from workflow_paths import repo_path
 from workflow_release_sync import sync_release_assets as release_sync_assets
-from workflow_state import parse_state
+from workflow_state import parse_state, resolve_state
 
 
 def run_stop_checks(repo: Path) -> dict[str, Any]:
     repo = repo_path(repo)
+    state_resolution = resolve_state(repo)
+    if state_resolution["status"] == "missing":
+        return {
+            "ok": True,
+            "status": "not_applicable",
+            "failedChecks": [],
+            "checks": [
+                {
+                    "id": "workflow_state",
+                    "ok": True,
+                    "status": "not_applicable",
+                    "detail": "DevFlow workflow state is not present",
+                }
+            ],
+        }
     release_report = release_promotion_run_gate(repo, apply=False)
     continuation = continuation_stop_check(repo, release_status=release_report.get("status"))
     action = continuation["action"]
     checks = [
         contextual_stop_check(context_health_stop_check(repo), action),
+        generated_artifact_stop_check(repo),
         contextual_verification_stop_check(repo, action),
         contextual_stop_check(checkpoint_stop_check(repo), action),
         continuation,
@@ -48,6 +65,30 @@ def run_stop_checks(repo: Path) -> dict[str, Any]:
         "status": "ready" if not failed else "blocked",
         "failedChecks": failed,
         "checks": checks,
+    }
+
+
+def generated_artifact_stop_check(repo: Path) -> dict[str, Any]:
+    report = inspect_generated_artifact_lifecycle(repo)
+    return {
+        "id": "generated_artifact_lifecycle",
+        "ok": bool(report["ok"]),
+        "status": str(report["status"]),
+        "detail": (
+            "generated artifact lifecycle is resolved"
+            if report["ok"]
+            else "one or more generated artifact lifecycle decisions remain unresolved"
+        ),
+        "decisions": [
+            {
+                "contractId": record["contractId"],
+                "decision": record["decision"],
+                "status": record["status"],
+                "nextAction": record["nextAction"],
+            }
+            for record in report["records"]
+        ],
+        "nextActions": report["nextActions"],
     }
 
 

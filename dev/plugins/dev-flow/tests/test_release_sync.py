@@ -934,7 +934,13 @@ context_management:
     def test_devflow_metadata_builds_packaged_runtime_instead_of_copying_raw_scripts(self):
         metadata = json.loads((PLUGIN_ROOT / ".codex-plugin" / "release-sync.json").read_text())
 
-        self.assertEqual(metadata["include"], ["tests/test_packaged_runtime.py", "vendor/**"])
+        self.assertEqual(
+            metadata["include"],
+            [
+                "tests/test_packaged_runtime.py",
+                "vendor/**",
+            ],
+        )
         self.assertEqual(metadata["defaultExcludeOverrides"], ["tests/**"])
         self.assertIn("scripts/**", metadata["exclude"])
         self.assertEqual(metadata["buildCommands"], [["{python}", "dev/scripts/package_devflow_release_runtime.py"]])

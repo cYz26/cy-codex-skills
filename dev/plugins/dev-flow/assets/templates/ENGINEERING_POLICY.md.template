@@ -70,6 +70,22 @@
 - A worker must stop before scope expansion, dependency changes, ambiguous
   cleanup, public-contract changes, or unapproved external effects.
 
+## Generated Artifact Safety
+
+- A Generated Artifact Contract grants automatic cleanup authority only when
+  sealed pre-creation and bound to the repository, task, run, owner, and
+  command.
+- Never infer or retroactively claim ownership from names, extensions, ignore
+  rules, apparent cache/build purpose, or post-creation evidence.
+- Prefer task/run-isolated roots. Adjacent output requires a complete
+  before-state and may remove only exact paths absent from that baseline.
+- Apply only a fresh `AUTO_CLEAN` plan after owner exit. Use no wildcard,
+  recursive deletion, symlink following, process kill, configuration change,
+  or Git mutation.
+- Retain the immutable manifest, plan, and cleanup receipt; unresolved,
+  pre-existing, tracked, protected, shared, escaped, or drifted targets require
+  a Human Gate.
+
 ## Dependencies and Source Integrity
 
 - Record repository, immutable commit, release ref, license, and file hashes for

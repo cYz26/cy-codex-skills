@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from workflow_constants import CODE_EXTENSIONS, SOURCE_DIRS
-from hook_response_adapter import advisory, block_stop_continue
+from hook_response_adapter import advisory, block_stop_continue, deny_pre_tool_use
 from workflow_mode_routing import read_devflow_config_document
 from workflow_state import parse_state
 
@@ -64,13 +64,15 @@ def hook_response(
     mode = hook_mode(repo)
     if mode == "off":
         return 0
-    decision = "block" if force_block or mode == "block" or event_name == "Stop" else "warn"
-    payload_diagnostic = hook_diagnostic(repo, event_name, decision, message, diagnostic)
-    if event_name == "Stop":
-        print(json.dumps(block_stop_continue(message, payload_diagnostic)))
+    should_block = force_block or mode == "block" or event_name in {"Stop", "SubagentStop"}
+    if should_block and event_name == "PreToolUse":
+        payload = deny_pre_tool_use(message)
+    elif should_block:
+        payload = block_stop_continue(message)
     else:
-        print(json.dumps(advisory(event_name, message, payload_diagnostic)))
-    return 1 if force_block or mode == "block" else 0
+        payload = advisory(event_name, message)
+    print(json.dumps(payload))
+    return 0
 
 
 def hook_diagnostic(

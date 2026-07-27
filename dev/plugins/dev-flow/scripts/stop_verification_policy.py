@@ -5,6 +5,7 @@ import json
 import sys
 from pathlib import Path
 
+from workflow_generated_artifacts import inspect_generated_artifact_lifecycle
 from workflow_lib import hook_response, parse_state, repo_path
 
 
@@ -17,6 +18,15 @@ def main() -> int:
     state = parse_state(repo)
     if not state:
         return 0
+    generated_artifacts = inspect_generated_artifact_lifecycle(repo)
+    if not generated_artifacts["ok"]:
+        next_actions = "; ".join(generated_artifacts["nextActions"])
+        return hook_response(
+            repo,
+            "DevFlow: Generated Artifact Lifecycle is unresolved. "
+            f"{next_actions}",
+            event_name="Stop",
+        )
     gates = state.get("gates", {})
     if not gates.get("verification_passed", False):
         return hook_response(

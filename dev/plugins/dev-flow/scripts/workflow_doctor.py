@@ -33,6 +33,7 @@ def doctor_workflow(
         "issues": issues,
         "recommendations": recommendations,
         "validation": validation,
+        "generatedArtifacts": validation["generatedArtifacts"],
     }
     if write_report:
         write_doctor_reports(repo, status, issues, recommendations)
