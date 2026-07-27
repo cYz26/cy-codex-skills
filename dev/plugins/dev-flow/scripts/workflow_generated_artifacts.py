@@ -2457,9 +2457,40 @@ def validate_terminal_cleanup(
         errors.append("terminal_receipt_quarantine_mismatch")
     if receipt.get("zeroUnlistedMutation") is not True:
         errors.append("terminal_receipt_unlisted_mutation")
+    raw_manifest_entries = manifest.get("entries")
+    manifest_entries_by_path = {
+        entry["path"]: entry
+        for entry in (
+            raw_manifest_entries
+            if isinstance(raw_manifest_entries, list)
+            else []
+        )
+        if isinstance(entry, dict)
+        and safe_relative_path(entry.get("path"))
+    }
     for record in quarantine_records if isinstance(quarantine_records, list) else []:
         if not valid_quarantine_record(record):
             continue
+        source = record["source"]
+        manifest_entry = manifest_entries_by_path.get(source)
+        if manifest_entry is None:
+            errors.append(f"terminal_quarantine_manifest_entry_missing:{source}")
+        else:
+            if (
+                record["manifestIdentitySha256"]
+                != document_sha256(manifest_entry)
+            ):
+                errors.append(
+                    f"terminal_quarantine_manifest_identity_mismatch:{source}"
+                )
+            expected_destination = (
+                f"{LIFECYCLE_QUARANTINE_ROOT}/"
+                f"{quarantine_object_name(manifest_entry)}"
+            )
+            if record["destination"] != expected_destination:
+                errors.append(
+                    f"terminal_quarantine_destination_mismatch:{source}"
+                )
         try:
             identity = capture_identity(
                 repo,

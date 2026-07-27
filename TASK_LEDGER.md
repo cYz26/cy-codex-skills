@@ -274,13 +274,13 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   release/refresh/final verification remains pending; intentionally unarchived
 - scope: DevFlow source, generated `dev-flow` release, and only the official
   plus internal `dev-flow@cy-codex-skills` caches
-- current_source_evidence: lifecycle 58/58; strict active and repository-wide
-  OpenSpec 57/57; workflow validation and `git diff --check` pass; focused
-  integration is 138/139 with only the expected stale release-fixture parity
-  failure before promotion
-- pending_evidence: source commit, generated release promotion, complete
+- current_source_evidence: lifecycle 60/60 and the complete pre-promotion source
+  suite pass after the final receipt-binding repair; strict active and
+  repository-wide OpenSpec 57/57, workflow validation, and `git diff --check`
+  pass
+- pending_evidence: repaired source commit, regenerated release, complete
   source/release/cache/runtime/Plugin Eval verification, both named refreshes,
-  remote push, and final two-axis review
+  remote push, and passing final Spec re-review
 - verification_evidence:
   `.planning/devflow/verification/20260727-generated-artifact-lifecycle-final.md`
 - release_receipt_sha256:
@@ -358,6 +358,18 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   entries through platform atomic no-replace rename into protected retained
   quarantine, record exact mappings, and restore without overwrite. The
   focused suite passes 58/58; strict OpenSpec and workflow validation pass.
+- 2026-07-27: The final Spec re-review found one required proof-chain gap:
+  terminal validation trusted receipt-reported manifest identity and
+  quarantine destination fields instead of deriving both from the bound
+  manifest entry. Two RED cases proved a tampered identity hash and an
+  alternate real quarantine object could pass. Terminal validation now
+  re-derives the manifest-entry SHA-256 and deterministic quarantine path for
+  every source mapping before accepting the retained object's live identity;
+  the focused lifecycle suite passes 60/60 and the complete pre-promotion
+  source suite passes. Standards review passed the existing birth-time,
+  descriptor, exclusive-move, and no-replace-restore mechanisms; item 9.4
+  remains open for regenerated release, caches, push, and passing Spec
+  re-review.
 
 ## Active Change: Add Incidental Finding Lifecycle
 
