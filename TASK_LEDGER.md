@@ -308,6 +308,11 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   discovery shim. This keeps source/release bytes and all 54 scenarios while
   allowing Plugin Eval to apply its intended fixture exclusion rather than
   counting verification-only text as user context.
+- 2026-07-27: The first integrated post-promotion suite exposed two stale test
+  assumptions: packaged smoke persisted the sealed contract outside its
+  canonical registry, and marketplace coverage prohibited every release
+  fixture. Both RED failures were repaired to require the canonical contract
+  path and the one exact lifecycle fixture, without changing runtime behavior.
 - 2026-07-27: The authorized generated release promotion became `current`.
   Both named profile caches were refreshed through the verified ChatGPT.app
   Codex CLI and proved recursively identical to release; no unrelated updater

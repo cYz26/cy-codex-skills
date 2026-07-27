@@ -187,7 +187,14 @@ class ProjectOrchestratorTests(unittest.TestCase):
         release_manifest = json.loads((RELEASE_PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text())
         self.assertLessEqual(len(release_manifest["interface"]["defaultPrompt"]), 3)
         self.assertTrue((RELEASE_PLUGIN_ROOT / "tests" / "test_packaged_runtime.py").exists())
-        self.assertFalse((RELEASE_PLUGIN_ROOT / "fixtures").exists())
+        self.assertEqual(
+            {
+                path.relative_to(RELEASE_PLUGIN_ROOT).as_posix()
+                for path in (RELEASE_PLUGIN_ROOT / "fixtures").rglob("*")
+                if path.is_file()
+            },
+            {"fixtures/test_generated_artifact_lifecycle.py"},
+        )
         self.assertFalse((RELEASE_PLUGIN_ROOT / "log").exists())
 
         dev_path, dev_entry = registered_plugin_path(DEV_MARKETPLACE, PLUGIN_ID)
