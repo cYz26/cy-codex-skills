@@ -46,10 +46,14 @@ DevFlow owns implementation planning; architecture work may use
 10. Continuation Policy — default `auto-until-terminal`, the next-item
     selection rule, the six continuation outcomes, and every genuine Human
     Gate. A phase label alone is not a gate.
-11. Validation Commands — focused, broad, runtime, docs, and release checks.
-12. Risks / Rollback — stop conditions and reversible actions.
-13. Goal Mode Prompt and Continue Prompt when recovery risk warrants them.
-14. Review Checklist and Final Verification.
+11. Generated Artifact Strategy — state whether disposable output exists. When
+    it does, define pre-creation registration, a task/run isolated root or
+    constrained adjacent scope, owner exit, retention, exact cleanup, receipt,
+    and Human Gate behavior.
+12. Validation Commands — focused, broad, runtime, docs, and release checks.
+13. Risks / Rollback — stop conditions and reversible actions.
+14. Goal Mode Prompt and Continue Prompt when recovery risk warrants them.
+15. Review Checklist and Final Verification.
 
 Required behavior does not belong in MVP, Future Work, or a later delivery
 phase. Incidental hardening does not enter the Critical Path unless it affects
@@ -67,6 +71,12 @@ likely to lose its definition of done.
 Add a SubAgent Strategy for independent Capability Slices. Record authorization
 state, disjoint write sets, Agent Task Contract path, main-agent-owned
 artifacts, and fallback. No worker starts before that contract is valid.
+
+For disposable output, choose one registration-only Generated Artifact
+Strategy. Prefer a task/run-specific isolated root. A contract must be sealed
+before creation; a post-creation contract cannot legitimize residue. Record the
+retention policy and require a fresh `AUTO_CLEAN` plan plus terminal cleanup
+receipt before completion.
 
 ## Canonical Artifact Mapping
 

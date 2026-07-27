@@ -58,6 +58,19 @@ verification proves that change; it does not prove the overall request is done
 when another approved task or change remains. Release, archive, commit, push,
 and PR actions remain separately authorized external effects.
 
+## Generated Artifact Lifecycle
+
+Treat artifact planning as read-only orchestration. Recompute the plan after
+the owning process exits and route a fresh `AUTO_CLEAN` decision to the
+explicit `cleanup --apply` command. Keep the resulting cleanup receipt as task
+evidence before continuing. `WAIT_OWNER` retries without deletion,
+`RETAIN` preserves the artifact, and `HUMAN_GATE` records the failed invariant
+and follows the ordinary Human Gate route.
+
+Never invoke cleanup from hooks, doctors, validators, or stop policies. A
+missing, post-creation, self-authored, or drifted contract cannot be repaired
+into automatic authority by the orchestrator.
+
 ## Git Transport vs GitHub Control Plane
 
 A gh authentication failure is not Git transport failure. For an explicitly

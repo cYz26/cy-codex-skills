@@ -110,6 +110,32 @@ A non-trivial change records Target State, Completion Contract, Capability
 Slices, Execution Ledger, Acceptance Criteria, Validation Commands, risks, and
 Final Verification before implementation.
 
+## Generated Artifact Lifecycle
+
+DevFlow supports automatic task-owned reclamation only through a Generated
+Artifact Contract sealed before the bound command creates output. The
+registration records repository, task, run, owner, command, retention, scope,
+and before-state. Names, extensions, ignore rules, and apparent cache/build
+purpose never establish ownership.
+
+The compact runtime CLI exposes read-only `prepare`, `observe`, and `plan`
+operations plus explicit `cleanup --apply`. Its deterministic routes are:
+
+- `AUTO_CLEAN`: the owner exited and every invariant passes; exact cleanup may
+  run under the standing contract and the terminal receipt is retained
+  evidence.
+- `WAIT_OWNER`: the process or lease is active; retry later without deletion
+  or a Human Gate.
+- `RETAIN`: the owning workflow preserves promoted or diagnostic output.
+- `HUMAN_GATE`: ownership, baseline, scope, Git state, identity, membership, or
+  another safety invariant is unsafe or ambiguous.
+
+The last route is a genuine destructive Human Gate. It is distinct from
+ordinary automatic task-owned reclamation and from retained evidence.
+Validators, doctors, review, and hooks only report the decision and exact next
+action; they never invoke apply mode. See
+`docs/generated-artifact-lifecycle.md`.
+
 ## Incidental Finding Lifecycle
 
 DevFlow protects the current Critical Path with three dispositions:

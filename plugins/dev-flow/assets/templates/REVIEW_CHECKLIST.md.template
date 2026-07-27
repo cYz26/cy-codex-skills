@@ -40,6 +40,20 @@
   accept, reject, or defer each recommended follow-up
 - [ ] No follow-up work started before normal intake and approval
 
+## Generated Artifact Lifecycle
+
+- [ ] Every automatic cleanup target has a Generated Artifact Contract sealed
+  pre-creation; no artifact was claimed retroactively
+- [ ] The latest read-only decision is resolved: `AUTO_CLEAN` has a bound
+  terminal receipt, `WAIT_OWNER` is not treated as completion, `RETAIN` remains
+  protected, and `HUMAN_GATE` has an explicit decision
+- [ ] Apply revalidated repository, owner, tracked/protected state, identity,
+  hashes, and directory membership immediately before mutation
+- [ ] Cleanup used exact paths with no wildcard or recursive deletion and no
+  symlink following
+- [ ] Contract, manifest, plan, cleanup receipt, and G41 worker result evidence
+  remain durable
+
 ## Release / Archive Readiness
 
 - [ ] TASK_LEDGER entries closed

@@ -45,13 +45,17 @@ these fields:
 ## Tasks
 
 Use `contract_path` for delegated work and `not-delegated` for ordinary
-main-agent tasks.
+main-agent tasks. Use `generated_artifact_contract` only for a standalone
+registration-only contract sealed before output creation; otherwise write
+`not-applicable`.
 
-| task_id | summary | owner | write_set | contract_path | required_evidence | review_gate | status |
-|---|---|---|---|---|---|---|---|
+| task_id | summary | owner | write_set | contract_path | generated_artifact_contract | required_evidence | review_gate | status |
+|---|---|---|---|---|---|---|---|---|
 
 Agent Task Contract template: `AGENT_TASK_CONTRACT.md`. Validate every
 delegated contract and reject overlapping write sets before spawning workers.
+When an artifact contract is referenced, keep its manifest, plan, and terminal
+cleanup receipt in task evidence before closing the item.
 
 ## Execution Log
 

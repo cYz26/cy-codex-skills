@@ -20,12 +20,15 @@ paths.
 - context health
 - verification evidence
 - checkpoint/compact state
+- generated artifact lifecycle decisions and each exact next action
 - execution continuation outcome from the active Full OpenSpec task list or
   fallback task ledger
 - release promotion dry-run status
 
 It does not write release assets, planning state, verification evidence, or
-archive files by default.
+archive files by default. Lifecycle inspection never invokes `cleanup --apply`
+or any other mutation; `AUTO_CLEAN`, `WAIT_OWNER`, `RETAIN`, and `HUMAN_GATE`
+remain execution-layer decisions.
 
 The Stop hook blocks premature termination for `CONTINUE_NEXT_ITEM`,
 `CHECKPOINT_AND_CONTINUE`, and `VERIFY_ACTIVE_CHANGE`. It reports an explicit

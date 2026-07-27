@@ -1,0 +1,506 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "generated-artifact-contract/v1",
+  "title": "Generated Artifact Contract v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "contractId",
+    "sealedAtNs",
+    "repository",
+    "taskId",
+    "runId",
+    "owner",
+    "command",
+    "retention",
+    "scopes"
+  ],
+  "properties": {
+    "schema": {
+      "const": "generated-artifact-contract/v1"
+    },
+    "contractId": {
+      "$ref": "#/$defs/identifier"
+    },
+    "sealedAtNs": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9223372036854775807
+    },
+    "repository": {
+      "$ref": "#/$defs/repository"
+    },
+    "taskId": {
+      "$ref": "#/$defs/identifier"
+    },
+    "runId": {
+      "$ref": "#/$defs/identifier"
+    },
+    "owner": {
+      "$ref": "#/$defs/owner"
+    },
+    "command": {
+      "$ref": "#/$defs/command"
+    },
+    "retention": {
+      "enum": [
+        "cleanup",
+        "retain",
+        "promote"
+      ]
+    },
+    "scopes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/isolatedRoot"
+          },
+          {
+            "$ref": "#/$defs/adjacentOutput"
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "root",
+        "device",
+        "inode",
+        "gitRoot"
+      ],
+      "properties": {
+        "root": {
+          "type": "string",
+          "minLength": 1
+        },
+        "device": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "inode": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "gitRoot": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "pid",
+        "uid",
+        "processStartToken",
+        "lease"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "pid": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "uid": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "processStartToken": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lease": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/lease"
+            }
+          ]
+        }
+      }
+    },
+    "lease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "identity"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "identity": {
+          "$ref": "#/$defs/identity"
+        }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "argv",
+        "sha256"
+      ],
+      "properties": {
+        "argv": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "isolatedRoot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scopeId",
+        "kind",
+        "path",
+        "shared",
+        "beforeState"
+      ],
+      "properties": {
+        "scopeId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "const": "isolated_root"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "shared": {
+          "const": false
+        },
+        "beforeState": {
+          "$ref": "#/$defs/isolatedBeforeState"
+        }
+      }
+    },
+    "adjacentOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scopeId",
+        "kind",
+        "parent",
+        "pattern",
+        "shared",
+        "beforeState"
+      ],
+      "properties": {
+        "scopeId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "const": "adjacent_output"
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pattern": {
+          "type": "string",
+          "minLength": 1
+        },
+        "shared": {
+          "const": false
+        },
+        "beforeState": {
+          "$ref": "#/$defs/adjacentBeforeState"
+        }
+      }
+    },
+    "isolatedBeforeState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "identity",
+        "members"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "absent",
+            "empty"
+          ]
+        },
+        "identity": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/identity"
+            }
+          ]
+        },
+        "members": {
+          "type": "array",
+          "maxItems": 0
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "absent"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "identity": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "empty"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "identity": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/identity"
+                  },
+                  {
+                    "properties": {
+                      "type": {
+                        "const": "directory"
+                      },
+                      "sha256": {
+                        "type": "null"
+                      },
+                      "members": {
+                        "maxItems": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "adjacentBeforeState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parentIdentity",
+        "entries"
+      ],
+      "properties": {
+        "parentIdentity": {
+          "$ref": "#/$defs/identity"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identity"
+          }
+        }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "type",
+        "device",
+        "inode",
+        "mode",
+        "nlink",
+        "uid",
+        "gid",
+        "mtimeNs",
+        "ctimeNs",
+        "size",
+        "sha256",
+        "members"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "enum": [
+            "file",
+            "directory",
+            "symlink",
+            "socket",
+            "fifo",
+            "device",
+            "other"
+          ]
+        },
+        "device": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "inode": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "mode": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4095
+        },
+        "nlink": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        },
+        "uid": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "gid": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "mtimeNs": {
+          "type": "integer",
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
+        },
+        "ctimeNs": {
+          "type": "integer",
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "sha256": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "oneOf": [
+            {
+              "properties": {
+                "type": {
+                  "const": "file"
+                },
+                "sha256": {
+                  "$ref": "#/$defs/sha256"
+                },
+                "members": {
+                  "maxItems": 0
+                }
+              }
+            },
+            {
+              "properties": {
+                "type": {
+                  "const": "directory"
+                },
+                "sha256": {
+                  "type": "null"
+                }
+              }
+            },
+            {
+              "properties": {
+                "type": {
+                  "enum": [
+                    "symlink",
+                    "socket",
+                    "fifo",
+                    "device",
+                    "other"
+                  ]
+                },
+                "sha256": {
+                  "type": "null"
+                },
+                "members": {
+                  "maxItems": 0
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

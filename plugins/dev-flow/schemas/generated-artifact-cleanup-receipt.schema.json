@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "generated-artifact-cleanup-receipt/v1",
+  "title": "Generated Artifact Cleanup Receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "contractSha256",
+    "manifestSha256",
+    "planSha256",
+    "decision",
+    "status",
+    "removed",
+    "remaining",
+    "absent",
+    "retained",
+    "zeroUnlistedMutation",
+    "effects",
+    "failure"
+  ],
+  "properties": {
+    "schema": {
+      "const": "generated-artifact-cleanup-receipt/v1"
+    },
+    "contractSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "manifestSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "planSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "decision": {
+      "enum": [
+        "AUTO_CLEAN",
+        "WAIT_OWNER",
+        "RETAIN",
+        "HUMAN_GATE"
+      ]
+    },
+    "status": {
+      "enum": [
+        "complete",
+        "failed",
+        "blocked"
+      ]
+    },
+    "removed": {
+      "$ref": "#/$defs/pathList"
+    },
+    "remaining": {
+      "$ref": "#/$defs/pathList"
+    },
+    "absent": {
+      "$ref": "#/$defs/pathList"
+    },
+    "retained": {
+      "$ref": "#/$defs/pathList"
+    },
+    "zeroUnlistedMutation": {
+      "type": "boolean"
+    },
+    "effects": {
+      "$ref": "#/$defs/effects"
+    },
+    "failure": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/failure"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "pathList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "effects": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "process",
+        "configuration",
+        "git",
+        "network"
+      ],
+      "properties": {
+        "process": {
+          "const": false
+        },
+        "configuration": {
+          "const": false
+        },
+        "git": {
+          "const": false
+        },
+        "network": {
+          "const": false
+        }
+      }
+    },
+    "failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "code",
+        "detail"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "detail": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

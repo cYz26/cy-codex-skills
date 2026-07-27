@@ -86,6 +86,206 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 - Follow-up Trigger: the next explicitly PR-required publication
 - Human Disposition: `accepted`
 
+### DF-IFL-004: Migration reminder treats non-DevFlow directories as pending adoption
+
+- Finding ID: `DF-IFL-004`
+- Disposition: `DEFER_AND_CONTINUE`
+- Severity: medium workflow-authority and UX risk; no failure in the active
+  Generated Artifact Lifecycle contract
+- Evidence: the global `UserPromptSubmit` migration hook reports
+  `migration_pending` for `/Users/cY/dev/workwork` because plugin migration
+  state, control-plane files, and project-local skills are absent, even though
+  that directory has not opted into DevFlow; the completed no-state Stop guard
+  covers only the Stop hook
+- Affected Contract: none; the active
+  `automate-owned-generated-artifact-cleanup` change does not own migration
+  reminder applicability or hook policy
+- Impact: ordinary non-DevFlow work can receive misleading migration guidance
+  and may invite unnecessary project initialization or migration
+- Current Mitigation: keep migration checks read-only, do not apply migration
+  from the reminder, and require a trusted project-adoption signal before
+  treating the guidance as actionable
+- Disposition Reason: changing reminder applicability requires a separate hook
+  policy, regression, generated-runtime, and cache-refresh write set; adding it
+  to the active artifact-lifecycle queue would expand the approved Completion
+  Contract
+- Recommended Follow-up: intake a focused OpenSpec repair that keeps explicit
+  migration CLI diagnostics available but makes the global reminder silent
+  when no trusted DevFlow adoption marker exists; preserve fail-closed handling
+  for ambiguous or untrusted markers
+- Follow-up Trigger: the next DevFlow hook-quality repair after the active
+  Generated Artifact Lifecycle change, or another reproduced non-DevFlow
+  reminder
+- Human Disposition: `accepted`
+
+### DF-IFL-005: Workwork contains pre-contract Stop-hook workaround state
+
+- Finding ID: `DF-IFL-005`
+- Disposition: `DEFER_AND_CONTINUE`
+- Severity: low local-state residue with medium applicability impact; no
+  source, release, or installed-cache defect remains
+- Evidence: `/Users/cY/dev/workwork/.planning/devflow/STATE.md` and
+  `/Users/cY/dev/workwork/.planning/devflow/verification/20260727091753-lark-readback-candidate-rev-2100-competency-2-2-anr-risk.md`
+  were created to satisfy the former Stop loop; the repaired Stop hook takes
+  its no-state `not_applicable` path only when recognized workflow state is
+  absent
+- Affected Contract: the active Generated Artifact Lifecycle explicitly
+  forbids retroactive ownership and automatic deletion of artifacts that
+  predate a sealed contract
+- Impact: `workwork` remains recognizable as a DevFlow-owned directory, so the
+  new no-state guard cannot demonstrate its intended behavior there while the
+  workaround state remains
+- Current Mitigation: leave the pre-existing files untouched and do not treat
+  their apparent generated nature as cleanup authority
+- Disposition Reason: the files are outside this repository, predate any
+  Generated Artifact Contract, and require a separate exact ownership and
+  recoverability decision before mutation
+- Recommended Follow-up: after confirming `workwork` is intentionally a
+  non-DevFlow directory, perform a separately authorized bounded cleanup of
+  the exact workaround state and verification record; disposition of the
+  existing context-health event log remains a separate ownership decision
+- Follow-up Trigger: before validating the repaired no-state behavior in
+  `workwork`, or when the user explicitly requests restoration of that
+  directory to non-DevFlow state
+- Human Disposition: `pending`
+
+### DF-IFL-006: GameDev consumer adapter overlaps its active main control plane
+
+- Finding ID: `DF-IFL-006`
+- Disposition: `DEFER_AND_CONTINUE`
+- Severity: medium cross-project ownership risk; no DevFlow source, release, or
+  installed-cache contract failure
+- Evidence: `/Users/cY/dev/game-dev` is actively executing Full OpenSpec change
+  `implement-ai-native-godot-platform` at stage
+  `implement-e40-r19-review-repair`, with 40/68 tasks complete and 79 dirty
+  worktree entries. Read-only project diagnostics are healthy, but migration
+  reports `pendingVersion=true` and 16 stale DevFlow skill links
+- Affected Contract: task 7.3 of
+  `automate-owned-generated-artifact-cleanup` permits a project-specific
+  adapter only when it does not overlap the active main-task control plane
+- Impact: `game-dev` does not yet consume the new Generated Artifact Contract;
+  its existing bytecode, process, evidence, and cleanup records remain governed
+  only by its active OpenSpec and explicit Human Gates
+- Current Mitigation: perform no `game-dev` write, migration apply, skill-link
+  refresh, adapter creation, or cleanup; the new DevFlow runtime remains
+  read-only and reports `generatedArtifacts.status=not_applicable` when no
+  pre-creation registry exists
+- Disposition Reason: modifying project skills, OpenSpec, ledger, state, or
+  cleanup behavior would overlap an active main agent's canonical write set and
+  could retroactively imply ownership over pre-contract residue
+- Recommended Follow-up: after the current E40 control-plane transaction
+  reaches a stable owner-approved boundary, refresh the 16 project-local
+  DevFlow links and let the `game-dev` owner update its own active OpenSpec
+  E70 lifecycle tasks 7.2/7.3 (or an explicitly approved successor change) to
+  register only newly created task-owned artifacts before creation
+- Follow-up Trigger: an explicit handoff from the `game-dev` main-task owner
+  after E40 no longer overlaps the adapter write set
+- Human Disposition: `pending`
+
+### DF-IFL-007: Release test packaging inflated Plugin Eval analysis
+
+- Finding ID: `DF-IFL-007`
+- Disposition: `CONTINUE_WITH_MINIMAL_GUARD`
+- Severity: resolved packaging-quality issue; no behavior, release, or runtime
+  contract remains failed
+- Evidence: the first release-target analysis scored 72/C with one
+  deferred-budget failure because the generated plugin carried the complete
+  23,685-token lifecycle test module. The source harness now accepts
+  `DEVFLOW_PLUGIN_ROOT`, runs the same 52 tests against source, release, and
+  both installed caches, and is no longer copied into runtime distribution.
+  Final Plugin Eval scores 86/B with 0 failures, 3 warnings, and 2
+  informational findings; maximum Python complexity is 14 without a complexity
+  warning
+- Affected Contract: release-target Plugin Eval and source-equivalent release
+  behavior verification
+- Impact: resolved; the release no longer ships non-runtime test source and
+  retains the complete lifecycle verification seam
+- Current Mitigation: keep the full test suite in development source, point it
+  explicitly at each release/cache root, and keep the compact packaged-runtime
+  smoke test in the generated plugin
+- Disposition Reason: this bounded packaging correction removed non-runtime
+  payload without weakening any schema, lifecycle, runtime, or test contract
+- Recommended Follow-up: none for this finding; the remaining plugin-wide
+  static token-budget warnings are tracked separately by `DF-IFL-001`
+- Follow-up Trigger: none
+- Human Disposition: `accepted`
+
+### DF-IFL-008: Local updater wrapper does not fail clearly on Python 3.9
+
+- Finding ID: `DF-IFL-008`
+- Disposition: `DEFER_AND_CONTINUE`
+- Severity: low local diagnostics compatibility risk; no Generated Artifact
+  Lifecycle, release, or cache contract failure
+- Evidence: the documented wrapper invoked by the machine's default
+  `python3` (`3.9.6`) raises `AttributeError` for `datetime.UTC`; the same
+  read-only updater completes under the project's required
+  `/opt/homebrew/bin/python3.12` (`3.12.13`)
+- Affected Contract: none; this change's exact validation commands already pin
+  Python 3.12 and the authorized plugin refresh uses the verified Codex CLI
+- Impact: an operator who substitutes the unsupported system Python receives a
+  traceback instead of an explicit minimum-version diagnostic
+- Current Mitigation: run DevFlow maintenance and updater diagnostics with the
+  repository's pinned Python 3.12 interpreter
+- Disposition Reason: changing updater-wide runtime compatibility is outside
+  the approved Generated Artifact Lifecycle behavior and does not block its
+  source, release, or installed-cache proof
+- Recommended Follow-up: in a separate updater-compatibility change, either
+  fail early with the supported Python requirement or replace version-specific
+  datetime usage and verify the complete updater on every claimed runtime
+- Follow-up Trigger: explicit updater compatibility intake
+- Human Disposition: `pending`
+
+## Current Verified Change: Generated Artifact Lifecycle
+
+- authoritative_queue: OpenSpec change
+  `automate-owned-generated-artifact-cleanup`
+- status: verified and complete at 26/26; intentionally unarchived
+- scope: DevFlow source, generated `dev-flow` release, and only the official
+  plus internal `dev-flow@cy-codex-skills` caches
+- completion_evidence: lifecycle 52/52; focused 139/139; pre-promotion
+  398/398; strict OpenSpec 57/57; release/runtime 290/290 with 132 source
+  records; Plugin Eval 86/B with zero failures; both named caches recursively
+  match release, report `matches-source`, and pass Doctor
+- release_receipt_sha256:
+  `1cb720f4441ec9036a5b9d02dccaaa0aab9887058d752ca094f71dc128463422`
+- runtime_archive_sha256:
+  `ae3668b5030bb644353b9a69d698636fbeeb8196cc18ea79a9ce767f97c86071`
+- implementation_commit:
+  `4be56bc50655946c50e2f3dd4e710b6891482165`
+- exclusions_preserved: no other plugin, global configuration, project
+  migration, legacy cleanup, pre-existing artifact deletion, push, PR, spec
+  sync, or archive
+- residuals: `DF-IFL-001`, `DF-IFL-002`, `DF-IFL-004`, `DF-IFL-005`,
+  `DF-IFL-006`, and `DF-IFL-008` remain non-blocking and do not authorize
+  follow-up work
+
+### Execution Log
+
+- 2026-07-27: Implemented the registration-only Generated Artifact Contract,
+  exact observed manifest, fail-closed plan/apply lifecycle, bound cleanup
+  receipt, main-task/G41 integration, read-only hooks and validators, schemas,
+  policy guidance, and release runtime packaging.
+- 2026-07-27: Independent Standards and Spec reviews drove manifest coverage,
+  terminal binding, schema, lease, identity, baseline, retained-policy, and
+  direct regression repairs; the stable source review returned no unresolved
+  behavior finding.
+- 2026-07-27: The release-target Plugin Eval failure was removed by excluding
+  the non-runtime full test module from distribution while making the same
+  source harness target source, release, and caches through
+  `DEVFLOW_PLUGIN_ROOT`; all four roots pass 52/52.
+- 2026-07-27: The authorized generated release promotion became `current`.
+  Both named profile caches were refreshed through the verified ChatGPT.app
+  Codex CLI and proved recursively identical to release; no unrelated updater
+  apply or excluded external effect ran.
+- 2026-07-27: The user authorized local submission and refresh. The canonical
+  OpenSpec artifacts and development source were committed locally as
+  `4be56bc50655946c50e2f3dd4e710b6891482165`; the generated runtime was then
+  rebuilt so `devflow_runtime.SOURCE_COMMIT` binds that implementation commit.
+  Push, PR, spec sync, archive, and legacy cleanup remain unauthorized.
+- 2026-07-27: `game-dev` remained read-only because its active E40 control
+  plane overlapped the conditional adapter write set. Its future adapter and
+  project-local link refresh remain with that project's OpenSpec owner.
+
 ## Active Change: Add Incidental Finding Lifecycle
 
 ### Goal Contract

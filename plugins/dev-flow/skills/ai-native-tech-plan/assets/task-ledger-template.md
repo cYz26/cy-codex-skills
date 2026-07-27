@@ -54,6 +54,15 @@
 - Genuine Human Gates: <explicit decisions or authorities; phase labels do not qualify>
 - External-effect gates: <release/archive/Git/dependency/migration/destructive actions>
 
+## Generated Artifact Strategy
+
+- Applicability: <not-applicable | registration-only>
+- Contract: <standalone pre-creation contract path | not-applicable>
+- Scope: <task/run isolated root | constrained adjacent output>
+- Retention: <cleanup | retain | promote>
+- Evidence: <manifest, fresh plan, cleanup receipt, G41 when delegated>
+- Unsafe state: <exact Human Gate rule; no retroactive ownership>
+
 ## Capability Slices
 
 ### Slice 1: <name>
