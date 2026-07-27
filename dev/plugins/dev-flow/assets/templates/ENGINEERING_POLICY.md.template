@@ -82,6 +82,9 @@
 - Apply only a fresh `AUTO_CLEAN` plan after owner exit. Use no wildcard,
   recursive deletion, symlink following, process kill, configuration change,
   or Git mutation.
+- Automatic cleanup exclusively moves exact paths into recoverable DevFlow
+  quarantine and records each mapping. Physical quarantine purge requires a
+  separate Human Gate.
 - Retain the immutable manifest, plan, and cleanup receipt; unresolved,
   pre-existing, tracked, protected, shared, escaped, or drifted targets require
   a Human Gate.

@@ -208,7 +208,9 @@ Observation and planning are read-only. Only a fresh `AUTO_CLEAN` plan after
 the owner exits may reach explicit exact-path cleanup. `WAIT_OWNER` retries,
 `RETAIN` preserves evidence, and unsafe or drifted state enters `HUMAN_GATE`.
 Cleanup uses no wildcard or recursive deletion and retains the immutable
-contract, manifest, plan, and terminal receipt under `.planning/devflow/`.
+contract, manifest, plan, terminal receipt, and recoverable quarantine mapping
+under `.planning/devflow/`. Physical quarantine purge is a separate Human
+Gate.
 Hooks, doctors, validators, review, and stop policies report lifecycle state
 but never apply cleanup.
 

@@ -322,6 +322,19 @@ class GeneratedArtifactContractTests(GeneratedArtifactTestSupport, unittest.Test
                             "maximum": timestamp_max,
                         },
                     )
+                self.assertEqual(
+                    definition["properties"]["birthtimeNs"],
+                    {
+                        "oneOf": [
+                            {
+                                "type": "integer",
+                                "minimum": timestamp_min,
+                                "maximum": timestamp_max,
+                            },
+                            {"type": "null"},
+                        ]
+                    },
+                )
 
         self.assertEqual(
             contract_schema["properties"]["sealedAtNs"]["maximum"],
@@ -455,6 +468,110 @@ class GeneratedArtifactContractTests(GeneratedArtifactTestSupport, unittest.Test
         contract = self.prepare(repo, retention="retain")
 
         self.assertEqual(contract["retention"], "retain")
+
+    def test_modified_preexisting_candidate_cannot_refresh_creation_authority(self):
+        from workflow_generated_artifacts import (
+            HUMAN_GATE,
+            canonical_document_bytes,
+            contract_document_path,
+            observe_artifacts,
+            plan_cleanup,
+            prepare_contract,
+        )
+
+        repo = self.make_repo()
+        source = repo / "src"
+        source.mkdir()
+        candidate = source / "preexisting.tmp"
+        candidate.write_bytes(b"preexisting")
+        contract = prepare_contract(
+            repo=repo,
+            task_id="task-1",
+            run_id="run-1",
+            owner_id="main",
+            owner_pid=999_999_999,
+            command=["python3", "build.py"],
+            isolated_roots=[],
+            adjacent_outputs=[{"parent": "src", "pattern": "**/*.tmp"}],
+            retention="cleanup",
+            contract_id="contract-1",
+            now_ns=1_700_000_000_000_000_000,
+        )
+        contract["scopes"][0]["beforeState"]["entries"] = []
+        contract["scopes"][0]["beforeState"]["parentIdentity"]["members"] = []
+        contract_path = contract_document_path(repo, contract)
+        contract_path.parent.mkdir(parents=True, exist_ok=True)
+        contract_path.write_bytes(canonical_document_bytes(contract))
+        candidate.write_bytes(b"modified after persisted seal")
+
+        manifest = observe_artifacts(repo, contract, exit_code=0)
+        entry = next(
+            item for item in manifest["entries"] if item["path"] == "src/preexisting.tmp"
+        )
+        self.assertGreater(entry["ctimeNs"], manifest["contractSeal"]["ctimeNs"])
+
+        plan = plan_cleanup(repo, contract, manifest)
+
+        self.assertEqual(plan["decision"], HUMAN_GATE, plan)
+        self.assertIn("contract_sealed_after_artifact", self.reason_codes(plan))
+
+    def test_identity_capture_rejects_lstat_to_external_symlink_substitution(self):
+        from workflow_generated_artifacts import GeneratedArtifactError, capture_identity
+
+        repo = self.make_repo()
+        target = repo / "owned.bin"
+        target.write_bytes(b"owned")
+        outside_fd, outside_name = tempfile.mkstemp(
+            prefix="dfga-outside-",
+            dir="/tmp",
+        )
+        os.close(outside_fd)
+        outside = Path(outside_name)
+        self.addCleanup(outside.unlink, missing_ok=True)
+        outside.write_bytes(b"outside secret")
+        original_lstat = os.lstat
+        original_stat = os.stat
+        injected = False
+
+        def substitute():
+            nonlocal injected
+            if injected:
+                return
+            injected = True
+            target.unlink()
+            target.symlink_to(outside)
+
+        def racing_lstat(path, *arguments, **keywords):
+            value = original_lstat(path, *arguments, **keywords)
+            if Path(path) == target:
+                substitute()
+            return value
+
+        def racing_stat(path, *arguments, **keywords):
+            value = original_stat(path, *arguments, **keywords)
+            if (
+                path == target.name
+                and keywords.get("dir_fd") is not None
+            ):
+                substitute()
+            return value
+
+        with (
+            patch(
+                "workflow_generated_artifacts.os.lstat",
+                side_effect=racing_lstat,
+            ),
+            patch(
+                "workflow_generated_artifacts.os.stat",
+                side_effect=racing_stat,
+            ),
+            self.assertRaises(GeneratedArtifactError),
+        ):
+            capture_identity(repo, target)
+
+        self.assertTrue(injected)
+        self.assertTrue(target.is_symlink())
+        self.assertEqual(outside.read_bytes(), b"outside secret")
 
     def test_contract_validator_rejects_missing_unknown_and_malformed_fields(self):
         from workflow_generated_artifacts import validate_contract
@@ -687,6 +804,7 @@ class GeneratedArtifactContractTests(GeneratedArtifactTestSupport, unittest.Test
             "remaining": [],
             "absent": [],
             "retained": [],
+            "quarantined": [],
             "zeroUnlistedMutation": True,
             "effects": {
                 "process": False,
@@ -2190,7 +2308,7 @@ class GeneratedArtifactCleanupTests(GeneratedArtifactTestSupport, unittest.TestC
 
         def recording_remover(root, entry):
             removal_order.append(entry["path"])
-            remove_exact_entry(root, entry)
+            return remove_exact_entry(root, entry)
 
         receipt = apply_cleanup(
             repo,
@@ -2291,7 +2409,7 @@ class GeneratedArtifactCleanupTests(GeneratedArtifactTestSupport, unittest.TestC
         self.assertEqual(outside.read_text(), "must survive\n")
 
     def test_leaf_replacement_during_removal_is_restored_and_never_deleted(self):
-        from workflow_generated_artifacts import apply_cleanup
+        import workflow_generated_artifacts as lifecycle
 
         repo = self.make_repo()
         contract, manifest, plan = self.ready_cleanup(
@@ -2300,7 +2418,7 @@ class GeneratedArtifactCleanupTests(GeneratedArtifactTestSupport, unittest.TestC
         )
         target = repo / contract["scopes"][0]["path"] / "output.bin"
         original_unlink = os.unlink
-        original_rename = os.rename
+        original_rename_noreplace = lifecycle.rename_noreplace
         injected = False
 
         def inject_replacement():
@@ -2311,31 +2429,136 @@ class GeneratedArtifactCleanupTests(GeneratedArtifactTestSupport, unittest.TestC
             original_unlink(target)
             target.write_bytes(b"user replacement")
 
-        def racing_unlink(path, *arguments, **keywords):
-            if path == "output.bin" and keywords.get("dir_fd") is not None:
+        def racing_rename_noreplace(
+            source,
+            destination,
+            *,
+            src_dir_fd,
+            dst_dir_fd,
+        ):
+            if source == "output.bin":
                 inject_replacement()
-            return original_unlink(path, *arguments, **keywords)
-
-        def racing_rename(source, destination, *arguments, **keywords):
-            if source == "output.bin" and keywords.get("src_dir_fd") is not None:
-                inject_replacement()
-            return original_rename(
+            return original_rename_noreplace(
                 source,
                 destination,
-                *arguments,
-                **keywords,
+                src_dir_fd=src_dir_fd,
+                dst_dir_fd=dst_dir_fd,
             )
 
-        with (
-            patch("workflow_generated_artifacts.os.unlink", side_effect=racing_unlink),
-            patch("workflow_generated_artifacts.os.rename", side_effect=racing_rename),
+        with patch(
+            "workflow_generated_artifacts.rename_noreplace",
+            side_effect=racing_rename_noreplace,
         ):
-            receipt = apply_cleanup(repo, contract, manifest, plan)
+            receipt = lifecycle.apply_cleanup(repo, contract, manifest, plan)
 
         self.assertTrue(injected)
         self.assertEqual(receipt["status"], "failed", receipt)
         self.assertNotIn(target.relative_to(repo).as_posix(), receipt["removed"])
         self.assertEqual(target.read_bytes(), b"user replacement")
+
+    def test_verified_quarantine_is_retained_without_pathname_delete(self):
+        from workflow_generated_artifacts import apply_cleanup
+
+        repo = self.make_repo()
+        contract, manifest, plan = self.ready_cleanup(
+            repo,
+            files=("output.bin",),
+        )
+        original_unlink = os.unlink
+        deleted_quarantine_names = []
+
+        def reject_quarantine_unlink(path, *arguments, **keywords):
+            if (
+                isinstance(path, str)
+                and path.startswith(".devflow-q-")
+                and keywords.get("dir_fd") is not None
+            ):
+                deleted_quarantine_names.append(path)
+                raise AssertionError("verified quarantine must be retained")
+            return original_unlink(path, *arguments, **keywords)
+
+        with patch(
+            "workflow_generated_artifacts.os.unlink",
+            side_effect=reject_quarantine_unlink,
+        ):
+            receipt = apply_cleanup(repo, contract, manifest, plan)
+
+        self.assertEqual(deleted_quarantine_names, [])
+        self.assertEqual(receipt["status"], "complete", receipt)
+        self.assertEqual(
+            [record["source"] for record in receipt["quarantined"]],
+            receipt["removed"],
+        )
+        self.assertTrue(all(record["expected"] for record in receipt["quarantined"]))
+        for record in receipt["quarantined"]:
+            self.assertTrue((repo / record["destination"]).exists(), record)
+
+    def test_restore_uses_atomic_no_replace_and_preserves_racing_leaf(self):
+        import workflow_generated_artifacts as lifecycle
+
+        self.assertTrue(
+            hasattr(lifecycle, "rename_noreplace"),
+            "restore requires an atomic no-replace primitive",
+        )
+        repo = self.make_repo()
+        parent = repo / "parent"
+        parent.mkdir()
+        quarantine = parent / ".devflow-q-test"
+        original = parent / "output.bin"
+        quarantine.write_bytes(b"moved replacement")
+        parent_fd = os.open(
+            parent,
+            os.O_RDONLY | getattr(os, "O_DIRECTORY", 0),
+        )
+        self.addCleanup(os.close, parent_fd)
+        real_rename_noreplace = lifecycle.rename_noreplace
+        injected = False
+
+        def racing_rename_noreplace(
+            source,
+            destination,
+            *,
+            src_dir_fd,
+            dst_dir_fd,
+        ):
+            nonlocal injected
+            if destination == original.name and not injected:
+                injected = True
+                replacement_fd = os.open(
+                    destination,
+                    os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                    0o600,
+                    dir_fd=dst_dir_fd,
+                )
+                try:
+                    os.write(replacement_fd, b"user replacement")
+                finally:
+                    os.close(replacement_fd)
+            return real_rename_noreplace(
+                source,
+                destination,
+                src_dir_fd=src_dir_fd,
+                dst_dir_fd=dst_dir_fd,
+            )
+
+        with (
+            patch(
+                "workflow_generated_artifacts.rename_noreplace",
+                side_effect=racing_rename_noreplace,
+            ),
+            self.assertRaises(lifecycle.GeneratedArtifactError) as raised,
+        ):
+            lifecycle.restore_quarantined_leaf(
+                parent_fd,
+                quarantine.name,
+                original.name,
+                "parent/output.bin",
+            )
+
+        self.assertTrue(injected)
+        self.assertEqual(raised.exception.code, "quarantine_restore_blocked")
+        self.assertEqual(original.read_bytes(), b"user replacement")
+        self.assertEqual(quarantine.read_bytes(), b"moved replacement")
 
     def test_success_receipt_replay_is_idempotent(self):
         from workflow_generated_artifacts import apply_cleanup
@@ -2491,7 +2714,7 @@ class GeneratedArtifactCleanupTests(GeneratedArtifactTestSupport, unittest.TestC
             attempted.append(entry["path"])
             if entry["path"].endswith("/b.bin"):
                 raise OSError("simulated removal failure")
-            remove_exact_entry(root, entry)
+            return remove_exact_entry(root, entry)
 
         receipt = apply_cleanup(
             repo,

@@ -27,8 +27,14 @@ artifact.
 #### Scenario: Persisted contract is reconstructed after artifact creation
 
 - **WHEN** canonical contract bytes are first persisted or rewritten after a cleanup candidate already exists
-- **THEN** the manifest records the persisted contract file identity and filesystem ctime
+- **THEN** the manifest records the persisted contract file identity and filesystem ctime plus the candidate filesystem birth time
 - **AND** classification is `HUMAN_GATE` even when embedded `sealedAtNs`, baseline, manifest, and plan fields are otherwise self-consistent
+
+#### Scenario: Filesystem creation time is unavailable or ambiguous
+
+- **WHEN** an exact candidate has no filesystem birth-time evidence or its birth time is not strictly newer than the persisted contract seal ctime
+- **THEN** classification is `HUMAN_GATE`
+- **AND** later metadata or content modification MUST NOT grant pre-creation authority
 
 ### Requirement: Observed manifests bind exact generated artifacts
 
@@ -38,7 +44,8 @@ manifest with exact identity and ownership evidence.
 #### Scenario: Generated entries are observed
 
 - **WHEN** the bound command finishes and DevFlow observes its declared output scopes
-- **THEN** the manifest records the canonical persisted contract file identity plus each exact relative path, type, device, inode, mode, link count, owner, timestamps, size, content digest when applicable, and directory membership
+- **THEN** the manifest records the canonical persisted contract file identity plus each exact relative path, type, device, inode, mode, link count, owner, modification/change/birth timestamps, size, content digest when applicable, and directory membership
+- **AND** regular-file identity and content are bound through one no-follow descriptor rather than separate pathname observations
 - **AND** it records the owning command result and process/lease completion
 
 #### Scenario: Observation crosses declared scope
@@ -83,9 +90,10 @@ MUST revalidate every invariant immediately before the first mutation.
 #### Scenario: Exact cleanup succeeds
 
 - **WHEN** apply mode revalidates an `AUTO_CLEAN` plan without drift
-- **THEN** it removes exact non-directory entries without following links
-- **AND** removes exact directories deepest-first only when empty
+- **THEN** it removes exact entries from their declared scope by exclusive atomic rename into the protected recovery quarantine without following links
+- **AND** moves exact directories deepest-first only when empty
 - **AND** uses no wildcard or recursive deletion
+- **AND** retains the quarantined inode until a separately authorized physical purge
 
 #### Scenario: Preflight changes before mutation
 
@@ -96,8 +104,9 @@ MUST revalidate every invariant immediately before the first mutation.
 #### Scenario: Leaf identity changes at the removal boundary
 
 - **WHEN** a path is replaced after read-only preflight but before its exact removal
-- **THEN** cleanup quarantines the current leaf in the same parent and verifies the moved inode before final deletion
-- **AND** a mismatched leaf is restored, remains present, and is never reported as removed
+- **THEN** cleanup exclusively quarantines the current leaf and verifies the moved inode without any later pathname-based unlink/rmdir
+- **AND** a mismatched leaf is restored with no-replace semantics when the original name remains free
+- **AND** if another replacement blocks restoration, both leaves are preserved, the receipt records the quarantine mapping, and cleanup fails
 
 #### Scenario: Operating-system failure occurs after some removals
 
@@ -119,7 +128,7 @@ manifest, decision, exact mutation result, and post-cleanup observation.
 #### Scenario: Successful receipt is inspected
 
 - **WHEN** automatic cleanup succeeds
-- **THEN** the receipt records contract and manifest hashes, decision, removed entries, zero unlisted mutation, exact absent targets, retained targets, and no process/configuration/Git effect
+- **THEN** the receipt records contract and manifest hashes, decision, removed entries, exact source-to-quarantine mappings, zero unlisted mutation, exact absent targets, retained targets, and no process/configuration/Git effect
 
 #### Scenario: Receipt does not match its inputs
 

@@ -117,9 +117,26 @@
   verification, and fail-closed restoration.
 - [x] 8.3 GREEN: restore byte-equivalent lifecycle tests to the release sync
   contract and link the final verification record from the active ledger item.
-- [ ] 8.4 Regenerate the source-bound release, rerun focused/broad/runtime and
-  Plugin Eval gates, refresh only the two authorized DevFlow caches, complete
-  a fresh two-axis review, and record final commit/cache evidence.
+- [x] 8.4 Regenerate the source-bound release, rerun focused/broad/runtime and
+  Plugin Eval gates, refresh only the two authorized DevFlow caches, and run
+  the fresh two-axis review; record its four new P1 failures without claiming
+  completion.
+
+## 9. Final Fail-Closed Review Repairs
+
+- [x] 9.1 RED: reproduce modified pre-existing candidates whose ctime becomes
+  newer than the contract seal, quarantine-name replacement after
+  verification, restore-check/rename replacement, and lstat/hash symlink
+  substitution.
+- [x] 9.2 GREEN: add immutable birth-time evidence with unavailable/equal time
+  fail-closed classification, and bind regular-file identity plus hashing to
+  one `O_NOFOLLOW` descriptor with before/after `fstat`.
+- [x] 9.3 GREEN: replace automatic final unlink/rmdir with exclusive atomic
+  movement into protected recoverable quarantine, add exact receipt mappings,
+  and use no-replace restoration that never overwrites a racing replacement.
+- [ ] 9.4 Regenerate the source-bound release, rerun focused/broad/runtime,
+  Plugin Eval, OpenSpec, and cache gates, refresh only the two authorized
+  DevFlow caches, then obtain passing Spec and Standards reviews.
 
 ## Validation Commands
 
@@ -161,6 +178,9 @@ git diff --check
   DevFlow/cache/game-dev integration on 2026-07-27.
 - This approval does not authorize deleting any artifact that predates a valid
   contract, including the currently recorded `game-dev` residue.
+- Automatic cleanup may move contract-owned paths into recoverable quarantine;
+  physically purging that quarantine is separate destructive cleanup and is
+  not authorized by this change.
 - `DF-IFL-004` records the non-DevFlow migration-reminder applicability gap as
   `DEFER_AND_CONTINUE`; it requires separate OpenSpec intake and does not add
   Hook-policy work to this change.

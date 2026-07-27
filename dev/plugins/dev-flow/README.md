@@ -122,8 +122,9 @@ The compact runtime CLI exposes read-only `prepare`, `observe`, and `plan`
 operations plus explicit `cleanup --apply`. Its deterministic routes are:
 
 - `AUTO_CLEAN`: the owner exited and every invariant passes; exact cleanup may
-  run under the standing contract and the terminal receipt is retained
-  evidence.
+  move owned paths into recoverable DevFlow quarantine under the standing
+  contract, and the terminal receipt is retained evidence. Physical purge is
+  a separate destructive Human Gate.
 - `WAIT_OWNER`: the process or lease is active; retry later without deletion
   or a Human Gate.
 - `RETAIN`: the owning workflow preserves promoted or diagnostic output.

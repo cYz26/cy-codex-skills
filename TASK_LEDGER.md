@@ -35,23 +35,25 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   review
 - Human Disposition: `pending`
 
-### DF-IFL-002: PATH Codex shim targets a removed app bundle
+### DF-IFL-002: Live Codex bindings differ across PATH and app servers
 
 - Finding ID: `DF-IFL-002`
 - Disposition: `DEFER_AND_CONTINUE`
 - Severity: low operational tooling risk; no repository or released-runtime
   contract failure
-- Evidence: `command -v codex` resolves to
-  `/Users/cY/.codex-switch/bin/codex`, whose `codex --version` fails because it
-  execs the missing `/Applications/Codex.app/Contents/Resources/codex`; the
-  verified `/Applications/ChatGPT.app/Contents/Resources/codex` reports
-  `codex-cli 0.145.0-alpha.18` and completed the authorized plugin refresh
+- Evidence: `codex-switch status` reports the active official profile while
+  the PATH `codex app-server` resolves to the internal plugin runtime instead
+  of the expected switch shim, and one VS Code app-server backend also differs;
+  the verified `/Applications/ChatGPT.app/Contents/Resources/codex` reports
+  `codex-cli 0.146.0-alpha.3.1` and completed both authorized named-profile
+  plugin refreshes
 - Affected Contract: none; the release and cache-refresh contract completed
   through the verified absolute CLI and explicit `CODEX_HOME`
-- Impact: future PATH-based Codex plugin maintenance commands can fail before
-  reaching the live CLI
+- Impact: future PATH-based commands or existing editor processes may exercise
+  a different runtime/profile than the operator expects
 - Current Mitigation: use the verified ChatGPT app CLI by absolute path with
-  `CODEX_HOME=/Users/cY/.codex` for bounded plugin operations
+  an explicit official or internal `CODEX_HOME` for bounded plugin operations;
+  do not mutate live process or workstation bindings from this repository
 - Disposition Reason: repairing the shim changes `codex-switch` workstation
   ownership outside this DevFlow release write set and is not required for the
   current Completion Contract
@@ -268,16 +270,17 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 
 - authoritative_queue: OpenSpec change
   `automate-owned-generated-artifact-cleanup`
-- status: post-commit review repair implemented at 29/30; release/cache/final
-  review item 8.4 remains pending; intentionally unarchived
+- status: final fail-closed review repair implemented at 33/34; item 9.4
+  release/refresh/final verification remains pending; intentionally unarchived
 - scope: DevFlow source, generated `dev-flow` release, and only the official
   plus internal `dev-flow@cy-codex-skills` caches
-- current_source_evidence: lifecycle 54/54; Agent Task Contract 25/25;
-  pre-promotion 400/400; strict active-change validation and `git diff --check`
-  pass
-- pending_evidence: source-bound release regeneration, complete
-  source/release/cache lifecycle parity, runtime verification, Plugin Eval,
-  both named cache refreshes, and final two-axis review
+- current_source_evidence: lifecycle 58/58; strict active and repository-wide
+  OpenSpec 57/57; workflow validation and `git diff --check` pass; focused
+  integration is 138/139 with only the expected stale release-fixture parity
+  failure before promotion
+- pending_evidence: source commit, generated release promotion, complete
+  source/release/cache/runtime/Plugin Eval verification, both named refreshes,
+  remote push, and final two-axis review
 - verification_evidence:
   `.planning/devflow/verification/20260727-generated-artifact-lifecycle-final.md`
 - release_receipt_sha256:
@@ -337,6 +340,24 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   and links the final evidence path. Focused lifecycle tests pass 54/54,
   Agent Task Contract tests pass 25/25, and pre-promotion passes 400/400;
   release/cache/final-review evidence remains item 8.4.
+- 2026-07-27: The next independent Spec and Standards review failed completion
+  with four P1 gaps: ctime could be refreshed on a pre-existing candidate,
+  quarantine verification was followed by a raceable pathname delete,
+  restore could overwrite a racing replacement, and lstat followed by
+  pathname hashing could read through an injected external symlink. The
+  canonical queue reopened at items 9.1-9.4. The systemic repair uses
+  immutable birth time, descriptor-bound hashing, exclusive rename, retained
+  recovery quarantine, and a separate Human Gate for physical purge.
+- 2026-07-27: Item 9.1 RED ran 58 focused scenarios and failed exactly the
+  four new guards: a modified pre-existing adjacent candidate still reached
+  `AUTO_CLEAN`, lstat/hash substitution read through an external symlink,
+  verified quarantine still reached pathname unlink, and no atomic no-replace
+  restore primitive existed. No production file was mutated by the RED run.
+- 2026-07-27: Items 9.2-9.3 GREEN now bind candidate creation to immutable
+  birth time, use no-follow descriptor identity/hash capture, move exact
+  entries through platform atomic no-replace rename into protected retained
+  quarantine, record exact mappings, and restore without overwrite. The
+  focused suite passes 58/58; strict OpenSpec and workflow validation pass.
 
 ## Active Change: Add Incidental Finding Lifecycle
 

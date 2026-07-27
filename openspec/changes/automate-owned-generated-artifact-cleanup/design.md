@@ -60,14 +60,17 @@ The lifecycle uses three immutable documents:
    before-state. The caller persists its canonical bytes below
    `.planning/devflow/generated-artifacts/contracts/` before starting the
    command. The observed manifest records that file's exact identity and
-   filesystem ctime; any candidate older than the persisted seal is
-   post-created registration and cannot reach `AUTO_CLEAN`.
+   filesystem ctime. Each candidate records filesystem birth time; a missing
+   birth time or a birth time not strictly newer than the persisted seal
+   proves insufficient pre-creation authority and cannot reach `AUTO_CLEAN`.
 2. `generated-artifact-manifest/v1` is captured after the command and records
-   every exact observed entry, identity field, type, content digest when
-   applicable, directory membership, and owning-process completion.
+   every exact observed entry, identity field, birth time, type,
+   descriptor-bound content digest when applicable, directory membership, and
+   owning-process completion. Regular files are opened with no-follow
+   semantics, bound with `fstat`, and hashed through that descriptor.
 3. `generated-artifact-cleanup-receipt/v1` binds the first two documents,
-   decision, exact mutations, failures, postconditions, and zero unlisted
-   mutation.
+   decision, exact source-to-quarantine mappings, failures, postconditions,
+   and zero unlisted mutation.
 
 Alternative considered: infer ownership from `.gitignore`, extensions, or
 known cache directory names. Rejected because these signals do not prove who
@@ -128,15 +131,19 @@ manifest, repository identity, process/lease state, every entry identity,
 directory membership, protection rules, and tracked state. Any mismatch causes
 zero mutation.
 
-Each exact leaf is first atomically renamed to a collision-resistant quarantine
-name in the same parent. The moved inode, type, content, and membership are
-then verified against the manifest before final unlink/rmdir. A mismatched
-replacement is restored and never deleted. Files and non-directory entries are
-removed without following links. Directories are processed deepest-first only
-after they are empty. No wildcard or recursive deletion is permitted. A
-partial operating-system failure stops further mutation, records exact
-completed and remaining entries, and requires explicit recovery from the
-receipt; it never reports success.
+Each exact leaf is atomically moved with no-replace semantics into the
+protected DevFlow recovery quarantine. The moved inode, type, content, and
+membership are verified against the manifest and the immutable receipt records
+the exact source-to-quarantine mapping. A mismatched replacement is restored
+with an exclusive no-replace rename; if another replacement blocks restoration,
+both entries are preserved and the receipt fails with the quarantine path.
+There is no automatic pathname-based final unlink/rmdir because POSIX does not
+provide an atomic unlink-if-identity primitive. Directories are processed
+deepest-first only after they are empty. No wildcard or recursive deletion is
+permitted. A partial operating-system failure stops further mutation, records
+exact completed, quarantined, and remaining entries, and requires explicit
+recovery from the receipt; it never reports success. Physical quarantine purge
+is separately authorized destructive cleanup and is not part of `AUTO_CLEAN`.
 
 ### Integrate by reference instead of widening every task interface
 

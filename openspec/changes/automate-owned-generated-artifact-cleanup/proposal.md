@@ -12,13 +12,19 @@ locks, sockets, spools, and build outputs.
 - Add a versioned Generated Artifact Contract that predeclares task/run
   ownership, command identity, allowed roots, before-state, retention, and
   cleanup policy before an artifact may qualify for automatic reclamation;
-  the persisted canonical contract file identity and filesystem ctime anchor
-  prove that registration was not reconstructed after creation.
+  the persisted canonical contract file identity/ctime plus each candidate's
+  immutable filesystem birth time prove that registration was not
+  reconstructed after creation. Filesystems without creation-time evidence
+  fail closed to a Human Gate.
 - Add immutable observed manifests and cleanup receipts that bind every exact
-  artifact identity and prove zero unlisted mutation.
+  artifact identity, descriptor-bound content digest, recoverable quarantine
+  mapping, and zero unlisted mutation.
 - Add one fail-closed lifecycle module with separate read-only
   classify/verify behavior and an explicit apply operation whose quarantine
-  handoff verifies the moved inode before final deletion.
+  handoff uses exclusive rename and verifies the moved inode. Automatic
+  cleanup removes exact paths from their declared scope but never performs a
+  pathname-based final unlink/rmdir; physical quarantine purge remains a
+  separate destructive Human Gate.
 - Integrate the contract with DevFlow task execution and Agent Task Contracts
   so main-agent and worker artifacts follow the same rules.
 - Keep validators and hooks read-only. The orchestrator may invoke automatic
@@ -56,7 +62,8 @@ locks, sockets, spools, and build outputs.
 - The `game-dev` repository will be the first consumer integration, but its
   currently unregistered cleanup targets remain outside automatic authority.
 - No new dependency, public network behavior, global configuration mutation,
-  legacy cleanup, commit, push, archive, or publication is introduced.
+  legacy cleanup, automatic quarantine purge, push, archive, or publication
+  is introduced.
 
 ## Skill Routing Ledger
 

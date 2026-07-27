@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import ctypes
+import errno
 import hashlib
 import json
 import os
-import secrets
 from fnmatch import fnmatchcase
 from functools import lru_cache
 from pathlib import Path, PurePosixPath
@@ -26,6 +27,9 @@ RETAIN = "RETAIN"
 HUMAN_GATE = "HUMAN_GATE"
 DECISIONS = (AUTO_CLEAN, WAIT_OWNER, RETAIN, HUMAN_GATE)
 LIFECYCLE_EVIDENCE_ROOT = ".planning/devflow/generated-artifacts"
+LIFECYCLE_QUARANTINE_ROOT = (
+    f"{LIFECYCLE_EVIDENCE_ROOT}/quarantine/objects"
+)
 
 RETENTION_POLICIES = ("cleanup", "retain", "promote")
 PID_MAX = 2_147_483_647
@@ -81,6 +85,7 @@ IDENTITY_FIELDS = {
     "gid",
     "mtimeNs",
     "ctimeNs",
+    "birthtimeNs",
     "size",
     "sha256",
     "members",
@@ -129,12 +134,59 @@ RECEIPT_FIELDS = {
     "remaining",
     "absent",
     "retained",
+    "quarantined",
     "zeroUnlistedMutation",
     "effects",
     "failure",
 }
 EFFECT_FIELDS = {"process", "configuration", "git", "network"}
 FAILURE_FIELDS = {"path", "code", "detail"}
+QUARANTINE_RECORD_FIELDS = {
+    "source",
+    "destination",
+    "expected",
+    "manifestIdentitySha256",
+    "quarantineIdentitySha256",
+    "device",
+    "inode",
+}
+
+
+class _StatxTimestamp(ctypes.Structure):
+    _fields_ = [
+        ("tv_sec", ctypes.c_int64),
+        ("tv_nsec", ctypes.c_uint32),
+        ("reserved", ctypes.c_int32),
+    ]
+
+
+class _Statx(ctypes.Structure):
+    _fields_ = [
+        ("mask", ctypes.c_uint32),
+        ("block_size", ctypes.c_uint32),
+        ("attributes", ctypes.c_uint64),
+        ("nlink", ctypes.c_uint32),
+        ("uid", ctypes.c_uint32),
+        ("gid", ctypes.c_uint32),
+        ("mode", ctypes.c_uint16),
+        ("spare0", ctypes.c_uint16),
+        ("inode", ctypes.c_uint64),
+        ("size", ctypes.c_uint64),
+        ("blocks", ctypes.c_uint64),
+        ("attributes_mask", ctypes.c_uint64),
+        ("atime", _StatxTimestamp),
+        ("birthtime", _StatxTimestamp),
+        ("ctime", _StatxTimestamp),
+        ("mtime", _StatxTimestamp),
+        ("rdev_major", ctypes.c_uint32),
+        ("rdev_minor", ctypes.c_uint32),
+        ("dev_major", ctypes.c_uint32),
+        ("dev_minor", ctypes.c_uint32),
+        ("mount_id", ctypes.c_uint64),
+        ("dio_mem_align", ctypes.c_uint32),
+        ("dio_offset_align", ctypes.c_uint32),
+        ("spare3", ctypes.c_uint64 * 12),
+    ]
 
 
 class GeneratedArtifactError(ValueError):
@@ -143,6 +195,7 @@ class GeneratedArtifactError(ValueError):
         self.detail = detail
         message = code if not detail else f"{code}:{detail}"
         super().__init__(message)
+        self.quarantine_record: Optional[dict[str, Any]] = None
 
 
 def apply_cleanup(
@@ -216,10 +269,19 @@ def apply_cleanup(
     removal = remover or remove_exact_entry
     ordered = ordered_removal_entries(entry_map.values())
     removed: list[str] = []
+    quarantined: list[dict[str, Any]] = []
     for entry in ordered:
         try:
-            removal(repo, entry)
+            quarantine_record = removal(repo, entry)
+            if not valid_quarantine_record(quarantine_record):
+                raise GeneratedArtifactError(
+                    "invalid_quarantine_record",
+                    entry["path"],
+                )
         except Exception as error:
+            error_record = getattr(error, "quarantine_record", None)
+            if valid_quarantine_record(error_record):
+                quarantined.append(error_record)
             return cleanup_receipt(
                 contract,
                 manifest,
@@ -228,12 +290,14 @@ def apply_cleanup(
                 status="failed",
                 removed=removed,
                 remaining=present_paths(repo, entries),
+                quarantined=quarantined,
                 failure={
                     "path": entry["path"],
                     "code": "os_remove_failed",
                     "detail": str(error),
                 },
             )
+        quarantined.append(quarantine_record)
         removed.append(entry["path"])
 
     remaining = present_paths(repo, entries)
@@ -246,6 +310,7 @@ def apply_cleanup(
             status="failed",
             removed=removed,
             remaining=remaining,
+            quarantined=quarantined,
             failure={
                 "path": remaining[0],
                 "code": "postcondition_failed",
@@ -260,6 +325,7 @@ def apply_cleanup(
         status="complete",
         removed=removed,
         remaining=[],
+        quarantined=quarantined,
         failure=None,
     )
     receipt_errors = validate_receipt(
@@ -276,72 +342,297 @@ def apply_cleanup(
     return receipt
 
 
-def remove_exact_entry(repo: Path, entry: dict[str, Any]) -> None:
+def remove_exact_entry(
+    repo: Path,
+    entry: dict[str, Any],
+) -> dict[str, Any]:
     relative = normalize_relative_path(entry["path"])
     parts = PurePosixPath(relative).parts
     if not parts:
         raise GeneratedArtifactError("empty_removal_path")
     parent_fd = open_parent_dirfd(repo, parts[:-1])
-    quarantine_name: Optional[str] = None
+    quarantine_fd: Optional[int] = None
+    quarantine_name = quarantine_object_name(entry)
+    quarantine_relative = (
+        f"{LIFECYCLE_QUARANTINE_ROOT}/{quarantine_name}"
+    )
     moved = False
+    moved_stat: Optional[os.stat_result] = None
     try:
+        quarantine_fd = open_quarantine_dirfd(repo)
         name = parts[-1]
         require_dirfd_exact_name(parent_fd, name, relative)
-        quarantine_name = unused_quarantine_name(parent_fd)
-        os.rename(
-            name,
-            quarantine_name,
-            src_dir_fd=parent_fd,
-            dst_dir_fd=parent_fd,
-        )
+        try:
+            rename_noreplace(
+                name,
+                quarantine_name,
+                src_dir_fd=parent_fd,
+                dst_dir_fd=quarantine_fd,
+            )
+        except FileExistsError as error:
+            raise GeneratedArtifactError(
+                "quarantine_destination_exists",
+                quarantine_relative,
+            ) from error
         moved = True
-        current = os.stat(
+        moved_stat = os.stat(
             quarantine_name,
-            dir_fd=parent_fd,
+            dir_fd=quarantine_fd,
             follow_symlinks=False,
         )
         if entry["type"] == "directory":
             verify_directory_for_removal(
-                parent_fd,
+                quarantine_fd,
                 quarantine_name,
-                current,
+                moved_stat,
                 entry,
             )
-            verify_quarantined_leaf(parent_fd, quarantine_name, current, entry)
-            os.rmdir(quarantine_name, dir_fd=parent_fd)
-            moved = False
-            return
-        verify_non_directory_for_removal(
-            parent_fd,
-            quarantine_name,
-            current,
-            entry,
-            renamed=True,
-        )
-        verify_quarantined_leaf(parent_fd, quarantine_name, current, entry)
-        os.unlink(quarantine_name, dir_fd=parent_fd)
-        moved = False
-    except Exception:
-        if moved and quarantine_name is not None:
-            restore_quarantined_leaf(
-                parent_fd,
+        else:
+            verify_non_directory_for_removal(
+                quarantine_fd,
                 quarantine_name,
-                parts[-1],
-                relative,
+                moved_stat,
+                entry,
+                renamed=True,
             )
-        raise
+        verify_quarantined_leaf(
+            quarantine_fd,
+            quarantine_name,
+            moved_stat,
+            entry,
+        )
+        record = capture_quarantine_record(
+            repo,
+            entry,
+            quarantine_relative,
+            expected=True,
+        )
+        if (
+            record["device"] != moved_stat.st_dev
+            or record["inode"] != moved_stat.st_ino
+        ):
+            raise GeneratedArtifactError(
+                "removal_identity_drift",
+                entry["path"],
+            )
+        moved = False
+        return record
+    except Exception as error:
+        if moved:
+            record = capture_existing_quarantine_record(
+                repo,
+                entry,
+                quarantine_relative,
+                expected=False,
+            )
+            same_moved_leaf = (
+                record is not None
+                and moved_stat is not None
+                and record["device"] == moved_stat.st_dev
+                and record["inode"] == moved_stat.st_ino
+            )
+            if same_moved_leaf:
+                try:
+                    restore_quarantined_leaf(
+                        quarantine_fd,
+                        quarantine_name,
+                        parts[-1],
+                        relative,
+                        original_parent_fd=parent_fd,
+                    )
+                    record = None
+                except Exception as restore_error:
+                    if isinstance(restore_error, GeneratedArtifactError):
+                        error = restore_error
+                    else:
+                        error = GeneratedArtifactError(
+                            "quarantine_restore_failed",
+                            f"{relative}:{restore_error}",
+                        )
+            if record is not None:
+                if not isinstance(error, GeneratedArtifactError):
+                    error = GeneratedArtifactError(
+                        "quarantine_operation_failed",
+                        f"{relative}:{error}",
+                    )
+                error.quarantine_record = record
+        raise error
     finally:
+        if quarantine_fd is not None:
+            os.close(quarantine_fd)
         os.close(parent_fd)
 
 
-def unused_quarantine_name(parent_fd: int) -> str:
-    for _attempt in range(32):
-        candidate = f".devflow-q-{secrets.token_hex(16)}"
-        try:
-            os.stat(candidate, dir_fd=parent_fd, follow_symlinks=False)
-        except FileNotFoundError:
-            return candidate
-    raise GeneratedArtifactError("quarantine_name_unavailable")
+def quarantine_object_name(entry: dict[str, Any]) -> str:
+    return f"{document_sha256(entry)}.quarantine"
+
+
+def open_quarantine_dirfd(repo: Path) -> int:
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_CLOEXEC", 0)
+    )
+    current_fd = os.open(repo, flags)
+    relative_parts: list[str] = []
+    try:
+        for part in PurePosixPath(LIFECYCLE_QUARANTINE_ROOT).parts:
+            relative_parts.append(part)
+            try:
+                os.mkdir(part, mode=0o700, dir_fd=current_fd)
+            except FileExistsError:
+                pass
+            require_dirfd_exact_name(
+                current_fd,
+                part,
+                "/".join(relative_parts),
+            )
+            next_fd = os.open(
+                part,
+                flags | getattr(os, "O_NOFOLLOW", 0),
+                dir_fd=current_fd,
+            )
+            os.close(current_fd)
+            current_fd = next_fd
+        value = os.fstat(current_fd)
+        if (
+            not stat.S_ISDIR(value.st_mode)
+            or value.st_uid != os.getuid()
+            or stat.S_IMODE(value.st_mode) & 0o077
+        ):
+            raise GeneratedArtifactError(
+                "quarantine_root_untrusted",
+                LIFECYCLE_QUARANTINE_ROOT,
+            )
+        return current_fd
+    except Exception:
+        os.close(current_fd)
+        raise
+
+
+def rename_noreplace(
+    source: str,
+    destination: str,
+    *,
+    src_dir_fd: int,
+    dst_dir_fd: int,
+) -> None:
+    libc = ctypes.CDLL(None, use_errno=True)
+    source_bytes = os.fsencode(source)
+    destination_bytes = os.fsencode(destination)
+    if sys.platform == "darwin":
+        rename = getattr(libc, "renameatx_np", None)
+        if rename is None:
+            raise GeneratedArtifactError("exclusive_rename_unavailable")
+        rename.argtypes = (
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        )
+        rename.restype = ctypes.c_int
+        result = rename(
+            src_dir_fd,
+            source_bytes,
+            dst_dir_fd,
+            destination_bytes,
+            0x00000004,
+        )
+    elif sys.platform.startswith("linux"):
+        rename = getattr(libc, "renameat2", None)
+        if rename is None:
+            raise GeneratedArtifactError("exclusive_rename_unavailable")
+        rename.argtypes = (
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        )
+        rename.restype = ctypes.c_int
+        result = rename(
+            src_dir_fd,
+            source_bytes,
+            dst_dir_fd,
+            destination_bytes,
+            0x00000001,
+        )
+    else:
+        raise GeneratedArtifactError("exclusive_rename_unavailable")
+    if result == 0:
+        return
+    error_number = ctypes.get_errno()
+    if error_number in (errno.EEXIST, errno.ENOTEMPTY):
+        raise FileExistsError(
+            error_number,
+            os.strerror(error_number),
+            destination,
+        )
+    raise OSError(
+        error_number,
+        os.strerror(error_number),
+        f"{source}->{destination}",
+    )
+
+
+def capture_quarantine_record(
+    repo: Path,
+    entry: dict[str, Any],
+    destination: str,
+    *,
+    expected: bool,
+) -> dict[str, Any]:
+    identity = capture_identity(
+        Path(repo).expanduser().resolve(),
+        Path(repo).expanduser().resolve()
+        / PurePosixPath(destination),
+    )
+    return {
+        "source": entry["path"],
+        "destination": destination,
+        "expected": expected,
+        "manifestIdentitySha256": document_sha256(entry),
+        "quarantineIdentitySha256": document_sha256(identity),
+        "device": identity["device"],
+        "inode": identity["inode"],
+    }
+
+
+def capture_existing_quarantine_record(
+    repo: Path,
+    entry: dict[str, Any],
+    destination: str,
+    *,
+    expected: bool,
+) -> Optional[dict[str, Any]]:
+    try:
+        return capture_quarantine_record(
+            repo,
+            entry,
+            destination,
+            expected=expected,
+        )
+    except GeneratedArtifactError:
+        return None
+
+
+def valid_quarantine_record(record: Any) -> bool:
+    return (
+        isinstance(record, dict)
+        and set(record) == QUARANTINE_RECORD_FIELDS
+        and safe_relative_path(record.get("source"))
+        and safe_relative_path(record.get("destination"))
+        and (
+            PurePosixPath(LIFECYCLE_QUARANTINE_ROOT)
+            in PurePosixPath(record["destination"]).parents
+        )
+        and isinstance(record.get("expected"), bool)
+        and valid_sha256(record.get("manifestIdentitySha256"))
+        and valid_sha256(record.get("quarantineIdentitySha256"))
+        and bounded_nonnegative_integer(record.get("device"))
+        and bounded_nonnegative_integer(record.get("inode"))
+    )
 
 
 def verify_quarantined_leaf(
@@ -363,22 +654,26 @@ def restore_quarantined_leaf(
     quarantine_name: str,
     original_name: str,
     relative: str,
+    *,
+    original_parent_fd: Optional[int] = None,
 ) -> None:
+    destination_fd = (
+        parent_fd
+        if original_parent_fd is None
+        else original_parent_fd
+    )
     try:
-        os.stat(original_name, dir_fd=parent_fd, follow_symlinks=False)
-    except FileNotFoundError:
-        pass
-    else:
+        rename_noreplace(
+            quarantine_name,
+            original_name,
+            src_dir_fd=parent_fd,
+            dst_dir_fd=destination_fd,
+        )
+    except FileExistsError as error:
         raise GeneratedArtifactError(
             "quarantine_restore_blocked",
             relative,
-        )
-    os.rename(
-        quarantine_name,
-        original_name,
-        src_dir_fd=parent_fd,
-        dst_dir_fd=parent_fd,
-    )
+        ) from error
 
 
 def open_parent_dirfd(repo: Path, parts: tuple[str, ...]) -> int:
@@ -536,6 +831,7 @@ def cleanup_receipt(
     removed: list[str],
     remaining: list[str],
     failure: Optional[dict[str, str]],
+    quarantined: Optional[list[dict[str, Any]]] = None,
 ) -> dict[str, Any]:
     entries = normalized_path_values(
         plan.get("entries") if isinstance(plan, dict) else None
@@ -544,6 +840,14 @@ def cleanup_receipt(
     remaining_paths = normalized_path_values(remaining)
     retained_paths = normalized_path_values(
         plan.get("retained") if isinstance(plan, dict) else None
+    )
+    quarantine_records = sorted(
+        list(quarantined or []),
+        key=lambda record: (
+            str(record.get("source"))
+            if isinstance(record, dict)
+            else ""
+        ),
     )
     return {
         "schema": RECEIPT_SCHEMA,
@@ -556,7 +860,16 @@ def cleanup_receipt(
         "remaining": remaining_paths,
         "absent": sorted(set(entries) - set(remaining_paths)),
         "retained": retained_paths,
-        "zeroUnlistedMutation": set(removed_paths).issubset(entries),
+        "quarantined": quarantine_records,
+        "zeroUnlistedMutation": (
+            set(removed_paths).issubset(entries)
+            and all(
+                valid_quarantine_record(record)
+                and record["expected"] is True
+                and record["source"] in entries
+                for record in quarantine_records
+            )
+        ),
         "effects": {
             "process": False,
             "configuration": False,
@@ -907,6 +1220,8 @@ def recorded_safety_reasons(
             and entry["ctimeNs"] < contract["sealedAtNs"]
         ):
             reasons.append(f"predates_contract:{path}")
+        if entry.get("birthtimeNs") is None:
+            reasons.append(f"artifact_creation_time_unavailable:{path}")
     return sorted(set(reasons))
 
 
@@ -963,12 +1278,17 @@ def contract_seal_safety_reasons(
         reasons.append("contract_seal_timestamp_mismatch")
     entries = manifest.get("entries")
     for entry in entries if isinstance(entries, list) else []:
-        if (
-            isinstance(entry, dict)
-            and isinstance(entry.get("path"), str)
-            and json_integer(entry.get("ctimeNs"))
+        if not isinstance(entry, dict) or not isinstance(entry.get("path"), str):
+            continue
+        birthtime_ns = entry.get("birthtimeNs")
+        if birthtime_ns is None:
+            reasons.append(
+                f"artifact_creation_time_unavailable:{entry['path']}"
+            )
+        elif (
+            json_integer(birthtime_ns)
             and json_integer(seal_ctime)
-            and entry["ctimeNs"] < seal_ctime
+            and birthtime_ns <= seal_ctime
         ):
             reasons.append(
                 f"contract_sealed_after_artifact:{entry['path']}"
@@ -1879,6 +2199,7 @@ def validate_receipt(
         errors.append("invalid_receipt_status")
     for field in ("removed", "remaining", "absent", "retained"):
         errors.extend(validate_path_list(receipt.get(field), f"receipt_{field}"))
+    errors.extend(validate_quarantine_records(receipt.get("quarantined")))
     if not isinstance(receipt.get("zeroUnlistedMutation"), bool):
         errors.append("invalid_zero_unlisted_mutation")
     effects = receipt.get("effects")
@@ -1899,6 +2220,25 @@ def validate_receipt(
     if plan is not None and receipt.get("planSha256") != document_sha256(plan):
         errors.append("receipt_plan_mismatch")
     return sorted(set(errors))
+
+
+def validate_quarantine_records(records: Any) -> list[str]:
+    if not isinstance(records, list):
+        return ["invalid_receipt_quarantined"]
+    errors: list[str] = []
+    sources: list[str] = []
+    destinations: list[str] = []
+    for record in records:
+        if not valid_quarantine_record(record):
+            errors.append("invalid_receipt_quarantine_record")
+            continue
+        sources.append(record["source"])
+        destinations.append(record["destination"])
+    if sources != sorted(sources) or len(sources) != len(set(sources)):
+        errors.append("invalid_receipt_quarantine_source_order")
+    if len(destinations) != len(set(destinations)):
+        errors.append("duplicate_receipt_quarantine_destination")
+    return errors
 
 
 def validate_plan(
@@ -2103,8 +2443,42 @@ def validate_terminal_cleanup(
         errors.append("terminal_receipt_absent_mismatch")
     if receipt.get("retained") != plan.get("retained", []):
         errors.append("terminal_receipt_retained_mismatch")
+    quarantine_records = receipt.get("quarantined")
+    if (
+        not isinstance(quarantine_records, list)
+        or [record.get("source") for record in quarantine_records if isinstance(record, dict)]
+        != entries
+        or any(
+            not isinstance(record, dict)
+            or record.get("expected") is not True
+            for record in quarantine_records
+        )
+    ):
+        errors.append("terminal_receipt_quarantine_mismatch")
     if receipt.get("zeroUnlistedMutation") is not True:
         errors.append("terminal_receipt_unlisted_mutation")
+    for record in quarantine_records if isinstance(quarantine_records, list) else []:
+        if not valid_quarantine_record(record):
+            continue
+        try:
+            identity = capture_identity(
+                repo,
+                repo / PurePosixPath(record["destination"]),
+            )
+        except GeneratedArtifactError:
+            errors.append(
+                f"terminal_quarantine_missing:{record['source']}"
+            )
+            continue
+        if (
+            identity["device"] != record["device"]
+            or identity["inode"] != record["inode"]
+            or document_sha256(identity)
+            != record["quarantineIdentitySha256"]
+        ):
+            errors.append(
+                f"terminal_quarantine_identity_drift:{record['source']}"
+            )
     remaining = set(present_paths(repo, entries))
     try:
         scopes = contract.get("scopes")
@@ -2180,6 +2554,10 @@ def inspect_generated_artifact_lifecycle(repo: Path) -> dict[str, Any]:
                     )
                     continue
                 document_paths.append(contract_path)
+            continue
+        if entry.name == "quarantine" and not entry.is_symlink():
+            if not entry.is_dir(follow_symlinks=False):
+                issues.append(f"untrusted_lifecycle_entry:{relative}")
             continue
         if entry.is_symlink() or not entry.is_file(follow_symlinks=False):
             issues.append(f"untrusted_lifecycle_entry:{relative}")
@@ -2890,45 +3268,111 @@ def inventory_tree(repo: Path, root: Path, *, include_root: bool) -> list[dict[s
     pending = [root]
     while pending:
         current = pending.pop()
+        identity = capture_identity(repo, current)
         if current != root or include_root:
-            entries.append(capture_identity(repo, current))
-        try:
-            current_stat = os.lstat(current)
-        except OSError as error:
-            raise GeneratedArtifactError("inventory_stat_failed", str(error)) from error
-        if not stat.S_ISDIR(current_stat.st_mode):
+            entries.append(identity)
+        if identity["type"] != "directory":
             continue
-        try:
-            children = sorted(
-                (Path(entry.path) for entry in os.scandir(current)),
-                key=lambda path: path.name,
-                reverse=True,
-            )
-        except OSError as error:
-            raise GeneratedArtifactError("inventory_read_failed", str(error)) from error
-        pending.extend(children)
+        pending.extend(
+            repo / PurePosixPath(member)
+            for member in reversed(identity["members"])
+        )
     return sorted(entries, key=lambda entry: entry["path"])
 
 
 def capture_identity(repo: Path, path: Path) -> dict[str, Any]:
+    repo = Path(repo).expanduser().resolve()
+    relative = normalize_relative_path(relative_path(repo, Path(path)))
+    parts = PurePosixPath(relative).parts
+    parent_fd = open_parent_dirfd(repo, parts[:-1])
+    file_fd: Optional[int] = None
     try:
-        value = os.lstat(path)
-    except OSError as error:
-        raise GeneratedArtifactError("identity_stat_failed", str(error)) from error
-    kind = file_type(value.st_mode)
-    digest = file_sha256(path) if kind == "file" else None
-    members: list[str] = []
-    if kind == "directory":
-        try:
-            members = sorted(
-                relative_path(repo, Path(entry.path))
-                for entry in os.scandir(path)
+        name = parts[-1]
+        require_dirfd_exact_name(parent_fd, name, relative)
+        initial = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+        kind = file_type(initial.st_mode)
+        digest = None
+        members: list[str] = []
+        value = initial
+        if kind == "file":
+            flags = (
+                os.O_RDONLY
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_NOFOLLOW", 0)
             )
-        except OSError as error:
-            raise GeneratedArtifactError("identity_membership_failed", str(error)) from error
+            file_fd = os.open(name, flags, dir_fd=parent_fd)
+            opened = os.fstat(file_fd)
+            require_same_stat_snapshot(initial, opened, relative)
+            if not stat.S_ISREG(opened.st_mode):
+                raise GeneratedArtifactError(
+                    "identity_type_drift",
+                    relative,
+                )
+            digest = descriptor_sha256(file_fd)
+            value = os.fstat(file_fd)
+            require_same_stat_snapshot(opened, value, relative)
+        elif kind == "directory":
+            flags = (
+                os.O_RDONLY
+                | getattr(os, "O_DIRECTORY", 0)
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_NOFOLLOW", 0)
+            )
+            file_fd = os.open(name, flags, dir_fd=parent_fd)
+            opened = os.fstat(file_fd)
+            require_same_stat_snapshot(initial, opened, relative)
+            if not stat.S_ISDIR(opened.st_mode):
+                raise GeneratedArtifactError(
+                    "identity_type_drift",
+                    relative,
+                )
+            names = sorted(os.listdir(file_fd))
+            members = [
+                (PurePosixPath(relative) / member).as_posix()
+                for member in names
+            ]
+            if not all(safe_relative_path(member) for member in members):
+                raise GeneratedArtifactError(
+                    "identity_membership_unsafe",
+                    relative,
+                )
+            value = os.fstat(file_fd)
+            require_same_stat_snapshot(opened, value, relative)
+        birthtime_ns = filesystem_birthtime_ns(
+            value,
+            file_fd=file_fd,
+            parent_fd=parent_fd,
+            name=name,
+        )
+    except OSError as error:
+        raise GeneratedArtifactError(
+            "identity_open_failed",
+            f"{relative}:{error}",
+        ) from error
+    finally:
+        if file_fd is not None:
+            os.close(file_fd)
+        os.close(parent_fd)
+    return identity_document(
+        relative,
+        value,
+        digest=digest,
+        members=members,
+        birthtime_ns=birthtime_ns,
+    )
+
+
+def identity_document(
+    relative: str,
+    value: os.stat_result,
+    *,
+    digest: Optional[str],
+    members: list[str],
+    birthtime_ns: Optional[int],
+) -> dict[str, Any]:
     return {
-        "path": relative_path(repo, path),
-        "type": kind,
+        "path": relative,
+        "type": file_type(value.st_mode),
         "device": value.st_dev,
         "inode": value.st_ino,
         "mode": stat.S_IMODE(value.st_mode),
@@ -2937,10 +3381,105 @@ def capture_identity(repo: Path, path: Path) -> dict[str, Any]:
         "gid": value.st_gid,
         "mtimeNs": value.st_mtime_ns,
         "ctimeNs": value.st_ctime_ns,
+        "birthtimeNs": birthtime_ns,
         "size": value.st_size,
         "sha256": digest,
         "members": members,
     }
+
+
+def require_same_stat_snapshot(
+    first: os.stat_result,
+    second: os.stat_result,
+    relative: str,
+) -> None:
+    fields = (
+        "st_dev",
+        "st_ino",
+        "st_mode",
+        "st_nlink",
+        "st_uid",
+        "st_gid",
+        "st_mtime_ns",
+        "st_ctime_ns",
+        "st_size",
+    )
+    if any(getattr(first, field) != getattr(second, field) for field in fields):
+        raise GeneratedArtifactError("identity_drift", relative)
+
+
+def filesystem_birthtime_ns(
+    value: os.stat_result,
+    *,
+    file_fd: Optional[int],
+    parent_fd: int,
+    name: str,
+) -> Optional[int]:
+    native_ns = getattr(value, "st_birthtime_ns", None)
+    if json_integer(native_ns):
+        return native_ns
+    native_seconds = getattr(value, "st_birthtime", None)
+    if isinstance(native_seconds, (int, float)):
+        result = int(native_seconds * 1_000_000_000)
+        return result if timestamp_ns(result) else None
+    if not sys.platform.startswith("linux"):
+        return None
+    if file_fd is not None:
+        return linux_statx_birthtime_ns(
+            file_fd,
+            "",
+            value,
+            flags=0x00001000,
+        )
+    return linux_statx_birthtime_ns(
+        parent_fd,
+        name,
+        value,
+        flags=0x00000100,
+    )
+
+
+def linux_statx_birthtime_ns(
+    directory_fd: int,
+    name: str,
+    expected: os.stat_result,
+    *,
+    flags: int,
+) -> Optional[int]:
+    libc = ctypes.CDLL(None, use_errno=True)
+    statx = getattr(libc, "statx", None)
+    if statx is None:
+        return None
+    statx.argtypes = (
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_int,
+        ctypes.c_uint,
+        ctypes.POINTER(_Statx),
+    )
+    statx.restype = ctypes.c_int
+    result = _Statx()
+    if statx(
+        directory_fd,
+        os.fsencode(name),
+        flags,
+        0x00000800,
+        ctypes.byref(result),
+    ) != 0:
+        return None
+    if not result.mask & 0x00000800:
+        return None
+    if (
+        result.inode != expected.st_ino
+        or os.makedev(result.dev_major, result.dev_minor)
+        != expected.st_dev
+    ):
+        raise GeneratedArtifactError("identity_birthtime_drift", name)
+    birthtime_ns = (
+        result.birthtime.tv_sec * 1_000_000_000
+        + result.birthtime.tv_nsec
+    )
+    return birthtime_ns if timestamp_ns(birthtime_ns) else None
 
 
 def valid_identity(identity: Any) -> bool:
@@ -2983,6 +3522,9 @@ def valid_identity(identity: Any) -> bool:
         timestamp_ns(identity.get(field))
         for field in ("mtimeNs", "ctimeNs")
     ):
+        return False
+    birthtime_ns = identity.get("birthtimeNs")
+    if birthtime_ns is not None and not timestamp_ns(birthtime_ns):
         return False
     digest = identity.get("sha256")
     members = identity.get("members")
@@ -3234,14 +3776,29 @@ def load_immutable_document(path: Path) -> dict[str, Any]:
 
 
 def file_sha256(path: Path) -> str:
-    digest = hashlib.sha256()
+    file_fd: Optional[int] = None
     try:
-        with path.open("rb") as handle:
-            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-                digest.update(chunk)
+        file_fd = os.open(
+            path,
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+        )
+        before = os.fstat(file_fd)
+        if not stat.S_ISREG(before.st_mode):
+            raise GeneratedArtifactError(
+                "identity_hash_not_regular",
+                str(path),
+            )
+        digest = descriptor_sha256(file_fd)
+        after = os.fstat(file_fd)
+        require_same_stat_snapshot(before, after, str(path))
     except OSError as error:
         raise GeneratedArtifactError("identity_hash_failed", str(error)) from error
-    return digest.hexdigest()
+    finally:
+        if file_fd is not None:
+            os.close(file_fd)
+    return digest
 
 
 def valid_sha256(value: Any) -> bool:
@@ -3269,8 +3826,12 @@ def file_type(mode: int) -> str:
 def relative_path(repo: Path, path: Path) -> str:
     try:
         return path.absolute().relative_to(repo).as_posix()
-    except ValueError as error:
-        raise GeneratedArtifactError("scope_escape", str(path)) from error
+    except ValueError:
+        try:
+            canonical_leaf = path.parent.resolve() / path.name
+            return canonical_leaf.relative_to(repo.resolve()).as_posix()
+        except ValueError as error:
+            raise GeneratedArtifactError("scope_escape", str(path)) from error
 
 
 def git_root(repo: Path) -> Optional[str]:
