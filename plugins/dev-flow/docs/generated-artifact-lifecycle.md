@@ -19,8 +19,10 @@ Keep four canonical JSON documents below
 The contract binds repository, task, run, owner, command digest, retention, and
 before-state. Its canonical bytes must be persisted under the contract registry
 before the bound command starts. The manifest records that file's exact
-identity and filesystem ctime, so a later rewrite cannot backdate registration
-with a forged `sealedAtNs`. The owner PID is paired with its process-start
+identity/ctime and every candidate's filesystem birth time, so a later rewrite
+or content modification cannot backdate registration with a forged
+`sealedAtNs`; unavailable or non-newer birth time fails closed. Regular-file
+identity and hashing use one no-follow descriptor. The owner PID is paired with its process-start
 token when available, so later PID reuse cannot invalidate a successful
 receipt. A lease is active only while its recorded exact identity remains
 present. Prefer an absent or empty task/run-specific isolated root. Adjacent
@@ -60,10 +62,13 @@ python3 scripts/generated_artifact_lifecycle.py cleanup \
 `prepare` output is the explicit pre-command sealing step. `cleanup --apply`
 first recomputes the plan and revalidates repository identity, owner exit,
 tracked and protected state, every exact entry, hashes, and directory
-membership. It atomically moves each leaf to an unpredictable quarantine name
-in the same parent, verifies the moved inode, then performs final deletion. A
-replacement is restored and never deleted. Cleanup uses no wildcard, recursive
-deletion, or symlink following.
+membership. It exclusively moves each leaf into the protected DevFlow recovery
+quarantine and verifies the moved inode without a later pathname-based
+unlink/rmdir. A replacement is restored with no-replace semantics and never
+overwritten or deleted. The receipt records every source-to-quarantine mapping.
+Cleanup uses no wildcard, recursive deletion, or symlink following. Physical
+quarantine purge is separate destructive cleanup and requires its own Human
+Gate.
 
 ## Decisions
 
@@ -75,8 +80,9 @@ deletion, or symlink following.
 - `HUMAN_GATE`: registration, baseline, ownership, scope, tracked/protected
   state, identity, membership, or another invariant is missing or unsafe.
 
-A failed operating-system removal stops immediately and records exact removed
-and remaining entries. It never reports completion or retries unrecorded work.
+A failed operating-system move stops immediately and records exact removed,
+quarantined, and remaining entries. It never reports completion or retries
+unrecorded work.
 
 ## Task and Worker Evidence
 

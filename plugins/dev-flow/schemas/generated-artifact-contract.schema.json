@@ -371,6 +371,7 @@
         "gid",
         "mtimeNs",
         "ctimeNs",
+        "birthtimeNs",
         "size",
         "sha256",
         "members"
@@ -430,6 +431,18 @@
           "type": "integer",
           "minimum": -9223372036854775808,
           "maximum": 9223372036854775807
+        },
+        "birthtimeNs": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": -9223372036854775808,
+              "maximum": 9223372036854775807
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "size": {
           "type": "integer",

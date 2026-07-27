@@ -15,6 +15,7 @@
     "remaining",
     "absent",
     "retained",
+    "quarantined",
     "zeroUnlistedMutation",
     "effects",
     "failure"
@@ -58,6 +59,12 @@
     },
     "retained": {
       "$ref": "#/$defs/pathList"
+    },
+    "quarantined": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/quarantineRecord"
+      }
     },
     "zeroUnlistedMutation": {
       "type": "boolean"
@@ -110,6 +117,48 @@
         },
         "network": {
           "const": false
+        }
+      }
+    },
+    "quarantineRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "destination",
+        "expected",
+        "manifestIdentitySha256",
+        "quarantineIdentitySha256",
+        "device",
+        "inode"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "destination": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected": {
+          "type": "boolean"
+        },
+        "manifestIdentitySha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "quarantineIdentitySha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "device": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "inode": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
         }
       }
     },
