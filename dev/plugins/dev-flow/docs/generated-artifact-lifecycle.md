@@ -17,24 +17,33 @@ Keep four canonical JSON documents below
    evidence.
 
 The contract binds repository, task, run, owner, command digest, retention, and
-before-state. The owner PID is paired with its process-start token when
-available, so later PID reuse cannot invalidate a successful receipt. A lease
-is active only while its recorded exact identity remains present. Prefer an
-absent or empty task/run-specific isolated root. Adjacent output is allowed
-only with a complete parent inventory and a predeclared discovery pattern;
-cleanup still uses exact manifest paths.
+before-state. Its canonical bytes must be persisted under the contract registry
+before the bound command starts. The manifest records that file's exact
+identity and filesystem ctime, so a later rewrite cannot backdate registration
+with a forged `sealedAtNs`. The owner PID is paired with its process-start
+token when available, so later PID reuse cannot invalidate a successful
+receipt. A lease is active only while its recorded exact identity remains
+present. Prefer an absent or empty task/run-specific isolated root. Adjacent
+output is allowed only with a complete parent inventory and a predeclared
+discovery pattern; cleanup still uses exact manifest paths.
 
 ## Runtime CLI
 
-The CLI writes canonical JSON to stdout. The caller persists each document
-before continuing:
+The CLI writes canonical JSON to stdout. Before the bound command runs, the
+caller persists the `prepare` output exactly at
+`.planning/devflow/generated-artifacts/contracts/<contract-id>.contract.json`.
+The caller persists each later document before continuing:
 
 ```bash
+mkdir -p .planning/devflow/generated-artifacts/contracts
+
 python3 scripts/generated_artifact_lifecycle.py prepare \
   --repo . --task-id <task> --run-id <run> \
   --owner-id <owner> --owner-pid <pid> \
   --command-json '["tool","--output","<isolated-root>"]' \
-  --isolated-root <isolated-root>
+  --contract-id <contract-id> \
+  --isolated-root <isolated-root> \
+  > .planning/devflow/generated-artifacts/contracts/<contract-id>.contract.json
 
 python3 scripts/generated_artifact_lifecycle.py observe \
   --repo . --contract <contract.json> --exit-code 0
@@ -47,10 +56,14 @@ python3 scripts/generated_artifact_lifecycle.py cleanup \
   --plan <plan.json> --apply
 ```
 
-`prepare`, `observe`, and `plan` are read-only. `cleanup --apply` first
-recomputes the plan and revalidates repository identity, owner exit, tracked
-and protected state, every exact entry, hashes, and directory membership. It
-uses no wildcard, recursive deletion, or symlink following.
+`prepare`, `observe`, and `plan` are read-only; shell persistence of the
+`prepare` output is the explicit pre-command sealing step. `cleanup --apply`
+first recomputes the plan and revalidates repository identity, owner exit,
+tracked and protected state, every exact entry, hashes, and directory
+membership. It atomically moves each leaf to an unpredictable quarantine name
+in the same parent, verifies the moved inode, then performs final deletion. A
+replacement is restored and never deleted. Cleanup uses no wildcard, recursive
+deletion, or symlink following.
 
 ## Decisions
 

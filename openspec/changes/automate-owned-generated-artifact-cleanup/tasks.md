@@ -15,7 +15,8 @@
 
 - [x] 2.1 RED: add schema and policy tests for pre-creation registration,
   isolated roots, adjacent output scopes, repository/task/run/owner/command
-  binding, baseline absence, retention, and malformed contracts.
+  binding, persisted contract-file identity/ctime, baseline absence,
+  retention, and malformed contracts.
 - [x] 2.2 Implement and validate
   `generated-artifact-contract/v1`,
   `generated-artifact-manifest/v1`, and
@@ -33,11 +34,13 @@
 
 - [x] 3.1 RED: add tests for all-or-nothing preflight, exact no-follow removal,
   deepest-first empty-directory cleanup, no wildcard/recursive deletion,
-  zero-unlisted mutation, idempotent success replay, and simulated partial
-  operating-system failure.
+  zero-unlisted mutation, leaf-replacement races, idempotent success replay,
+  and simulated partial operating-system failure.
 - [x] 3.2 Implement the explicit cleanup apply path so it revalidates every
-  invariant immediately before mutation, records exact completed/remaining
-  entries, and never reports success after uncertainty or partial failure.
+  invariant immediately before mutation, quarantines and verifies each moved
+  inode before final deletion, restores mismatched replacements, records exact
+  completed/remaining entries, and never reports success after uncertainty or
+  partial failure.
 - [x] 3.3 Implement the compact lifecycle CLI with read-only `prepare`,
   `observe`, and `plan` operations plus explicit `cleanup --apply`, structured
   JSON output, stable exit codes, and no network/configuration/Git effects.
@@ -82,7 +85,8 @@
   `git diff --check`.
 - [x] 6.3 Regenerate the DevFlow release runtime from the combined current
   source state, preserving the unrelated stop-hook work, then prove managed
-  source/release parity and packaged smoke coverage.
+  source/release parity including the complete lifecycle test module and
+  packaged smoke coverage.
 - [x] 6.4 Run release-target Plugin Eval, record score/findings/remediation,
   and leave any unresolved actionable failure as a blocker rather than
   weakening the contract.
@@ -102,6 +106,20 @@
   handoff, and completion status without commit, push, PR, archive,
   publication, configuration mutation, or deletion of pre-existing
   unregistered artifacts.
+
+## 8. Post-Commit Independent Review Repairs
+
+- [x] 8.1 RED: reproduce post-creation contract resealing, concurrent leaf
+  replacement at the deletion boundary, missing release lifecycle tests, and
+  the missing active-ledger evidence link.
+- [x] 8.2 GREEN: bind classification to the canonical persisted contract file
+  identity/ctime and replace verify-then-unlink with quarantine, moved-inode
+  verification, and fail-closed restoration.
+- [x] 8.3 GREEN: restore byte-equivalent lifecycle tests to the release sync
+  contract and link the final verification record from the active ledger item.
+- [ ] 8.4 Regenerate the source-bound release, rerun focused/broad/runtime and
+  Plugin Eval gates, refresh only the two authorized DevFlow caches, complete
+  a fresh two-axis review, and record final commit/cache evidence.
 
 ## Validation Commands
 

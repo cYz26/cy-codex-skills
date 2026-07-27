@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import secrets
 from fnmatch import fnmatchcase
 from functools import lru_cache
 from pathlib import Path, PurePosixPath
@@ -87,6 +88,7 @@ IDENTITY_FIELDS = {
 MANIFEST_FIELDS = {
     "schema",
     "contractSha256",
+    "contractSeal",
     "observedAtNs",
     "repository",
     "taskId",
@@ -280,18 +282,103 @@ def remove_exact_entry(repo: Path, entry: dict[str, Any]) -> None:
     if not parts:
         raise GeneratedArtifactError("empty_removal_path")
     parent_fd = open_parent_dirfd(repo, parts[:-1])
+    quarantine_name: Optional[str] = None
+    moved = False
     try:
         name = parts[-1]
         require_dirfd_exact_name(parent_fd, name, relative)
-        current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+        quarantine_name = unused_quarantine_name(parent_fd)
+        os.rename(
+            name,
+            quarantine_name,
+            src_dir_fd=parent_fd,
+            dst_dir_fd=parent_fd,
+        )
+        moved = True
+        current = os.stat(
+            quarantine_name,
+            dir_fd=parent_fd,
+            follow_symlinks=False,
+        )
         if entry["type"] == "directory":
-            verify_directory_for_removal(parent_fd, name, current, entry)
-            os.rmdir(name, dir_fd=parent_fd)
+            verify_directory_for_removal(
+                parent_fd,
+                quarantine_name,
+                current,
+                entry,
+            )
+            verify_quarantined_leaf(parent_fd, quarantine_name, current, entry)
+            os.rmdir(quarantine_name, dir_fd=parent_fd)
+            moved = False
             return
-        verify_non_directory_for_removal(parent_fd, name, current, entry)
-        os.unlink(name, dir_fd=parent_fd)
+        verify_non_directory_for_removal(
+            parent_fd,
+            quarantine_name,
+            current,
+            entry,
+            renamed=True,
+        )
+        verify_quarantined_leaf(parent_fd, quarantine_name, current, entry)
+        os.unlink(quarantine_name, dir_fd=parent_fd)
+        moved = False
+    except Exception:
+        if moved and quarantine_name is not None:
+            restore_quarantined_leaf(
+                parent_fd,
+                quarantine_name,
+                parts[-1],
+                relative,
+            )
+        raise
     finally:
         os.close(parent_fd)
+
+
+def unused_quarantine_name(parent_fd: int) -> str:
+    for _attempt in range(32):
+        candidate = f".devflow-q-{secrets.token_hex(16)}"
+        try:
+            os.stat(candidate, dir_fd=parent_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            return candidate
+    raise GeneratedArtifactError("quarantine_name_unavailable")
+
+
+def verify_quarantined_leaf(
+    parent_fd: int,
+    name: str,
+    current: os.stat_result,
+    expected: dict[str, Any],
+) -> None:
+    latest = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+    if latest.st_dev != current.st_dev or latest.st_ino != current.st_ino:
+        raise GeneratedArtifactError(
+            "removal_identity_drift",
+            expected["path"],
+        )
+
+
+def restore_quarantined_leaf(
+    parent_fd: int,
+    quarantine_name: str,
+    original_name: str,
+    relative: str,
+) -> None:
+    try:
+        os.stat(original_name, dir_fd=parent_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        pass
+    else:
+        raise GeneratedArtifactError(
+            "quarantine_restore_blocked",
+            relative,
+        )
+    os.rename(
+        quarantine_name,
+        original_name,
+        src_dir_fd=parent_fd,
+        dst_dir_fd=parent_fd,
+    )
 
 
 def open_parent_dirfd(repo: Path, parts: tuple[str, ...]) -> int:
@@ -352,13 +439,20 @@ def verify_non_directory_for_removal(
     name: str,
     current: os.stat_result,
     expected: dict[str, Any],
+    *,
+    renamed: bool = False,
 ) -> None:
     if stat.S_ISDIR(current.st_mode) or stat.S_ISLNK(current.st_mode):
         raise GeneratedArtifactError("removal_type_drift", expected["path"])
     current_type = file_type(current.st_mode)
     if current_type != expected["type"]:
         raise GeneratedArtifactError("removal_type_drift", expected["path"])
-    verify_stable_node(current, expected, include_times=True)
+    verify_stable_node(
+        current,
+        expected,
+        include_times=True,
+        include_ctime=not renamed,
+    )
     if current_type != "file":
         return
     flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
@@ -378,6 +472,7 @@ def verify_stable_node(
     expected: dict[str, Any],
     *,
     include_times: bool = False,
+    include_ctime: bool = True,
 ) -> None:
     actual = {
         "device": current.st_dev,
@@ -392,10 +487,11 @@ def verify_stable_node(
             {
                 "nlink": current.st_nlink,
                 "mtimeNs": current.st_mtime_ns,
-                "ctimeNs": current.st_ctime_ns,
                 "size": current.st_size,
             }
         )
+        if include_ctime:
+            actual["ctimeNs"] = current.st_ctime_ns
         fields = tuple(actual)
     if any(actual[field] != expected[field] for field in fields):
         raise GeneratedArtifactError("removal_identity_drift", expected["path"])
@@ -521,6 +617,7 @@ def observe_artifacts(
         raise GeneratedArtifactError("contract_invalid", ",".join(errors))
     if not isinstance(exit_code, int) or isinstance(exit_code, bool):
         raise GeneratedArtifactError("invalid_exit_code")
+    contract_seal = capture_contract_seal(repo, contract)
 
     scope_inventories: list[dict[str, Any]] = []
     candidates: list[dict[str, Any]] = []
@@ -542,6 +639,7 @@ def observe_artifacts(
     manifest = {
         "schema": MANIFEST_SCHEMA,
         "contractSha256": document_sha256(contract),
+        "contractSeal": contract_seal,
         "observedAtNs": int(now_ns if now_ns is not None else time.time_ns()),
         "repository": contract["repository"],
         "taskId": contract["taskId"],
@@ -818,12 +916,63 @@ def safety_reasons(
     manifest: dict[str, Any],
 ) -> list[str]:
     reasons = recorded_safety_reasons(contract, manifest, repo=repo)
+    reasons.extend(contract_seal_safety_reasons(repo, contract, manifest))
     owner = contract["owner"]
     reasons.extend(lease_safety_reasons(repo, owner.get("lease")))
 
     for entry in manifest["entries"]:
         reasons.extend(current_identity_reasons(repo, entry))
     reasons.extend(scope_inventory_reasons(repo, contract, manifest))
+    return sorted(set(reasons))
+
+
+def contract_seal_safety_reasons(
+    repo: Path,
+    contract: dict[str, Any],
+    manifest: dict[str, Any],
+) -> list[str]:
+    recorded = manifest.get("contractSeal")
+    if not valid_identity(recorded):
+        return ["invalid_contract_seal"]
+    reasons: list[str] = []
+    try:
+        current = capture_contract_seal(repo, contract)
+    except GeneratedArtifactError as error:
+        return [error.code]
+    if current != recorded:
+        reasons.append("contract_seal_identity_drift")
+    if recorded.get("path") != contract_document_relative_path(contract):
+        reasons.append("contract_seal_path_mismatch")
+    if recorded.get("sha256") != document_sha256(contract):
+        reasons.append("contract_seal_hash_mismatch")
+    owner = contract.get("owner")
+    if (
+        not isinstance(owner, dict)
+        or recorded.get("uid") != owner.get("uid")
+    ):
+        reasons.append("contract_seal_owner_mismatch")
+    if recorded.get("nlink") != 1:
+        reasons.append("contract_seal_shared")
+    sealed_at = contract.get("sealedAtNs")
+    seal_ctime = recorded.get("ctimeNs")
+    if (
+        positive_timestamp_ns(sealed_at)
+        and json_integer(seal_ctime)
+        and seal_ctime < sealed_at
+    ):
+        reasons.append("contract_seal_timestamp_mismatch")
+    entries = manifest.get("entries")
+    for entry in entries if isinstance(entries, list) else []:
+        if (
+            isinstance(entry, dict)
+            and isinstance(entry.get("path"), str)
+            and json_integer(entry.get("ctimeNs"))
+            and json_integer(seal_ctime)
+            and entry["ctimeNs"] < seal_ctime
+        ):
+            reasons.append(
+                f"contract_sealed_after_artifact:{entry['path']}"
+            )
     return sorted(set(reasons))
 
 
@@ -1245,6 +1394,38 @@ def prepare_contract(
     return contract
 
 
+def contract_document_relative_path(contract: dict[str, Any]) -> str:
+    contract_id = contract.get("contractId") if isinstance(contract, dict) else None
+    require_identifier("contract_id", contract_id)
+    return (
+        f"{LIFECYCLE_EVIDENCE_ROOT}/contracts/"
+        f"{contract_id}.contract.json"
+    )
+
+
+def contract_document_path(repo: Path, contract: dict[str, Any]) -> Path:
+    return local_path(
+        Path(repo).expanduser().resolve(),
+        contract_document_relative_path(contract),
+        require_exists=False,
+    )
+
+
+def capture_contract_seal(
+    repo: Path,
+    contract: dict[str, Any],
+) -> dict[str, Any]:
+    repo = Path(repo).expanduser().resolve()
+    relative = contract_document_relative_path(contract)
+    path = local_path(repo, relative, require_exists=True)
+    identity = capture_identity(repo, path)
+    if identity["type"] != "file":
+        raise GeneratedArtifactError("contract_seal_not_regular", relative)
+    if identity["sha256"] != document_sha256(contract):
+        raise GeneratedArtifactError("contract_seal_hash_mismatch", relative)
+    return identity
+
+
 def prepare_isolated_scope(repo: Path, relative: str, index: int) -> dict[str, Any]:
     normalized = normalize_relative_path(relative)
     reject_protected_path(normalized, repo=repo)
@@ -1320,6 +1501,9 @@ def validate_contract(
         errors.append("invalid_sealed_at")
     errors.extend(validate_repository(repo, contract.get("repository")))
     errors.extend(validate_owner(contract.get("owner")))
+    owner = contract.get("owner")
+    if isinstance(owner, dict) and owner.get("uid") != os.getuid():
+        errors.append("owner_uid_mismatch:contract")
     errors.extend(validate_command(contract.get("command")))
     if contract.get("retention") not in RETENTION_POLICIES:
         errors.append("invalid_retention")
@@ -1349,6 +1533,9 @@ def validate_manifest(
         errors.append("invalid_manifest_schema")
     if not valid_sha256(manifest.get("contractSha256")):
         errors.append("invalid_contract_digest")
+    contract_seal = manifest.get("contractSeal")
+    if not valid_identity(contract_seal):
+        errors.append("invalid_contract_seal")
     if not positive_timestamp_ns(manifest.get("observedAtNs")):
         errors.append("invalid_observed_at")
     errors.extend(validate_repository(repo, manifest.get("repository")))
@@ -1363,6 +1550,24 @@ def validate_manifest(
     if contract is not None:
         if manifest.get("contractSha256") != document_sha256(contract):
             errors.append("manifest_contract_mismatch")
+        expected_seal_path = contract_document_relative_path(contract)
+        if (
+            isinstance(contract_seal, dict)
+            and contract_seal.get("path") != expected_seal_path
+        ):
+            errors.append("manifest_contract_seal_path_mismatch")
+        if (
+            isinstance(contract_seal, dict)
+            and contract_seal.get("sha256") != document_sha256(contract)
+        ):
+            errors.append("manifest_contract_seal_hash_mismatch")
+        if (
+            positive_timestamp_ns(manifest.get("observedAtNs"))
+            and isinstance(contract_seal, dict)
+            and json_integer(contract_seal.get("ctimeNs"))
+            and manifest["observedAtNs"] < contract_seal["ctimeNs"]
+        ):
+            errors.append("manifest_observed_before_contract_seal")
         if (
             positive_timestamp_ns(manifest.get("observedAtNs"))
             and positive_timestamp_ns(contract.get("sealedAtNs"))
@@ -1945,18 +2150,57 @@ def inspect_generated_artifact_lifecycle(repo: Path) -> dict[str, Any]:
             [],
             [f"generated_artifact_registry_unreadable:{error}"],
         )
+    document_paths: list[Path] = []
     for entry in entries:
-        relative = (root / entry.name).relative_to(repo).as_posix()
+        path = root / entry.name
+        relative = path.relative_to(repo).as_posix()
+        if entry.name == "contracts" and not entry.is_symlink():
+            if not entry.is_dir(follow_symlinks=False):
+                issues.append(f"untrusted_lifecycle_entry:{relative}")
+                continue
+            try:
+                contract_entries = sorted(
+                    os.scandir(path),
+                    key=lambda item: item.name,
+                )
+            except OSError as error:
+                issues.append(
+                    f"generated_artifact_contract_registry_unreadable:{error}"
+                )
+                continue
+            for contract_entry in contract_entries:
+                contract_path = path / contract_entry.name
+                contract_relative = contract_path.relative_to(repo).as_posix()
+                if (
+                    contract_entry.is_symlink()
+                    or not contract_entry.is_file(follow_symlinks=False)
+                ):
+                    issues.append(
+                        f"untrusted_lifecycle_entry:{contract_relative}"
+                    )
+                    continue
+                document_paths.append(contract_path)
+            continue
         if entry.is_symlink() or not entry.is_file(follow_symlinks=False):
             issues.append(f"untrusted_lifecycle_entry:{relative}")
             continue
+        document_paths.append(path)
+
+    for path in document_paths:
+        relative = path.relative_to(repo).as_posix()
         try:
-            document = load_immutable_document(root / entry.name)
+            document = load_immutable_document(path)
         except GeneratedArtifactError as error:
             issues.append(f"invalid_lifecycle_document:{relative}:{error.code}")
             continue
         if document.get("schema") not in recognized_schemas:
             issues.append(f"unknown_lifecycle_document:{relative}")
+            continue
+        if (
+            path.parent.name == "contracts"
+            and document.get("schema") != CONTRACT_SCHEMA
+        ):
+            issues.append(f"invalid_contract_seal_document:{relative}")
             continue
         documents.append(
             {

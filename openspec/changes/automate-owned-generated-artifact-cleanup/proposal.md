@@ -11,11 +11,14 @@ locks, sockets, spools, and build outputs.
 
 - Add a versioned Generated Artifact Contract that predeclares task/run
   ownership, command identity, allowed roots, before-state, retention, and
-  cleanup policy before an artifact may qualify for automatic reclamation.
+  cleanup policy before an artifact may qualify for automatic reclamation;
+  the persisted canonical contract file identity and filesystem ctime anchor
+  prove that registration was not reconstructed after creation.
 - Add immutable observed manifests and cleanup receipts that bind every exact
   artifact identity and prove zero unlisted mutation.
 - Add one fail-closed lifecycle module with separate read-only
-  classify/verify behavior and an explicit apply operation.
+  classify/verify behavior and an explicit apply operation whose quarantine
+  handoff verifies the moved inode before final deletion.
 - Integrate the contract with DevFlow task execution and Agent Task Contracts
   so main-agent and worker artifacts follow the same rules.
 - Keep validators and hooks read-only. The orchestrator may invoke automatic

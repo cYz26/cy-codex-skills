@@ -22,14 +22,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "Generated Artifact Lifecycle: read-only prepare, observe, and plan; "
-            "cleanup mutates only with --apply."
+            "persist prepare output before the bound command; cleanup mutates "
+            "only with --apply."
         )
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     prepare = subparsers.add_parser(
         "prepare",
-        help="Read-only pre-creation contract preparation.",
+        help="Emit the canonical pre-creation contract for caller persistence.",
     )
     add_repo_argument(prepare)
     prepare.add_argument("--task-id", required=True)

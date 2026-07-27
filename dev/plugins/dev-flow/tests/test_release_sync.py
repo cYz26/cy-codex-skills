@@ -937,6 +937,7 @@ context_management:
         self.assertEqual(
             metadata["include"],
             [
+                "tests/test_generated_artifact_lifecycle.py",
                 "tests/test_packaged_runtime.py",
                 "vendor/**",
             ],

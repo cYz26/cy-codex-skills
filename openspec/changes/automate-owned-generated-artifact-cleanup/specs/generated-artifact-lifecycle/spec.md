@@ -24,6 +24,12 @@ artifact.
 - **THEN** DevFlow MUST NOT infer ownership from its name, extension, ignore status, or directory
 - **AND** cleanup requires a Human Gate
 
+#### Scenario: Persisted contract is reconstructed after artifact creation
+
+- **WHEN** canonical contract bytes are first persisted or rewritten after a cleanup candidate already exists
+- **THEN** the manifest records the persisted contract file identity and filesystem ctime
+- **AND** classification is `HUMAN_GATE` even when embedded `sealedAtNs`, baseline, manifest, and plan fields are otherwise self-consistent
+
 ### Requirement: Observed manifests bind exact generated artifacts
 
 DevFlow SHALL expand every contract-matching artifact into an immutable
@@ -32,7 +38,7 @@ manifest with exact identity and ownership evidence.
 #### Scenario: Generated entries are observed
 
 - **WHEN** the bound command finishes and DevFlow observes its declared output scopes
-- **THEN** the manifest records each exact relative path, type, device, inode, mode, link count, owner, timestamps, size, content digest when applicable, and directory membership
+- **THEN** the manifest records the canonical persisted contract file identity plus each exact relative path, type, device, inode, mode, link count, owner, timestamps, size, content digest when applicable, and directory membership
 - **AND** it records the owning command result and process/lease completion
 
 #### Scenario: Observation crosses declared scope
@@ -86,6 +92,12 @@ MUST revalidate every invariant immediately before the first mutation.
 - **WHEN** any contract, manifest, repository, process, tracked-state, identity, hash, or directory-membership value changes before the first removal
 - **THEN** cleanup stops with zero mutation
 - **AND** the receipt reports the failed invariant
+
+#### Scenario: Leaf identity changes at the removal boundary
+
+- **WHEN** a path is replaced after read-only preflight but before its exact removal
+- **THEN** cleanup quarantines the current leaf in the same parent and verifies the moved inode before final deletion
+- **AND** a mismatched leaf is restored, remains present, and is never reported as removed
 
 #### Scenario: Operating-system failure occurs after some removals
 
@@ -159,4 +171,5 @@ Lifecycle schemas, module, CLI, templates, and tests as the development source.
 
 - **WHEN** release packaging and runtime verification run
 - **THEN** every managed generated-artifact file is present and byte-equivalent
+- **AND** the complete development lifecycle test module is present and byte-equivalent in the release
 - **AND** packaged smoke tests exercise read-only classification and exact apply behavior without network or user configuration mutation

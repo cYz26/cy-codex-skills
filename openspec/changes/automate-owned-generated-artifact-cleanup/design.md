@@ -57,7 +57,11 @@ The lifecycle uses three immutable documents:
 1. `generated-artifact-contract/v1` is sealed before the owning command runs.
    It binds task ID, run ID, owner, command digest, repository identity,
    isolated roots, explicitly declared adjacent output scopes, retention, and
-   before-state.
+   before-state. The caller persists its canonical bytes below
+   `.planning/devflow/generated-artifacts/contracts/` before starting the
+   command. The observed manifest records that file's exact identity and
+   filesystem ctime; any candidate older than the persisted seal is
+   post-created registration and cannot reach `AUTO_CLEAN`.
 2. `generated-artifact-manifest/v1` is captured after the command and records
    every exact observed entry, identity field, type, content digest when
    applicable, directory membership, and owning-process completion.
@@ -93,8 +97,11 @@ the default and recommended path.
 `workflow_generated_artifacts.py` provides the lifecycle implementation.
 `generated_artifact_lifecycle.py` provides a compact CLI with read-only
 `prepare`, `observe`, and `plan` operations plus an explicit `cleanup --apply`
-operation. The orchestrator may execute `cleanup --apply` without a per-run
-Human Gate only when `plan` returns `AUTO_CLEAN`.
+operation. `prepare` emits canonical JSON only; the caller must persist it at
+the canonical contract path before running the bound command. `observe`
+captures the persisted contract file identity, and `plan` verifies that anchor
+without writing. The orchestrator may execute `cleanup --apply` without a
+per-run Human Gate only when `plan` returns `AUTO_CLEAN`.
 
 Hooks, stop policies, workflow validation, and project doctors may inspect and
 report lifecycle state but MUST NOT invoke apply mode.
@@ -121,11 +128,15 @@ manifest, repository identity, process/lease state, every entry identity,
 directory membership, protection rules, and tracked state. Any mismatch causes
 zero mutation.
 
-Files and non-directory entries are removed by exact path without following
-links. Directories are removed deepest-first only after they are empty. No
-wildcard or recursive deletion is permitted. A partial operating-system
-failure stops further mutation, records exact completed and remaining entries,
-and requires explicit recovery from the receipt; it never reports success.
+Each exact leaf is first atomically renamed to a collision-resistant quarantine
+name in the same parent. The moved inode, type, content, and membership are
+then verified against the manifest before final unlink/rmdir. A mismatched
+replacement is restored and never deleted. Files and non-directory entries are
+removed without following links. Directories are processed deepest-first only
+after they are empty. No wildcard or recursive deletion is permitted. A
+partial operating-system failure stops further mutation, records exact
+completed and remaining entries, and requires explicit recovery from the
+receipt; it never reports success.
 
 ### Integrate by reference instead of widening every task interface
 
@@ -144,11 +155,15 @@ The change is complete only when:
 - all three document schemas and the lifecycle module reject unknown,
   pre-existing, tracked, protected, shared, occupied, drifted, and escaped
   targets;
+- a canonical persisted contract-file identity proves pre-creation sealing,
+  and any post-creation rewrite or reseal becomes `HUMAN_GATE`;
 - valid isolated and adjacent task-owned artifacts produce `AUTO_CLEAN`,
   exact cleanup, idempotent post-state, and a bound receipt;
+- concurrent leaf replacement cannot cause an unverified inode to be deleted;
 - main-task and Agent Task Contract integration use the same lifecycle;
 - hooks and validators remain read-only;
-- source and release trees are byte-equivalent for managed runtime files;
+- source and release trees are byte-equivalent for managed runtime files and
+  the complete lifecycle test module;
 - full DevFlow tests, strict OpenSpec validation, release verification, and
   release-target Plugin Eval pass;
 - the installed DevFlow cache and `game-dev` integration are refreshed only

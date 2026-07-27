@@ -145,7 +145,8 @@ class AgentTaskContractTests(unittest.TestCase):
         )
         lifecycle_root = repo / ".planning" / "devflow" / "generated-artifacts"
         lifecycle_root.mkdir(parents=True)
-        contract_path = lifecycle_root / "parser-run.contract.json"
+        contract_path = lifecycle_root / "contracts" / "parser-run.contract.json"
+        contract_path.parent.mkdir()
         manifest_path = lifecycle_root / "parser-run.manifest.json"
         plan_path = lifecycle_root / "parser-run.plan.json"
         receipt_path = lifecycle_root / "parser-run.receipt.json"
@@ -159,6 +160,7 @@ class AgentTaskContractTests(unittest.TestCase):
             command=["python3", "build.py"],
             isolated_roots=[artifact_root],
             adjacent_outputs=[],
+            contract_id="parser-run",
         )
         contract_path.write_bytes(canonical_document_bytes(contract))
         agent_contract_path = repo / "agent-task.md"
@@ -166,7 +168,7 @@ class AgentTaskContractTests(unittest.TestCase):
             VALID_CONTRACT
             + "\n## Generated Artifact Contract\n\n"
             "- Contract: "
-            "`.planning/devflow/generated-artifacts/parser-run.contract.json`\n"
+            "`.planning/devflow/generated-artifacts/contracts/parser-run.contract.json`\n"
         )
         validation = validate_agent_task_contract_file(
             agent_contract_path,

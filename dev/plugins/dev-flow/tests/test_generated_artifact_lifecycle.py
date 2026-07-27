@@ -97,7 +97,11 @@ class GeneratedArtifactTestSupport:
         return repo
 
     def prepare(self, repo, **overrides):
-        from workflow_generated_artifacts import prepare_contract
+        from workflow_generated_artifacts import (
+            canonical_document_bytes,
+            contract_document_path,
+            prepare_contract,
+        )
 
         values = {
             "repo": repo,
@@ -113,7 +117,11 @@ class GeneratedArtifactTestSupport:
             "now_ns": 1_700_000_000_000_000_000,
         }
         values.update(overrides)
-        return prepare_contract(**values)
+        contract = prepare_contract(**values)
+        contract_path = contract_document_path(repo, contract)
+        contract_path.parent.mkdir(parents=True, exist_ok=True)
+        contract_path.write_bytes(canonical_document_bytes(contract))
+        return contract
 
     def observe(self, repo, contract, *, exit_code=0):
         from workflow_generated_artifacts import observe_artifacts
@@ -625,13 +633,23 @@ class GeneratedArtifactContractTests(GeneratedArtifactTestSupport, unittest.Test
         self.assertIn("receipt_unlisted_effect:git", receipt_errors)
 
     def empty_lifecycle_documents(self, repo):
-        from workflow_generated_artifacts import AUTO_CLEAN, document_sha256
+        from workflow_generated_artifacts import (
+            AUTO_CLEAN,
+            capture_contract_seal,
+            document_sha256,
+        )
 
         contract = self.prepare(repo)
+        contract_seal = capture_contract_seal(repo, contract)
         manifest = {
             "schema": "generated-artifact-manifest/v1",
             "contractSha256": document_sha256(contract),
-            "observedAtNs": contract["sealedAtNs"] + 1,
+            "contractSeal": contract_seal,
+            "observedAtNs": max(
+                contract["sealedAtNs"],
+                contract_seal["ctimeNs"],
+            )
+            + 1,
             "repository": contract["repository"],
             "taskId": contract["taskId"],
             "runId": contract["runId"],
@@ -717,6 +735,38 @@ class GeneratedArtifactContractTests(GeneratedArtifactTestSupport, unittest.Test
 
 
 class GeneratedArtifactDecisionTests(GeneratedArtifactTestSupport, unittest.TestCase):
+    def test_contract_must_remain_sealed_on_disk_before_artifact_creation(self):
+        from workflow_generated_artifacts import HUMAN_GATE, plan_cleanup
+
+        repo = self.make_repo()
+        contract = self.prepare(repo)
+        seal_path = (
+            repo
+            / ".planning"
+            / "devflow"
+            / "generated-artifacts"
+            / "contracts"
+            / "contract-1.contract.json"
+        )
+        sealed_bytes = seal_path.read_bytes()
+        seal_path.unlink()
+        artifact = self.create_isolated_output(repo, contract)
+        seal_path.write_bytes(sealed_bytes)
+        self.assertGreater(
+            seal_path.stat().st_ctime_ns,
+            artifact.stat().st_ctime_ns,
+        )
+
+        manifest = self.observe(repo, contract)
+        plan = plan_cleanup(repo, contract, manifest)
+
+        self.assertEqual(plan["decision"], HUMAN_GATE, plan)
+        self.assertIn(
+            "contract_sealed_after_artifact",
+            self.reason_codes(plan),
+            plan,
+        )
+
     def test_auto_clean_wait_owner_and_retain_decisions(self):
         from workflow_generated_artifacts import (
             AUTO_CLEAN,
@@ -1165,11 +1215,6 @@ class GeneratedArtifactInspectionTests(GeneratedArtifactTestSupport, unittest.Te
             plan = plan_cleanup(repo, contract, manifest)
             self.write_lifecycle_document(
                 repo,
-                f"case-{index}.contract.json",
-                contract,
-            )
-            self.write_lifecycle_document(
-                repo,
                 f"case-{index}.manifest.json",
                 manifest,
             )
@@ -1256,7 +1301,6 @@ class GeneratedArtifactInspectionTests(GeneratedArtifactTestSupport, unittest.Te
         plan = plan_cleanup(repo, contract, manifest)
         receipt = apply_cleanup(repo, contract, manifest, plan)
         for name, document in (
-            ("terminal.contract.json", contract),
             ("terminal.manifest.json", manifest),
             ("terminal.plan.json", plan),
             ("terminal.receipt.json", receipt),
@@ -2098,7 +2142,6 @@ class GeneratedArtifactInspectionTests(GeneratedArtifactTestSupport, unittest.Te
         )
 
         for name, document in (
-            ("forged.contract.json", contract),
             ("forged.manifest.json", manifest),
             ("forged.plan.json", forged_plan),
             ("forged.receipt.json", forged_receipt),
@@ -2245,6 +2288,53 @@ class GeneratedArtifactCleanupTests(GeneratedArtifactTestSupport, unittest.TestC
         self.assertTrue(target.is_symlink())
         self.assertEqual(outside.read_text(), "must survive\n")
 
+    def test_leaf_replacement_during_removal_is_restored_and_never_deleted(self):
+        from workflow_generated_artifacts import apply_cleanup
+
+        repo = self.make_repo()
+        contract, manifest, plan = self.ready_cleanup(
+            repo,
+            files=("output.bin",),
+        )
+        target = repo / contract["scopes"][0]["path"] / "output.bin"
+        original_unlink = os.unlink
+        original_rename = os.rename
+        injected = False
+
+        def inject_replacement():
+            nonlocal injected
+            if injected:
+                return
+            injected = True
+            original_unlink(target)
+            target.write_bytes(b"user replacement")
+
+        def racing_unlink(path, *arguments, **keywords):
+            if path == "output.bin" and keywords.get("dir_fd") is not None:
+                inject_replacement()
+            return original_unlink(path, *arguments, **keywords)
+
+        def racing_rename(source, destination, *arguments, **keywords):
+            if source == "output.bin" and keywords.get("src_dir_fd") is not None:
+                inject_replacement()
+            return original_rename(
+                source,
+                destination,
+                *arguments,
+                **keywords,
+            )
+
+        with (
+            patch("workflow_generated_artifacts.os.unlink", side_effect=racing_unlink),
+            patch("workflow_generated_artifacts.os.rename", side_effect=racing_rename),
+        ):
+            receipt = apply_cleanup(repo, contract, manifest, plan)
+
+        self.assertTrue(injected)
+        self.assertEqual(receipt["status"], "failed", receipt)
+        self.assertNotIn(target.relative_to(repo).as_posix(), receipt["removed"])
+        self.assertEqual(target.read_bytes(), b"user replacement")
+
     def test_success_receipt_replay_is_idempotent(self):
         from workflow_generated_artifacts import apply_cleanup
 
@@ -2333,15 +2423,18 @@ class GeneratedArtifactCleanupTests(GeneratedArtifactTestSupport, unittest.TestC
         contract, manifest, plan = self.ready_cleanup(repo)
         receipt = apply_cleanup(repo, contract, manifest, plan)
         lifecycle_root = repo / ".planning" / "devflow" / "generated-artifacts"
-        lifecycle_root.mkdir(parents=True)
+        lifecycle_root.mkdir(parents=True, exist_ok=True)
         paths = {
-            "contract": lifecycle_root / "task-1-run-1.contract.json",
+            "contract": (
+                lifecycle_root
+                / "contracts"
+                / "contract-1.contract.json"
+            ),
             "manifest": lifecycle_root / "task-1-run-1.manifest.json",
             "plan": lifecycle_root / "task-1-run-1.plan.json",
             "receipt": lifecycle_root / "task-1-run-1.receipt.json",
         }
         for label, document in (
-            ("contract", contract),
             ("manifest", manifest),
             ("plan", plan),
             ("receipt", receipt),
@@ -2520,7 +2613,15 @@ class GeneratedArtifactCliTests(GeneratedArtifactTestSupport, unittest.TestCase)
         contract = json.loads(prepared.stdout)
         self.assertEqual(contract["schema"], "generated-artifact-contract/v1")
         self.assertFalse((repo / root).exists())
-        contract_path = repo / "contract.json"
+        contract_path = (
+            repo
+            / ".planning"
+            / "devflow"
+            / "generated-artifacts"
+            / "contracts"
+            / "cli-task-cli-run.contract.json"
+        )
+        contract_path.parent.mkdir(parents=True)
         self.write_document(contract_path, contract)
         return prepared, contract_path
 

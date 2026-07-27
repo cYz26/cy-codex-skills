@@ -182,32 +182,31 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   after E40 no longer overlaps the adapter write set
 - Human Disposition: `pending`
 
-### DF-IFL-007: Release test packaging inflated Plugin Eval analysis
+### DF-IFL-007: Release test optimization violated explicit test parity
 
 - Finding ID: `DF-IFL-007`
 - Disposition: `CONTINUE_WITH_MINIMAL_GUARD`
-- Severity: resolved packaging-quality issue; no behavior, release, or runtime
-  contract remains failed
+- Severity: resolved specification-compliance issue; release-quality
+  re-verification remains part of active item 8.4
 - Evidence: the first release-target analysis scored 72/C with one
   deferred-budget failure because the generated plugin carried the complete
-  23,685-token lifecycle test module. The source harness now accepts
-  `DEVFLOW_PLUGIN_ROOT`, runs the same 52 tests against source, release, and
-  both installed caches, and is no longer copied into runtime distribution.
-  Final Plugin Eval scores 86/B with 0 failures, 3 warnings, and 2
-  informational findings; maximum Python complexity is 14 without a complexity
-  warning
-- Affected Contract: release-target Plugin Eval and source-equivalent release
-  behavior verification
-- Impact: resolved; the release no longer ships non-runtime test source and
-  retains the complete lifecycle verification seam
-- Current Mitigation: keep the full test suite in development source, point it
-  explicitly at each release/cache root, and keep the compact packaged-runtime
-  smoke test in the generated plugin
-- Disposition Reason: this bounded packaging correction removed non-runtime
-  payload without weakening any schema, lifecycle, runtime, or test contract
-- Recommended Follow-up: none for this finding; the remaining plugin-wide
-  static token-budget warnings are tracked separately by `DF-IFL-001`
-- Follow-up Trigger: none
+  lifecycle test module. Removing that file restored an 86/B result, but the
+  post-commit Spec review proved the optimization contradicted the explicit
+  requirement that release contain the same lifecycle tests as development
+  source
+- Affected Contract: source/release test parity and release-target Plugin Eval
+- Impact: the omission is repaired in source release metadata; final generated
+  release and Plugin Eval evidence remain pending under item 8.4
+- Current Mitigation: include the byte-equivalent complete lifecycle test
+  module in release, retain the compact packaged-runtime smoke test, and treat
+  any resulting evaluator budget as an optimization problem rather than
+  weakening the approved parity contract
+- Disposition Reason: restoring the missing managed test is the bounded guard
+  required to satisfy the existing Completion Contract
+- Recommended Follow-up: if Plugin Eval reports an actionable budget failure,
+  reduce duplicated test/guidance tokens without removing required release
+  tests or behavior coverage
+- Follow-up Trigger: active release-target Plugin Eval
 - Human Disposition: `accepted`
 
 ### DF-IFL-008: Local updater wrapper does not fail clearly on Python 3.9
@@ -235,29 +234,62 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 - Follow-up Trigger: explicit updater compatibility intake
 - Human Disposition: `pending`
 
+### DF-IFL-009: Lifecycle document loading repeats across three public seams
+
+- Finding ID: `DF-IFL-009`
+- Disposition: `DEFER_AND_CONTINUE`
+- Severity: low maintainability risk; no failed lifecycle behavior or release
+  contract
+- Evidence: the final Standards review identified repeated
+  contract/manifest/plan/receipt loading and validation shapes in
+  `generated_artifact_lifecycle.py`, `record_task_evidence.py`, and
+  `workflow_agent_task_contract.py`
+- Affected Contract: none; all three seams use the same strict document
+  validators, and the focused lifecycle plus Agent Task Contract suites pass
+- Impact: a future document-field change could require coordinated edits and
+  increase validation-drift risk
+- Current Mitigation: keep the canonical schemas and validators in
+  `workflow_generated_artifacts.py`, require focused coverage at all three
+  seams, and run source/release parity checks on every lifecycle change
+- Disposition Reason: introducing a shared bundle/loader abstraction after the
+  security review would widen the current repair across three public seams
+  without changing required behavior; it is not needed to close the
+  pre-creation or deletion-race failures
+- Recommended Follow-up: intake a bounded internal refactor that introduces
+  one typed lifecycle-document bundle/loader while preserving CLI, task
+  evidence, and Agent Task Contract outputs byte-for-byte
+- Follow-up Trigger: the next lifecycle schema version or a reproduced
+  validation-drift defect
+- Human Disposition: `pending`
+
 ## Current Verified Change: Generated Artifact Lifecycle
 
 - authoritative_queue: OpenSpec change
   `automate-owned-generated-artifact-cleanup`
-- status: verified and complete at 26/26; intentionally unarchived
+- status: post-commit review repair implemented at 29/30; release/cache/final
+  review item 8.4 remains pending; intentionally unarchived
 - scope: DevFlow source, generated `dev-flow` release, and only the official
   plus internal `dev-flow@cy-codex-skills` caches
-- completion_evidence: lifecycle 52/52; focused 139/139; pre-promotion
-  398/398; strict OpenSpec 57/57; release/runtime 290/290 with 132 source
-  records; Plugin Eval 86/B with zero failures; both named caches recursively
-  match release, report `matches-source`, and pass Doctor
+- current_source_evidence: lifecycle 54/54; Agent Task Contract 25/25;
+  pre-promotion 400/400; strict active-change validation and `git diff --check`
+  pass
+- pending_evidence: source-bound release regeneration, complete
+  source/release/cache lifecycle parity, runtime verification, Plugin Eval,
+  both named cache refreshes, and final two-axis review
+- verification_evidence:
+  `.planning/devflow/verification/20260727-generated-artifact-lifecycle-final.md`
 - release_receipt_sha256:
   `1cb720f4441ec9036a5b9d02dccaaa0aab9887058d752ca094f71dc128463422`
-- runtime_archive_sha256:
+- prior_runtime_archive_sha256:
   `ae3668b5030bb644353b9a69d698636fbeeb8196cc18ea79a9ce767f97c86071`
-- implementation_commit:
+- prior_implementation_commit:
   `4be56bc50655946c50e2f3dd4e710b6891482165`
 - exclusions_preserved: no other plugin, global configuration, project
   migration, legacy cleanup, pre-existing artifact deletion, push, PR, spec
   sync, or archive
 - residuals: `DF-IFL-001`, `DF-IFL-002`, `DF-IFL-004`, `DF-IFL-005`,
-  `DF-IFL-006`, and `DF-IFL-008` remain non-blocking and do not authorize
-  follow-up work
+  `DF-IFL-006`, `DF-IFL-008`, and `DF-IFL-009` remain non-blocking and do not
+  authorize follow-up work
 
 ### Execution Log
 
@@ -285,6 +317,18 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 - 2026-07-27: `game-dev` remained read-only because its active E40 control
   plane overlapped the conditional adapter write set. Its future adapter and
   project-local link refresh remain with that project's OpenSpec owner.
+- 2026-07-27: The post-commit Spec and Standards axes reopened completion with
+  four required findings: persisted contract sealing was not independently
+  anchored, verify-then-unlink admitted a leaf replacement race, release
+  omitted the explicitly required complete lifecycle test module, and this
+  active ledger item did not link its verification record.
+- 2026-07-27: RED tests reproduced post-creation resealing and deletion-time
+  leaf replacement. GREEN now records and revalidates canonical contract-file
+  identity/ctime, quarantines and verifies the moved inode before final
+  deletion, restores mismatches, includes the lifecycle test in release sync,
+  and links the final evidence path. Focused lifecycle tests pass 54/54,
+  Agent Task Contract tests pass 25/25, and pre-promotion passes 400/400;
+  release/cache/final-review evidence remains item 8.4.
 
 ## Active Change: Add Incidental Finding Lifecycle
 
