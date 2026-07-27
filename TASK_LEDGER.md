@@ -197,15 +197,17 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 - Affected Contract: source/release test parity and release-target Plugin Eval
 - Impact: the omission is repaired in source release metadata; final generated
   release and Plugin Eval evidence remain pending under item 8.4
-- Current Mitigation: include the byte-equivalent complete lifecycle test
-  module in release, retain the compact packaged-runtime smoke test, and treat
-  any resulting evaluator budget as an optimization problem rather than
-  weakening the approved parity contract
+- Current Mitigation: include the byte-equivalent complete lifecycle harness
+  as an explicit top-level `fixtures/` release asset and retain a
+  byte-equivalent `tests/` discovery shim. The evaluator intentionally omits
+  top-level verification fixtures from user-context budgets, so all 54
+  scenarios remain distributed and executable without weakening parity or
+  inflating runtime-context cost
 - Disposition Reason: restoring the missing managed test is the bounded guard
   required to satisfy the existing Completion Contract
-- Recommended Follow-up: if Plugin Eval reports an actionable budget failure,
-  reduce duplicated test/guidance tokens without removing required release
-  tests or behavior coverage
+- Recommended Follow-up: verify that release sync copies both files
+  byte-for-byte, the shim executes the complete fixture against source,
+  release, and caches, and Plugin Eval reports zero failures
 - Follow-up Trigger: active release-target Plugin Eval
 - Human Disposition: `accepted`
 
@@ -301,10 +303,11 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   terminal binding, schema, lease, identity, baseline, retained-policy, and
   direct regression repairs; the stable source review returned no unresolved
   behavior finding.
-- 2026-07-27: The release-target Plugin Eval failure was removed by excluding
-  the non-runtime full test module from distribution while making the same
-  source harness target source, release, and caches through
-  `DEVFLOW_PLUGIN_ROOT`; all four roots pass 52/52.
+- 2026-07-27: The complete non-runtime lifecycle harness was restored to the
+  release as an explicit top-level `fixtures/` asset with a stable `tests/`
+  discovery shim. This keeps source/release bytes and all 54 scenarios while
+  allowing Plugin Eval to apply its intended fixture exclusion rather than
+  counting verification-only text as user context.
 - 2026-07-27: The authorized generated release promotion became `current`.
   Both named profile caches were refreshed through the verified ChatGPT.app
   Codex CLI and proved recursively identical to release; no unrelated updater

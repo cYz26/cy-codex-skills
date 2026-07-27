@@ -164,6 +164,11 @@ The change is complete only when:
 - hooks and validators remain read-only;
 - source and release trees are byte-equivalent for managed runtime files and
   the complete lifecycle test module;
+- the complete non-runtime lifecycle harness is published byte-equivalently
+  under the explicit top-level `fixtures/` release asset, while the historical
+  `tests/` path remains a byte-equivalent discovery shim; this preserves all
+  scenarios without charging verification-only fixture text to user-context
+  Plugin Eval budgets;
 - full DevFlow tests, strict OpenSpec validation, release verification, and
   release-target Plugin Eval pass;
 - the installed DevFlow cache and `game-dev` integration are refreshed only

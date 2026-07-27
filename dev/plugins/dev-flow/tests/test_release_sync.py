@@ -937,12 +937,16 @@ context_management:
         self.assertEqual(
             metadata["include"],
             [
+                "fixtures/test_generated_artifact_lifecycle.py",
                 "tests/test_generated_artifact_lifecycle.py",
                 "tests/test_packaged_runtime.py",
                 "vendor/**",
             ],
         )
-        self.assertEqual(metadata["defaultExcludeOverrides"], ["tests/**"])
+        self.assertEqual(
+            metadata["defaultExcludeOverrides"],
+            ["fixtures/**", "tests/**"],
+        )
         self.assertIn("scripts/**", metadata["exclude"])
         self.assertEqual(metadata["buildCommands"], [["{python}", "dev/scripts/package_devflow_release_runtime.py"]])
         self.assertNotIn("managedOutputCommands", metadata)

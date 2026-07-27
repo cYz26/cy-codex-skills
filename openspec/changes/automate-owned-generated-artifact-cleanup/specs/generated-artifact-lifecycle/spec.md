@@ -171,5 +171,6 @@ Lifecycle schemas, module, CLI, templates, and tests as the development source.
 
 - **WHEN** release packaging and runtime verification run
 - **THEN** every managed generated-artifact file is present and byte-equivalent
-- **AND** the complete development lifecycle test module is present and byte-equivalent in the release
+- **AND** the complete development lifecycle fixture and its discovery shim are present and byte-equivalent in the release
+- **AND** verification-only fixture text remains outside user-context Plugin Eval budgets without removing any lifecycle scenario
 - **AND** packaged smoke tests exercise read-only classification and exact apply behavior without network or user configuration mutation

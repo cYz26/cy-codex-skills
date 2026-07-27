@@ -623,8 +623,12 @@ context_health:
             "scripts/record_task_evidence.py",
             metadata["managedOutputs"],
         )
-        self.assertNotIn(
+        self.assertIn(
             "tests/test_generated_artifact_lifecycle.py",
+            metadata["include"],
+        )
+        self.assertIn(
+            "fixtures/test_generated_artifact_lifecycle.py",
             metadata["include"],
         )
         for relative in (
@@ -634,13 +638,33 @@ context_health:
             "docs/generated-artifact-lifecycle.md",
         ):
             self.assertTrue((PLUGIN_ROOT / relative).is_file(), relative)
-        lifecycle_test = (
-            PLUGIN_ROOT / "tests" / "test_generated_artifact_lifecycle.py"
-        ).read_text()
+        lifecycle_fixture = (
+            PLUGIN_ROOT / "fixtures" / "test_generated_artifact_lifecycle.py"
+        )
+        release_lifecycle_fixture = (
+            RELEASE_PLUGIN_ROOT
+            / "fixtures"
+            / "test_generated_artifact_lifecycle.py"
+        )
+        self.assertEqual(
+            lifecycle_fixture.read_bytes(),
+            release_lifecycle_fixture.read_bytes(),
+        )
         self.assertIn(
             'os.environ.get("DEVFLOW_PLUGIN_ROOT"',
-            lifecycle_test,
+            lifecycle_fixture.read_text(),
         )
+        lifecycle_shim = (
+            PLUGIN_ROOT / "tests" / "test_generated_artifact_lifecycle.py"
+        )
+        release_lifecycle_shim = (
+            RELEASE_PLUGIN_ROOT / "tests" / "test_generated_artifact_lifecycle.py"
+        )
+        self.assertEqual(
+            lifecycle_shim.read_bytes(),
+            release_lifecycle_shim.read_bytes(),
+        )
+        self.assertIn("loadTestsFromModule", lifecycle_shim.read_text())
 
     def test_release_legacy_names_are_confined_to_inspector_runtime_and_negative_test(self):
         legacy_name = re.compile(

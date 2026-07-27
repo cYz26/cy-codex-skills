@@ -1,10 +1,12 @@
 {
   "include": [
+    "fixtures/test_generated_artifact_lifecycle.py",
     "tests/test_generated_artifact_lifecycle.py",
     "tests/test_packaged_runtime.py",
     "vendor/**"
   ],
   "defaultExcludeOverrides": [
+    "fixtures/**",
     "tests/**"
   ],
   "exclude": [
