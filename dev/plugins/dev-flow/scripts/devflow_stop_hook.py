@@ -29,6 +29,7 @@ from workflow_generated_artifacts import inspect_generated_artifact_lifecycle
 from workflow_paths import repo_path
 from workflow_release_sync import sync_release_assets as release_sync_assets
 from workflow_state import parse_state, resolve_state
+from workflow_stop_scope import stop_hook_scope
 
 
 def run_stop_checks(repo: Path) -> dict[str, Any]:
@@ -265,6 +266,8 @@ def main() -> int:
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
     payload = read_hook_payload()
+    if not args.json and not stop_hook_scope(payload)["enforce"]:
+        return 0
     repo = repo_path(args.repo or payload.get("cwd") or Path.cwd())
     report = run_stop_checks(repo)
     if args.json:

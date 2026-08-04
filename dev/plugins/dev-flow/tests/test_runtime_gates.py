@@ -64,6 +64,29 @@ context_management:
 """
         )
 
+    def make_incomplete_stop_repo(self):
+        repo = self.make_repo()
+        self.write_state(repo)
+        (repo / "TASK_LEDGER.md").write_text(
+            "| Task | Status |\n"
+            "| --- | --- |\n"
+            "| Continue approved work | executing |\n"
+        )
+        return repo
+
+    def invoke_stop_hook(self, module, repo, payload, *, json_mode=False):
+        stdout = io.StringIO()
+        argv = ["devflow_stop_hook.py", "--repo", str(repo)]
+        if json_mode:
+            argv.append("--json")
+        with mock.patch.object(sys, "argv", argv), mock.patch.object(
+            sys,
+            "stdin",
+            io.StringIO(json.dumps(payload)),
+        ), contextlib.redirect_stdout(stdout):
+            exit_code = module.main()
+        return exit_code, stdout.getvalue()
+
     def test_claude_delegate_module_is_python39_syntax_compatible(self):
         source = (SCRIPTS / "workflow_claude_delegate.py").read_text()
         tree = ast.parse(source, filename="workflow_claude_delegate.py", feature_version=(3, 9))
@@ -469,6 +492,124 @@ goal_gate:
 
         self.assertEqual(exit_code, 0)
         self.assertEqual(stdout.getvalue(), "")
+
+    def test_stop_hook_does_not_continue_a_turn_twice(self):
+        module = importlib.import_module("devflow_stop_hook")
+        repo = self.make_incomplete_stop_repo()
+        tracked = [repo / "TASK_LEDGER.md", repo / ".planning" / "devflow" / "STATE.md"]
+        before = {path: path.read_bytes() for path in tracked}
+
+        exit_code, output = self.invoke_stop_hook(
+            module,
+            repo,
+            {
+                "cwd": str(repo),
+                "hook_event_name": "Stop",
+                "session_id": "durable-session",
+                "turn_id": "continued-turn",
+                "transcript_path": str(repo / "rollout.jsonl"),
+                "stop_hook_active": True,
+                "last_assistant_message": "The requested side answer is complete.",
+            },
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(output, "")
+        self.assertEqual(before, {path: path.read_bytes() for path in tracked})
+
+    def test_stop_hook_does_not_apply_durable_execution_to_ephemeral_conversation(self):
+        module = importlib.import_module("devflow_stop_hook")
+        repo = self.make_incomplete_stop_repo()
+        tracked = [repo / "TASK_LEDGER.md", repo / ".planning" / "devflow" / "STATE.md"]
+        before = {path: path.read_bytes() for path in tracked}
+
+        exit_code, output = self.invoke_stop_hook(
+            module,
+            repo,
+            {
+                "cwd": str(repo),
+                "hook_event_name": "Stop",
+                "session_id": "ephemeral-side-session",
+                "turn_id": "side-turn",
+                "transcript_path": None,
+                "stop_hook_active": False,
+                "last_assistant_message": "The side conversation is complete.",
+            },
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(output, "")
+        self.assertEqual(before, {path: path.read_bytes() for path in tracked})
+
+    def test_stop_hook_preserves_first_durable_and_legacy_continuation(self):
+        module = importlib.import_module("devflow_stop_hook")
+
+        for payload in (
+            {
+                "hook_event_name": "Stop",
+                "session_id": "durable-session",
+                "turn_id": "first-turn",
+                "transcript_path": "/tmp/durable-rollout.jsonl",
+                "stop_hook_active": False,
+            },
+            {
+                "hook_event_name": "Stop",
+                "session_id": "legacy-session",
+                "turn_id": "legacy-turn",
+                "stop_hook_active": False,
+            },
+        ):
+            with self.subTest(payload=payload):
+                repo = self.make_incomplete_stop_repo()
+                payload = {**payload, "cwd": str(repo)}
+
+                exit_code, output = self.invoke_stop_hook(module, repo, payload)
+
+                self.assertEqual(exit_code, 0)
+                response = json.loads(output)
+                self.assertEqual(set(response), {"decision", "reason"})
+                self.assertEqual(response["decision"], "block")
+                self.assertIn("execution_continuation", response["reason"])
+
+    def test_stop_hook_json_diagnostics_ignore_live_conversation_scope(self):
+        module = importlib.import_module("devflow_stop_hook")
+        repo = self.make_incomplete_stop_repo()
+
+        exit_code, output = self.invoke_stop_hook(
+            module,
+            repo,
+            {
+                "cwd": str(repo),
+                "hook_event_name": "Stop",
+                "transcript_path": None,
+                "stop_hook_active": True,
+            },
+            json_mode=True,
+        )
+
+        self.assertEqual(exit_code, 1)
+        report = json.loads(output)
+        self.assertFalse(report["ok"])
+        self.assertIn("execution_continuation", report["failedChecks"])
+
+    def test_workflow_doctor_reports_stop_hook_protocol_scope(self):
+        repo = self.make_repo()
+        self.write_state(repo)
+
+        report = doctor_workflow(repo)
+
+        protocol = report["stopHookProtocol"]
+        self.assertTrue(protocol["ok"], protocol)
+        self.assertEqual(protocol["status"], "ready")
+        self.assertEqual(
+            {case["id"]: case["enforce"] for case in protocol["cases"]},
+            {
+                "already_continued": False,
+                "ephemeral_transcript": False,
+                "durable_transcript": True,
+                "legacy_payload": True,
+            },
+        )
 
     def test_stop_hook_uses_ledger_completion_check(self):
         module = importlib.import_module("devflow_stop_hook")

@@ -35,3 +35,13 @@ The Stop hook blocks premature termination for `CONTINUE_NEXT_ITEM`,
 `AWAIT_HUMAN`, `READY_FOR_EXTERNAL_EFFECT`, or verified `COMPLETE` boundary
 without authorizing or executing the next action. Full OpenSpec tasks take
 precedence over `TASK_LEDGER.md`; the hook never merges them into a new queue.
+
+Repository continuation enforcement is scoped to a durable or legacy-
+compatible Codex conversation. Before reading the repository, the hook stays
+silent when `stop_hook_active` is true because Codex already continued that
+turn, or when the payload explicitly has `transcript_path: null` because an
+ephemeral conversation cannot own durable execution. A first Stop attempt with
+a persistent transcript retains the existing blocking behavior. Payloads from
+older callers that omit `transcript_path` preserve the existing fail-closed
+checks, and `--json` remains an operator diagnostic independent of live Hook
+scope. The hook never parses transcript contents to infer conversation type.

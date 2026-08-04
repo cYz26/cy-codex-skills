@@ -6,6 +6,7 @@ from typing import Optional
 from workflow_paths import render_template, repo_path
 from workflow_validate import validate_workflow_state
 from workflow_constants import resolve_plugin_root
+from workflow_stop_scope import stop_hook_protocol_check
 
 
 def doctor_workflow(
@@ -25,15 +26,21 @@ def doctor_workflow(
         plugin_root=drift_plugin_root,
         codex_home=codex_home,
     )
-    issues = validation["issues"] + validation["warnings"]
+    stop_hook_protocol = stop_hook_protocol_check()
+    issues = validation["issues"] + validation["warnings"] + stop_hook_protocol["issues"]
     recommendations = repair_recommendations(issues)
-    status = "healthy" if validation["ok"] and not validation["warnings"] else "needs repair"
+    status = (
+        "healthy"
+        if validation["ok"] and not validation["warnings"] and stop_hook_protocol["ok"]
+        else "needs repair"
+    )
     report = {
         "diagnosis": status,
         "issues": issues,
         "recommendations": recommendations,
         "validation": validation,
         "generatedArtifacts": validation["generatedArtifacts"],
+        "stopHookProtocol": stop_hook_protocol,
     }
     if write_report:
         write_doctor_reports(repo, status, issues, recommendations)

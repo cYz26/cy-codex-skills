@@ -218,7 +218,11 @@ confirmation.
 
 The read-only Stop hook prefers the active Full OpenSpec task list over the
 fallback `TASK_LEDGER.md` and blocks premature completion while executable work
-remains. It does not execute work or bypass the default-deny side-effect policy.
+remains. This enforcement is one-shot and conversation-scoped: an already-
+continued Stop turn and an explicitly ephemeral conversation with no persistent
+transcript stay silent, while a first Stop in a durable conversation retains
+the existing guard. The hook does not parse transcripts, execute work, or
+bypass the default-deny side-effect policy.
 
 ## Goal Workflow
 

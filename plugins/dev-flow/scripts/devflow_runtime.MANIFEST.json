@@ -1,15 +1,15 @@
 {
   "archive": {
-    "bytes": 211850,
+    "bytes": 212788,
     "path": "scripts/devflow_runtime.pyz",
-    "sha256": "fed5629637f0a11df36426b9efd9cf99e5d5e5de97cb4d27a65df7dad0e34470"
+    "sha256": "5a69ef6ae12ab3ee44d080efe2e9387b07a11ba91745f2e210ba388395b37851"
   },
   "buildCommand": [
     "/opt/homebrew/opt/python@3.12/bin/python3.12",
     "dev/scripts/package_devflow_release_runtime.py"
   ],
   "schemaVersion": 1,
-  "sourceCommit": "7059c06d7fcb2a94ee659c7657fc9aa17a7061d2",
+  "sourceCommit": "e69458f79e17c6fcb752fd9cef802eb22e1709e3",
   "sources": [
     {
       "bytes": 2660,
@@ -102,9 +102,9 @@
       "sha256": "62d56259442dae2dacf982bc31efed080904edb8340dab6b0e8ce40c319b62e3"
     },
     {
-      "bytes": 10127,
+      "bytes": 10258,
       "path": "dev/plugins/dev-flow/scripts/devflow_stop_hook.py",
-      "sha256": "f1cbaa89151d1a55c69b6f2da81707fe41f5beff0798224634f08fba9fb5d811"
+      "sha256": "9f2fe49c1cd35edb1eaf1e39300f4dad2268cba9ee8ed613bd3f872b04ef5f33"
     },
     {
       "bytes": 1074,
@@ -542,9 +542,9 @@
       "sha256": "384231c9efe065d18bc96497e57a2a8209103b6a79b40dd1b6e2804656975f28"
     },
     {
-      "bytes": 1934,
+      "bytes": 2183,
       "path": "dev/plugins/dev-flow/scripts/workflow_doctor.py",
-      "sha256": "1925ea4435c717f559514ddb34d4f69016eea6dec01ba3892f3d4f001cd0b0f3"
+      "sha256": "44f199a9dfb66c524ec1a19eb009a3256dd8e57361f69e997e1ebada70f3211d"
     },
     {
       "bytes": 130846,
@@ -660,6 +660,11 @@
       "bytes": 14048,
       "path": "dev/plugins/dev-flow/scripts/workflow_state.py",
       "sha256": "bcc0cdf51681055832a8378eae268c795931651693ad7f409407e95e5c8f25ba"
+    },
+    {
+      "bytes": 2366,
+      "path": "dev/plugins/dev-flow/scripts/workflow_stop_scope.py",
+      "sha256": "f4d85df824b9725d431c38ced7bedf299851200fbd5e0be13a463fc5563bf18c"
     },
     {
       "bytes": 8154,
