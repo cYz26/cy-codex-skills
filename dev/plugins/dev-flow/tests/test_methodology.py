@@ -27,7 +27,7 @@ def write_official_openspec_skills(repo: Path) -> None:
             "description: Official OpenSpec workflow fixture\n"
             "allowed-tools: Bash(openspec:*)\n"
             "metadata:\n"
-            '  generatedBy: "1.6.0"\n'
+            '  generatedBy: "1.7.0"\n'
             "---\n"
         )
 
@@ -498,13 +498,26 @@ class MethodologyContractTests(unittest.TestCase):
         )
         write_official_openspec_skills(repo)
 
-        report = dependency_report(
-            PLUGIN_ROOT,
-            codex_home=codex_home,
-            config_path=codex_home / "config.toml",
-            repo=repo,
-            triggered_capabilities={"test-first-execution"},
-        )
+        with tempfile.TemporaryDirectory(prefix="devflow-methodology-bin-") as bin_root:
+            for name, output in {
+                "codex": "codex fixture",
+                "openspec": "1.7.0",
+                "node": "v24.13.0",
+            }.items():
+                binary = Path(bin_root) / name
+                binary.write_text(f"#!/bin/sh\nprintf '{output}\\n'\n")
+                binary.chmod(0o755)
+            with mock.patch.dict(
+                os.environ,
+                {"PATH": f"{bin_root}{os.pathsep}{os.environ.get('PATH', '')}"},
+            ):
+                report = dependency_report(
+                    PLUGIN_ROOT,
+                    codex_home=codex_home,
+                    config_path=codex_home / "config.toml",
+                    repo=repo,
+                    triggered_capabilities={"test-first-execution"},
+                )
 
         self.assertTrue(report["ok"], report)
         self.assertEqual(report["methodology"]["requiredSkills"], ["tdd"])

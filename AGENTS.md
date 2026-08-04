@@ -23,7 +23,7 @@ The active configuration is minimal:
 {"workflow":{"mode":"full-openspec"}}
 ```
 
-OpenSpec 1.6 contributes exactly six project-local skills:
+OpenSpec 1.7 contributes exactly six project-local skills:
 `openspec-propose`, `openspec-explore`, `openspec-apply-change`,
 `openspec-update-change`, `openspec-sync-specs`, and
 `openspec-archive-change`. DevFlow generates and verifies them in isolation

@@ -21,7 +21,7 @@ workflow paths explicitly.
 ## Safe project-local refresh
 
 Apply only actions already authorized by the user. Preview official OpenSpec
-1.6 skills through DevFlow's isolated OpenSpec staging path, then apply the
+1.7 skills through DevFlow's isolated OpenSpec staging path, then apply the
 same plan:
 
 ```bash

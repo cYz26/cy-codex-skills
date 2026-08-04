@@ -35,7 +35,7 @@ def ensure_project_local_skills(
     triggered_capabilities: set[str] | None = None,
     openspec_skill_root: Path | None = None,
     openspec_generation_planned: bool = False,
-    openspec_expected_version: str = "1.6.0",
+    openspec_expected_version: str = "1.7.0",
 ) -> dict[str, Any]:
     required_matt = required_matt_skills(triggered_capabilities or set())
     methodology_source = verify_matt_vendor(plugin_root, required_matt)

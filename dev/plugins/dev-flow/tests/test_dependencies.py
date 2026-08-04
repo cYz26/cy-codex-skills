@@ -34,7 +34,7 @@ class DependencyTests(unittest.TestCase):
         self.bin_dir = self.root / "bin"
         self.bin_dir.mkdir()
         self.write_executable("codex", "#!/bin/sh\nprintf 'codex fixture\\n'\n")
-        self.write_executable("openspec", "#!/bin/sh\nprintf '1.6.0\\n'\n")
+        self.write_executable("openspec", "#!/bin/sh\nprintf '1.7.0\\n'\n")
         self.write_executable("node", "#!/bin/sh\nprintf 'v20.19.0\\n'\n")
         self.repo_counter = 0
 
@@ -82,7 +82,7 @@ class DependencyTests(unittest.TestCase):
                     "description: Official OpenSpec workflow fixture\n"
                     "allowed-tools: Bash(openspec:*)\n"
                     "metadata:\n"
-                    '  generatedBy: "1.6.0"\n'
+                    '  generatedBy: "1.7.0"\n'
                     "---\n"
                 )
         for skill in matt_skills:
@@ -472,7 +472,7 @@ class DependencyTests(unittest.TestCase):
                 if mutation == "missing":
                     skill_file.unlink()
                 elif mutation == "wrong-version":
-                    skill_file.write_text(skill_file.read_text().replace("1.6.0", "1.5.0"))
+                    skill_file.write_text(skill_file.read_text().replace("1.7.0", "1.6.0"))
                 else:
                     outside = self.root / f"openspec-outside-{self.repo_counter}"
                     outside.mkdir()
@@ -613,9 +613,9 @@ class DependencyTests(unittest.TestCase):
             mock.patch.object(
                 auto_update,
                 "installed_openspec_version",
-                return_value="1.5.0",
+                return_value="1.6.0",
             ),
-            mock.patch.object(auto_update, "npm_latest_version", return_value="1.6.0"),
+            mock.patch.object(auto_update, "npm_latest_version", return_value="1.7.0"),
             mock.patch.object(
                 auto_update,
                 "run_command",
@@ -626,11 +626,11 @@ class DependencyTests(unittest.TestCase):
 
         openspec = next(item for item in results if item["name"] == "openspec-cli")
         self.assertEqual(openspec["status"], "update-available")
-        self.assertEqual(openspec["current"], "1.5.0")
-        self.assertEqual(openspec["expectedVersion"], "1.6.0")
+        self.assertEqual(openspec["current"], "1.6.0")
+        self.assertEqual(openspec["expectedVersion"], "1.7.0")
         self.assertEqual(
             openspec["recommendedCommand"],
-            ["npm", "install", "-g", "@fission-ai/openspec@1.6.0"],
+            ["npm", "install", "-g", "@fission-ai/openspec@1.7.0"],
         )
 
     def test_external_updater_apply_without_authorization_stops_before_commands(self):
@@ -683,7 +683,7 @@ class DependencyTests(unittest.TestCase):
             mock.patch.object(
                 auto_update,
                 "installed_openspec_version",
-                side_effect=["1.5.0", "1.6.0"],
+                side_effect=["1.6.0", "1.7.0"],
             ),
             mock.patch.object(auto_update, "run_command", return_value=command_result) as run,
         ):
@@ -695,10 +695,10 @@ class DependencyTests(unittest.TestCase):
 
         openspec = next(item for item in results if item["name"] == "openspec-cli")
         self.assertEqual(openspec["status"], "updated-or-unchanged")
-        self.assertEqual(openspec["before"], "1.5.0")
-        self.assertEqual(openspec["after"], "1.6.0")
+        self.assertEqual(openspec["before"], "1.6.0")
+        self.assertEqual(openspec["after"], "1.7.0")
         run.assert_called_once_with(
-            ["npm", "install", "-g", "@fission-ai/openspec@1.6.0"],
+            ["npm", "install", "-g", "@fission-ai/openspec@1.7.0"],
             timeout=600,
         )
 

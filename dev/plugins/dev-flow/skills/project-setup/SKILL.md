@@ -24,7 +24,7 @@ project-local skill activation before apply.
    the plan is safe.
 5. Preview `scripts/activate_project_dependencies.py --repo <repo>
    --refresh-project-skills --dry-run --json`; explicit apply generates the
-   six OpenSpec 1.6 skills in isolation and copies them to `.agents/skills`
+   six OpenSpec 1.7 skills in isolation and copies them to `.agents/skills`
    without enabling global OPSX prompts.
 6. Run `scripts/validate_workflow_state.py --repo <repo> --json`.
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "lastVerified": "2026-07-23",
+  "lastVerified": "2026-08-04",
   "methodology": {
     "name": "mattpocock-skills",
     "kind": "git-skill-pack",
@@ -84,14 +84,21 @@
       "name": "openspec-cli",
       "required": true,
       "purpose": "OpenSpec proposal, spec, task, validation, sync, and archive workflows.",
-      "expectedVersion": "1.6.0",
+      "expectedVersion": "1.7.0",
       "binary": "openspec",
       "versionCommand": ["openspec", "--version"],
-      "installCommand": ["npm", "install", "-g", "@fission-ai/openspec@1.6.0"],
-      "updateCommand": ["npm", "install", "-g", "@fission-ai/openspec@1.6.0"],
+      "installCommand": ["npm", "install", "-g", "@fission-ai/openspec@1.7.0"],
+      "updateCommand": ["npm", "install", "-g", "@fission-ai/openspec@1.7.0"],
       "runtimeRequirements": {"node": ">=20.19.0"},
       "smokeCommand": ["openspec", "--version"],
       "source": "https://www.npmjs.com/package/@fission-ai/openspec",
+      "releaseEvidence": {
+        "tag": "v1.7.0",
+        "commit": "4e16790d90d8f54d4773ad9a5e71a57cd9f1e86b",
+        "publishedAt": "2026-07-29T01:31:24.000Z",
+        "tarball": "https://registry.npmjs.org/@fission-ai/openspec/-/openspec-1.7.0.tgz",
+        "integrity": "sha512-FGuMzBqJVB7/mbn/+kt9MsHzCvjoAVNguDWtuHBjdlF3GkUGrc5QlU6FJ70wbb4sBPsd9zbXB2wftMmxCzEJCw=="
+      },
       "failureMode": "Missing, drifted, or failing OpenSpec blocks spec-driven DevFlow tasks.",
       "fallbackOrBlocker": "Install the expected package or run the recorded updater in explicit apply mode."
     },

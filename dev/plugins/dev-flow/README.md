@@ -75,9 +75,9 @@ python3 scripts/activate_project_dependencies.py --repo . \
 Repeat `--capability` for every capability required by the current task.
 Unknown capabilities fail closed.
 
-## OpenSpec 1.6 Boundary
+## OpenSpec 1.7 Boundary
 
-DevFlow pins OpenSpec 1.6.0 and Node `>=20.19.0`. It generates exactly six
+DevFlow pins OpenSpec 1.7.0 and Node `>=20.19.0`. It generates exactly six
 official Codex skills in an isolated temporary project:
 
 - `openspec-propose`

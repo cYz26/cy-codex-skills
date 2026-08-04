@@ -266,6 +266,83 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   validation-drift defect
 - Human Disposition: `pending`
 
+### DF-IFL-010: Installed-cache checker misidentifies the DevFlow self-hosting source route
+
+- Finding ID: `DF-IFL-010`
+- Disposition: `DEFER_AND_CONTINUE`
+- Severity: medium self-hosting diagnostic false-negative; no missing OpenSpec,
+  Matt methodology, release-cache, or consumer runtime dependency
+- Evidence: the source-root `check_dependencies.py` reports
+  `workflowReady: true` with OpenSpec 1.6 and all six Matt skills verified, while
+  the byte-matching installed-cache checker reports `missing_required` only
+  because all project-local DevFlow links point to
+  `dev/plugins/dev-flow/skills/**` instead of the cache's identical
+  `skills/**` paths
+- Affected Contract: none in the OpenSpec 1.7 release adoption; source-mode
+  dependency proof and release/cache identity remain independently verifiable
+- Impact: running the installed-cache checker against this plugin's own source
+  repository can block a valid workflow even though dependency bytes and
+  versions are complete
+- Current Mitigation: use the canonical development-source checker for this
+  self-hosting repository, verify release/cache byte identity separately, and
+  keep the installed-cache checker authoritative for cache-root consumer routes
+- Disposition Reason: repairing dual-root identity requires a separate behavior
+  contract and regression write set; it predates OpenSpec 1.7 and does not
+  invalidate the exact-version, generated-skill, or release compatibility proof
+- Recommended Follow-up: add explicit `development_source` and
+  `installed_cache` root identities, trust hash-equivalent managed links, and
+  retain fail-closed behavior for true byte or provenance drift
+- Follow-up Trigger: a dedicated dependency-gate repair or the next self-hosting
+  diagnostics change
+- Human Disposition: `pending`
+
+## Active Change: OpenSpec 1.7 Upgrade
+
+- authoritative_queue: OpenSpec change `upgrade-devflow-openspec-1-7`
+- status: verified implementation plus submission preflight at 26/29; executing
+  the scoped implementation commit at task 8.2
+- target_state: exact `@fission-ai/openspec@1.7.0`, Node `>=20.19.0`, isolated
+  exact six-skill Codex core generation, project-local transactional refresh,
+  and source/release/runtime compatibility proof
+- capability_evidence: npm formal release published 2026-07-29; tag
+  `v1.7.0` peels to `4e16790d90d8f54d4773ad9a5e71a57cd9f1e86b`;
+  isolated 1.6/1.7 comparison retained the same six paths and removed Codex
+  commands; OpenSpec 1.7 strict repository validation passed 58/58
+- approved_scope: OpenSpec-specific DevFlow source, generated release
+  counterpart, exact CLI/current-project six-skill/named-cache rollout after
+  verification, and canonical evidence/state
+- authorization: on 2026-08-04 the user explicitly instructed Codex to commit
+  the upgrade to the remote and complete the local refresh; this authorizes
+  scoped commits on verified `main`, native push to `origin/main`, refresh of
+  only `dev-flow@cy-codex-skills`, and refresh of this project's exact six
+  OpenSpec skills
+- excluded: PR, GitHub Release publication, archive, broad updater apply,
+  unrelated dependencies/plugins/projects, project migration, legacy cleanup,
+  force-push, and the `DF-IFL-010` repair
+- evidence: focused RED/GREEN 18/18; complete development discovery 444/444;
+  source pre-promotion 408/408; strict OpenSpec 58/58; packaged 6/6 and release
+  discovery 66/66; 132-record runtime verified at archive SHA-256
+  `fed5629637f0a11df36426b9efd9cf99e5d5e5de97cb4d27a65df7dad0e34470`;
+  Plugin Eval 86/B with zero failures; OpenSpec CLI/project skills at 1.7.0;
+  named cache matches source; workflow valid; Doctor healthy; diff check clean
+- review: Standards and Spec axes found no actionable finding; the generated
+  counterpart changes are required by release policy rather than scope creep
+- verification_evidence:
+  `.planning/devflow/verification/20260804-openspec-1-7-red.md`
+- checkpoint:
+  `.planning/devflow/checkpoints/2026-08-04-verification_passed-upgrade-devflow-openspec-1-7.md`
+- rollback: restore the exact 1.6 provenance/default/release counterpart,
+  reinstall exact OpenSpec 1.6.0, and transactionally restore the six project
+  skills only if post-verification regression requires rollback
+- residuals: `DF-IFL-001` plugin-wide static token budgets and `DF-IFL-010`
+  self-hosting root identity remain `DEFER_AND_CONTINUE`; neither blocks the
+  1.7 Completion Contract or authorizes follow-up work
+- next_item: task 8.2 scoped implementation commit; then continue automatically
+  through deterministic runtime rebuild/commit, native push, targeted refresh,
+  closeout readback, and scoped receipt push
+- unrelated_wip_preserved:
+  `openspec/changes/separate-git-transport-from-github-auth/evidence/implementation.md`
+
 ## Current Verified Change: Generated Artifact Lifecycle
 
 - authoritative_queue: OpenSpec change

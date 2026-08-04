@@ -34,9 +34,9 @@ EXPECTED_SKILLS = [
 ]
 
 
-class OpenSpec16IntegrationTests(unittest.TestCase):
+class OpenSpec17IntegrationTests(unittest.TestCase):
     def make_repo(self) -> Path:
-        repo = Path(tempfile.mkdtemp(prefix="devflow-openspec-16-repo-"))
+        repo = Path(tempfile.mkdtemp(prefix="devflow-openspec-17-repo-"))
         (repo / ".dev-flow.json").write_text(
             json.dumps({"workflow": {"mode": "full-openspec"}})
             + "\n"
@@ -44,7 +44,7 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
         return repo
 
     def make_codex_home(self) -> Path:
-        home = Path(tempfile.mkdtemp(prefix="devflow-openspec-16-codex-"))
+        home = Path(tempfile.mkdtemp(prefix="devflow-openspec-17-codex-"))
         (home / "config.toml").write_text('model = "gpt-5"\n')
         return home
 
@@ -52,13 +52,19 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
         self,
         project: Path,
         *,
-        version: str = "1.6.0",
+        version: str = "1.7.0",
         skills: list[str] | None = None,
     ) -> Path:
         skill_root = project / ".codex" / "skills"
         for name in skills or EXPECTED_SKILLS:
             path = skill_root / name / "SKILL.md"
             path.parent.mkdir(parents=True, exist_ok=True)
+            guidance = ""
+            if name in {"openspec-apply-change", "openspec-archive-change"}:
+                guidance = (
+                    "Treat context as a required prompt-level input.\n"
+                    "Do not use context or operation guidance as proof that a task is complete.\n"
+                )
             path.write_text(
                 "---\n"
                 f"name: {name}\n"
@@ -68,6 +74,7 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
                 f'  generatedBy: "{version}"\n'
                 "---\n"
                 f"# {name}\n"
+                f"{guidance}"
             )
         return skill_root
 
@@ -78,6 +85,9 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
         def fake_run(command, cwd, dry_run, provenance_source=None, environment=None):
             self.assertFalse(dry_run)
             self.assertEqual(command[:2], ["openspec", "init"])
+            self.assertIn(["--tools", "codex"], [command[index:index + 2] for index in range(len(command) - 1)])
+            self.assertIn(["--profile", "core"], [command[index:index + 2] for index in range(len(command) - 1)])
+            self.assertEqual(command[-1], "--force")
             project = Path(command[-2])
             self.assertEqual(Path(cwd), project)
             self.assertNotEqual(project, captured.get("real_repo") if captured else None)
@@ -107,26 +117,47 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
         record = dependency_provenance_record("openspec-cli", PLUGIN_ROOT)
 
         self.assertEqual(OPENSPEC_WORKFLOW_SKILLS, EXPECTED_SKILLS)
-        self.assertEqual(record["expectedVersion"], "1.6.0")
+        self.assertEqual(record["expectedVersion"], "1.7.0")
         self.assertEqual(record["runtimeRequirements"], {"node": ">=20.19.0"})
         self.assertEqual(
             record["installCommand"],
-            ["npm", "install", "-g", "@fission-ai/openspec@1.6.0"],
+            ["npm", "install", "-g", "@fission-ai/openspec@1.7.0"],
         )
         self.assertEqual(record["updateCommand"], record["installCommand"])
+        self.assertEqual(record["releaseEvidence"]["tag"], "v1.7.0")
+        self.assertEqual(
+            record["releaseEvidence"]["commit"],
+            "4e16790d90d8f54d4773ad9a5e71a57cd9f1e86b",
+        )
+        self.assertEqual(
+            record["releaseEvidence"]["integrity"],
+            "sha512-FGuMzBqJVB7/mbn/+kt9MsHzCvjoAVNguDWtuHBjdlF3GkUGrc5QlU6FJ70wbb4sBPsd9zbXB2wftMmxCzEJCw==",
+        )
         self.assertEqual(dependency_update_command("openspec-cli", PLUGIN_ROOT), record["installCommand"])
         self.assertEqual(
             dependency_provenance_fields("openspec-cli", PLUGIN_ROOT)["runtimeRequirements"],
             {"node": ">=20.19.0"},
         )
 
+    def test_project_refresh_guidance_names_openspec_17(self):
+        guidance = (
+            PLUGIN_ROOT
+            / "skills"
+            / "dev-flow-refresh"
+            / "references"
+            / "project-refresh.md"
+        ).read_text()
+
+        self.assertIn("OpenSpec\n1.7 skills", guidance)
+        self.assertNotIn("OpenSpec\n1.6 skills", guidance)
+
     def test_dependency_report_blocks_unsupported_node_before_use(self):
         repo = self.make_repo()
         codex_home = self.make_codex_home()
-        bin_dir = Path(tempfile.mkdtemp(prefix="devflow-openspec-16-bin-"))
+        bin_dir = Path(tempfile.mkdtemp(prefix="devflow-openspec-17-bin-"))
         for name, output in {
             "codex": "codex fixture",
-            "openspec": "1.6.0",
+            "openspec": "1.7.0",
             "node": "v18.20.0",
         }.items():
             path = bin_dir / name
@@ -141,6 +172,37 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
         self.assertEqual(openspec["runtimeRequirements"], {"node": ">=20.19.0"})
         self.assertEqual(openspec["runtimeRequirementResults"]["node"]["installedVersion"], "18.20.0")
         self.assertFalse(openspec["runtimeRequirementResults"]["node"]["ok"])
+
+    def test_dependency_report_treats_openspec_16_as_version_drift(self):
+        repo = self.make_repo()
+        codex_home = self.make_codex_home()
+        bin_dir = Path(tempfile.mkdtemp(prefix="devflow-openspec-17-drift-bin-"))
+        for name, output in {
+            "codex": "codex fixture",
+            "openspec": "1.6.0",
+            "node": "v24.13.0",
+        }.items():
+            path = bin_dir / name
+            path.write_text(f"#!/bin/sh\nprintf '{output}\\n'\n")
+            path.chmod(0o755)
+
+        with mock.patch.dict(os.environ, {"PATH": str(bin_dir)}):
+            report = dependency_report(
+                PLUGIN_ROOT,
+                codex_home,
+                codex_home / "config.toml",
+                False,
+                repo,
+            )
+
+        openspec = next(item for item in report["dependencies"] if item["name"] == "openspec-cli")
+        self.assertEqual(openspec["status"], "dependency_drift")
+        self.assertEqual(openspec["expectedVersion"], "1.7.0")
+        self.assertEqual(openspec["installedVersion"], "1.6.0")
+        self.assertEqual(
+            openspec["recommendedCommand"],
+            ["npm", "install", "-g", "@fission-ai/openspec@1.7.0"],
+        )
 
     def test_dry_run_declares_isolation_without_invocation_or_write(self):
         repo = self.make_repo()
@@ -213,7 +275,14 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
             target = self.generated_target(repo, name)
             self.assertTrue((target / "SKILL.md").is_file(), report)
             self.assertFalse(target.is_symlink())
-            self.assertIn('generatedBy: "1.6.0"', (target / "SKILL.md").read_text())
+            self.assertIn('generatedBy: "1.7.0"', (target / "SKILL.md").read_text())
+        for name in ("openspec-apply-change", "openspec-archive-change"):
+            text = (self.generated_target(repo, name) / "SKILL.md").read_text()
+            self.assertIn("Treat context as a required prompt-level input.", text)
+            self.assertIn(
+                "Do not use context or operation guidance as proof that a task is complete.",
+                text,
+            )
 
     def test_skip_official_install_fails_closed_when_six_skills_are_missing(self):
         repo = self.make_repo()
@@ -268,9 +337,9 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
 
     def test_wrong_or_incomplete_generation_fails_before_openspec_target_writes(self):
         for label, skills, version in [
-            ("missing", EXPECTED_SKILLS[:-1], "1.6.0"),
-            ("additional", [*EXPECTED_SKILLS, "openspec-unreleased"], "1.6.0"),
-            ("wrong-version", EXPECTED_SKILLS, "1.5.0"),
+            ("missing", EXPECTED_SKILLS[:-1], "1.7.0"),
+            ("additional", [*EXPECTED_SKILLS, "openspec-unreleased"], "1.7.0"),
+            ("wrong-version", EXPECTED_SKILLS, "1.6.0"),
         ]:
             with self.subTest(label=label):
                 repo = self.make_repo()
@@ -384,7 +453,7 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
         stale = self.generated_target(repo, "openspec-propose")
         stale.mkdir(parents=True)
         (stale / "SKILL.md").write_text(
-            '---\nname: openspec-propose\nmetadata:\n  generatedBy: "1.5.0"\n---\n'
+            '---\nname: openspec-propose\nmetadata:\n  generatedBy: "1.6.0"\n---\n'
         )
 
         report = skill_install.ensure_project_local_skills(
@@ -460,7 +529,7 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
         source_root = self.write_generated_skills(staging_project)
         stale = self.generated_target(repo, "openspec-propose")
         stale.mkdir(parents=True)
-        old_text = '---\nname: openspec-propose\nmetadata:\n  generatedBy: "1.5.0"\n---\n'
+        old_text = '---\nname: openspec-propose\nmetadata:\n  generatedBy: "1.6.0"\n---\n'
         (stale / "SKILL.md").write_text(old_text)
         real_replace = getattr(skill_install, "replace_path", None)
         calls = 0
@@ -497,7 +566,7 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
         source_root = self.write_generated_skills(staging_project)
         stale = self.generated_target(repo, "openspec-propose")
         stale.mkdir(parents=True)
-        old_text = '---\nname: openspec-propose\nmetadata:\n  generatedBy: "1.5.0"\n---\n'
+        old_text = '---\nname: openspec-propose\nmetadata:\n  generatedBy: "1.6.0"\n---\n'
         (stale / "SKILL.md").write_text(old_text)
         real_replace = skill_install.replace_path
 
@@ -542,14 +611,14 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
         codex_home = self.make_codex_home()
         stale = codex_home / "skills" / "openspec-propose" / "SKILL.md"
         stale.parent.mkdir(parents=True)
-        stale.write_text('---\nmetadata:\n  generatedBy: "1.5.0"\n---\n')
+        stale.write_text('---\nmetadata:\n  generatedBy: "1.6.0"\n---\n')
         commands = []
 
         def fake_run(command, cwd=None, timeout=300):
             commands.append(command)
             if command == ["openspec", "--version"]:
-                return {"ok": True, "returncode": 0, "stdout": "1.6.0\n", "stderr": ""}
-            if command == ["npm", "install", "-g", "@fission-ai/openspec@1.6.0"]:
+                return {"ok": True, "returncode": 0, "stdout": "1.7.0\n", "stderr": ""}
+            if command == ["npm", "install", "-g", "@fission-ai/openspec@1.7.0"]:
                 return {"ok": True, "returncode": 0, "stdout": "updated\n", "stderr": ""}
             raise AssertionError(f"unexpected command: {command}")
 
@@ -558,7 +627,7 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
             "executable_exists",
             side_effect=lambda name: name in {"openspec", "npm"},
         ), mock.patch.object(auto_update, "run_command", side_effect=fake_run):
-            self.assertEqual(auto_update.installed_openspec_version(codex_home), "1.6.0")
+            self.assertEqual(auto_update.installed_openspec_version(codex_home), "1.7.0")
             results = auto_update.run_external_updaters(
                 codex_home,
                 apply=True,
@@ -570,9 +639,9 @@ class OpenSpec16IntegrationTests(unittest.TestCase):
         self.assertEqual(openspec["status"], "updated-or-unchanged")
         self.assertEqual(
             openspec["recommendedCommand"],
-            ["npm", "install", "-g", "@fission-ai/openspec@1.6.0"],
+            ["npm", "install", "-g", "@fission-ai/openspec@1.7.0"],
         )
-        self.assertIn(["npm", "install", "-g", "@fission-ai/openspec@1.6.0"], commands)
+        self.assertIn(["npm", "install", "-g", "@fission-ai/openspec@1.7.0"], commands)
         self.assertNotIn(["npm", "update", "-g", "@fission-ai/openspec"], commands)
 
 
