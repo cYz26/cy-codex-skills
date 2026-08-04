@@ -92,10 +92,10 @@
 - [x] 8.2 Commit the reviewed OpenSpec 1.7 source, release assets, tests,
   canonical change, and ledger on `main`; preserve all unrelated WIP and record
   the implementation commit identity.
-- [ ] 8.3 Rebuild and verify the deterministic DevFlow runtime so its source
+- [x] 8.3 Rebuild and verify the deterministic DevFlow runtime so its source
   receipt binds the implementation commit, commit that generated counterpart,
   push native Git to `origin/main`, and prove a fast-forward remote readback.
-- [ ] 8.4 Refresh only `dev-flow@cy-codex-skills` and this project's exact six
+- [x] 8.4 Refresh only `dev-flow@cy-codex-skills` and this project's exact six
   OpenSpec skills, rerun cache/project/workflow diagnostics, record final
   local/remote parity, and push the scoped closeout receipt without archive,
   PR, GitHub Release, broad updater apply, migration, or legacy cleanup.
@@ -109,4 +109,4 @@
 | Generated release | main | `plugins/dev-flow/**` | sync receipt, package/runtime checks, Plugin Eval | no publication | done |
 | Named local rollout | main | exact OpenSpec CLI, six current-project skills, named DevFlow cache | prestate and readback | named dependency update only | done |
 | Final proof | main | this change, `TASK_LEDGER.md`, `.planning/devflow/**` | integrated evidence and diff | stop before commit/push/archive | done |
-| Submission and final refresh | main | explicit Git index/`main`, generated runtime receipt, named DevFlow cache, current project skills, closeout evidence | transport/staged review, commits, remote ref readback, cache/project diagnostics | commit, native push, and targeted refresh explicitly authorized 2026-08-04 | pending |
+| Submission and final refresh | main | explicit Git index/`main`, generated runtime receipt, named DevFlow cache, current project skills, closeout evidence | transport/staged review, commits, remote ref readback, cache/project diagnostics | commit, native push, and targeted refresh explicitly authorized 2026-08-04 | done |

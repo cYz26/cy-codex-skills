@@ -17,7 +17,8 @@
 ## Verified Implementation Baseline
 
 - OpenSpec change implementation: 25/25 tasks complete before submission
-  follow-through; four authorized submission/refresh tasks were then appended.
+  follow-through; the four authorized submission/refresh tasks are now also
+  complete, for 29/29 total.
 - OpenSpec CLI: exact `1.7.0`; Node: `24.13.0`; six current-project skills:
   exact 1.7 batch; Codex command files: none.
 - Release runtime before implementation commit: verified across 132 source
@@ -73,9 +74,38 @@ pass
   `7059c06d7fcb2a94ee659c7657fc9aa17a7061d2`, archive SHA-256
   `fed5629637f0a11df36426b9efd9cf99e5d5e5de97cb4d27a65df7dad0e34470`,
   290/290 runtime checks, packaged 6/6, release discovery 66/66, release sync
-  `current`, and Plugin Eval 86/B with zero failures. Receipt commit and native
-  push remain pending task 8.3.
-- Targeted local refresh and closeout push/readback: pending task 8.4.
+  `current`, and Plugin Eval 86/B with zero failures.
+- Runtime receipt commit: `49bb13f` (`chore(devflow): bind OpenSpec 1.7 runtime
+  receipt`). Native SSH push advanced `origin/main` from `29384ef` through
+  `49bb13f`; `git ls-remote`, fetch, and divergence readback proved local and
+  remote `main` equal at 0 ahead / 0 behind. Task 8.3 passed.
+- The verified ChatGPT.app Codex CLI refreshed only
+  `dev-flow@cy-codex-skills` version `0.3.0+codex.20260529145038` under
+  `/Users/cY/.codex`. Cache and release runtime archives byte-match at SHA-256
+  `fed5629637f0a11df36426b9efd9cf99e5d5e5de97cb4d27a65df7dad0e34470`;
+  both source receipts equal `7059c06d7fcb2a94ee659c7657fc9aa17a7061d2`.
+- Current-project activation dry-run selected only the exact six OpenSpec copy
+  refreshes. Apply regenerated them in isolated temporary Codex/XDG homes,
+  verified exact OpenSpec `1.7.0`, and returned `current` because every project
+  copy was already byte-current. All 16 DevFlow skills remained linked; no
+  command file, migration, legacy cleanup, or unrelated project write ran.
+- Post-refresh readback: OpenSpec `1.7.0`, Node `24.13.0`, six project skills
+  stamped `generatedBy: "1.7.0"`, `.codex/commands/openspec` absent, project
+  migration and official skill layout `current`, workflow validation clean,
+  Doctor healthy, and remote/local parity 0/0 at `49bb13f` before this final
+  closeout receipt.
+- Global OpenSpec configuration stayed byte-identical at SHA-256
+  `1cfa273ff52c007ed07478ebfd47942ce005324b08776b8c00b16a6e5271cb5b`.
+  The tracked project `openspec/config.yaml` also equals HEAD at SHA-256
+  `7f64d2448e1c83ffa6f2f3398b742fb5f2d4d3ea47b2c540a9076484977026b4`.
+  The authorized named `codex plugin add` rewrote `/Users/cY/.codex/config.toml`
+  from its pre-refresh byte hash to
+  `031f405defb3f8e9d4ef68e959e2fb6bff6378b496ed7a47bfbeb6c7329af5d3`;
+  this is recorded as the plugin-registration side effect, not misreported as
+  an OpenSpec generator or project-config mutation.
+- Task 8.4 is complete. This tasks/evidence/ledger update is the scoped final
+  closeout receipt; its immutable commit and post-push remote readback are
+  reported in the operator handoff to avoid a self-referential receipt chain.
 
 ## Residual Findings
 

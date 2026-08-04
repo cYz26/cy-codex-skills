@@ -299,8 +299,9 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 ## Active Change: OpenSpec 1.7 Upgrade
 
 - authoritative_queue: OpenSpec change `upgrade-devflow-openspec-1-7`
-- status: implementation committed as `7059c06` at 27/29; executing the
-  deterministic runtime receipt commit and native push at task 8.3
+- status: verified at 29/29; implementation, deterministic runtime receipt,
+  native push, named cache refresh, current-project refresh, and closeout proof
+  are complete; the change remains intentionally unarchived
 - target_state: exact `@fission-ai/openspec@1.7.0`, Node `>=20.19.0`, isolated
   exact six-skill Codex core generation, project-local transactional refresh,
   and source/release/runtime compatibility proof
@@ -345,9 +346,25 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 - rebound_release_evidence: runtime 290/290, packaged 6/6, release discovery
   66/66, release sync current, Plugin Eval 86/B with zero failures; the one-time
   release gate is consumed and `release_allowed` is false
-- next_item: task 8.3 deterministic runtime rebuild/commit and native push;
-  then continue automatically through targeted refresh, closeout readback, and
-  scoped receipt push
+- runtime_receipt_commit: `49bb13f` (`chore(devflow): bind OpenSpec 1.7 runtime
+  receipt`); native SSH push advanced `origin/main` from `29384ef` through
+  `49bb13f`, and remote/local divergence read back 0/0
+- local_refresh_evidence: the official ChatGPT.app Codex CLI refreshed only
+  `dev-flow@cy-codex-skills`; installed cache/release archives match at
+  `fed5629637f0a11df36426b9efd9cf99e5d5e5de97cb4d27a65df7dad0e34470`
+  with source receipt `7059c06`; isolated project activation verified the exact
+  six 1.7 skills and returned `current`; migration/layout are current, workflow
+  validation is clean, Doctor is healthy, and no OpenSpec command files exist
+- config_readback: global OpenSpec config stayed at
+  `1cfa273ff52c007ed07478ebfd47942ce005324b08776b8c00b16a6e5271cb5b`;
+  project `openspec/config.yaml` equals HEAD; the authorized named plugin add
+  rewrote Codex config to
+  `031f405defb3f8e9d4ef68e959e2fb6bff6378b496ed7a47bfbeb6c7329af5d3`
+  and is recorded as an expected plugin-registration side effect
+- next_item: none within the current authorization; start a new Codex task or
+  restart Desktop to reload refreshed skills; archive, PR, GitHub Release,
+  broad updater apply, migration, cleanup, and unrelated repair remain separate
+  Human Gates
 - unrelated_wip_preserved:
   `openspec/changes/separate-git-transport-from-github-auth/evidence/implementation.md`
 
