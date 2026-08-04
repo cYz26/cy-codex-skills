@@ -89,7 +89,7 @@
   authorization, confirm local `main` equals `origin/main`, validate native Git
   transport, and review an exact staged write set that excludes the unrelated
   Git-transport evidence edit.
-- [ ] 8.2 Commit the reviewed OpenSpec 1.7 source, release assets, tests,
+- [x] 8.2 Commit the reviewed OpenSpec 1.7 source, release assets, tests,
   canonical change, and ledger on `main`; preserve all unrelated WIP and record
   the implementation commit identity.
 - [ ] 8.3 Rebuild and verify the deterministic DevFlow runtime so its source

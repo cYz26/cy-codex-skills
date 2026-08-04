@@ -299,8 +299,8 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 ## Active Change: OpenSpec 1.7 Upgrade
 
 - authoritative_queue: OpenSpec change `upgrade-devflow-openspec-1-7`
-- status: verified implementation plus submission preflight at 26/29; executing
-  the scoped implementation commit at task 8.2
+- status: implementation committed as `7059c06` at 27/29; executing the
+  deterministic runtime receipt commit and native push at task 8.3
 - target_state: exact `@fission-ai/openspec@1.7.0`, Node `>=20.19.0`, isolated
   exact six-skill Codex core generation, project-local transactional refresh,
   and source/release/runtime compatibility proof
@@ -337,9 +337,17 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 - residuals: `DF-IFL-001` plugin-wide static token budgets and `DF-IFL-010`
   self-hosting root identity remain `DEFER_AND_CONTINUE`; neither blocks the
   1.7 Completion Contract or authorizes follow-up work
-- next_item: task 8.2 scoped implementation commit; then continue automatically
-  through deterministic runtime rebuild/commit, native push, targeted refresh,
-  closeout readback, and scoped receipt push
+- implementation_commit: `7059c06` (`feat(devflow): upgrade OpenSpec
+  integration to 1.7`), 22 reviewed paths
+- rebound_runtime_source_commit: `7059c06d7fcb2a94ee659c7657fc9aa17a7061d2`
+- rebound_runtime_archive_sha256:
+  `fed5629637f0a11df36426b9efd9cf99e5d5e5de97cb4d27a65df7dad0e34470`
+- rebound_release_evidence: runtime 290/290, packaged 6/6, release discovery
+  66/66, release sync current, Plugin Eval 86/B with zero failures; the one-time
+  release gate is consumed and `release_allowed` is false
+- next_item: task 8.3 deterministic runtime rebuild/commit and native push;
+  then continue automatically through targeted refresh, closeout readback, and
+  scoped receipt push
 - unrelated_wip_preserved:
   `openspec/changes/separate-git-transport-from-github-auth/evidence/implementation.md`
 

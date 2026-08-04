@@ -64,8 +64,17 @@ pass
   rename, canonical change, and ledger only. `git diff --cached --check`
   passed; `.planning/**`, the unrelated Git-transport evidence edit, and the
   four deterministic runtime outputs were absent. Task 8.1 passed.
-- Implementation commit: pending task 8.2.
-- Generated runtime receipt commit and native push: pending task 8.3.
+- Implementation commit: `7059c06` (`feat(devflow): upgrade OpenSpec
+  integration to 1.7`), 22 reviewed paths, task 8.2 passed.
+- Generated runtime gate: the fresh source receipt recorded SHA-256
+  `668cc7193f5e4bd79118905ebac14c85d83d83ce7336fddb18bbb9b4935ce219`;
+  one target-bound authorization was consumed and reset closed.
+- Generated runtime readback: source commit
+  `7059c06d7fcb2a94ee659c7657fc9aa17a7061d2`, archive SHA-256
+  `fed5629637f0a11df36426b9efd9cf99e5d5e5de97cb4d27a65df7dad0e34470`,
+  290/290 runtime checks, packaged 6/6, release discovery 66/66, release sync
+  `current`, and Plugin Eval 86/B with zero failures. Receipt commit and native
+  push remain pending task 8.3.
 - Targeted local refresh and closeout push/readback: pending task 8.4.
 
 ## Residual Findings
