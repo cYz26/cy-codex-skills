@@ -18,6 +18,7 @@ from plugin_project_migration import project_migration_sync_result
 from workflow_constants import resolve_plugin_root
 from workflow_dependency_provenance import dependency_provenance_fields, dependency_update_command
 from workflow_side_effect_policy import side_effect_decision
+from workflow_release_verification import verify_project_refresh_release_parity
 
 
 def parse_args() -> argparse.Namespace:
@@ -497,8 +498,40 @@ def plugin_cache_verification_results(codex_home: Path, config: dict[str, Any]) 
                 if status == "matches-source"
                 else "installed cache differs from marketplace source"
             )
-            results.append(item("plugin-cache-verify", selector, status, detail, path=cache, source=str(source)))
+            project_refresh = _project_refresh_cache_parity(source, cache)
+            if project_refresh is not None and not project_refresh["ok"]:
+                status = "project-refresh-drift"
+                detail = "project-refresh source, release, or cache identity differs"
+            results.append(
+                item(
+                    "plugin-cache-verify",
+                    selector,
+                    status,
+                    detail,
+                    path=cache,
+                    source=str(source),
+                    projectRefreshParity=project_refresh,
+                    registrationOnlySatisfiesFreshness=False,
+                )
+            )
     return results
+
+
+def _project_refresh_cache_parity(source: Path, cache: Path) -> dict[str, Any] | None:
+    if not plugin_root_matches_name(source, "dev-flow"):
+        return None
+    source = source.resolve()
+    if source.parent.name != "plugins":
+        return None
+    if source.parent.parent.name == "dev":
+        development = source
+        release = source.parents[2] / "plugins" / source.name
+    else:
+        release = source
+        development = source.parents[1] / "dev" / "plugins" / source.name
+    if not (development / ".codex-plugin" / "project-migration.json").is_file():
+        return None
+    return verify_project_refresh_release_parity(development, release, cache)
 
 
 def plugin_install_results(config: dict[str, Any], apply: bool, codex_home: Path | None = None) -> list[dict[str, Any]]:
@@ -738,7 +771,7 @@ def main() -> int:
 
 
 def updater_exit_code(results: list[dict[str, Any]], *, apply: bool) -> int:
-    blocking = {"failed", "manual-required"}
+    blocking = {"failed", "manual-required", "project-refresh-drift"}
     if apply:
         blocking.update(
             {

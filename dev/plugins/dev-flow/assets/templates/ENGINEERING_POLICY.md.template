@@ -102,8 +102,17 @@
 
 - Develop managed plugin and skill sources under `dev/`; generate release
   counterparts through the release promotion gate.
+- For every DevFlow change, record Project Refresh Impact as `changed`,
+  `verified-unchanged`, or `not-applicable` with inspected surfaces, schema
+  decision, refresh-contract revision, tracked-input digest, migration/fixture
+  coverage, and residual risk.
+- Treat versioned project configuration targets as immutable. Configuration-
+  sensitive changes require a new target, schema head, unique migration path,
+  and fixtures; every refresh-sensitive byte change requires a new contract
+  revision.
 - Run release runtime verification, source/release parity checks, packaged
-  tests, and release-target Plugin Eval before readiness.
+  project-refresh/fixture parity, tests, and release-target Plugin Eval before
+  readiness.
 - Release apply, installed-cache refresh, project migration, archive, commit,
   push, and PR creation remain distinct authorization boundaries.
 

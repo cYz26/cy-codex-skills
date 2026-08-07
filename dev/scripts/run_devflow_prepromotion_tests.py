@@ -10,6 +10,11 @@ import unittest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TEST_ROOT = REPO_ROOT / "dev" / "plugins" / "dev-flow" / "tests"
+DEVFLOW_SCRIPTS = REPO_ROOT / "dev" / "plugins" / "dev-flow" / "scripts"
+sys.path.insert(0, str(DEVFLOW_SCRIPTS))
+
+from workflow_release_verification import analyze_project_refresh_impact
+from workflow_state import resolve_state
 RELEASE_DEPENDENT_TESTS = {
     "test_packaged_runtime.py",
     "test_release_smoke.py",
@@ -50,10 +55,25 @@ def main() -> int:
         return 1
     if not result.wasSuccessful():
         return 1
+    state = resolve_state(REPO_ROOT).get("data", {})
+    current_change = state.get("current_change", {}) if isinstance(state, dict) else {}
+    change_id = str(current_change.get("id") or "") if isinstance(current_change, dict) else ""
+    refresh_impact = analyze_project_refresh_impact(
+        REPO_ROOT / "dev" / "plugins" / "dev-flow",
+        REPO_ROOT / "plugins" / "dev-flow",
+        expected_change=change_id or None,
+    )
+    if not refresh_impact["ok"]:
+        print(
+            "DevFlow pre-promotion Project Refresh Impact gate failed: "
+            + "; ".join(refresh_impact["errors"]),
+            file=sys.stderr,
+        )
+        return 1
     print(
         "DevFlow pre-promotion source suite passed: "
         f"{result.testsRun} tests across {len(files)} modules; "
-        "release-dependent modules remain mandatory after promotion."
+        "Project Refresh Impact is covered; release-dependent modules remain mandatory after promotion."
     )
     return 0
 

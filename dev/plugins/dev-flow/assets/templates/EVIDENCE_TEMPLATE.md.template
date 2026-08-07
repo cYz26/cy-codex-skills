@@ -19,6 +19,17 @@
 
 - <path>: <why changed>
 
+## Project Refresh Impact
+
+- Disposition: changed / verified-unchanged / not-applicable
+- Inspected surfaces: <configuration, readers, state, AGENTS, templates,
+  Skills, dependencies, runtime, fixtures>
+- Project schema decision: <advanced / managed-refresh / verified-unchanged /
+  not-applicable>
+- Refresh contract revision and tracked-input digest: <revision>, <sha256>
+- Migration and fixture coverage: <paths or not applicable>
+- Source / release / cache readback: <result>
+
 ## Risks / Gaps
 
 - none

@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import re
-import shutil
-import uuid
+import stat
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +22,10 @@ from workflow_project_skill_paths import (
     OFFICIAL_PROJECT_SKILL_PATH_KIND,
     guard_project_skill_write,
     official_project_skill_dir,
+)
+from workflow_project_refresh import (
+    apply_managed_skill_link,
+    apply_verified_skill_tree_transaction,
 )
 
 
@@ -163,70 +166,28 @@ def materialize_matt_project_skill(
     expected: dict[str, str],
     refreshing: bool,
 ) -> dict[str, Any]:
-    transaction_id = uuid.uuid4().hex
-    stage = target.parent / f".devflow-matt-stage-{skill}-{transaction_id}"
-    backup = target.parent / f".devflow-matt-backup-{skill}-{transaction_id}"
-    backed_up = False
-    retain_backup = False
+    files: dict[str, dict[str, Any]] = {}
     try:
-        target.parent.mkdir(parents=True, exist_ok=True)
-        stage.mkdir()
         for source_file in sorted(source.rglob("*")):
             relative = source_file.relative_to(source).as_posix()
             if source_file.is_symlink():
                 raise OSError(f"Matt source contains symlink: {relative}")
             if source_file.is_dir():
-                (stage / relative).mkdir(parents=True, exist_ok=True)
                 continue
             if not source_file.is_file():
                 raise OSError(f"Matt source contains unsupported path: {relative}")
-            target_file = stage / relative
-            target_file.parent.mkdir(parents=True, exist_ok=True)
-            adapted = adapt_matt_file_bytes(f"{skill}/{relative}", source_file.read_bytes())
-            target_file.write_bytes(adapted)
-            shutil.copymode(source_file, target_file)
+            files[relative] = {
+                "content": adapt_matt_file_bytes(f"{skill}/{relative}", source_file.read_bytes()),
+                "mode": stat.S_IMODE(source_file.stat().st_mode),
+            }
         license_source = source.parent / MATT_LICENSE_FILENAME
         if license_source.is_symlink() or not license_source.is_file():
             raise OSError(f"Matt source license is missing or untrusted: {skill}")
-        license_target = stage / MATT_LICENSE_FILENAME
-        license_target.write_bytes(license_source.read_bytes())
-        shutil.copymode(license_source, license_target)
-        if not tree_matches_hashes(stage, expected):
-            raise OSError(f"adapted Matt skill failed hash verification: {skill}")
-        if target.exists() or target.is_symlink():
-            target.replace(backup)
-            backed_up = True
-        stage.replace(target)
-        remove_path(backup)
-    except (OSError, UnicodeError, ValueError, shutil.Error) as error:
-        remove_path(stage)
-        if backed_up:
-            retain_backup = True
-            try:
-                remove_path(target)
-                if not (backup.exists() or backup.is_symlink()):
-                    raise OSError("Matt rollback backup is missing")
-                backup.replace(target)
-            except (OSError, UnicodeError, ValueError, shutil.Error) as rollback_error:
-                backup_available = backup.exists() or backup.is_symlink()
-                retained_path = backup.absolute().relative_to(
-                    Path(repo).absolute()
-                ).as_posix()
-                return install_result(
-                    "mattpocock-skills",
-                    skill,
-                    source,
-                    target,
-                    False,
-                    "transaction-rollback-failed",
-                    error=str(error),
-                    rollbackError=str(rollback_error),
-                    rollbackStatus=(
-                        "backup-retained" if backup_available else "backup-unavailable"
-                    ),
-                    retainedBackupPath=retained_path,
-                )
-            retain_backup = False
+        files[MATT_LICENSE_FILENAME] = {
+            "content": license_source.read_bytes(),
+            "mode": stat.S_IMODE(license_source.stat().st_mode),
+        }
+    except (OSError, UnicodeError, ValueError) as error:
         return install_result(
             "mattpocock-skills",
             skill,
@@ -236,10 +197,49 @@ def materialize_matt_project_skill(
             "transaction-rolled-back",
             error=str(error),
         )
-    finally:
-        remove_path(stage)
-        if not retain_backup:
-            remove_path(backup)
+    transaction = apply_verified_skill_tree_transaction(
+        repo,
+        [
+            {
+                "id": f"install-matt-skill:{skill}",
+                "skill": skill,
+                "replace": refreshing,
+                "files": files,
+                "expectedSha256": expected,
+            }
+        ],
+        replace_path=replace_path,
+    )
+    if not transaction["ok"]:
+        if transaction["status"] == "transaction-rollback-failed":
+            return install_result(
+                "mattpocock-skills",
+                skill,
+                source,
+                target,
+                False,
+                "transaction-rollback-failed",
+                error=transaction.get("error"),
+                rollbackError="; ".join(transaction.get("rollbackErrors", [])),
+                rollbackStatus=transaction.get("rollbackStatus"),
+                retainedBackupPath=(
+                    f"{transaction['retainedBackupPath']}/"
+                    f".devflow-matt-backup-{skill}-{Path(transaction['retainedTransactionPath']).name}"
+                    if transaction.get("retainedBackupPath")
+                    and transaction.get("retainedTransactionPath")
+                    else None
+                ),
+                retainedTransactionPath=transaction.get("retainedTransactionPath"),
+            )
+        return install_result(
+            "mattpocock-skills",
+            skill,
+            source,
+            target,
+            False,
+            transaction["status"],
+            error=transaction.get("error") or "; ".join(transaction.get("issues", [])),
+        )
     status = "refreshed-copy" if refreshing else "copied"
     return install_result("mattpocock-skills", skill, source, target, True, status)
 
@@ -497,88 +497,46 @@ def materialize_openspec_skill_transaction(
     plans: list[dict[str, Any]],
     actions: list[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    skill_root = official_project_skill_dir(repo, OPENSPEC_WORKFLOW_SKILLS[0]).parent
-    transaction_id = uuid.uuid4().hex
-    stage_root = skill_root / f".devflow-openspec-stage-{transaction_id}"
-    backup_root = skill_root / f".devflow-openspec-backup-{transaction_id}"
-    backed_up: list[tuple[Path, Path]] = []
-    written: list[Path] = []
-    retain_backup_root = False
+    operations: list[dict[str, Any]] = []
     try:
         for plan in actions:
             guard_project_skill_write(repo, plan["target"])
-        skill_root.mkdir(parents=True, exist_ok=True)
-        stage_root.mkdir()
-        backup_root.mkdir()
-        for plan in actions:
-            staged_skill = stage_root / plan["skill"]
-            shutil.copytree(plan["source"], staged_skill, symlinks=True)
-            staged_files = trusted_regular_tree_files(staged_skill)
-            if staged_files is None or set(staged_files) != {"SKILL.md"}:
-                raise OSError(f"staged skill is incomplete: {plan['skill']}")
-        for plan in actions:
-            target = plan["target"]
-            backup = backup_root / plan["skill"]
-            if target.exists() or target.is_symlink():
-                replace_path(target, backup)
-                backed_up.append((backup, target))
-            replace_path(stage_root / plan["skill"], target)
-            written.append(target)
-    except (OSError, shutil.Error) as exc:
-        rollback_errors: list[str] = []
-        for target in reversed(written):
-            try:
-                remove_path(target)
-            except OSError as rollback_error:
-                rollback_errors.append(str(rollback_error))
-        for backup, target in reversed(backed_up):
-            try:
-                if target.exists() or target.is_symlink():
-                    remove_path(target)
-                if not (backup.exists() or backup.is_symlink()):
-                    raise OSError(f"OpenSpec rollback backup is missing: {backup.name}")
-                replace_path(backup, target)
-            except (OSError, shutil.Error) as rollback_error:
-                rollback_errors.append(str(rollback_error))
-        if rollback_errors:
-            retain_backup_root = backup_root.exists() or backup_root.is_symlink()
-            retained_path = (
-                backup_root.absolute().relative_to(Path(repo).absolute()).as_posix()
-                if retain_backup_root
-                else None
+            source_files = trusted_regular_tree_files(plan["source"])
+            if source_files is None or set(source_files) != {"SKILL.md"}:
+                raise OSError(f"verified OpenSpec source is incomplete: {plan['skill']}")
+            operations.append(
+                {
+                    "id": f"install-openspec-skill:{plan['skill']}",
+                    "skill": plan["skill"],
+                    "replace": plan["action"] == "refresh",
+                    "files": {
+                        relative: {
+                            "content": path.read_bytes(),
+                            "mode": stat.S_IMODE(path.stat().st_mode),
+                        }
+                        for relative, path in source_files.items()
+                    },
+                    "expectedSha256": {
+                        relative: hashlib.sha256(path.read_bytes()).hexdigest()
+                        for relative, path in source_files.items()
+                    },
+                }
             )
-            items = [
-                install_result(
-                    "openspec",
-                    plan["skill"],
-                    plan["source"],
-                    plan["target"],
-                    False,
-                    "transaction-rollback-failed",
-                )
-                if plan["action"] in {"copy", "refresh"}
-                else install_result(
-                    "openspec",
-                    plan["skill"],
-                    plan["source"],
-                    plan["target"],
-                    True,
-                    plan["status"],
-                )
-                for plan in plans
-            ]
-            return items, {
-                "ok": False,
-                "status": "rollback-failed",
-                "changed": False,
-                "rolledBack": False,
-                "error": str(exc),
-                "rollbackErrors": rollback_errors,
-                "rollbackStatus": (
-                    "backup-retained" if retain_backup_root else "backup-unavailable"
-                ),
-                "retainedBackupPath": retained_path,
-            }
+    except (OSError, UnicodeError, ValueError) as exc:
+        transaction = {
+            "ok": False,
+            "status": "transaction-rolled-back",
+            "rolledBack": True,
+            "error": str(exc),
+        }
+    else:
+        transaction = apply_verified_skill_tree_transaction(
+            repo,
+            operations,
+            replace_path=replace_path,
+        )
+
+    if not transaction["ok"]:
         items = [
             install_result(
                 "openspec",
@@ -586,7 +544,7 @@ def materialize_openspec_skill_transaction(
                 plan["source"],
                 plan["target"],
                 False,
-                "transaction-rolled-back",
+                transaction["status"],
             )
             if plan["action"] in {"copy", "refresh"}
             else install_result(
@@ -599,17 +557,18 @@ def materialize_openspec_skill_transaction(
             )
             for plan in plans
         ]
+        rollback_failed = transaction["status"] == "transaction-rollback-failed"
         return items, {
             "ok": False,
-            "status": "rolled-back",
+            "status": "rollback-failed" if rollback_failed else "rolled-back",
             "changed": False,
-            "rolledBack": True,
-            "error": str(exc),
+            "rolledBack": bool(transaction.get("rolledBack")),
+            "error": transaction.get("error"),
+            "rollbackErrors": transaction.get("rollbackErrors", []),
+            "rollbackStatus": transaction.get("rollbackStatus"),
+            "retainedBackupPath": transaction.get("retainedBackupPath"),
+            "retainedTransactionPath": transaction.get("retainedTransactionPath"),
         }
-    finally:
-        remove_path(stage_root)
-        if not retain_backup_root:
-            remove_path(backup_root)
 
     statuses = {
         plan["skill"]: "refreshed-copy" if plan["action"] == "refresh" else "copied"
@@ -633,13 +592,6 @@ def replace_path(source: Path, target: Path) -> None:
     source.replace(target)
 
 
-def remove_path(path: Path) -> None:
-    if path.is_symlink() or path.is_file():
-        path.unlink(missing_ok=True)
-    elif path.is_dir():
-        shutil.rmtree(path)
-
-
 def install_project_skill(
     repo: Path,
     source_kind: str,
@@ -661,18 +613,27 @@ def install_project_skill(
                 return install_result(source_kind, skill, source, target, False, "source-conflict")
             if dry_run:
                 return install_result(source_kind, skill, source, target, True, "would-refresh-copy")
-            target.unlink()
-            shutil.copytree(source, target)
-            return install_result(source_kind, skill, source, target, True, "refreshed-copy")
+            return _install_verified_source_tree(
+                repo,
+                source_kind,
+                skill,
+                source,
+                target,
+                refreshing=True,
+            )
         if target.resolve() == source.resolve():
             return install_result(source_kind, skill, source, target, (target / "SKILL.md").exists(), "already-linked")
         if refresh_existing:
             if dry_run:
                 return install_result(source_kind, skill, source, target, True, "would-refresh-link")
-            target.unlink()
-            status = write_skill_tree(source, target)
-            refresh_status = "refreshed-link" if status == "linked" else "refreshed-copy"
-            return install_result(source_kind, skill, source, target, (target / "SKILL.md").exists(), refresh_status)
+            return _install_verified_source_link(
+                repo,
+                source_kind,
+                skill,
+                source,
+                target,
+                refreshing=True,
+            )
         if source_kind in {"dev-flow", "mattpocock-skills"}:
             return install_result(source_kind, skill, source, target, False, "source-conflict")
         status = "already-linked-existing-source"
@@ -692,10 +653,14 @@ def install_project_skill(
         ):
             if dry_run:
                 return install_result(source_kind, skill, source, target, True, "would-refresh-copy")
-            shutil.rmtree(target)
-            status = write_skill_tree(source, target)
-            refresh_status = "refreshed-link" if status == "linked" else "refreshed-copy"
-            return install_result(source_kind, skill, source, target, (target / "SKILL.md").exists(), refresh_status)
+            return _install_verified_source_tree(
+                repo,
+                source_kind,
+                skill,
+                source,
+                target,
+                refreshing=True,
+            )
         matches = (
             skill_trees_match(source, target)
             if copy_source or source_kind == "dev-flow"
@@ -713,22 +678,117 @@ def install_project_skill(
             True,
             "would-copy" if copy_source else "would-link",
         )
-    target.parent.mkdir(parents=True, exist_ok=True)
     if copy_source:
-        shutil.copytree(source, target)
-        status = "copied"
-    else:
-        status = write_skill_tree(source, target)
-    return install_result(source_kind, skill, source, target, (target / "SKILL.md").exists(), status)
+        return _install_verified_source_tree(
+            repo,
+            source_kind,
+            skill,
+            source,
+            target,
+            refreshing=False,
+        )
+    return _install_verified_source_link(
+        repo,
+        source_kind,
+        skill,
+        source,
+        target,
+        refreshing=False,
+    )
 
 
-def write_skill_tree(source: Path, target: Path) -> str:
-    try:
-        target.symlink_to(source, target_is_directory=True)
-        return "linked"
-    except OSError:
-        shutil.copytree(source, target)
-        return "copied"
+def _install_verified_source_tree(
+    repo: Path,
+    source_kind: str,
+    skill: str,
+    source: Path,
+    target: Path,
+    *,
+    refreshing: bool,
+) -> dict[str, Any]:
+    source_files = trusted_regular_tree_files(source)
+    if source_files is None or "SKILL.md" not in source_files:
+        return install_result(source_kind, skill, source, target, False, "missing-or-untrusted-source")
+    files = {
+        relative: {
+            "content": path.read_bytes(),
+            "mode": stat.S_IMODE(path.stat().st_mode),
+        }
+        for relative, path in source_files.items()
+    }
+    transaction = apply_verified_skill_tree_transaction(
+        repo,
+        [
+            {
+                "id": f"install-project-skill:{source_kind}:{skill}",
+                "skill": skill,
+                "replace": refreshing,
+                "files": files,
+                "expectedSha256": {
+                    relative: hashlib.sha256(record["content"]).hexdigest()
+                    for relative, record in files.items()
+                },
+            }
+        ],
+        replace_path=replace_path,
+    )
+    return install_result(
+        source_kind,
+        skill,
+        source,
+        target,
+        bool(transaction["ok"]),
+        ("refreshed-copy" if refreshing else "copied")
+        if transaction["ok"]
+        else str(transaction["status"]),
+        transaction=transaction,
+    )
+
+
+def _install_verified_source_link(
+    repo: Path,
+    source_kind: str,
+    skill: str,
+    source: Path,
+    target: Path,
+    *,
+    refreshing: bool,
+) -> dict[str, Any]:
+    transaction = apply_managed_skill_link(
+        repo,
+        skill,
+        source,
+        replace_existing=refreshing,
+        trusted_root=source.parents[1],
+    )
+    if transaction["ok"]:
+        return install_result(
+            source_kind,
+            skill,
+            source,
+            target,
+            True,
+            str(transaction["status"]),
+            transaction=transaction,
+        )
+    if transaction["status"] == "transaction-rolled-back":
+        return _install_verified_source_tree(
+            repo,
+            source_kind,
+            skill,
+            source,
+            target,
+            refreshing=refreshing,
+        )
+    return install_result(
+        source_kind,
+        skill,
+        source,
+        target,
+        False,
+        str(transaction["status"]),
+        transaction=transaction,
+    )
 
 
 def generated_skill_copy(target: Path, source_kind: str) -> bool:

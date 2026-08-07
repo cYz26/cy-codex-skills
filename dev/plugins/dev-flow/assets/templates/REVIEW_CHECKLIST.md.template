@@ -56,6 +56,10 @@
 
 ## Release / Archive Readiness
 
+- [ ] Project Refresh Impact is `changed`, `verified-unchanged`, or
+  `not-applicable` with fresh tracked-input and schema/migration evidence
+- [ ] Immutable config targets, supported fixture paths, packaged CLI/Skill
+  references, and source/release/cache contract identities pass their gates
 - [ ] TASK_LEDGER entries closed
 - [ ] Evidence linked in `.planning/devflow/STATE.md`
 - [ ] Knowledge update decision recorded

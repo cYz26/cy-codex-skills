@@ -1,15 +1,15 @@
 {
   "archive": {
-    "bytes": 212788,
+    "bytes": 245881,
     "path": "scripts/devflow_runtime.pyz",
-    "sha256": "5a69ef6ae12ab3ee44d080efe2e9387b07a11ba91745f2e210ba388395b37851"
+    "sha256": "1d793be3ec3d345daeea1fdc520fb7486babae89a1d171633bdedcf13b66dc95"
   },
   "buildCommand": [
     "/opt/homebrew/opt/python@3.12/bin/python3.12",
     "dev/scripts/package_devflow_release_runtime.py"
   ],
   "schemaVersion": 1,
-  "sourceCommit": "e69458f79e17c6fcb752fd9cef802eb22e1709e3",
+  "sourceCommit": "187c81cb25a13cde58b9c972a9ed050311f82775",
   "sources": [
     {
       "bytes": 2660,
@@ -47,9 +47,9 @@
       "sha256": "b017ed47a5821a802d18f106535bcbe8c8c6f771d6dc668dd7a774f08532dabb"
     },
     {
-      "bytes": 28531,
+      "bytes": 29887,
       "path": "dev/plugins/dev-flow/scripts/codex_auto_update_plugins_skills.py",
-      "sha256": "5ab4b6ee3502290e43b1e72c871e4c597bf53d07719e68bfa35d57fa16898b9b"
+      "sha256": "57c361363b6dbee227db3004e7ec8f9d3514454137e235af5baab7d9d32d572e"
     },
     {
       "bytes": 1566,
@@ -137,9 +137,9 @@
       "sha256": "b94c3d7afd9b8ce8d2844bb55395be2ff23db8e356baf43c0c2a24127234c3fe"
     },
     {
-      "bytes": 17638,
+      "bytes": 19430,
       "path": "dev/plugins/dev-flow/scripts/legacy_workflow_config.py",
-      "sha256": "e1645f8084fa958fa5271545029addeb1626c9f0dd4d46771076035014a27fab"
+      "sha256": "79c94ccb0203277d8cad962faa4b1b598eb1dd1ab9ab81584b92f7a094141914"
     },
     {
       "bytes": 4390,
@@ -167,9 +167,9 @@
       "sha256": "0058d0850049279f94fe6353ea197f567d5f97792f88168e5bb8c2025c4bc867"
     },
     {
-      "bytes": 18361,
+      "bytes": 25809,
       "path": "dev/plugins/dev-flow/scripts/plugin_project_migration.py",
-      "sha256": "acbd1d184a3eb2a612b81659a39e37a9ce5794fb1b10092b43d0137064f1bfc1"
+      "sha256": "55ff46545724fae18ed56dd4e88c0de9d14c2411d2ed35f4972d2a84647caa08"
     },
     {
       "bytes": 1316,
@@ -282,9 +282,9 @@
       "sha256": "416bb253dc6634ce4c560386c6d16b322bde0d84d7c7ff7d8fa12faa62fddd18"
     },
     {
-      "bytes": 10749,
+      "bytes": 11542,
       "path": "dev/plugins/dev-flow/scripts/verify_release_runtime.py",
-      "sha256": "f108ab6fa5bdb7095ff004304060e33211f43a0a940d6004b03e3035b8f885f3"
+      "sha256": "201aaff634c8751689df29505483222f42c065893e304dee136aff2d50605634"
     },
     {
       "bytes": 28117,
@@ -542,9 +542,9 @@
       "sha256": "384231c9efe065d18bc96497e57a2a8209103b6a79b40dd1b6e2804656975f28"
     },
     {
-      "bytes": 2183,
+      "bytes": 4931,
       "path": "dev/plugins/dev-flow/scripts/workflow_doctor.py",
-      "sha256": "44f199a9dfb66c524ec1a19eb009a3256dd8e57361f69e997e1ebada70f3211d"
+      "sha256": "7bb0bd03ebd7aa96244e7e0a405cffb1d298831c519693f5bd6d53967ee919c1"
     },
     {
       "bytes": 130846,
@@ -607,9 +607,14 @@
       "sha256": "0c48ba0d9cf84c9f570fa366b3c3a8bb9a521d32e6275f821fd689fffec65614"
     },
     {
-      "bytes": 29607,
+      "bytes": 145100,
+      "path": "dev/plugins/dev-flow/scripts/workflow_project_refresh.py",
+      "sha256": "1b7efecc4775a2e82d456db1164951b80052b0c14c7295940fb0ef39c9bad321"
+    },
+    {
+      "bytes": 29660,
       "path": "dev/plugins/dev-flow/scripts/workflow_project_skill_install.py",
-      "sha256": "65e537be771bcd7fb7d71248d0712c10b4f382195ff18273a1f394976a2a49fe"
+      "sha256": "1dd240d0eb83515c39ad11e45578ae4b415d260752989ae832ebc0f77775d681"
     },
     {
       "bytes": 11073,
@@ -622,9 +627,9 @@
       "sha256": "8d72f1fee66dfa9cd62d86353f7f325af39ea60eb8237d6638095b849f97be0e"
     },
     {
-      "bytes": 12210,
+      "bytes": 34071,
       "path": "dev/plugins/dev-flow/scripts/workflow_release_verification.py",
-      "sha256": "c88ddbdab32af291a9109929851b9b64752008a55d4e711d1568b3248c2637b1"
+      "sha256": "68de24912e4245f81e7272729e575e15a60df7d13c0303e56ee42a4bc3f7d4ac"
     },
     {
       "bytes": 1921,
@@ -642,9 +647,9 @@
       "sha256": "756dc89b8d5537f74ee588552607166fff099395933ce33a2b98611bb49e1165"
     },
     {
-      "bytes": 6206,
+      "bytes": 6159,
       "path": "dev/plugins/dev-flow/scripts/workflow_scaffold.py",
-      "sha256": "82017624e08142ef01db0ba327368348afbab2c0d82bad11643f44f2cf86f6cc"
+      "sha256": "defb7cb82d1482b7e4f6be74fab78b4bc60634dc8936d4f8b5fd822ad49e0b49"
     },
     {
       "bytes": 2377,

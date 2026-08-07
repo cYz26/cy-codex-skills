@@ -51,9 +51,13 @@ DevFlow owns implementation planning; architecture work may use
     constrained adjacent scope, owner exit, retention, exact cleanup, receipt,
     and Human Gate behavior.
 12. Validation Commands — focused, broad, runtime, docs, and release checks.
-13. Risks / Rollback — stop conditions and reversible actions.
-14. Goal Mode Prompt and Continue Prompt when recovery risk warrants them.
-15. Review Checklist and Final Verification.
+13. Project Refresh Impact — for DevFlow changes, record disposition, inspected
+    surfaces, schema decision, contract revision/digest, migration/fixture
+    coverage, and source/release/cache proof; otherwise record why it is not
+    applicable.
+14. Risks / Rollback — stop conditions and reversible actions.
+15. Goal Mode Prompt and Continue Prompt when recovery risk warrants them.
+16. Review Checklist and Final Verification.
 
 Required behavior does not belong in MVP, Future Work, or a later delivery
 phase. Incidental hardening does not enter the Critical Path unless it affects

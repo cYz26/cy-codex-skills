@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://devflow.local/schemas/project-refresh-receipt.schema.json",
+  "title": "DevFlow project refresh receipt",
+  "type": "object",
+  "allOf": [
+    {
+      "if": {"properties": {"kind": {"const": "devflow-project-refresh-apply-receipt"}}},
+      "then": {
+        "required": [
+          "planSha256",
+          "sourceIdentity",
+          "projectSchema",
+          "migrationPath",
+          "actions",
+          "authorizations",
+          "changedPaths",
+          "preservedPaths",
+          "stateBefore",
+          "stateBeforeFingerprint",
+          "stateAfterFingerprint",
+          "verification",
+          "verificationReceiptPath",
+          "actionSetSha256",
+          "receiptEvidenceSha256",
+          "rollbackStatus",
+          "receiptPath",
+          "valuesRedacted"
+        ]
+      }
+    },
+    {
+      "if": {"properties": {"kind": {"const": "devflow-project-refresh-verification-receipt"}}},
+      "then": {
+        "required": [
+          "planSha256",
+          "sourceIdentity",
+          "projectSchema",
+          "migrationPath",
+          "actions",
+          "authorizations",
+          "changedPaths",
+          "preservedPaths",
+          "stateBefore",
+          "stateBeforeFingerprint",
+          "stateAfterFingerprint",
+          "verification",
+          "actionSetSha256",
+          "receiptEvidenceSha256",
+          "rollbackStatus",
+          "applyReceiptPath",
+          "receiptPath",
+          "valuesRedacted"
+        ]
+      }
+    }
+  ],
+  "required": ["schemaVersion", "kind", "createdAt", "repo", "status"],
+  "properties": {
+    "schemaVersion": {"const": "1.0"},
+    "kind": {
+      "enum": [
+        "devflow-project-refresh-apply-receipt",
+        "devflow-project-refresh-verification-receipt",
+        "devflow-project-refresh-rollback-receipt"
+      ]
+    },
+    "createdAt": {"type": "string", "format": "date-time"},
+    "repo": {"type": "string", "minLength": 1},
+    "status": {
+      "enum": ["applied_and_verified", "applied_incomplete", "verified", "rolled_back"]
+    },
+    "planSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "sourceIdentity": {"type": "object"},
+    "projectSchema": {"type": "object"},
+    "migrationPath": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "actions": {"type": "array", "items": {"$ref": "#/$defs/action"}},
+    "authorizations": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "changedPaths": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "preservedPaths": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "verification": {"type": "object"},
+    "stateBefore": {"type": ["object", "null"]},
+    "stateBeforeFingerprint": {"$ref": "#/$defs/fingerprint"},
+    "stateAfterFingerprint": {"$ref": "#/$defs/fingerprint"},
+    "verificationReceiptPath": {"type": "string", "minLength": 1},
+    "actionSetSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "receiptEvidenceSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "rollbackStatus": {"type": "string"},
+    "receiptPath": {"type": "string", "minLength": 1},
+    "applyReceiptPath": {"type": "string", "minLength": 1},
+    "valuesRedacted": {"const": true}
+  },
+  "$defs": {
+    "fingerprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "sha256"],
+      "properties": {
+        "kind": {"enum": ["absent", "file", "symlink", "non_regular", "unreadable"]},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "action": {
+      "type": "object",
+      "required": [
+        "id",
+        "kind",
+        "path",
+        "beforeFingerprint",
+        "afterFingerprint",
+        "authorization",
+        "dependencies",
+        "ownership",
+        "source",
+        "rollback",
+        "verification"
+      ],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["create_file", "replace_json", "create_symlink", "replace_symlink"]},
+        "path": {"type": "string", "minLength": 1},
+        "beforeFingerprint": {"$ref": "#/$defs/fingerprint"},
+        "afterFingerprint": {"$ref": "#/$defs/fingerprint"},
+        "authorization": {"type": "string", "minLength": 1},
+        "dependencies": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "ownership": {"type": "string", "minLength": 1},
+        "source": {"type": "object"},
+        "rollback": {"type": "object"},
+        "verification": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}
+      }
+    }
+  }
+}

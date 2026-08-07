@@ -119,7 +119,10 @@ current completion; it leaves the Human Disposition pending.
 Before release promotion, run the checked-in complete source-only suite. It
 executes every development module except exactly `test_packaged_runtime.py` and
 `test_release_smoke.py`, which require promoted generated assets, and it rejects
-skips as well as failures:
+skips as well as failures. The runner also fails closed when Project Refresh
+Impact evidence is stale, a versioned config target changed, schema/migration
+coverage is missing, fixtures are incomplete, or the refresh-contract revision
+was not advanced:
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3.12 dev/scripts/run_devflow_prepromotion_tests.py
@@ -143,5 +146,9 @@ implementation gate, unverified current change, or command-line `--apply`
 alone cannot authorize promotion.
 
 After authorized promotion, run the full development discovery including both
-release-dependent modules, plus packaged/runtime checks. The pre-promotion
-receipt never substitutes for final full-suite evidence.
+release-dependent modules, plus packaged/runtime checks. Runtime verification
+must prove project-refresh contract, CLI, Skill/reference, config target,
+schema, and fixture parity between development and generated release. Run the
+read-only updater to report named-cache identity; registration success alone is
+not freshness. The pre-promotion receipt never substitutes for final full-suite
+evidence.

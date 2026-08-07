@@ -234,10 +234,43 @@ tools.
 
 ## Plugin Project Migration
 
-`plugin-project-migration` reports project-local DevFlow skill/control-plane
-drift. Its default path is read-only. Reviewed apply mode refreshes declared
-DevFlow skill links and missing control-plane files; it does not interpret or
-apply retired workflow configuration. Use the legacy inspector separately.
+`plugin-project-migration` is the single deterministic writer for one adopted
+project. Its compatibility invocation and `plan` subcommand are read-only. The
+versioned interface seals exact actions and authorizations, then verifies or
+rolls back the selected transaction:
+
+```bash
+python3 scripts/plugin_project_migration.py plan --repo <repo> --json
+python3 scripts/plugin_project_migration.py apply --repo <repo> \
+  --expect-plan <sha256:...> --allow project-refresh-apply \
+  --allow workflow-config-migration --json
+python3 scripts/plugin_project_migration.py verify --repo <repo> \
+  --receipt <apply-receipt> --json
+python3 scripts/plugin_project_migration.py rollback --repo <repo> \
+  --receipt <apply-receipt> --apply --json
+```
+
+The ordinary legacy `--apply` route uses the same engine for safe declared
+Skill links and missing control-plane files but never grants workflow-
+configuration authority. Active `AGENTS.md`, divergent generated candidates,
+custom Skill copies, legacy `.codex/skills`, historical content, unsafe config,
+and post-apply edits remain protected.
+
+## Project Refresh Impact
+
+Every DevFlow change records `changed`, `verified-unchanged`, or
+`not-applicable` Project Refresh Impact in the versioned migration contract.
+The record binds inspected surfaces, project-schema decision,
+refresh-contract revision, tracked-input digest, migration paths, and fixture
+coverage. The pre-promotion suite rejects stale evidence, mutation of an
+immutable config target, a configuration-sensitive change without a schema
+advance, or tracked drift without a revision advance.
+
+Release packaging carries the manifest, schemas, immutable config targets,
+runtime/CLI, refresh Skill/reference, and supported fixture matrix as one unit.
+Runtime verification proves source/release identity; the read-only updater
+reports named-cache identity. Registration success alone is never cache
+freshness proof.
 
 ## Archive Policy
 
@@ -267,8 +300,9 @@ python3 plugins/dev-flow/scripts/verify_release_runtime.py \
 ```
 
 Run packaged tests and Plugin Eval against `plugins/dev-flow` before claiming
-release readiness. Installed cache refresh and project migration remain
-separate, explicit actions.
+release readiness. The same gate also runs project-refresh parity and fixture
+checks. Installed cache refresh and consumer-project migration remain separate,
+explicit actions.
 
 ## Repair Discipline
 

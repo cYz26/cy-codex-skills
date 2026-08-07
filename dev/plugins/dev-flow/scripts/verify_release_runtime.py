@@ -9,6 +9,8 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
+from workflow_release_verification import verify_project_refresh_release_parity
+
 
 MANIFEST_NAME = "devflow_runtime.MANIFEST.json"
 SHA256_NAME = "devflow_runtime.sha256"
@@ -33,6 +35,23 @@ def verify_release_runtime(plugin_root: Path, repo_root: Path | None = None) -> 
     check_source_commit(scripts_root / SOURCE_COMMIT_NAME, manifest, checks)
     check_sources(repo_root, manifest, checks)
     check_methodology_contract(plugin_root, checks)
+    source_root = repo_root / "dev" / "plugins" / "dev-flow"
+    refresh_parity: dict[str, Any] | None = None
+    if (source_root / ".codex-plugin" / "project-migration.json").is_file():
+        refresh_parity = verify_project_refresh_release_parity(source_root, plugin_root)
+        add_check(
+            checks,
+            "project refresh release parity",
+            bool(refresh_parity["ok"]),
+            json.dumps(refresh_parity["errors"], sort_keys=True),
+        )
+    else:
+        add_check(
+            checks,
+            "project refresh release parity",
+            True,
+            "not applicable to this synthetic runtime fixture",
+        )
 
     ok = all(check["ok"] for check in checks)
     return {
@@ -45,6 +64,7 @@ def verify_release_runtime(plugin_root: Path, repo_root: Path | None = None) -> 
         "archiveSha256": archive_sha,
         "sourceCommit": manifest.get("sourceCommit"),
         "checks": checks,
+        "projectRefreshParity": refresh_parity,
         "nextAction": (
             "release runtime verified"
             if ok

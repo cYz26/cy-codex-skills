@@ -16,13 +16,19 @@ SCRIPTS = PLUGIN_ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 from release_promotion_gate import quality_gates, run_gate
+import codex_auto_update_plugins_skills as updater_module
 import workflow_release_sync
+import workflow_project_refresh as refresh_module
 from workflow_release_sync import release_eval_target, sync_release_assets
+from workflow_doctor import doctor_workflow
 from workflow_release_verification import (
     DEVFLOW_PREPROMOTION_COMMAND,
+    analyze_project_refresh_impact,
+    project_refresh_tracked_inputs_sha256,
     record_release_verification,
     release_promotion_readiness,
     release_source_snapshot,
+    verify_project_refresh_release_parity,
 )
 
 
@@ -146,17 +152,31 @@ context_management:
                 f"-s dev/plugins/{target}/tests -p 'test_*.py'"
             )
         )
-        report = record_release_verification(
-            repo,
-            target,
-            "release-fixture",
-            development_command=development_command,
-            development_result="pass",
-            openspec_command="openspec validate --all --strict",
-            openspec_result="pass",
-            diff_command="git diff --check",
-            diff_result="pass",
+        synthetic_devflow = (
+            target == "dev-flow"
+            and not (repo / "dev" / "plugins" / "dev-flow" / ".codex-plugin" / "project-migration.json").exists()
         )
+        impact = {"ok": True, "status": "synthetic_fixture", "errors": []}
+        context = (
+            mock.patch("workflow_release_verification.analyze_project_refresh_impact", return_value=impact)
+            if synthetic_devflow
+            else mock.patch(
+                "workflow_release_verification.analyze_project_refresh_impact",
+                wraps=analyze_project_refresh_impact,
+            )
+        )
+        with context:
+            report = record_release_verification(
+                repo,
+                target,
+                "release-fixture",
+                development_command=development_command,
+                development_result="pass",
+                openspec_command="openspec validate --all --strict",
+                openspec_result="pass",
+                diff_command="git diff --check",
+                diff_result="pass",
+            )
         self.assertTrue(report["ok"], report)
         return report
 
@@ -349,6 +369,7 @@ context_management:
         self.assertIn("runtime archive members match manifest sources", check_names)
         self.assertIn("methodology identity is pinned", check_names)
         self.assertIn("methodology skill set is exact", check_names)
+        self.assertIn("project refresh release parity", check_names)
 
         with (release_scripts / "devflow_runtime.pyz").open("ab") as archive:
             archive.write(b"drift")
@@ -937,6 +958,7 @@ context_management:
         self.assertEqual(
             metadata["include"],
             [
+                "fixtures/project-refresh/**",
                 "fixtures/test_generated_artifact_lifecycle.py",
                 "tests/test_generated_artifact_lifecycle.py",
                 "tests/test_packaged_runtime.py",
@@ -1168,6 +1190,427 @@ context_management:
             "scripts/devflow_runtime.MANIFEST.json",
             report["assets"][0]["staleOutputs"],
         )
+
+
+class ProjectRefreshImpactTests(unittest.TestCase):
+    def make_root(
+        self,
+        *,
+        revision=1,
+        head=1,
+        minimum=0,
+        impact="changed",
+        reader="reader-v1\n",
+        config_versions=None,
+    ):
+        root = Path(tempfile.mkdtemp(prefix="devflow-refresh-impact-"))
+        self.addCleanup(lambda: shutil.rmtree(root, ignore_errors=True))
+        config_versions = config_versions or {
+            version: json.dumps(
+                {"workflow": {"mode": "full-openspec"}, "projectContract": version}
+            )
+            + "\n"
+            for version in range(1, head + 1)
+        }
+        paths = [
+            ".codex-plugin",
+            "assets/project-refresh",
+            "assets/templates",
+            "fixtures/project-refresh",
+            "schemas",
+            "scripts",
+            "skills/dev-flow-refresh/references",
+            "skills/plugin-project-migration",
+        ]
+        for relative in paths:
+            (root / relative).mkdir(parents=True, exist_ok=True)
+        (root / ".codex-plugin" / "plugin.json").write_text('{"name":"dev-flow","version":"test"}\n')
+        for version, content in config_versions.items():
+            (root / "assets" / "project-refresh" / f"config-v{version}.json").write_text(content)
+        (root / "assets" / "templates" / "AGENTS.md.template").write_text("agents-v1\n")
+        (root / "scripts" / "legacy_workflow_config.py").write_text(reader)
+        (root / "scripts" / "workflow_project_refresh.py").write_text("engine-v1\n")
+        (root / "scripts" / "plugin_project_migration.py").write_text("cli-v1\n")
+        (root / "scripts" / "workflow_project_skill_install.py").write_text("installer-v1\n")
+        (root / "scripts" / "workflow_methodology.py").write_text("methodology-v1\n")
+        (root / "scripts" / "workflow_dependency_provenance.py").write_text("provenance-v1\n")
+        (root / "scripts" / "workflow_validate.py").write_text("validator-v1\n")
+        (root / "skills" / "dev-flow-refresh" / "SKILL.md").write_text("refresh-skill-v1\n")
+        (root / "skills" / "dev-flow-refresh" / "references" / "project-refresh.md").write_text(
+            "refresh-reference-v1\n"
+        )
+        (root / "skills" / "plugin-project-migration" / "SKILL.md").write_text("migration-skill-v1\n")
+        for name in [
+            "project-refresh-contract.schema.json",
+            "project-refresh-plan.schema.json",
+            "project-refresh-receipt.schema.json",
+        ]:
+            (root / "schemas" / name).write_text("{}\n")
+        fixture_entries = []
+        for version in range(minimum, head + 1):
+            name = f"schema-v{version}.json"
+            (root / "fixtures" / "project-refresh" / name).write_text(f'{{"schema":{version}}}\n')
+            fixture_entries.append(
+                {
+                    "path": name,
+                    "observedSchema": version,
+                    "expectedMigrationPath": [
+                        f"schema-v{step}-to-v{step + 1}" for step in range(version, head)
+                    ],
+                }
+            )
+        fixture_manifest = {
+            "schemaVersion": "1.0",
+            "currentProjectSchema": head,
+            "fixtures": fixture_entries,
+        }
+        (root / "fixtures" / "project-refresh" / "manifest.json").write_text(
+            json.dumps(fixture_manifest, indent=2) + "\n"
+        )
+        tracked = [
+            "assets/templates/AGENTS.md.template",
+            "fixtures/project-refresh/manifest.json",
+            "scripts/legacy_workflow_config.py",
+            "scripts/plugin_project_migration.py",
+            "scripts/workflow_dependency_provenance.py",
+            "scripts/workflow_methodology.py",
+            "scripts/workflow_project_skill_install.py",
+            "scripts/workflow_project_refresh.py",
+            "scripts/workflow_validate.py",
+            "skills/dev-flow-refresh/SKILL.md",
+            "skills/dev-flow-refresh/references/project-refresh.md",
+            "skills/plugin-project-migration/SKILL.md",
+        ]
+        tracked.extend(
+            f"assets/project-refresh/config-v{version}.json" for version in sorted(config_versions)
+        )
+        migration_steps = [
+            {
+                "id": f"schema-v{version}-to-v{version + 1}",
+                "from": version,
+                "to": version + 1,
+                "authorization": "workflow-config-migration",
+                "configTarget": version + 1,
+            }
+            for version in range(minimum, head)
+        ]
+        for step in migration_steps:
+            identifier = step["id"]
+            if identifier not in refresh_module.MIGRATION_STEP_REGISTRY:
+                refresh_module.MIGRATION_STEP_REGISTRY[identifier] = {
+                    **step,
+                    "planner": identifier,
+                    "verifier": f"configuration-schema-v{step['to']}",
+                }
+                self.addCleanup(refresh_module.MIGRATION_STEP_REGISTRY.pop, identifier, None)
+        contract = {
+            "schemaVersion": "2.0",
+            "engineSchemaVersion": "2.0",
+            "plugin": "dev-flow",
+            "stateKey": "dev-flow",
+            "projectSchema": {"head": head, "minimumSupported": minimum},
+            "configTargets": {
+                str(version): f"assets/project-refresh/config-v{version}.json"
+                for version in sorted(config_versions)
+            },
+            "migrationSteps": migration_steps,
+            "refreshContract": {
+                "revision": revision,
+                "impact": impact,
+                "trackedInputs": tracked,
+                "evidence": {
+                    "changeId": "refresh-impact-fixture",
+                    "refreshContractRevision": revision,
+                    "projectSchemaHead": head,
+                    "trackedInputsSha256": "pending",
+                    "schemaDecision": "advanced" if head else "verified-unchanged",
+                    "inspectedSurfaces": ["configuration", "runtime", "skills", "fixtures"],
+                    "reason": "fixture evidence",
+                },
+            },
+            "projectLocalSkills": [],
+            "managedFiles": [],
+        }
+        manifest = root / ".codex-plugin" / "project-migration.json"
+        manifest.write_text(json.dumps(contract, indent=2) + "\n")
+        contract["refreshContract"]["evidence"]["trackedInputsSha256"] = (
+            project_refresh_tracked_inputs_sha256(root)
+        )
+        manifest.write_text(json.dumps(contract, indent=2) + "\n")
+        return root
+
+    def refresh_evidence(self, root):
+        manifest = root / ".codex-plugin" / "project-migration.json"
+        contract = json.loads(manifest.read_text())
+        contract["refreshContract"]["evidence"]["trackedInputsSha256"] = (
+            project_refresh_tracked_inputs_sha256(root)
+        )
+        manifest.write_text(json.dumps(contract, indent=2) + "\n")
+
+    def test_impact_gate_accepts_a_versioned_config_migration_with_fresh_evidence(self):
+        baseline = self.make_root(revision=1, head=1)
+        source = self.make_root(revision=2, head=2)
+
+        report = analyze_project_refresh_impact(source, baseline)
+
+        self.assertTrue(report["ok"], report)
+        self.assertEqual(report["status"], "changed_covered")
+        self.assertEqual(report["migrationCoverage"], {"1": ["schema-v1-to-v2"]})
+
+    def test_impact_gate_rejects_managed_refresh_for_config_sensitive_change(self):
+        baseline = self.make_root(revision=1, head=1)
+        source = self.make_root(revision=2, head=1, reader="reader-correction\n")
+        manifest_path = source / ".codex-plugin" / "project-migration.json"
+        manifest = json.loads(manifest_path.read_text())
+        manifest["refreshContract"]["evidence"]["schemaDecision"] = "managed-refresh"
+        manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
+        self.refresh_evidence(source)
+
+        report = analyze_project_refresh_impact(source, baseline)
+
+        self.assertFalse(report["ok"], report)
+        self.assertEqual(report["status"], "blocked")
+        self.assertEqual(report["sourceProjectSchemaHead"], 1)
+        self.assertIn("scripts/legacy_workflow_config.py", report["configSensitiveChanges"])
+        self.assertIn("config_sensitive_change_requires_schema_advance", report["errors"])
+
+    def test_impact_gate_rejects_immutable_target_mutation_and_schema_or_revision_omissions(self):
+        baseline = self.make_root(revision=1, head=1)
+
+        immutable = self.make_root(
+            revision=2,
+            head=2,
+            config_versions={
+                1: '{"workflow":{"mode":"full-openspec"},"projectContract":99}\n',
+                2: '{"workflow":{"mode":"full-openspec"},"projectContract":2}\n',
+            },
+        )
+        immutable_report = analyze_project_refresh_impact(immutable, baseline)
+        self.assertIn("immutable_config_target_mutated:1", immutable_report["errors"])
+
+        no_schema = self.make_root(revision=2, head=1, reader="reader-v2\n")
+        no_schema_report = analyze_project_refresh_impact(no_schema, baseline)
+        self.assertIn("config_sensitive_change_requires_schema_advance", no_schema_report["errors"])
+
+        no_revision = self.make_root(revision=1, head=1)
+        (no_revision / "assets" / "templates" / "AGENTS.md.template").write_text("agents-v2\n")
+        self.refresh_evidence(no_revision)
+        no_revision_report = analyze_project_refresh_impact(no_revision, baseline)
+        self.assertIn("tracked_change_requires_refresh_revision_advance", no_revision_report["errors"])
+
+    def test_impact_gate_rejects_manifest_only_adapter_changes_without_revision_advance(self):
+        mutations = {
+            "projectLocalSkills": ["dev-flow-refresh"],
+            "managedFiles": ["ENGINEERING_POLICY.md"],
+        }
+        for field, value in mutations.items():
+            with self.subTest(field=field):
+                baseline = self.make_root(revision=1, head=1)
+                source = self.make_root(revision=1, head=1)
+                manifest_path = source / ".codex-plugin" / "project-migration.json"
+                manifest = json.loads(manifest_path.read_text())
+                manifest[field] = value
+                manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
+                self.refresh_evidence(source)
+
+                report = analyze_project_refresh_impact(source, baseline)
+
+                self.assertTrue(report["manifestChanged"], report)
+                self.assertIn(
+                    "manifest_change_requires_refresh_revision_advance",
+                    report["errors"],
+                )
+
+        baseline = self.make_root(revision=1, head=1)
+        source = self.make_root(revision=1, head=1)
+        alternate_id = "fixture-legacy-selection-v0-to-v1"
+        refresh_module.MIGRATION_STEP_REGISTRY[alternate_id] = {
+            **refresh_module.MIGRATION_STEP_REGISTRY["legacy-selection-v0-to-v1"],
+            "planner": "legacy-selection-v0-to-v1",
+        }
+        self.addCleanup(refresh_module.MIGRATION_STEP_REGISTRY.pop, alternate_id, None)
+        manifest_path = source / ".codex-plugin" / "project-migration.json"
+        manifest = json.loads(manifest_path.read_text())
+        manifest["migrationSteps"][0]["id"] = alternate_id
+        manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
+        self.refresh_evidence(source)
+
+        migration_report = analyze_project_refresh_impact(source, baseline)
+
+        self.assertIn("manifest:migrationSteps", migration_report["configSensitiveChanges"])
+        self.assertIn(
+            "manifest_change_requires_refresh_revision_advance",
+            migration_report["errors"],
+        )
+        self.assertIn(
+            "config_sensitive_change_requires_schema_advance",
+            migration_report["errors"],
+        )
+
+        target_baseline = self.make_root(revision=1, head=1)
+        target_source = self.make_root(revision=1, head=1)
+        (target_source / "assets" / "project-refresh" / "config-v0.json").write_text(
+            '{"legacyContract":0}\n'
+        )
+        target_manifest_path = target_source / ".codex-plugin" / "project-migration.json"
+        target_manifest = json.loads(target_manifest_path.read_text())
+        target_manifest["configTargets"]["0"] = "assets/project-refresh/config-v0.json"
+        target_manifest_path.write_text(json.dumps(target_manifest, indent=2) + "\n")
+        self.refresh_evidence(target_source)
+
+        target_report = analyze_project_refresh_impact(target_source, target_baseline)
+
+        self.assertIn("manifest:configTargets", target_report["configSensitiveChanges"])
+        self.assertIn(
+            "manifest_change_requires_refresh_revision_advance",
+            target_report["errors"],
+        )
+
+    def test_impact_gate_rejects_deleted_immutable_targets_and_untrusted_baselines(self):
+        baseline = self.make_root(revision=1, head=1)
+        removed = self.make_root(
+            revision=2,
+            head=2,
+            config_versions={
+                2: '{"workflow":{"mode":"full-openspec"},"projectContract":2}\n'
+            },
+        )
+
+        removed_report = analyze_project_refresh_impact(removed, baseline)
+        self.assertIn("immutable_config_target_removed:1", removed_report["errors"])
+
+        untrusted_baseline = Path(tempfile.mkdtemp(prefix="devflow-refresh-missing-baseline-"))
+        self.addCleanup(lambda: shutil.rmtree(untrusted_baseline, ignore_errors=True))
+        baseline_report = analyze_project_refresh_impact(removed, untrusted_baseline)
+        self.assertIn("baseline_refresh_manifest_missing_or_untrusted", baseline_report["errors"])
+
+    def test_impact_evidence_is_bound_to_the_change_and_required_owner_inventory(self):
+        baseline = self.make_root(revision=1, head=1)
+        source = self.make_root(revision=2, head=2)
+
+        wrong_change = analyze_project_refresh_impact(
+            source,
+            baseline,
+            expected_change="another-change",
+        )
+        self.assertIn("refresh_impact_evidence_change_mismatch", wrong_change["errors"])
+
+        manifest_path = source / ".codex-plugin" / "project-migration.json"
+        manifest = json.loads(manifest_path.read_text())
+        manifest["refreshContract"]["trackedInputs"].remove(
+            "scripts/workflow_dependency_provenance.py"
+        )
+        manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
+        self.refresh_evidence(source)
+        missing_owner = analyze_project_refresh_impact(source, baseline)
+        self.assertIn(
+            "refresh_required_input_missing:scripts/workflow_dependency_provenance.py",
+            missing_owner["errors"],
+        )
+
+    def test_impact_gate_rejects_stale_evidence_and_incomplete_fixture_matrix(self):
+        baseline = self.make_root(revision=1, head=1)
+        source = self.make_root(revision=2, head=2)
+        (source / "scripts" / "workflow_project_refresh.py").write_text("changed-after-evidence\n")
+
+        stale = analyze_project_refresh_impact(source, baseline)
+        self.assertIn("refresh_impact_evidence_stale", stale["errors"])
+
+        self.refresh_evidence(source)
+        fixtures = source / "fixtures" / "project-refresh" / "manifest.json"
+        document = json.loads(fixtures.read_text())
+        document["fixtures"] = [item for item in document["fixtures"] if item["observedSchema"] != 1]
+        fixtures.write_text(json.dumps(document, indent=2) + "\n")
+        self.refresh_evidence(source)
+        incomplete = analyze_project_refresh_impact(source, baseline)
+        self.assertIn("fixture_matrix_missing_schema:1", incomplete["errors"])
+
+    def test_release_and_cache_parity_cover_contract_cli_skills_and_fixtures(self):
+        source = self.make_root(revision=2, head=2)
+        release = Path(tempfile.mkdtemp(prefix="devflow-refresh-release-"))
+        cache = Path(tempfile.mkdtemp(prefix="devflow-refresh-cache-"))
+        self.addCleanup(lambda: shutil.rmtree(release, ignore_errors=True))
+        self.addCleanup(lambda: shutil.rmtree(cache, ignore_errors=True))
+        shutil.copytree(source, release, dirs_exist_ok=True)
+        shutil.copytree(release, cache, dirs_exist_ok=True)
+
+        current = verify_project_refresh_release_parity(source, release, cache)
+        self.assertTrue(current["ok"], current)
+
+        (release / "skills" / "dev-flow-refresh" / "references" / "project-refresh.md").write_text(
+            "stale release reference\n"
+        )
+        release_drift = verify_project_refresh_release_parity(source, release, cache)
+        self.assertIn(
+            "release_file_mismatch:skills/dev-flow-refresh/references/project-refresh.md",
+            release_drift["errors"],
+        )
+
+        shutil.copy2(
+            source / "skills" / "dev-flow-refresh" / "references" / "project-refresh.md",
+            release / "skills" / "dev-flow-refresh" / "references" / "project-refresh.md",
+        )
+        cache_manifest = cache / ".codex-plugin" / "project-migration.json"
+        cache_contract = json.loads(cache_manifest.read_text())
+        cache_contract["refreshContract"]["revision"] = 99
+        cache_manifest.write_text(json.dumps(cache_contract) + "\n")
+        cache_drift = verify_project_refresh_release_parity(source, release, cache)
+        self.assertIn("cache_contract_identity_mismatch", cache_drift["errors"])
+
+    def test_updater_reports_structured_project_refresh_source_release_cache_identity(self):
+        repo = Path(tempfile.mkdtemp(prefix="devflow-refresh-updater-repo-"))
+        codex_home = Path(tempfile.mkdtemp(prefix="devflow-refresh-updater-home-"))
+        self.addCleanup(lambda: shutil.rmtree(repo, ignore_errors=True))
+        self.addCleanup(lambda: shutil.rmtree(codex_home, ignore_errors=True))
+        fixture = self.make_root(revision=2, head=2)
+        development = repo / "dev" / "plugins" / "dev-flow"
+        release = repo / "plugins" / "dev-flow"
+        cache = codex_home / "plugins" / "cache" / "fixture-market" / "dev-flow" / "2.0.0"
+        shutil.copytree(fixture, development)
+        shutil.copytree(development, release)
+        shutil.copytree(release, cache)
+        config = {
+            "marketplaces": {
+                "fixture-market": {"source_type": "directory", "source": str(release)}
+            },
+            "plugins": {"dev-flow@fixture-market": {"enabled": True}},
+        }
+
+        current = updater_module.plugin_cache_verification_results(codex_home, config)
+        self.assertEqual(current[0]["status"], "matches-source")
+        self.assertTrue(current[0]["projectRefreshParity"]["ok"])
+        self.assertFalse(current[0]["registrationOnlySatisfiesFreshness"])
+
+        (development / "scripts" / "workflow_project_refresh.py").write_text("development drift\n")
+        drift = updater_module.plugin_cache_verification_results(codex_home, config)
+        self.assertEqual(drift[0]["status"], "project-refresh-drift")
+        self.assertFalse(drift[0]["projectRefreshParity"]["ok"])
+
+    def test_doctor_reports_structured_project_refresh_source_release_cache_identity(self):
+        repo = Path(tempfile.mkdtemp(prefix="devflow-refresh-doctor-repo-"))
+        codex_home = Path(tempfile.mkdtemp(prefix="devflow-refresh-doctor-home-"))
+        self.addCleanup(lambda: shutil.rmtree(repo, ignore_errors=True))
+        self.addCleanup(lambda: shutil.rmtree(codex_home, ignore_errors=True))
+        fixture = self.make_root(revision=2, head=2)
+        development = repo / "dev" / "plugins" / "dev-flow"
+        release = repo / "plugins" / "dev-flow"
+        cache = codex_home / "plugins" / "cache" / "fixture-market" / "dev-flow" / "2.0.0"
+        shutil.copytree(fixture, development)
+        shutil.copytree(development, release)
+        shutil.copytree(release, cache)
+
+        report = doctor_workflow(
+            repo,
+            plugin_root=development,
+            codex_home=codex_home,
+        )
+        refresh = report["projectRefresh"]
+
+        self.assertEqual(refresh["status"], "current")
+        self.assertTrue(refresh["identitiesMatch"])
+        self.assertEqual(refresh["source"]["identity"], refresh["release"]["identity"])
+        self.assertEqual(refresh["release"]["identity"], refresh["cache"][0]["identity"])
+        self.assertFalse(refresh["registrationOnlySatisfiesFreshness"])
 
 
 def hook_index(commands, name):

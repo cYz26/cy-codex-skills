@@ -7,8 +7,10 @@ description: Use when DevFlow has upgraded, when refreshing the local/global Dev
 
 Refresh DevFlow, then its active projects. This skill owns that sequence and
 evidence; `codex-updater` owns full inventory/update,
-`plugin-project-migration` migration apply, `project-setup` first-time setup,
-and `workflow-doctor` root-cause diagnosis.
+`plugin-project-migration` owns the deterministic one-project plan/apply/
+verify/rollback seam, `project-setup` owns first-time setup, and
+`workflow-doctor` owns root-cause diagnosis. Do not reproduce migration logic
+in this Skill.
 
 ## 1. Global Before Project
 
@@ -31,41 +33,55 @@ Do not claim cache freshness from the install command alone.
 
 ## 2. Discover and Diagnose Projects
 
-Refresh only named projects or active projects with a DevFlow marker such as
-`AGENTS.md`, `.planning/devflow/STATE.md`, `openspec/config.yaml`, migration
-state, or DevFlow links under `.agents/skills`.
+Refresh only named projects or active projects with a trusted DevFlow adoption
+marker: `.dev-flow.json`, `.planning/devflow/STATE.md`, or
+`openspec/config.yaml`. `AGENTS.md`, legacy skill content, or a directory name
+alone never opts a project into refresh.
 
 After global freshness is established, whenever a specific project qualifies
 for refresh, read `references/project-refresh.md` before running its read-only
 diagnostics or making any project write. It owns the exact
-`plugin_project_migration.py`, `validate_workflow_state.py`,
-`doctor_workflow.py`, `scaffold_workflow.py`, and `git status` sequence, plus
-the guarded `activate_project_dependencies.py` apply paths and legacy
-`.codex/skills` handling.
+`plugin_project_migration.py` plan/apply/verify/rollback sequence, supplemental
+diagnostics, receipt handling, and legacy `.codex/skills` boundary.
 
-Project writes require explicit intent. Do not overwrite `AGENTS.md`, resolve
-conflicts, remove legacy links, or apply a
-project migration merely because diagnostics found drift.
+When dependency-layout detail is needed, run
+`activate_project_dependencies.py --dry-run --json` only as supplemental
+read-only evidence. Project refresh writes still use the sealed migration
+engine and its named authorizations.
+
+Project writes require explicit intent, the sealed `planSha256`, the exact
+selected actions, and every named authorization. Do not overwrite
+`AGENTS.md`, resolve conflicts, remove legacy links, or apply a migration
+merely because diagnostics found drift. The ordinary compatibility
+`--apply` path never grants `workflow-config-migration` authority.
 
 ## 3. AGENTS Drift Gate
 
-Every project refresh checks durable workflow-rule drift. If dry-run produces
-`AGENTS.md.generated`, compare it with active `AGENTS.md`; it is merge-required
-evidence, not guidance. Preserve project rules and keep task scope in OpenSpec
-or the Execution Ledger. The project reference owns merge and validation.
+Every project plan checks durable workflow-rule drift semantically. Current
+guidance remains unchanged. Stale guidance may create only a non-conflicting
+`AGENTS.md.generated` merge candidate; active `AGENTS.md` is never overwritten.
+The candidate is merge-required evidence, not active guidance. Merge only
+durable workflow rules, preserve project rules, and keep task scope in OpenSpec
+or the Execution Ledger. Record `git status` before and after any authorized
+project refresh so unrelated work remains distinguishable.
 
 ## 4. Legacy Configuration Boundary
 
-If diagnostics report retired workflow keys or legacy integration files, run
-the read-only `inspect_legacy_workflow_config.py` report. Ordinary refresh does
-not interpret, migrate, or remove them. Any cleanup is a separate action with
-an exact file list, ownership review, rollback evidence, and explicit
-authorization.
+The planner may offer the ordered `legacy-selection-v0-to-v1` and
+`full-openspec-v1-to-v2` chain only for a clean Git-tracked regular
+`.dev-flow.json` with an exact rollback blob. It removes only retired
+selectors, preserves every unrelated JSON value/type, sets `workflow.mode` to
+`full-openspec`, advances the versioned project contract, redacts values, and
+requires the separate `workflow-config-migration` authorization. Unsafe or
+conflicting configuration stays manual-only. Legacy integration files and
+`.codex/skills` cleanup remain separate actions with exact paths and approval.
 
 ## Final Evidence
 
-Rerun validation, cache-drift diagnosis, migration sync, and `git status` per
-project. Report global status, included/skipped projects, changed/generated
-files, conflicts, manual review, and restart need. Report `AGENTS status` as
-`unchanged`, `merged`, `generated-deferred`, or `conflict`; deferred means the
-current durable workflow rules may be stale.
+Run receipt-bound `verify` after every apply. Report global source/release/cache
+identity, included/skipped projects, plan digests, selected authorizations,
+apply and verification receipts, changed/preserved paths, conflicts, manual
+review, rollback availability, and restart need. Report `AGENTS status` as
+`unchanged`, `merge-required`, or `candidate-conflict`. An unresolved manual
+action, authorization, AGENTS merge, cleanup, dependency action, or cache drift
+prevents a `refreshed`/`current` claim.

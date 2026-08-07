@@ -153,6 +153,8 @@ checkpoints; OpenSpec remains the canonical plan.
 - [ ] Required behavior matches the OpenSpec scenarios.
 - [ ] Tests or documented manual checks cover the changed behavior.
 - [ ] No required capability remains unimplemented without a blocker.
+- [ ] Project Refresh Impact is recorded and its release gate passes when this
+  change affects DevFlow.
 
 ## Validation Commands
 
@@ -166,3 +168,5 @@ checkpoints; OpenSpec remains the canonical plan.
 - [ ] Focused tests pass.
 - [ ] Broader tests, lint, typecheck, or build pass where applicable.
 - [ ] Verification evidence is recorded.
+- [ ] Project Refresh Impact, migration fixtures, and source/release/cache
+  parity are verified or explicitly not applicable.

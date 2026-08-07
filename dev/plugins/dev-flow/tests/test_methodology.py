@@ -732,7 +732,10 @@ class MethodologyContractTests(unittest.TestCase):
         config = json.loads((repo / ".dev-flow.json").read_text())
 
         self.assertIn(".dev-flow.json", report["written"])
-        self.assertEqual(config, {"workflow": {"mode": "full-openspec"}})
+        self.assertEqual(
+            config,
+            {"projectContract": 2, "workflow": {"mode": "full-openspec"}},
+        )
 
     def test_state_and_verification_contract_are_roadmap_free(self):
         from workflow_state import default_state_values, merged_gates, render_state

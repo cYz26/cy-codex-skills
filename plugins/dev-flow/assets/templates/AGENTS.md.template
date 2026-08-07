@@ -285,14 +285,29 @@ Report source/release drift, installed plugin cache freshness, and project-local
 skill links drift. Applying cache refresh or project migration requires explicit
 authorization.
 
+## Project Refresh Impact Gate
+
+Every DevFlow change must classify its effect on established projects as
+`changed`, `verified-unchanged`, or `not-applicable`. Inspect the declared
+refresh-sensitive configuration, readers, migration registry/state, AGENTS
+guidance, control-plane templates, project-local Skill inventory, dependency
+layout, fixtures, and refresh Skill contract. Record concrete evidence in the
+versioned refresh contract. A tracked-byte change requires a refresh-contract
+revision; a configuration-sensitive change requires a new immutable config
+target, project-schema advance, unique migration step, and supported fixture.
+Pre-promotion and release verification fail closed on stale evidence, missing
+coverage, immutable-target mutation, or source/release/cache identity drift.
+
 ## DevFlow Refresh Workflow
 
 Use `dev-flow-refresh` after a DevFlow upgrade or when an established project
 needs its DevFlow workflow refreshed. Refresh the named plugin first with
 `codex plugin add dev-flow@cy-codex-skills --json`, then run project diagnostics
-before any project write. Treat `AGENTS.md.generated` as a merge-only candidate
-and merge only durable workflow rules. Legacy skill cleanup requires separate
-approval.
+before any project write. Use the existing `plugin_project_migration.py`
+`plan`/`apply`/`verify`/`rollback` interface as the only project writer. Treat
+`AGENTS.md.generated` as a merge-only candidate and merge only durable workflow
+rules. Workflow-configuration migration, legacy skill cleanup, and consumer-
+project apply require their own authorization.
 
 ## Legacy Configuration
 

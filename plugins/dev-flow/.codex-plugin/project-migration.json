@@ -1,7 +1,118 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "2.0",
+  "engineSchemaVersion": "2.0",
   "plugin": "dev-flow",
   "stateKey": "dev-flow",
+  "projectSchema": {
+    "head": 2,
+    "minimumSupported": 0
+  },
+  "configTargets": {
+    "1": "assets/project-refresh/config-v1.json",
+    "2": "assets/project-refresh/config-v2.json"
+  },
+  "migrationSteps": [
+    {
+      "id": "legacy-selection-v0-to-v1",
+      "from": 0,
+      "to": 1,
+      "authorization": "workflow-config-migration",
+      "configTarget": 1
+    },
+    {
+      "id": "full-openspec-v1-to-v2",
+      "from": 1,
+      "to": 2,
+      "authorization": "workflow-config-migration",
+      "configTarget": 2
+    }
+  ],
+  "refreshContract": {
+    "revision": 2,
+    "impact": "changed",
+    "evidence": {
+      "changeId": "add-versioned-devflow-project-refresh",
+      "refreshContractRevision": 2,
+      "projectSchemaHead": 2,
+      "trackedInputsSha256": "ee6817cc798f64d1976c815accbad39cc2966e6244b1eeb019778ba8d9d597d1",
+      "schemaDecision": "advanced",
+      "inspectedSurfaces": [
+        "agents-guidance",
+        "configuration",
+        "control-plane-templates",
+        "dependency-layout",
+        "fixtures",
+        "migration-runtime",
+        "project-local-skills",
+        "project-state",
+        "refresh-skill"
+      ],
+      "reason": "Advances established projects through an immutable v1-to-v2 configuration step while hardening future-head derivation, conflicting-evidence handling, manifest-only impact detection, and independently auditable verification receipts."
+    },
+    "trackedInputs": [
+      "assets/project-refresh/config-v1.json",
+      "assets/project-refresh/config-v2.json",
+      "assets/templates/AGENTS.md.template",
+      "assets/templates/ENGINEERING_POLICY.md.template",
+      "assets/templates/EVIDENCE_TEMPLATE.md.template",
+      "assets/templates/OPENSPEC_DESIGN.md.template",
+      "assets/templates/OPENSPEC_TASKS.md.template",
+      "assets/templates/REVIEW_CHECKLIST.md.template",
+      "assets/templates/TASK_LEDGER.md.template",
+      "fixtures/project-refresh/manifest.json",
+      "fixtures/project-refresh/current.json",
+      "fixtures/project-refresh/current-v2.json",
+      "fixtures/project-refresh/legacy-conflicting-aliases.json",
+      "fixtures/project-refresh/legacy-preserve-settings.json",
+      "fixtures/project-refresh/legacy-root-selection.json",
+      "fixtures/project-refresh/legacy-workflow-selection.json",
+      "schemas/project-refresh-contract.schema.json",
+      "schemas/project-refresh-plan.schema.json",
+      "schemas/project-refresh-receipt.schema.json",
+      "scripts/codex_auto_update_plugins_skills.py",
+      "scripts/doctor_workflow.py",
+      "scripts/inspect_legacy_workflow_config.py",
+      "scripts/legacy_workflow_config.py",
+      "scripts/plugin_project_migration.py",
+      "scripts/plugin_project_migration_check.py",
+      "scripts/release_promotion_gate.py",
+      "scripts/scaffold_workflow.py",
+      "scripts/sync_release_assets.py",
+      "scripts/workflow_contract_control_plane.py",
+      "scripts/workflow_dependency_catalog.py",
+      "scripts/workflow_dependency_provenance.py",
+      "scripts/workflow_methodology.py",
+      "scripts/workflow_mode_routing.py",
+      "scripts/workflow_planning_paths.py",
+      "scripts/workflow_project_activation.py",
+      "scripts/workflow_project_skill_install.py",
+      "scripts/workflow_project_skill_paths.py",
+      "scripts/workflow_project_refresh.py",
+      "scripts/workflow_release_sync.py",
+      "scripts/workflow_release_verification.py",
+      "scripts/workflow_scaffold.py",
+      "scripts/workflow_validate.py",
+      "scripts/workflow_doctor.py",
+      "scripts/verify_release_runtime.py",
+      "skills/ai-native-tech-plan/SKILL.md",
+      "skills/capability-research/SKILL.md",
+      "skills/change-plan/SKILL.md",
+      "skills/checkpoint-compact/SKILL.md",
+      "skills/claude-code-delegate/SKILL.md",
+      "skills/codex-updater/SKILL.md",
+      "skills/context-health-check/SKILL.md",
+      "skills/context-tool-audit/SKILL.md",
+      "skills/dev-flow-refresh/SKILL.md",
+      "skills/dev-flow-refresh/references/project-refresh.md",
+      "skills/execute-task/SKILL.md",
+      "skills/feature-intake/SKILL.md",
+      "skills/plugin-project-migration/SKILL.md",
+      "skills/project-orchestrator/SKILL.md",
+      "skills/project-setup/SKILL.md",
+      "skills/verify-and-archive/SKILL.md",
+      "skills/workflow-doctor/SKILL.md"
+    ]
+  },
   "projectLocalSkills": [
     "ai-native-tech-plan",
     "capability-research",
@@ -20,5 +131,15 @@
     "dev-flow-refresh",
     "plugin-project-migration"
   ],
-  "managedFiles": []
+  "managedFiles": [
+    "ENGINEERING_POLICY.md",
+    "EVIDENCE_TEMPLATE.md",
+    "REVIEW_CHECKLIST.md",
+    "TASK_LEDGER.md"
+  ],
+  "agentsGuidance": {
+    "activePath": "AGENTS.md",
+    "candidatePath": "AGENTS.md.generated",
+    "template": "assets/templates/AGENTS.md.template"
+  }
 }

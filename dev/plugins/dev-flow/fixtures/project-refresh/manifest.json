@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "1.0",
+  "currentProjectSchema": 2,
+  "fixtures": [
+    {
+      "path": "current-v2.json",
+      "observedSchema": 2,
+      "expectedMigrationPath": []
+    },
+    {
+      "path": "current.json",
+      "observedSchema": 1,
+      "expectedMigrationPath": [
+        "full-openspec-v1-to-v2"
+      ]
+    },
+    {
+      "path": "legacy-root-selection.json",
+      "observedSchema": 0,
+      "expectedMigrationPath": [
+        "legacy-selection-v0-to-v1",
+        "full-openspec-v1-to-v2"
+      ]
+    },
+    {
+      "path": "legacy-workflow-selection.json",
+      "observedSchema": 0,
+      "expectedMigrationPath": [
+        "legacy-selection-v0-to-v1",
+        "full-openspec-v1-to-v2"
+      ]
+    },
+    {
+      "path": "legacy-preserve-settings.json",
+      "observedSchema": 0,
+      "expectedMigrationPath": [
+        "legacy-selection-v0-to-v1",
+        "full-openspec-v1-to-v2"
+      ]
+    },
+    {
+      "path": "legacy-conflicting-aliases.json",
+      "observedSchema": 0,
+      "manualOnly": true
+    }
+  ]
+}

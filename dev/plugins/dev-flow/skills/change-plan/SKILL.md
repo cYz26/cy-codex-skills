@@ -31,6 +31,10 @@ authoritative and OpenSpec is canonical.
    Ledger, Acceptance Criteria, Validation Commands, risks, rollback, Critical
    Path, Incidental Finding Budget, Escalation Triggers, default continuation
    policy, and genuine Human Gates.
+   For DevFlow changes, include Project Refresh Impact as `changed`,
+   `verified-unchanged`, or `not-applicable`, with the inspected surfaces,
+   project-schema decision, refresh-contract revision/digest, migration and
+   fixture coverage, packaged CLI/Skill consequences, and parity commands.
 5. Route unclear behavior to `openspec-explore`, new ready intent to
    `openspec-propose`, existing-change planning revision to
    `openspec-update-change`, and plan structure to `ai-native-tech-plan`.
@@ -54,4 +58,5 @@ applicable approved OpenSpec or ledger route.
 Planning is complete when every scenario has a task and validator, no required
 decision is open, the next executable ledger item is explicit, and ordinary
 item/change boundaries route back to the `auto-until-terminal` orchestrator
-loop. Do not edit production code in this skill.
+loop. A DevFlow plan is not final with missing Project Refresh Impact evidence.
+Do not edit production code in this skill.

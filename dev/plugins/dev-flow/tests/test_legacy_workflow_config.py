@@ -65,7 +65,7 @@ class LegacyWorkflowConfigTests(unittest.TestCase):
         self.assertTrue(all("value" not in item for item in first["recognizedInputs"]))
         self.assertEqual(
             first["targetConfiguration"],
-            {"workflow": {"mode": "full-openspec"}},
+            {"projectContract": 2, "workflow": {"mode": "full-openspec"}},
         )
 
     def test_reports_top_level_and_camel_case_legacy_config_aliases(self):
@@ -235,7 +235,10 @@ class LegacyWorkflowConfigTests(unittest.TestCase):
         rendered = json.dumps(result, sort_keys=True)
 
         self.assertNotIn(secret, rendered)
-        self.assertEqual(result["targetConfiguration"], {"workflow": {"mode": "full-openspec"}})
+        self.assertEqual(
+            result["targetConfiguration"],
+            {"projectContract": 2, "workflow": {"mode": "full-openspec"}},
+        )
         self.assertTrue(result["valuesRedacted"])
 
     def test_broken_config_symlink_is_reported_as_conflict_without_target_read(self):
@@ -374,6 +377,29 @@ class LegacyWorkflowConfigTests(unittest.TestCase):
                 "reason": "legacy_agent_config_unreadable:UnicodeDecodeError",
             },
             unreadable_result["conflicts"],
+        )
+
+    def test_rejects_symlinked_legacy_parent_without_reading_external_content(self):
+        repo = self.make_repo()
+        external = self.make_repo()
+        secret = "external-legacy-secret-must-not-be-read"
+        (external / "config.toml").write_text(f"token = {secret!r}\n")
+        hooks = external / "hooks"
+        hooks.mkdir()
+        (hooks / "gsd-external.sh").write_text(secret)
+        (repo / ".codex").symlink_to(external, target_is_directory=True)
+        before_repo = self.snapshot(repo)
+        before_external = self.snapshot(external)
+
+        result = self.module().inspect_legacy_workflow_config(repo)
+        rendered = json.dumps(result, sort_keys=True)
+
+        self.assertEqual(self.snapshot(repo), before_repo)
+        self.assertEqual(self.snapshot(external), before_external)
+        self.assertNotIn(secret, rendered)
+        self.assertIn(
+            {"path": ".codex", "reason": "legacy_path_parent_untrusted"},
+            result["conflicts"],
         )
 
 

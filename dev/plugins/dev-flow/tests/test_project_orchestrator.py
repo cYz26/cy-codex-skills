@@ -193,7 +193,16 @@ class ProjectOrchestratorTests(unittest.TestCase):
                 for path in (RELEASE_PLUGIN_ROOT / "fixtures").rglob("*")
                 if path.is_file()
             },
-            {"fixtures/test_generated_artifact_lifecycle.py"},
+            {
+                "fixtures/project-refresh/current-v2.json",
+                "fixtures/project-refresh/current.json",
+                "fixtures/project-refresh/legacy-conflicting-aliases.json",
+                "fixtures/project-refresh/legacy-preserve-settings.json",
+                "fixtures/project-refresh/legacy-root-selection.json",
+                "fixtures/project-refresh/legacy-workflow-selection.json",
+                "fixtures/project-refresh/manifest.json",
+                "fixtures/test_generated_artifact_lifecycle.py",
+            },
         )
         self.assertFalse((RELEASE_PLUGIN_ROOT / "log").exists())
 
@@ -458,7 +467,10 @@ class ProjectOrchestratorTests(unittest.TestCase):
         self.assertFalse((repo / ".planning" / "ROADMAP.md").exists())
         self.assertFalse((repo / ".planning" / "phases").exists())
         workflow_config = json.loads((repo / ".dev-flow.json").read_text())
-        self.assertEqual(workflow_config, {"workflow": {"mode": "full-openspec"}})
+        self.assertEqual(
+            workflow_config,
+            {"projectContract": 2, "workflow": {"mode": "full-openspec"}},
+        )
         self.assertTrue((repo / "openspec" / "changes" / "initial-target-state" / "tasks.md").exists())
         for filename in [
             "ENGINEERING_POLICY.md",

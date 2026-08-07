@@ -14,6 +14,7 @@ from workflow_paths import normalize_project_name, render_template, repo_path
 from workflow_state import default_state_values, render_state
 from workflow_change import write_change_files
 from workflow_contract_control_plane import write_missing_control_plane
+from legacy_workflow_config import CANONICAL_TARGET_CONFIGURATION
 from workflow_planning_paths import atomic_write_text
 
 
@@ -101,14 +102,7 @@ def write_base_files(writer: WritePlan, project_mode: str, force_agents: bool) -
         writer.write(item["path"], render_template(item["template"], {}))
     writer.write(
         ".dev-flow.json",
-        json.dumps(
-            {
-                "workflow": {
-                    "mode": "full-openspec",
-                }
-            },
-            indent=2,
-        )
+        json.dumps(CANONICAL_TARGET_CONFIGURATION, indent=2)
         + "\n",
     )
 

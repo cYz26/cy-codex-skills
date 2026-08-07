@@ -1,4 +1,6 @@
 import json
+import hashlib
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -18,6 +20,8 @@ from plugin_project_migration import (
     project_migration_sync_result,
     sync_project_migrations,
 )
+
+LEGACY_PROFILE_KEY = "methodology" + "_profile"
 
 
 class PluginProjectMigrationTests(unittest.TestCase):
@@ -41,14 +45,50 @@ class PluginProjectMigrationTests(unittest.TestCase):
         (plugin / ".codex-plugin" / "project-migration.json").write_text(
             json.dumps(
                 {
-                    "schemaVersion": "1.0",
+                    "schemaVersion": "2.0",
+                    "engineSchemaVersion": "2.0",
                     "plugin": "dev-flow",
+                    "projectSchema": {"head": 1, "minimumSupported": 0},
+                    "configTargets": {"1": "assets/project-refresh/config-v1.json"},
+                    "migrationSteps": [
+                        {
+                            "id": "legacy-selection-v0-to-v1",
+                            "from": 0,
+                            "to": 1,
+                            "authorization": "workflow-config-migration",
+                            "configTarget": 1,
+                        }
+                    ],
+                    "refreshContract": {"revision": 1, "impact": "changed", "trackedInputs": []},
                     "projectLocalSkills": ["project-orchestrator", "plugin-project-migration"],
-                    "managedFiles": [],
+                    "managedFiles": [
+                        "ENGINEERING_POLICY.md",
+                        "EVIDENCE_TEMPLATE.md",
+                        "REVIEW_CHECKLIST.md",
+                        "TASK_LEDGER.md",
+                    ],
+                    "agentsGuidance": {
+                        "activePath": "AGENTS.md",
+                        "candidatePath": "AGENTS.md.generated",
+                        "template": "assets/templates/AGENTS.md.template",
+                    },
                 }
             )
             + "\n"
         )
+        config = plugin / "assets" / "project-refresh" / "config-v1.json"
+        config.parent.mkdir(parents=True)
+        config.write_text('{\n  "workflow": {\n    "mode": "full-openspec"\n  }\n}\n')
+        template_root = plugin / "assets" / "templates"
+        template_root.mkdir(parents=True)
+        for name in [
+            "AGENTS.md.template",
+            "ENGINEERING_POLICY.md.template",
+            "EVIDENCE_TEMPLATE.md.template",
+            "REVIEW_CHECKLIST.md.template",
+            "TASK_LEDGER.md.template",
+        ]:
+            (template_root / name).write_bytes((PLUGIN_ROOT / "assets" / "templates" / name).read_bytes())
         self.write_skill(plugin / "skills" / "project-orchestrator" / "SKILL.md")
         self.write_skill(plugin / "skills" / "plugin-project-migration" / "SKILL.md")
         return plugin
@@ -87,6 +127,18 @@ class PluginProjectMigrationTests(unittest.TestCase):
             repo / ".planning" / "STATE.md",
         ]
         return {path.relative_to(repo).as_posix(): path.read_text() for path in watched}
+
+    def snapshot_tree(self, repo):
+        result = {}
+        for path in sorted(repo.rglob("*")):
+            relative = path.relative_to(repo).as_posix()
+            if path.is_symlink():
+                result[relative] = f"symlink:{path.readlink()}"
+            elif path.is_file():
+                result[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
+            elif path.is_dir():
+                result[relative] = "directory"
+        return result
 
     def test_sync_reports_missing_state_without_mutating_project_files(self):
         repo = self.make_repo()
@@ -198,18 +250,77 @@ class PluginProjectMigrationTests(unittest.TestCase):
             "EVIDENCE_TEMPLATE.md",
             "REVIEW_CHECKLIST.md",
         })
+        self.assertEqual(report["refreshEngine"]["status"], "applied_incomplete")
+        self.assertTrue(Path(report["refreshEngine"]["receiptPath"]).is_file())
+        self.assertFalse((repo / ".dev-flow.json").exists())
 
     def test_apply_refuses_to_replace_non_symlink_skill_target(self):
         repo = self.make_repo()
         plugin = self.make_plugin_root(version="1.1.0")
         self.write_skill(repo / ".agents" / "skills" / "project-orchestrator" / "SKILL.md")
 
+        before = self.snapshot_tree(repo)
         report = apply_project_migrations(repo=repo, plugin_root=plugin, codex_home=self.make_codex_home())
 
         conflicts = report["plugins"][0]["conflicts"]
         self.assertFalse(report["ok"], report)
         self.assertEqual(report["status"], "blocked")
         self.assertEqual(conflicts[0]["reason"], "target-exists-not-symlink")
+        self.assertEqual(self.snapshot_tree(repo), before)
+
+    def test_legacy_apply_never_claims_workflow_configuration_authority(self):
+        repo = self.make_repo()
+        (repo / ".dev-flow.json").write_text(
+            json.dumps({LEGACY_PROFILE_KEY: "private-legacy-value"}) + "\n"
+        )
+        subprocess.run(["git", "init", "-q", str(repo)], check=True)
+        subprocess.run(["git", "-C", str(repo), "config", "user.name", "DevFlow Tests"], check=True)
+        subprocess.run(
+            ["git", "-C", str(repo), "config", "user.email", "devflow-tests@example.invalid"],
+            check=True,
+        )
+        subprocess.run(["git", "-C", str(repo), "add", ".dev-flow.json"], check=True)
+        subprocess.run(["git", "-C", str(repo), "commit", "-qm", "legacy config"], check=True)
+        plugin = self.make_plugin_root(version="1.2.0")
+
+        report = apply_project_migrations(repo=repo, plugin_root=plugin, codex_home=self.make_codex_home())
+
+        self.assertEqual(
+            json.loads((repo / ".dev-flow.json").read_text()),
+            {LEGACY_PROFILE_KEY: "private-legacy-value"},
+        )
+        refresh = report["refreshEngine"]
+        self.assertEqual(refresh["status"], "applied_incomplete")
+        self.assertIn("workflow-config-migration", refresh["remainingAuthorizations"])
+
+    def test_no_subcommand_json_cli_remains_a_read_only_compatible_report(self):
+        repo = self.make_repo()
+        plugin = self.make_plugin_root(version="1.2.0")
+        before = self.snapshot_tree(repo)
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(PLUGIN_ROOT / "scripts" / "plugin_project_migration.py"),
+                "--repo",
+                str(repo),
+                "--plugin-root",
+                str(plugin),
+                "--codex-home",
+                str(self.make_codex_home()),
+                "--json",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        report = json.loads(completed.stdout)
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(report["status"], "migration_pending")
+        self.assertIn("plugins", report)
+        self.assertIn("recommendation", report)
+        self.assertEqual(self.snapshot_tree(repo), before)
 
     def test_hook_reminder_is_short_and_sync_only(self):
         repo = self.make_repo()

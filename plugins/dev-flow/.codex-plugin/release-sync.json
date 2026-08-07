@@ -1,5 +1,6 @@
 {
   "include": [
+    "fixtures/project-refresh/**",
     "fixtures/test_generated_artifact_lifecycle.py",
     "tests/test_generated_artifact_lifecycle.py",
     "tests/test_packaged_runtime.py",

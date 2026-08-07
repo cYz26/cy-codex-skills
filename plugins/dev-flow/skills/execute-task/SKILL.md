@@ -43,6 +43,10 @@ explicit apply mode.
    complete behavior, then run focused and broader checks.
 5. Record changed files, commands, results, cleanup, and risks under
    `.planning/devflow/verification/`.
+   When DevFlow refresh-sensitive bytes change, update the approved Project
+   Refresh Impact evidence, contract revision, schema/migration decision, and
+   fixtures in the same item; never leave that synchronization to a later
+   unowned release step.
 6. Update the task, Execution Ledger, and state only after evidence passes or a
    blocker is recorded.
 

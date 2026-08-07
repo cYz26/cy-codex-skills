@@ -10,11 +10,18 @@ from typing import Any
 
 from workflow_project_activation import managed_project_skills
 from workflow_project_skill_paths import (
-    guard_project_skill_write,
     official_project_skill_dir,
     scan_project_skill_layout,
 )
-from workflow_contract_control_plane import control_plane_status, write_missing_control_plane
+from workflow_contract_control_plane import control_plane_status
+from workflow_project_refresh import (
+    PROJECT_REFRESH_AUTHORIZATION,
+    WORKFLOW_CONFIG_AUTHORIZATION,
+    apply_project_refresh,
+    plan_project_refresh,
+    rollback_project_refresh,
+    verify_project_refresh,
+)
 from workflow_planning_paths import (
     append_devflow_text,
     atomic_write_devflow,
@@ -67,65 +74,160 @@ def apply_project_migrations(
     adapter = load_adapter(plugin_root)
     if adapter is None:
         report = base_report(repo, plugin_root, codex_home_path, "not_applicable", [])
-        write_report_file(repo, report)
-        append_history(repo, "none", "not_applicable", [])
+        return report
+
+    plugin_before = inspect_plugin(repo, plugin_root, adapter)
+    refresh_plan = plan_project_refresh(repo, plugin_root, codex_home_path)
+    conflicts = list(plugin_before["conflicts"])
+    blocking_manual = _blocking_refresh_manual_actions(refresh_plan)
+    if not refresh_plan.get("ok") or blocking_manual or conflicts:
+        for item in blocking_manual:
+            conflicts.append(
+                {
+                    "status": "conflict",
+                    "reason": item.get("reason", "manual-review-required"),
+                    "target": str(repo / str(item.get("path") or "")),
+                    "source": None,
+                    "skill": Path(str(item.get("path") or "unknown")).name,
+                }
+            )
+        plugin_before["conflicts"] = conflicts
+        report = base_report(repo, plugin_root, codex_home_path, "blocked", [plugin_before])
+        report["ok"] = False
+        report["refreshEngine"] = _compatibility_refresh_result(
+            refresh_plan,
+            status="blocked",
+            ok=False,
+            next_action="Resolve project ownership conflicts and produce a fresh plan.",
+        )
+        return report
+
+    selected = {
+        str(action["id"])
+        for action in refresh_plan.get("actions", [])
+        if action.get("authorization") == PROJECT_REFRESH_AUTHORIZATION
+    }
+    if selected:
+        refresh_result = apply_project_refresh(
+            repo,
+            plugin_root,
+            expected_plan=str(refresh_plan["planSha256"]),
+            authorizations={PROJECT_REFRESH_AUTHORIZATION},
+            selected_actions=selected,
+            codex_home=codex_home_path,
+        )
+    else:
+        refresh_result = _compatibility_refresh_result(
+            refresh_plan,
+            status=(
+                "authorization_required"
+                if WORKFLOW_CONFIG_AUTHORIZATION in refresh_plan.get("requiredAuthorizations", [])
+                else refresh_plan.get("status", "current")
+            ),
+            ok=refresh_plan.get("status") == "current",
+            next_action=(
+                "Use the project-refresh apply command with explicit workflow-config-migration authorization."
+                if WORKFLOW_CONFIG_AUTHORIZATION in refresh_plan.get("requiredAuthorizations", [])
+                else str(refresh_plan.get("nextAction") or "No project migration action needed.")
+            ),
+        )
+    if not refresh_result.get("ok"):
+        plugin_before["conflicts"] = conflicts
+        report = base_report(repo, plugin_root, codex_home_path, "blocked", [plugin_before])
+        report["ok"] = False
+        report["refreshEngine"] = refresh_result
         return report
 
     plugin = inspect_plugin(repo, plugin_root, adapter)
-    conflicts = list(plugin["conflicts"])
-    changes: list[dict[str, Any]] = []
-    manifest = read_json(plugin_root / ".codex-plugin" / "plugin.json")
-    plugin_name = str(adapter.get("plugin") or manifest.get("name") or plugin_root.name)
-    for skill in adapter.get("projectLocalSkills", []):
-        source = preferred_project_skill_source(repo, plugin_root, plugin_name, skill)
-        accepted_sources = project_skill_sources(repo, plugin_root, plugin_name, skill)
-        target = official_project_skill_dir(repo, skill)
-        guard_project_skill_write(repo, target)
-        if not (source / "SKILL.md").exists():
-            conflicts.append(conflict(skill, target, source, "missing-source"))
-            continue
-        if target.exists() and not target.is_symlink():
-            conflicts.append(conflict(skill, target, source, "target-exists-not-symlink"))
-            continue
-        if target.is_symlink() and target_matches_any_source(target, accepted_sources):
-            continue
-        if target.is_symlink():
-            target.unlink()
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.symlink_to(source, target_is_directory=True)
-        changes.append(
-            {
-                "kind": "project-local-skill",
-                "skill": skill,
-                "target": str(target),
-                "source": str(source),
-                "pathKind": "official_repo_skill_path",
-            }
-        )
-    changes.extend(write_missing_control_plane(repo, dry_run=False))
-
-    plugin["conflicts"] = conflicts
+    changes = _legacy_changes_from_refresh(repo, refresh_plan, selected)
     plugin["changes"] = changes
+    plugin["conflicts"] = []
     plugin["staleProjectSkills"] = []
     plugin["missingProjectSkills"] = []
-    plugin["skillLayout"] = scan_project_skill_layout(
-        repo,
-        migration_skill_layout_scope(adapter),
-        script_path=Path(__file__).with_name("activate_project_dependencies.py"),
-    )
-    if conflicts:
-        status = "blocked"
-        ok = False
-    else:
-        status = "applied"
-        ok = True
-        update_state(repo, adapter, plugin)
-
+    status = "applied"
     report = base_report(repo, plugin_root, codex_home_path, status, [plugin])
-    report["ok"] = ok
+    report["ok"] = True
+    report["refreshEngine"] = refresh_result
     write_report_file(repo, report)
-    append_history(repo, plugin["name"], status, changes, conflicts)
+    append_history(repo, plugin["name"], status, changes, [])
     return report
+
+
+def _blocking_refresh_manual_actions(plan: dict[str, Any]) -> list[dict[str, Any]]:
+    blocking_reasons = {
+        "target_exists_not_symlink",
+        "managed_file_ownership_ambiguous",
+        "candidate_ownership_ambiguous",
+        "candidate_content_conflict",
+        "missing_or_untrusted_source",
+        "missing_or_untrusted_template",
+    }
+    return [
+        item
+        for item in plan.get("manualActions", [])
+        if isinstance(item, dict) and item.get("reason") in blocking_reasons
+    ]
+
+
+def _compatibility_refresh_result(
+    plan: dict[str, Any],
+    *,
+    status: str,
+    ok: bool,
+    next_action: str,
+) -> dict[str, Any]:
+    return {
+        "schemaVersion": "1.0",
+        "kind": "devflow-project-refresh-result",
+        "ok": ok,
+        "status": status,
+        "repo": plan.get("repo"),
+        "planSha256": plan.get("planSha256"),
+        "changedPaths": [],
+        "preservedPaths": list(plan.get("preservedPaths", [])),
+        "rollbackStatus": "not_started",
+        "receiptPath": None,
+        "retryability": str(plan.get("retryability") or "after_remediation"),
+        "remainingAuthorizations": sorted(
+            set(map(str, plan.get("requiredAuthorizations", [])))
+        ),
+        "manualActions": list(plan.get("manualActions", [])),
+        "nextAction": next_action,
+    }
+
+
+def _legacy_changes_from_refresh(
+    repo: Path,
+    plan: dict[str, Any],
+    selected: set[str],
+) -> list[dict[str, Any]]:
+    changes: list[dict[str, Any]] = []
+    for action in plan.get("actions", []):
+        if str(action.get("id")) not in selected:
+            continue
+        relative = str(action.get("path") or "")
+        if action.get("kind") in {"create_symlink", "replace_symlink"}:
+            source = action.get("source") if isinstance(action.get("source"), dict) else {}
+            changes.append(
+                {
+                    "kind": "project-local-skill",
+                    "skill": Path(relative).name,
+                    "target": str(repo / relative),
+                    "source": str(source.get("target") or ""),
+                    "pathKind": "official_repo_skill_path",
+                }
+            )
+        elif str(action.get("id", "")).startswith("create-control-plane:"):
+            changes.append(
+                {
+                    "kind": "control-plane-file",
+                    "path": relative,
+                    "template": Path(str(action.get("source", {}).get("path") or "")).name,
+                }
+            )
+        elif action.get("id") == "create-agents-merge-candidate":
+            changes.append({"kind": "agents-merge-candidate", "path": relative})
+    return changes
 
 
 def project_migration_sync_result(
@@ -349,19 +451,6 @@ def read_state(repo: Path) -> dict[str, Any]:
         return {"schemaVersion": "1.0", "plugins": {}}
 
 
-def update_state(repo: Path, adapter: dict[str, Any], plugin: dict[str, Any]) -> None:
-    state = read_state(repo)
-    state.setdefault("schemaVersion", "1.0")
-    state.setdefault("plugins", {})
-    state["plugins"][plugin["name"]] = {
-        "version": plugin["runtimeVersion"],
-        "lastSyncedAt": now_iso(),
-        "projectLocalSkills": list(adapter.get("projectLocalSkills", [])),
-        "managedFiles": list(adapter.get("managedFiles", [])),
-    }
-    write_json(repo, runtime_root(repo) / "state.json", state)
-
-
 def write_report_file(repo: Path, report: dict[str, Any]) -> None:
     write_json(repo, runtime_root(repo) / "reports" / "latest.json", report)
 
@@ -447,29 +536,129 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Sync or apply Codex plugin project migrations.")
-    parser.add_argument("--repo", default=".")
-    parser.add_argument("--plugin-root", default=default_plugin_root())
-    parser.add_argument("--codex-home", default=Path.home() / ".codex")
+def _add_common_arguments(parser: argparse.ArgumentParser, *, defaults: bool) -> None:
+    default = None if defaults else argparse.SUPPRESS
+    parser.add_argument("--repo", default="." if defaults else default)
+    parser.add_argument("--plugin-root", default=default_plugin_root() if defaults else default)
+    parser.add_argument("--codex-home", default=Path.home() / ".codex" if defaults else default)
+    parser.add_argument("--json", action="store_true", default=False if defaults else default)
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Inspect, plan, apply, verify, or roll back one DevFlow project refresh."
+    )
+    _add_common_arguments(parser, defaults=True)
     actions = parser.add_mutually_exclusive_group()
     actions.add_argument("--apply", action="store_true")
     parser.add_argument("--write-report", action="store_true")
-    parser.add_argument("--json", action="store_true")
-    return parser.parse_args()
+    subparsers = parser.add_subparsers(dest="command")
+
+    plan_parser = subparsers.add_parser("plan", help="Produce a deterministic read-only refresh plan.")
+    _add_common_arguments(plan_parser, defaults=False)
+
+    apply_parser = subparsers.add_parser("apply", help="Apply an explicitly authorized sealed plan.")
+    _add_common_arguments(apply_parser, defaults=False)
+    apply_parser.add_argument("--expect-plan", "--plan-sha256", dest="plan_sha256", required=True)
+    apply_parser.add_argument("--allow", "--authorize", dest="authorize", action="append", default=[])
+    apply_parser.add_argument("--action", action="append", default=None)
+
+    verify_parser = subparsers.add_parser("verify", help="Verify a successful apply receipt afresh.")
+    _add_common_arguments(verify_parser, defaults=False)
+    verify_parser.add_argument("--receipt", required=True)
+
+    rollback_parser = subparsers.add_parser("rollback", help="Plan or explicitly apply receipt-bound rollback.")
+    _add_common_arguments(rollback_parser, defaults=False)
+    rollback_parser.add_argument("--receipt", required=True)
+    rollback_parser.add_argument("--apply", action="store_true", dest="rollback_apply")
+    return parser.parse_args(argv)
 
 
-def main() -> int:
-    args = parse_args()
-    if args.apply:
-        report = apply_project_migrations(args.repo, args.plugin_root, args.codex_home)
-    else:
-        report = sync_project_migrations(args.repo, args.plugin_root, args.codex_home, args.write_report)
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    try:
+        if args.command == "plan":
+            report = plan_project_refresh(args.repo, args.plugin_root, args.codex_home)
+        elif args.command == "apply":
+            report = apply_project_refresh(
+                args.repo,
+                args.plugin_root,
+                expected_plan=args.plan_sha256,
+                authorizations=set(args.authorize),
+                selected_actions=set(args.action) if args.action is not None else None,
+                codex_home=args.codex_home,
+            )
+        elif args.command == "verify":
+            report = verify_project_refresh(
+                args.repo,
+                args.plugin_root,
+                args.receipt,
+                codex_home=args.codex_home,
+            )
+        elif args.command == "rollback":
+            report = rollback_project_refresh(
+                args.repo,
+                args.plugin_root,
+                args.receipt,
+                apply=args.rollback_apply,
+            )
+        elif args.apply:
+            report = apply_project_migrations(args.repo, args.plugin_root, args.codex_home)
+        else:
+            report = sync_project_migrations(
+                args.repo,
+                args.plugin_root,
+                args.codex_home,
+                args.write_report,
+            )
+    except Exception as error:
+        expected = isinstance(
+            error,
+            (OSError, ValueError, json.JSONDecodeError, PlanningOwnershipError),
+        )
+        report = {
+            "schemaVersion": "1.0",
+            "kind": "devflow-project-refresh-result",
+            "ok": False,
+            "status": "invalid_request" if expected else "internal_failure",
+            "repo": str(Path(args.repo).expanduser().resolve()),
+            "changedPaths": [],
+            "preservedPaths": [],
+            "rollbackStatus": "not_started",
+            "receiptPath": None,
+            "retryability": "after_correction" if expected else "after_repair",
+            "errorType": type(error).__name__,
+            "nextAction": (
+                "Correct the request or trusted path and retry."
+                if expected
+                else "Inspect the internal failure before retrying."
+            ),
+        }
     if args.json:
         print(json.dumps(report, indent=2, sort_keys=True))
     else:
-        print(f"{report['status']}: {report['recommendation']}")
-    return 0 if report["ok"] else 1
+        detail = report.get("nextAction") or report.get("recommendation") or "No next action recorded."
+        print(f"{report['status']}: {detail}")
+    if args.command is None:
+        return 0 if report["ok"] else 1
+    return project_refresh_exit_code(report)
+
+
+def project_refresh_exit_code(report: dict[str, Any]) -> int:
+    status = str(report.get("status") or "internal_error")
+    if status in {"current", "not_applicable", "applied_and_verified", "verified", "rolled_back"}:
+        return 0
+    if status in {
+        "migration_pending",
+        "authorization_required",
+        "manual_review_required",
+        "baseline_ambiguous",
+        "applied_incomplete",
+        "verified_incomplete",
+        "rollback_blocked",
+    }:
+        return 2
+    return 3
 
 
 if __name__ == "__main__":

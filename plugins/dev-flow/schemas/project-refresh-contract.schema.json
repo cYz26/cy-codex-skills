@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://devflow.local/schemas/project-refresh-contract.schema.json",
+  "title": "DevFlow project refresh contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "engineSchemaVersion",
+    "plugin",
+    "stateKey",
+    "projectSchema",
+    "configTargets",
+    "migrationSteps",
+    "refreshContract",
+    "projectLocalSkills",
+    "managedFiles"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "2.0"},
+    "engineSchemaVersion": {"const": "2.0"},
+    "plugin": {"type": "string", "minLength": 1},
+    "stateKey": {"type": "string", "minLength": 1},
+    "projectSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["head", "minimumSupported"],
+      "properties": {
+        "head": {"type": "integer", "minimum": 0},
+        "minimumSupported": {"type": "integer", "minimum": 0}
+      }
+    },
+    "configTargets": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"pattern": "^[0-9]+$"},
+      "additionalProperties": {"type": "string", "pattern": "^assets/project-refresh/config-v[0-9]+\\.json$"}
+    },
+    "migrationSteps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "from", "to"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "from": {"type": "integer", "minimum": 0},
+          "to": {"type": "integer", "minimum": 1},
+          "authorization": {"type": "string", "minLength": 1},
+          "configTarget": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "refreshContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["revision", "impact", "evidence", "trackedInputs"],
+      "properties": {
+        "revision": {"type": "integer", "minimum": 1},
+        "impact": {"enum": ["changed", "verified-unchanged", "not-applicable"]},
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "changeId",
+            "refreshContractRevision",
+            "projectSchemaHead",
+            "trackedInputsSha256",
+            "schemaDecision",
+            "inspectedSurfaces",
+            "reason"
+          ],
+          "properties": {
+            "changeId": {"type": "string", "minLength": 1},
+            "refreshContractRevision": {"type": "integer", "minimum": 1},
+            "projectSchemaHead": {"type": "integer", "minimum": 0},
+            "trackedInputsSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "schemaDecision": {
+              "enum": ["advanced", "managed-refresh", "verified-unchanged", "not-applicable"]
+            },
+            "inspectedSurfaces": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"type": "string", "minLength": 1}
+            },
+            "reason": {"type": "string", "minLength": 1}
+          }
+        },
+        "trackedInputs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "projectLocalSkills": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"}
+    },
+    "managedFiles": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "ENGINEERING_POLICY.md",
+          "EVIDENCE_TEMPLATE.md",
+          "REVIEW_CHECKLIST.md",
+          "TASK_LEDGER.md"
+        ]
+      }
+    },
+    "agentsGuidance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["activePath", "candidatePath", "template"],
+      "properties": {
+        "activePath": {"const": "AGENTS.md"},
+        "candidatePath": {"const": "AGENTS.md.generated"},
+        "template": {"const": "assets/templates/AGENTS.md.template"}
+      }
+    }
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://devflow.local/schemas/project-refresh-plan.schema.json",
+  "title": "DevFlow project refresh plan",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "kind",
+    "ok",
+    "status",
+    "repo",
+    "actions",
+    "readSet",
+    "writeSet",
+    "requiredAuthorizations",
+    "manualActions",
+    "preservedPaths",
+    "verification",
+    "retryability",
+    "planSha256",
+    "nextAction"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "1.0"},
+    "kind": {"const": "devflow-project-refresh-plan"},
+    "ok": {"type": "boolean"},
+    "status": {
+      "enum": [
+        "not_applicable",
+        "current",
+        "migration_pending",
+        "manual_review_required",
+        "baseline_ambiguous",
+        "blocked"
+      ]
+    },
+    "repo": {"type": "string", "minLength": 1},
+    "actions": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/action"}
+    },
+    "readSet": {"$ref": "#/$defs/pathArray"},
+    "sourceReadSet": {"$ref": "#/$defs/pathArray"},
+    "writeSet": {"$ref": "#/$defs/pathArray"},
+    "requiredAuthorizations": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "manualActions": {"type": "array", "items": {"type": "object"}},
+    "preservedPaths": {"$ref": "#/$defs/pathArray"},
+    "verification": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "retryability": {"type": "string", "minLength": 1},
+    "projectContentStatus": {"type": "string"},
+    "migrationState": {"type": "object"},
+    "stateSyncRequired": {"type": "boolean"},
+    "recovery": {"type": "object"},
+    "planSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "nextAction": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "pathArray": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "fingerprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "sha256"],
+      "properties": {
+        "kind": {"enum": ["absent", "file", "symlink", "non_regular", "unreadable"]},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "action": {
+      "type": "object",
+      "required": [
+        "id",
+        "kind",
+        "path",
+        "beforeFingerprint",
+        "afterFingerprint",
+        "authorization",
+        "dependencies",
+        "ownership",
+        "source",
+        "rollback",
+        "verification"
+      ],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["create_file", "replace_json", "create_symlink", "replace_symlink"]},
+        "path": {"type": "string", "minLength": 1},
+        "beforeFingerprint": {"$ref": "#/$defs/fingerprint"},
+        "afterFingerprint": {"$ref": "#/$defs/fingerprint"},
+        "authorization": {"type": "string", "minLength": 1},
+        "dependencies": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "ownership": {"type": "string", "minLength": 1},
+        "source": {"type": "object"},
+        "rollback": {"type": "object"},
+        "verification": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}
+      }
+    }
+  }
+}

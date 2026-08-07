@@ -1,0 +1,16 @@
+{
+  "methodology\u005fprofile": "matt-native",
+  "customRoot": {
+    "enabled": true,
+    "items": [
+      1,
+      "two"
+    ]
+  },
+  "workflow": {
+    "customFlag": false,
+    "provider\u0053electors": {
+      "planning": "openspec"
+    }
+  }
+}

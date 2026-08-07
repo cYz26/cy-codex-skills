@@ -1,5 +1,16 @@
 # Task Ledger
 
+## Project Refresh Impact Record
+
+Every DevFlow change records one release disposition in its canonical OpenSpec
+evidence: `changed`, `verified-unchanged`, or `not-applicable`. The record names
+the inspected refresh-sensitive surfaces, project-schema decision,
+refresh-contract revision and tracked-input digest, migration/fixture coverage,
+packaged CLI and Skill/reference result, source/release/cache identities,
+residual risk, and exact validation command. Missing or stale impact evidence
+blocks release verification; the record never authorizes release sync, cache
+refresh, or consumer-project migration.
+
 ## Incidental Finding Register
 
 This cross-change register preserves deferred and blocked findings across task,

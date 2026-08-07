@@ -7,7 +7,10 @@ from typing import Any
 
 SCHEMA_VERSION = 1
 REPORT_KIND = "devflow-legacy-workflow-config-inspection"
-CANONICAL_TARGET_CONFIGURATION = {"workflow": {"mode": "full-openspec"}}
+CANONICAL_TARGET_CONFIGURATION = {
+    "projectContract": 2,
+    "workflow": {"mode": "full-openspec"},
+}
 LEGACY_WORKFLOW_FIELD_ALIASES = {
     "methodology_profile": ("methodology_profile", "methodologyProfile"),
     "roadmap_provider": ("roadmap_provider", "roadmapProvider"),
@@ -136,7 +139,9 @@ def _inspect_provider_lock(
     conflicts: list[dict[str, str]],
 ) -> None:
     relative = ".planning/devflow/providers.lock.json"
-    path = repo / relative
+    path = _inspection_path(repo, relative, "provider_lock", artifacts, conflicts)
+    if path is None:
+        return
     if not _lexists(path):
         return
     if path.is_symlink() or not path.is_file():
@@ -224,7 +229,9 @@ def _inspect_known_artifacts(
         _inspect_generated_marker(repo, relative, kind, artifacts, conflicts)
 
     for relative in HISTORY_PATHS:
-        path = repo / relative
+        path = _inspection_path(repo, relative, "historical_data", artifacts, conflicts)
+        if path is None:
+            continue
         if not _lexists(path):
             continue
         if path.is_symlink():
@@ -252,7 +259,9 @@ def _inspect_legacy_agent_config(
     conflicts: list[dict[str, str]],
 ) -> None:
     relative = ".codex/config.toml"
-    path = repo / relative
+    path = _inspection_path(repo, relative, "legacy_agent_config", artifacts, conflicts)
+    if path is None:
+        return
     if not _lexists(path):
         return
     if path.is_symlink() or not path.is_file():
@@ -292,7 +301,9 @@ def _inspect_legacy_hook_config(
     conflicts: list[dict[str, str]],
 ) -> None:
     relative = ".codex/hooks.json"
-    path = repo / relative
+    path = _inspection_path(repo, relative, "legacy_hook_config", artifacts, conflicts)
+    if path is None:
+        return
     if not _lexists(path):
         return
     if path.is_symlink() or not path.is_file():
@@ -331,7 +342,9 @@ def _inspect_legacy_hook_files(
     artifacts: list[dict[str, Any]],
     conflicts: list[dict[str, str]],
 ) -> None:
-    root = repo / ".codex" / "hooks"
+    root = _inspection_path(repo, ".codex/hooks", "legacy_hook_root", artifacts, conflicts)
+    if root is None:
+        return
     if not _lexists(root):
         return
     if root.is_symlink() or not root.is_dir():
@@ -390,7 +403,9 @@ def _inspect_legacy_path(
     artifacts: list[dict[str, Any]],
     conflicts: list[dict[str, str]],
 ) -> None:
-    path = repo / relative
+    path = _inspection_path(repo, relative, kind, artifacts, conflicts)
+    if path is None:
+        return
     if not _lexists(path):
         return
     if path.is_symlink():
@@ -430,7 +445,9 @@ def _inspect_generated_marker(
     artifacts: list[dict[str, Any]],
     conflicts: list[dict[str, str]],
 ) -> None:
-    path = repo / relative
+    path = _inspection_path(repo, relative, kind, artifacts, conflicts)
+    if path is None:
+        return
     if not _lexists(path):
         return
     if path.is_symlink():
@@ -509,6 +526,41 @@ def _add_conflict_artifact(
 
 def _lexists(path: Path) -> bool:
     return path.exists() or path.is_symlink()
+
+
+def _inspection_path(
+    repo: Path,
+    relative: str,
+    kind: str,
+    artifacts: list[dict[str, Any]],
+    conflicts: list[dict[str, str]],
+) -> Path | None:
+    requested = Path(relative)
+    if requested.is_absolute() or not requested.parts or ".." in requested.parts:
+        _add_conflict_artifact(
+            artifacts,
+            conflicts,
+            relative,
+            "legacy_path_invalid",
+            kind,
+        )
+        return None
+    cursor = repo
+    for segment in requested.parts[:-1]:
+        cursor = cursor / segment
+        if cursor.is_symlink() or (cursor.exists() and not cursor.is_dir()):
+            offending = cursor.relative_to(repo).as_posix()
+            conflict = {"path": offending, "reason": "legacy_path_parent_untrusted"}
+            if conflict not in conflicts:
+                _add_conflict_artifact(
+                    artifacts,
+                    conflicts,
+                    offending,
+                    "legacy_path_parent_untrusted",
+                    kind,
+                )
+            return None
+    return repo.joinpath(*requested.parts)
 
 
 def _read_config(repo: Path, conflicts: list[dict[str, str]]) -> dict[str, Any]:

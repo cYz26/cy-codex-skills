@@ -98,6 +98,14 @@ Document concrete data flow before implementation when this change touches persi
 
 Do not introduce breaking behavior without explicit approval.
 
+## Project Refresh Impact
+
+For DevFlow changes, record `changed`, `verified-unchanged`, or
+`not-applicable`; list inspected refresh-sensitive surfaces, schema decision,
+contract revision/digest, required migration/fixture coverage, packaged CLI and
+Skill effects, and source/release/cache verification. For other projects,
+record why this gate is not applicable.
+
 ## Testing
 
 Add or update tests before implementation for behavior changes. Record verification evidence before archive.
@@ -120,3 +128,4 @@ Add or update tests before implementation for behavior changes. Record verificat
 - [ ] Focused tests pass.
 - [ ] Broader tests, lint, typecheck, or build pass where applicable.
 - [ ] Verification evidence is recorded.
+- [ ] Project Refresh Impact evidence is fresh or explicitly not applicable.
