@@ -128,7 +128,7 @@ untouched original checkout/release, not this worktree's revision-3 generated
 release. The separately authorized Git submission created feature commit
 `b2b1976ac15efeb1bfaf6f69ebdf85ef25245ad5` on
 `codex/add-project-directed-implementation-readiness-gate`; native SSH readback
-proved the remote branch points to that exact commit. No PR, main merge, cache,
+proved the remote branch contains that exact commit. No PR, main merge, cache,
 marketplace, other consumer, dependency, archive, or publication action was
 taken. The pre-existing unrelated Git-transport evidence diff remains
 user-owned and byte-identical in both this worktree and the original checkout.
