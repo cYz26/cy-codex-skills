@@ -28,6 +28,11 @@ for phase confirmation.
 6. Return to `project-orchestrator` and execute the recorded next action; do not
    end the user request merely because the checkpoint was written.
 
+PostCompact recovery records that compaction completed, then re-evaluates any
+active implementation-readiness contract before product writes resume. A stale,
+Required, or NotReady result blocks continuation with its exact remediation;
+compact completion never repairs or authorizes readiness.
+
 ## Preconditions
 
 Checkpoint only when durable context, next action or stopping-point intent,

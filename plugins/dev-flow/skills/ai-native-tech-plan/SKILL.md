@@ -55,9 +55,14 @@ DevFlow owns implementation planning; architecture work may use
     surfaces, schema decision, contract revision/digest, migration/fixture
     coverage, and source/release/cache proof; otherwise record why it is not
     applicable.
-14. Risks / Rollback — stop conditions and reversible actions.
-15. Goal Mode Prompt and Continue Prompt when recovery risk warrants them.
-16. Review Checklist and Final Verification.
+14. Project-Directed Implementation Readiness — when the project selects an
+    external implementation provider, record the provider policy, target
+    profile, exact capabilities, consumer/change bindings, evidence contract,
+    limitations, and override policy. Mark unresolved readiness non-executable;
+    do not add provider discovery, installation, activation, or fallback.
+15. Risks / Rollback — stop conditions and reversible actions.
+16. Goal Mode Prompt and Continue Prompt when recovery risk warrants them.
+17. Review Checklist and Final Verification.
 
 Required behavior does not belong in MVP, Future Work, or a later delivery
 phase. Incidental hardening does not enter the Critical Path unless it affects
@@ -75,6 +80,11 @@ likely to lose its definition of done.
 Add a SubAgent Strategy for independent Capability Slices. Record authorization
 state, disjoint write sets, Agent Task Contract path, main-agent-owned
 artifacts, and fallback. No worker starts before that contract is valid.
+
+If a readiness Requirement applies, every product-mutation slice and mutating
+delegation depends on a current Ready receipt plus its ordinary authority. A
+direction review or draft requirement may precede that receipt; it cannot make
+the plan execution-ready.
 
 For disposable output, choose one registration-only Generated Artifact
 Strategy. Prefer a task/run-specific isolated root. A contract must be sealed

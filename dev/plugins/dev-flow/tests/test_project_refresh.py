@@ -1263,6 +1263,34 @@ class ProjectRefreshTests(unittest.TestCase):
         self.assertNotIn("AGENTS.md.generated", plan["writeSet"])
         self.assertEqual(self.snapshot(repo), before)
 
+    def test_revision_two_agents_guidance_missing_only_readiness_rule_creates_merge_candidate(self):
+        plugin = self.make_contract_plugin()
+        self.enable_agents_guidance(plugin)
+        repo = self.make_repo()
+        self.write_json(repo / ".dev-flow.json", {"workflow": {"mode": "full-openspec"}})
+        revision_two_fixture = json.loads(
+            (
+                PLUGIN_ROOT
+                / "fixtures"
+                / "implementation-readiness"
+                / "agents-guidance-markers-revision2.json"
+            ).read_text()
+        )
+        self.assertEqual(revision_two_fixture["refreshContractRevision"], 2)
+        revision_two = "\n".join(revision_two_fixture["markers"]) + "\n"
+        self.assertNotIn("## Project-Directed Implementation Readiness", revision_two)
+        (repo / "AGENTS.md").write_text(revision_two)
+
+        plan = plan_project_refresh(repo, plugin)
+
+        self.assertTrue(plan["ok"], plan)
+        self.assertEqual(plan["agentsGuidance"]["status"], "agents_merge_required")
+        self.assertEqual(
+            plan["agentsGuidance"]["missingMarkers"],
+            ["Project-Directed Implementation Readiness"],
+        )
+        self.assertIn("AGENTS.md.generated", plan["writeSet"])
+
     def test_stale_agents_guidance_creates_only_a_merge_candidate_and_remains_incomplete(self):
         plugin = self.make_contract_plugin()
         self.enable_agents_guidance(plugin)

@@ -106,6 +106,31 @@ and make decision resolution required.
 Do not start implementation until scope, solution, validation, risks, and the
 next ledger item are durable.
 
+## Project-Directed Implementation Readiness
+
+Project-owned engineering direction is planning input only. When an approved
+active plan explicitly selects an external implementation provider, promote an
+`ImplementationReadinessRequirement v1` bound to that provider, the consumer
+identity/revision, active change and semantic plan, target profile, exact
+capabilities, accepted evidence, required limitations, and named-human-only
+fallback policy. Do not infer a selection from chat, repository presence, or a
+producer's internal files.
+
+The approved plan records this applicability durably as
+`implementation_readiness.required: true` in `.planning/devflow/STATE.md`;
+projects whose active plan selects no external provider retain `false`.
+Requirement promotion verifies that marker, `spec_approved`, `plan_written`,
+the active change, and the repository-derived semantic plan before writing.
+
+Read-only research and draft planning remain allowed while readiness is
+Required or NotReady. Execution-ready status, product edits, mutating
+delegation, automatic continuation into writes, passing verification, release
+readiness, and archive readiness require a current Ready receipt plus every
+ordinary Goal, task, dependency, authority, and Human Gate. Ready is evidence,
+not authorization. Doctors and hooks report the stable issue and next action;
+they never discover, select, install, activate, invoke, or silently replace a
+provider.
+
 ## Goal Workflow
 
 Use `define-goal` when the user asks for goal-backed work or when the task is

@@ -31,6 +31,12 @@ Use `openspec status --change <id> --json` and relevant `openspec instructions
 <artifact> --change <id> --json`; honor returned `artifactPaths` and
 `actionContext`.
 
+When project-directed implementation readiness applies, require the same
+current Ready receipt used by execution before recording a passing verification
+or completion result. Recompute its consumer, active-change, semantic-plan,
+target, provider-artifact, capability-set, and evaluator bindings; readiness
+does not substitute for the ordinary completion gates.
+
 ## Archive Gate
 
 Run `scripts/archive_status.py --repo <repo> --change <change> --json`.
@@ -94,6 +100,11 @@ step is release, archive, commit, push, PR, dependency/migration apply, or
 another separately authorized effect; never perform it from verification
 readiness alone. Return `COMPLETE` only when the overall contract, not merely
 the current change, is closed and verified.
+
+Source verification, generated release, installed cache, and each consumer
+project remain separate readiness identities. A source-green result may return
+`READY_FOR_EXTERNAL_EFFECT`; it cannot claim release/cache/consumer parity or
+perform any promotion/apply action.
 
 Archive preparation is a distinct optional route. Lack of archive authorization
 does not prevent continuing other already approved in-scope work, and an

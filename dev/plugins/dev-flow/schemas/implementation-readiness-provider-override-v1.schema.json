@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://devflow.local/schemas/implementation-readiness-provider-override-v1.schema.json",
+  "title": "Implementation Provider Override v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "overrideId",
+    "namedHuman",
+    "project",
+    "activeChange",
+    "previousProviderId",
+    "newProviderId",
+    "reason",
+    "decidedAt",
+    "invalidates",
+    "reassessmentRequired",
+    "overrideDigest"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "1.0"},
+    "kind": {"const": "ImplementationProviderOverride"},
+    "overrideId": {"$ref": "#/$defs/stableId"},
+    "namedHuman": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "displayName"],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "displayName": {"type": "string", "minLength": 1}
+      }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "rootIdentity"],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "rootIdentity": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "activeChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "semanticPlanDigest"],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "semanticPlanDigest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "previousProviderId": {"$ref": "#/$defs/stableId"},
+    "newProviderId": {"$ref": "#/$defs/stableId"},
+    "reason": {"type": "string", "minLength": 1},
+    "decidedAt": {"type": "string", "format": "date-time"},
+    "invalidates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirementDigests", "receiptDigests"],
+      "properties": {
+        "requirementDigests": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/digest"}
+        },
+        "receiptDigests": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/digest"}
+        }
+      }
+    },
+    "reassessmentRequired": {"const": true},
+    "overrideDigest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "stableId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  }
+}

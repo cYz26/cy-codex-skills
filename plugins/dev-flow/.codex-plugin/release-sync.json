@@ -1,5 +1,6 @@
 {
   "include": [
+    "fixtures/implementation-readiness/**",
     "fixtures/project-refresh/**",
     "fixtures/test_generated_artifact_lifecycle.py",
     "tests/test_generated_artifact_lifecycle.py",
@@ -44,6 +45,7 @@
     "scripts/doctor_workflow.py",
     "scripts/generated_artifact_lifecycle.py",
     "scripts/git_transport_preflight.py",
+    "scripts/implementation_readiness.py",
     "scripts/inspect_legacy_workflow_config.py",
     "scripts/inspect_repo.py",
     "scripts/lint_ai_plan.py",

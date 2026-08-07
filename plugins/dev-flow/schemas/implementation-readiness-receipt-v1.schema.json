@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://devflow.local/schemas/implementation-readiness-receipt-v1.schema.json",
+  "title": "ImplementationReadinessReceipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "evaluatorVersion",
+    "state",
+    "bindings",
+    "issueCodes",
+    "nextAction",
+    "recordedAt",
+    "receiptDigest"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "1.0"},
+    "kind": {"const": "ImplementationReadinessReceipt"},
+    "evaluatorVersion": {"const": "1.0"},
+    "state": {"const": "IMPLEMENTATION_PROVIDER_READY"},
+    "bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requirementDigest",
+        "evidenceDigest",
+        "activeContextDigest",
+        "semanticPlanDigest",
+        "providerArtifactDigest",
+        "consumerRootIdentity",
+        "consumerRevision",
+        "targetProfileDigest",
+        "capabilitySetDigest"
+      ],
+      "properties": {
+        "requirementDigest": {"$ref": "#/$defs/digest"},
+        "evidenceDigest": {"$ref": "#/$defs/digest"},
+        "activeContextDigest": {"$ref": "#/$defs/digest"},
+        "semanticPlanDigest": {"$ref": "#/$defs/digest"},
+        "providerArtifactDigest": {"$ref": "#/$defs/digest"},
+        "consumerRootIdentity": {"$ref": "#/$defs/digest"},
+        "consumerRevision": {"type": "string", "minLength": 1},
+        "targetProfileDigest": {"$ref": "#/$defs/digest"},
+        "capabilitySetDigest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "issueCodes": {"type": "array", "maxItems": 0},
+    "nextAction": {"const": "continue-with-ordinary-implementation-authority"},
+    "recordedAt": {"type": "string", "format": "date-time"},
+    "receiptDigest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  }
+}

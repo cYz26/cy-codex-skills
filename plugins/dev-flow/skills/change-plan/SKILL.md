@@ -35,6 +35,13 @@ authoritative and OpenSpec is canonical.
    `verified-unchanged`, or `not-applicable`, with the inspected surfaces,
    project-schema decision, refresh-contract revision/digest, migration and
    fixture coverage, packaged CLI/Skill consequences, and parity commands.
+   When the project selects an external implementation provider, also bind an
+   explicit `ImplementationReadinessRequirement v1` to the approved active
+   change and semantic plan, then record
+   `implementation_readiness.required: true` in DevFlow state at approval.
+   Retain `false` when no external provider is selected. Planning may expose Required/NotReady remediation,
+   but it must not claim executable status or infer selection from chat,
+   advisory direction, repository presence, or a producer's internal files.
 5. Route unclear behavior to `openspec-explore`, new ready intent to
    `openspec-propose`, existing-change planning revision to
    `openspec-update-change`, and plan structure to `ai-native-tech-plan`.

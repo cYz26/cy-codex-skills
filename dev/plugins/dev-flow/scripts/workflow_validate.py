@@ -8,6 +8,11 @@ from workflow_compact_state import check_compact_state
 from workflow_constants import resolve_plugin_root
 from workflow_goal_gate import goal_gate_warning
 from workflow_generated_artifacts import inspect_generated_artifact_lifecycle
+from workflow_implementation_readiness import (
+    IMPLEMENTATION_PROVIDER_READY,
+    ReadinessError,
+    inspect_repository_readiness,
+)
 from workflow_mode_routing import read_workflow_mode_config
 from workflow_paths import repo_path
 from workflow_state import parse_state, resolve_state
@@ -29,6 +34,7 @@ def validate_workflow_state(
     check_change(repo, state, issues, warnings)
     check_compact_state(repo, state, issues, warnings)
     check_goal_gate(state, warnings)
+    implementation_readiness = check_implementation_readiness(repo, state, issues, warnings)
     check_hook_cache_drift(issues, plugin_root=plugin_root, codex_home=codex_home)
     check_archive_gate(state, issues)
     generated_artifacts = inspect_generated_artifact_lifecycle(repo)
@@ -40,6 +46,7 @@ def validate_workflow_state(
         "state": state,
         "gates": state.get("gates", {}),
         "generatedArtifacts": generated_artifacts,
+        "implementationReadiness": implementation_readiness,
     }
 
 
@@ -84,6 +91,7 @@ def missing_agents_guidance(text: str) -> list[str]:
         "Project Control Plane": "## Project Control Plane",
         "Capability Routing": "## Capability Routing",
         "Intake and Planning": "## Intake and Planning",
+        "Project-Directed Implementation Readiness": "## Project-Directed Implementation Readiness",
         "Goal Workflow": "## Goal Workflow",
         "AI Coding Planning Rules": "AI Coding Planning Rules",
         "Target State": "Target State",
@@ -185,6 +193,46 @@ def check_goal_gate(state: dict[str, Any], warnings: list[str]) -> None:
     warning = goal_gate_warning(state)
     if warning:
         warnings.append(warning)
+
+
+def check_implementation_readiness(
+    repo: Path,
+    state: dict[str, Any],
+    issues: list[str],
+    warnings: list[str],
+) -> dict[str, Any]:
+    change = state.get("current_change", {})
+    change_id = str(change.get("id") or "") if isinstance(change, dict) else ""
+    try:
+        report = inspect_repository_readiness(repo, change_id or None)
+    except ReadinessError as error:
+        report = {
+            "applicable": True,
+            "report": {"state": "IMPLEMENTATION_PROVIDER_NOT_READY", "nextAction": "restore-current-consumer-context"},
+            "receiptCurrent": False,
+            "issues": [error.code],
+        }
+    if not report.get("applicable"):
+        return report
+    readiness = report.get("report") if isinstance(report.get("report"), dict) else {}
+    current = bool(
+        readiness.get("state") == IMPLEMENTATION_PROVIDER_READY
+        and report.get("receiptCurrent")
+    )
+    if current:
+        return report
+    message = (
+        "Implementation readiness is not current for governed execution: "
+        f"state={readiness.get('state', 'unknown')}, "
+        f"receiptCurrent={bool(report.get('receiptCurrent'))}, "
+        f"nextAction={readiness.get('nextAction', 'inspect-implementation-readiness')}"
+    )
+    stage = str(state.get("current_stage") or "").strip().lower().replace("-", "_")
+    if stage in {"planning", "intake", "research", "draft"}:
+        warnings.append(message)
+    else:
+        issues.append(message)
+    return report
 
 
 def check_hook_cache_drift(

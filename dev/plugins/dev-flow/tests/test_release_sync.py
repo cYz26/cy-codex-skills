@@ -958,6 +958,7 @@ context_management:
         self.assertEqual(
             metadata["include"],
             [
+                "fixtures/implementation-readiness/**",
                 "fixtures/project-refresh/**",
                 "fixtures/test_generated_artifact_lifecycle.py",
                 "tests/test_generated_artifact_lifecycle.py",
@@ -982,6 +983,7 @@ context_management:
         self.assertIn("scripts/devflow_runtime.sha256", metadata["managedOutputs"])
         self.assertIn("scripts/devflow_runtime.SOURCE_COMMIT", metadata["managedOutputs"])
         self.assertIn("scripts/devflow_launcher.py", metadata["managedOutputs"])
+        self.assertIn("scripts/implementation_readiness.py", metadata["managedOutputs"])
         self.assertIn("scripts/record_release_verification.py", metadata["managedOutputs"])
         self.assertIn("scripts/record_spec_sync.py", metadata["managedOutputs"])
 

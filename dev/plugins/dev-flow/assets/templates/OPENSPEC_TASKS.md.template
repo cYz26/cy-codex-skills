@@ -33,6 +33,9 @@ checkpoints; OpenSpec remains the canonical plan.
 - [ ] Validation Commands have been run or documented as unavailable.
 - [ ] Verification evidence is recorded.
 - [ ] Workflow state is updated.
+- [ ] Any applicable project-directed implementation-readiness Requirement has
+  a current Ready receipt and independent ordinary authority before product
+  mutation.
 
 ## Continuation Policy
 
@@ -155,6 +158,8 @@ checkpoints; OpenSpec remains the canonical plan.
 - [ ] No required capability remains unimplemented without a blocker.
 - [ ] Project Refresh Impact is recorded and its release gate passes when this
   change affects DevFlow.
+- [ ] No provider was inferred, discovered, installed, activated, invoked, or
+  silently substituted by the implementation-readiness gate.
 
 ## Validation Commands
 
@@ -170,3 +175,5 @@ checkpoints; OpenSpec remains the canonical plan.
 - [ ] Verification evidence is recorded.
 - [ ] Project Refresh Impact, migration fixtures, and source/release/cache
   parity are verified or explicitly not applicable.
+- [ ] Applicable Requirement/Evidence/Receipt bindings are current, or the exact
+  Required/NotReady blocker is recorded without an executable completion claim.

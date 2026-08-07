@@ -194,6 +194,16 @@ class ProjectOrchestratorTests(unittest.TestCase):
                 if path.is_file()
             },
             {
+                "fixtures/implementation-readiness/agents-guidance-markers-revision2.json",
+                "fixtures/implementation-readiness/invalid-evidence-missing-capabilities-v1.json",
+                "fixtures/implementation-readiness/invalid-provider-override-anonymous-v1.json",
+                "fixtures/implementation-readiness/invalid-receipt-not-ready-v1.json",
+                "fixtures/implementation-readiness/invalid-requirement-v2.json",
+                "fixtures/implementation-readiness/project-refresh-cases-v3.json",
+                "fixtures/implementation-readiness/valid-evidence-v1.json",
+                "fixtures/implementation-readiness/valid-provider-override-v1.json",
+                "fixtures/implementation-readiness/valid-receipt-v1.json",
+                "fixtures/implementation-readiness/valid-requirement-v1.json",
                 "fixtures/project-refresh/current-v2.json",
                 "fixtures/project-refresh/current.json",
                 "fixtures/project-refresh/legacy-conflicting-aliases.json",

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "DevFlowAgentsGuidanceMarkers",
+  "refreshContractRevision": 2,
+  "markers": [
+    "## Workflow Ownership",
+    "## Project Control Plane",
+    "## Capability Routing",
+    "## Intake and Planning",
+    "## Goal Workflow",
+    "AI Coding Planning Rules",
+    "Target State",
+    "Completion Contract",
+    "Capability Slices",
+    "Execution Ledger",
+    "Acceptance Criteria",
+    "Validation Commands",
+    "Final Verification",
+    "Full OpenSpec",
+    "Matt",
+    "Agent Task Contract",
+    "canonical",
+    "## Workflow Mode Routing",
+    "## Plugin Eval Gate",
+    "## Local Reference Update Reminder",
+    "## DevFlow Refresh Workflow"
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "ImplementationReadinessRequirement",
+  "requirementId": "requirement-alpha",
+  "provider": {
+    "id": "provider.alpha",
+    "policy": "project-selected",
+    "fallbackPolicy": "named-human-override-only"
+  },
+  "consumer": {
+    "projectId": "consumer.alpha",
+    "rootIdentity": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "revision": "git:1111111111111111111111111111111111111111"
+  },
+  "activeChange": {
+    "id": "deliver-capability-alpha",
+    "semanticPlanDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "targetProfile": {
+    "id": "target.alpha",
+    "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "requiredCapabilities": [
+    {
+      "id": "build",
+      "evidenceType": "validator-receipt"
+    },
+    {
+      "id": "verify",
+      "evidenceType": "validator-receipt"
+    }
+  ],
+  "acceptedEvidence": {
+    "schemaVersion": "1.0",
+    "maximumAgeSeconds": 3600,
+    "requireImmutableReceipts": true
+  },
+  "requiredLimitations": [
+    "no-production-publication"
+  ],
+  "semanticInputDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+}

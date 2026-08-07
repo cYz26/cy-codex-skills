@@ -116,6 +116,23 @@ def validate_agent_task_contract_file(
         }
     report = validate_agent_task_contract_text(path.read_text())
     report["path"] = str(path)
+    if repo is not None and write_scope_present(report.get("sections", {}).get("Scope", "")):
+        from workflow_implementation_readiness import repository_mutation_gate
+
+        readiness = repository_mutation_gate(Path(repo).expanduser().resolve(), ordinary_authority=True)
+        report["implementationReadiness"] = readiness
+        report["validationManifest"]["gates"]["implementationReadiness"] = {
+            "required": bool(readiness["applicable"]),
+            "status": "passed" if readiness["allowed"] else "failed",
+            "errors": list(readiness["issueCodes"]),
+        }
+        if readiness["applicable"] and not readiness["allowed"]:
+            report["errors"].extend(
+                f"implementation_readiness:{code}"
+                for code in readiness["issueCodes"]
+            )
+            report["errors"] = sorted(set(report["errors"]))
+            report["ok"] = False
     reference = report["validationManifest"]["generatedArtifact"]["contractPath"]
     if reference is not None:
         repository = Path(repo).expanduser().resolve() if repo is not None else find_repo_root(path)

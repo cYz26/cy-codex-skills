@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "ImplementationProviderOverride",
+  "overrideId": "override-alpha",
+  "namedHuman": {
+    "id": "human-123",
+    "displayName": "Named Owner"
+  },
+  "project": {
+    "id": "consumer.alpha",
+    "rootIdentity": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "activeChange": {
+    "id": "deliver-capability-alpha",
+    "semanticPlanDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "previousProviderId": "provider.alpha",
+  "newProviderId": "provider.beta",
+  "reason": "The named owner changed the approved implementation stack.",
+  "decidedAt": "2026-08-07T08:30:00Z",
+  "invalidates": {
+    "requirementDigests": [
+      "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    ],
+    "receiptDigests": [
+      "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+    ]
+  },
+  "reassessmentRequired": true,
+  "overrideDigest": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
+}

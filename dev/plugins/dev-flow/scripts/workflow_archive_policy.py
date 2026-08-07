@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from workflow_mode_routing import read_devflow_config_document, read_workflow_mode_config
+from workflow_implementation_readiness import repository_mutation_gate
 from workflow_spec_sync_evidence import verify_spec_sync
 from workflow_state import parse_state
 
@@ -91,6 +92,22 @@ def archive_status(
             )
         )
 
+    implementation_readiness = repository_mutation_gate(
+        repo,
+        ordinary_authority=True,
+        change_id=change_id or None,
+    )
+    if implementation_readiness["applicable"] and not implementation_readiness["allowed"]:
+        blockers.append(
+            risk(
+                "implementation_provider_not_ready",
+                "A current Ready implementation receipt is required before archive readiness.",
+                state=implementation_readiness.get("readinessState"),
+                issueCodes=implementation_readiness.get("issueCodes", []),
+                nextAction=implementation_readiness.get("nextAction"),
+            )
+        )
+
     if change_id and change_id != "none":
         blockers.extend(task_risks(repo, change_id))
         risks.extend(dirty_worktree_risks(repo, change_id))
@@ -124,6 +141,7 @@ def archive_status(
         "durableArchiveAuthorization": durable_archive_authorization,
         "allowRisk": bool(allow_risk),
         "nextAction": archive_next_action(ready, approval_required, risks, blockers),
+        "implementationReadiness": implementation_readiness,
     }
 
 

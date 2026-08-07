@@ -1,0 +1,6 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "ImplementationReadinessReceipt",
+  "evaluatorVersion": "1.0",
+  "state": "IMPLEMENTATION_PROVIDER_NOT_READY"
+}

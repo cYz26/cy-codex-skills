@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from workflow_paths import rel, repo_path
+from workflow_implementation_readiness import repository_mutation_gate
 from workflow_state import parse_state
 
 
@@ -167,7 +168,26 @@ def continuation_decision(
         human_gate=is_explicit_human_gate(current_state),
         external_effect_ready=external_effect_ready,
     )
-    return {**result, "executionSource": source}
+    readiness = repository_mutation_gate(repo, ordinary_authority=True)
+    if (
+        result["action"] in AUTOMATIC_CONTINUATION_ACTIONS
+        and readiness["applicable"]
+        and not readiness["allowed"]
+    ):
+        result = decision(
+            CHECKPOINT_AND_CONTINUE,
+            "implementation readiness blocks governed execution but its Human Gate is not yet durably recorded",
+            (
+                "Record the exact readiness issue and next action, set both current_stage and "
+                "current_change.status to awaiting_human, then re-run continuation before stopping. "
+                f"Required remediation: {readiness['nextAction']}"
+            ),
+        )
+    return {
+        **result,
+        "executionSource": source,
+        "implementationReadiness": readiness,
+    }
 
 
 def is_explicit_human_gate(state: dict[str, Any]) -> bool:

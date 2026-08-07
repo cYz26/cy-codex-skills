@@ -28,6 +28,14 @@ The plan incorporates the inspector's known provider lock, legacy hook/agent,
 legacy Skill, and historical planning paths as redacted preserved/manual
 evidence. Do not clean any of those paths as part of refresh.
 
+For refresh contract revision 3, also record the implementation-readiness
+surface status: packaged CLI/schemas, project-local Skill links, maintained
+templates, compatibility fixture identity, and any pre-existing project-owned
+Requirement/Evidence/Receipt namespace. These are inspection and managed-
+refresh facts only. Missing project direction remains not applicable; existing
+direction remains project-owned and is never synthesized, selected, or
+rewritten by refresh.
+
 Verify that the isolated, generated OpenSpec
 1.7 skills and the DevFlow project-local Skill sources match the named plugin
 identity before authorizing a project write.
@@ -90,6 +98,10 @@ python3 dev/plugins/dev-flow/scripts/plugin_project_migration.py verify \
 Verification covers managed-path readback, configuration schema, migration
 sync, workflow validation, cache-drift diagnosis, AGENTS disposition, and
 migration-state identity. `verified_incomplete` is attention, not completion.
+For revision 3, verification additionally reports whether already-existing
+readiness artifacts are current for the active consumer context; it does not
+write or repair those artifacts and does not turn their state into provider or
+ordinary implementation authority.
 
 Rollback is receipt-bound and requires a second explicit apply flag:
 

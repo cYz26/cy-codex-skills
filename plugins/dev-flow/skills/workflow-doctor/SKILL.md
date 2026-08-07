@@ -19,6 +19,10 @@ resources, goal, cache, and release readiness separately.
 2. Run `scripts/doctor_workflow.py --repo <repo> --write-report --json`.
 3. Inspect `.dev-flow.json`, `.planning/devflow/STATE.md`, OpenSpec artifacts,
    tracking status, cache drift, and generated guidance.
+   Also run `scripts/implementation_readiness.py inspect --repo <repo>
+   --change-id <change> --json` when that canonical namespace exists. Report
+   Requirement/Evidence/Receipt/override trust, exact binding drift, stable
+   issue codes, and the one next action separately from ordinary authority.
    For an active change, compare `openspec status --change <id> --json` and
    `openspec instructions <artifact> --change <id> --json`; use returned
    `artifactPaths` and `actionContext` to distinguish schema paths from drift.
@@ -32,3 +36,7 @@ Legacy or mixed state produces a read-only inspection plan; diagnosis preserves
 user-owned files. `AGENTS.md.generated` remains a merge candidate. A doctor
 result is complete when it separates blockers from warnings, names owners and
 hashes, and supplies a safe next command.
+
+The doctor never creates or promotes a Requirement, writes a Receipt or
+override, selects a fallback, runs provider commands, or installs/activates a
+provider.

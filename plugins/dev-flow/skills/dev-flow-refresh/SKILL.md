@@ -76,6 +76,21 @@ requires the separate `workflow-config-migration` authorization. Unsafe or
 conflicting configuration stays manual-only. Legacy integration files and
 `.codex/skills` cleanup remain separate actions with exact paths and approval.
 
+## 5. Implementation-Readiness Boundary
+
+Project schema 2 and its immutable configuration targets do not acquire a
+provider-selection key. Refresh contract revision 3 carries the generic
+implementation-readiness CLI, schemas, lifecycle guidance, Skills, templates,
+and compatibility fixtures as a managed refresh. The planner may report stale
+Skill links or generated-guidance drift, but refresh does not create a
+Requirement, choose a provider or target, write provider Evidence/Receipts,
+record an override, or run provider commands.
+
+After an authorized refresh, inspect any readiness namespace already owned by
+the project and report whether its receipt remains current. A refreshed Skill
+link or template never proves implementation readiness, and a source/release/
+cache identity match never grants consumer apply or ordinary task authority.
+
 ## Final Evidence
 
 Run receipt-bound `verify` after every apply. Report global source/release/cache

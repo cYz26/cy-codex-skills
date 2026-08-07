@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "ImplementationReadinessReceipt",
+  "evaluatorVersion": "1.0",
+  "state": "IMPLEMENTATION_PROVIDER_READY",
+  "bindings": {
+    "requirementDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "evidenceDigest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "activeContextDigest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "semanticPlanDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "providerArtifactDigest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "consumerRootIdentity": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "consumerRevision": "git:1111111111111111111111111111111111111111",
+    "targetProfileDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "capabilitySetDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+  },
+  "issueCodes": [],
+  "nextAction": "continue-with-ordinary-implementation-authority",
+  "recordedAt": "2026-08-07T08:00:00Z",
+  "receiptDigest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+}

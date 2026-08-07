@@ -98,6 +98,23 @@ Document concrete data flow before implementation when this change touches persi
 
 Do not introduce breaking behavior without explicit approval.
 
+## Project-Directed Implementation Readiness
+
+When the approved project plan selects an external implementation provider,
+record the selected provider identity/policy, consumer identity and exact
+revision, active change and semantic-plan digest, target profile, exact required
+capabilities, accepted Evidence v1 constraints, required limitations, and
+named-human override policy. Record `implementation_readiness.required: true`
+in DevFlow state only after this plan is approved; otherwise retain `false`.
+State whether the current result is Required,
+NotReady, or Ready and link the current Receipt when one exists.
+
+Read-only research and draft planning may proceed while unresolved. Product
+mutation requires a current Ready receipt plus ordinary implementation
+authority. Do not infer direction from chat or producer internals, and do not
+add provider selection configuration, discovery, installation, activation,
+command execution, or automatic fallback.
+
 ## Project Refresh Impact
 
 For DevFlow changes, record `changed`, `verified-unchanged`, or

@@ -1,7 +1,7 @@
 {
   "name": "dev-flow",
   "version": "0.3.0+codex.20260529145038",
-  "description": "Codex dev workflow.",
+  "description": "Codex dev workflow with contract-first implementation readiness.",
   "author": {
     "name": "cY",
     "url": "https://github.com/cYz26"
@@ -14,14 +14,15 @@
     "plugin",
     "openspec",
     "planning",
-    "workflow"
+    "workflow",
+    "readiness"
   ],
   "skills": "./skills/",
   "hooks": "./hooks.json",
   "interface": {
     "displayName": "DevFlow",
     "shortDescription": "Plan-first project workflow setup and gates",
-    "longDescription": "Initializes Codex-first setup, AI-native target-state planning, OpenSpec planning, verification, checkpoints, and repair.",
+    "longDescription": "Initializes Codex-first setup, AI-native target-state planning, OpenSpec planning, project-directed implementation-readiness gates, verification, checkpoints, and repair.",
     "developerName": "cY",
     "category": "Coding",
     "capabilities": [
@@ -34,7 +35,7 @@
     "termsOfServiceURL": "https://github.com/cYz26/cy-codex-skills/blob/main/plugins/dev-flow/README.md",
     "defaultPrompt": [
       "Plan work",
-      "Setup workflow",
+      "Check implementation readiness",
       "Verify work"
     ],
     "brandColor": "#2563EB",

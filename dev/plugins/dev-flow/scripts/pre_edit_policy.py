@@ -5,6 +5,7 @@ import json
 import sys
 from pathlib import Path
 
+from workflow_implementation_readiness import repository_mutation_gate
 from workflow_lib import hook_response, parse_state, production_like_path, repo_path
 
 
@@ -26,6 +27,16 @@ def main() -> int:
             repo,
             "DevFlow: production edit before approved execution state. "
             "Use project-orchestrator / feature-intake / change-plan first.",
+        )
+    readiness = repository_mutation_gate(repo, ordinary_authority=True)
+    if readiness["applicable"] and not readiness["allowed"]:
+        codes = ", ".join(readiness["issueCodes"]) or "unknown"
+        return hook_response(
+            repo,
+            "DevFlow: implementation readiness blocks this production edit "
+            f"({codes}). Next action: {readiness['nextAction']}.",
+            diagnostic={"implementationReadiness": readiness},
+            force_block=True,
         )
     return 0
 

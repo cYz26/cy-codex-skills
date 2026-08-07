@@ -110,6 +110,38 @@ A non-trivial change records Target State, Completion Contract, Capability
 Slices, Execution Ledger, Acceptance Criteria, Validation Commands, risks, and
 Final Verification before implementation.
 
+## Project-Directed Implementation Readiness
+
+When an approved project plan explicitly selects an external implementation
+provider, DevFlow can promote an `ImplementationReadinessRequirement v1` and
+evaluate exact provider Evidence v1 for the current consumer revision, active
+semantic plan, target profile, capability set, limitations, and provider
+artifact. The deterministic result is Required, NotReady, or Ready; only Ready
+may produce a content-bound Receipt v1.
+
+Approval first records `implementation_readiness.required: true` in
+`.planning/devflow/STATE.md`; plans selecting no external provider keep it
+`false`. This durable marker makes a missing Requirement fail closed instead of
+being mistaken for a non-applicable project. Promotion also verifies
+`spec_approved`, `plan_written`, the active change, and the repository-derived
+semantic-plan digest.
+
+Inspect or compose the gate with caller-confirmed ordinary authority:
+
+```bash
+python3 scripts/implementation_readiness.py inspect --repo . \
+  --change-id <change> --json
+python3 scripts/implementation_readiness.py check-mutation --repo . \
+  --change-id <change> --ordinary-authority --json
+```
+
+Promotion, receipt writing, and named-human override recording are dry-run by
+default and require explicit `--apply`. Ready proves only current evidence; it
+does not grant task, dependency, credential, cost, release, cache, migration,
+Git, archive, or publication authority. The gate never discovers, selects,
+installs, activates, invokes, or silently substitutes a provider. Projects that
+do not select an external provider receive no injected provider configuration.
+
 ## Generated Artifact Lifecycle
 
 DevFlow supports automatic task-owned reclamation only through a Generated

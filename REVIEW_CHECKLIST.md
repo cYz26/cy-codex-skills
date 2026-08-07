@@ -40,6 +40,17 @@
   accept, reject, or defer each recommended follow-up
 - [ ] No follow-up work started before normal intake and approval
 
+## Implementation Readiness
+
+- [ ] Any project-selected external provider has an active-plan-bound v1
+  Requirement; no selection was inferred from chat or repository presence
+- [ ] Requirement, Evidence, current Receipt, consumer, semantic plan, target,
+  provider artifact, capabilities, limitations, and evaluator bindings match
+- [ ] Ready is composed with ordinary authority and is not treated as task,
+  dependency, credential, release, cache, migration, Git, or archive approval
+- [ ] Override and unresolved states fail closed without discovery, automatic
+  fallback, provider installation, activation, or command execution
+
 ## Release / Archive Readiness
 
 - [ ] Project Refresh Impact is `changed`, `verified-unchanged`, or

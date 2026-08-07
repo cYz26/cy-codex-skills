@@ -28,6 +28,22 @@ active ledger before choosing a workflow action.
    `workflow-doctor`.
 6. Route a non-trivial technical plan to `ai-native-tech-plan`.
 
+Before routing an approved item into product mutation, run:
+
+```bash
+python3 scripts/implementation_readiness.py check-mutation --repo <repo> \
+  --change-id <change> --ordinary-authority --json
+```
+
+The readiness contract is applicable when approved state records
+`implementation_readiness.required: true`; a missing Requirement then returns
+Required instead of being treated as not applicable. Required/NotReady, a
+missing current Ready receipt, or missing ordinary authority must first be
+persisted with both Human Gate state fields before the next continuation result
+may be `AWAIT_HUMAN`. Ready never grants the ordinary authority supplied by
+the caller and never authorizes dependencies, credentials, cost, release,
+cache, migration, archive, Git, or publication.
+
 ## Continuous Execution
 
 Use `auto-until-terminal` after implementation is approved. The orchestrator
@@ -44,6 +60,11 @@ owns the enclosing `execute -> evidence -> decide -> continue` loop:
 5. Immediately perform the next approved in-scope action for the first three
    outcomes. Do not end the user request after an item, slice, review, or
    active-change boundary.
+
+Re-evaluate a current implementation-readiness receipt before every automatic
+transition into product writes and after resume/compact. Do not discover,
+select, install, activate, invoke, or silently replace a provider when the
+reported state is unresolved.
 
 A phase label is not a Human Gate. Stop only for an unresolved product choice,
 material scope/write-set/public-contract expansion, dependency or migration,

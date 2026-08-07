@@ -8,6 +8,7 @@ import re
 from typing import Any
 
 from workflow_planning_paths import atomic_write_devflow, release_verification_root
+from workflow_implementation_readiness import repository_mutation_gate
 from workflow_project_refresh import project_refresh_contract_snapshot
 from workflow_state import resolve_state, trusted_repo_regular_file
 
@@ -52,6 +53,26 @@ PROJECT_REFRESH_REQUIRED_INPUTS = {
     "skills/dev-flow-refresh/references/project-refresh.md",
     "skills/plugin-project-migration/SKILL.md",
 }
+PROJECT_REFRESH_REVISION3_REQUIRED_INPUTS = {
+    ".codex-plugin/plugin.json",
+    ".codex-plugin/release-sync.json",
+    "README.md",
+    "assets/templates/STATE.md.template",
+    "fixtures/implementation-readiness/agents-guidance-markers-revision2.json",
+    "fixtures/implementation-readiness/project-refresh-cases-v3.json",
+    "schemas/implementation-readiness-evidence-v1.schema.json",
+    "schemas/implementation-readiness-provider-override-v1.schema.json",
+    "schemas/implementation-readiness-receipt-v1.schema.json",
+    "schemas/implementation-readiness-requirement-v1.schema.json",
+    "scripts/implementation_readiness.py",
+    "scripts/workflow_implementation_readiness.py",
+    "scripts/workflow_state.py",
+    "skills/execute-task/SKILL.md",
+    "skills/feature-intake/SKILL.md",
+    "skills/project-orchestrator/SKILL.md",
+    "skills/verify-and-archive/SKILL.md",
+    "skills/workflow-doctor/SKILL.md",
+}
 PROJECT_REFRESH_PARITY_FILES = (
     ".codex-plugin/project-migration.json",
     "skills/dev-flow-refresh/SKILL.md",
@@ -60,6 +81,17 @@ PROJECT_REFRESH_PARITY_FILES = (
     "schemas/project-refresh-contract.schema.json",
     "schemas/project-refresh-plan.schema.json",
     "schemas/project-refresh-receipt.schema.json",
+)
+PROJECT_REFRESH_REVISION3_PARITY_FILES = (
+    ".codex-plugin/plugin.json",
+    ".codex-plugin/release-sync.json",
+    "README.md",
+    "fixtures/implementation-readiness/agents-guidance-markers-revision2.json",
+    "fixtures/implementation-readiness/project-refresh-cases-v3.json",
+    "schemas/implementation-readiness-evidence-v1.schema.json",
+    "schemas/implementation-readiness-provider-override-v1.schema.json",
+    "schemas/implementation-readiness-receipt-v1.schema.json",
+    "schemas/implementation-readiness-requirement-v1.schema.json",
 )
 PROJECT_REFRESH_MANIFEST_IDENTITY_FIELDS = (
     "schemaVersion",
@@ -171,7 +203,10 @@ def analyze_project_refresh_impact(
         errors.append("refresh_impact_evidence_surfaces_missing")
     tracked_inputs = source_refresh.get("trackedInputs")
     tracked_set = set(map(str, tracked_inputs)) if isinstance(tracked_inputs, list) else set()
-    for relative in sorted(PROJECT_REFRESH_REQUIRED_INPUTS - tracked_set):
+    required_inputs = set(PROJECT_REFRESH_REQUIRED_INPUTS)
+    if source_revision >= 3:
+        required_inputs.update(PROJECT_REFRESH_REVISION3_REQUIRED_INPUTS)
+    for relative in sorted(required_inputs - tracked_set):
         errors.append(f"refresh_required_input_missing:{relative}")
     config_targets = source_document.get("configTargets")
     if isinstance(config_targets, dict):
@@ -289,6 +324,10 @@ def verify_project_refresh_release_parity(
         errors.append("release_contract_identity_mismatch")
     direct_files = set(PROJECT_REFRESH_PARITY_FILES)
     source_document = _read_refresh_manifest(source_root, errors, "source")
+    source_refresh = source_document.get("refreshContract", {}) if isinstance(source_document, dict) else {}
+    source_revision = _nonnegative_int(source_refresh.get("revision"), default=0)
+    if source_revision >= 3:
+        direct_files.update(PROJECT_REFRESH_REVISION3_PARITY_FILES)
     direct_files.update(
         str(path)
         for path in source_document.get("configTargets", {}).values()
@@ -627,6 +666,13 @@ def release_promotion_readiness(
         blockers.append("fresh_complete_release_verification")
     if require_authorization and not bool(gates.get("release_allowed")):
         blockers.append("durable_release_authorization")
+    implementation_readiness = repository_mutation_gate(
+        repo,
+        ordinary_authority=True,
+        change_id=change_id or None,
+    )
+    if implementation_readiness["applicable"] and not implementation_readiness["allowed"]:
+        blockers.append("implementation_readiness")
     return {
         "ready": not blockers,
         "target": target,
@@ -636,6 +682,7 @@ def release_promotion_readiness(
         "evidence": evidence,
         "blockers": sorted(set(blockers)),
         "durableReleaseAuthorization": bool(gates.get("release_allowed")),
+        "implementationReadiness": implementation_readiness,
     }
 
 

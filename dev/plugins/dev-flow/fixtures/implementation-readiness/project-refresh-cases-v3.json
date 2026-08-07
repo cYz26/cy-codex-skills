@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0",
+  "refreshContractRevision": 3,
+  "projectSchemaHead": 2,
+  "schemaDecision": "managed-refresh",
+  "cases": [
+    {
+      "id": "current-schema-2",
+      "expected": "no-configuration-migration",
+      "proof": "test_supported_project_refresh_fixture_matrix_reaches_the_current_schema"
+    },
+    {
+      "id": "stale-project-skill-link",
+      "expected": "reported-until-explicit-refresh-apply",
+      "proof": "test_sync_reports_stale_project_local_skill_links"
+    },
+    {
+      "id": "missing-project-direction",
+      "expected": "readiness-not-applicable-and-no-provider-selected",
+      "proof": "test_missing_direction_is_not_applicable_and_does_not_select_provider"
+    },
+    {
+      "id": "existing-project-direction",
+      "expected": "requirement-promoted-but-missing-evidence-is-required",
+      "proof": "test_existing_direction_requires_current_project_bound_evidence"
+    },
+    {
+      "id": "brownfield-generated-guidance",
+      "expected": "merge-candidate-only",
+      "proof": "test_revision_two_agents_guidance_missing_only_readiness_rule_creates_merge_candidate"
+    },
+    {
+      "id": "ambiguous-baseline",
+      "expected": "manual-review-with-zero-configuration-writes",
+      "proof": "test_unrecognized_configuration_shape_is_baseline_ambiguous"
+    },
+    {
+      "id": "no-automatic-provider-selection",
+      "expected": "ordinary-authority-composes-with-not-applicable-readiness",
+      "proof": "test_missing_direction_is_not_applicable_and_does_not_select_provider"
+    }
+  ]
+}

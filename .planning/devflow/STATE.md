@@ -4,7 +4,7 @@ project_mode: brownfield
 current_stage: verified
 
 current_change:
-  id: add-versioned-devflow-project-refresh
+  id: add-project-directed-implementation-readiness-gate
   status: verified
 
 gates:
@@ -18,15 +18,18 @@ gates:
   archive_allowed: false
   release_allowed: false
 
+implementation_readiness:
+  required: false
+
 context_management:
   compact_policy: checkpoint_boundary
-  last_checkpoint_id: 2026-08-07-delivered-add-versioned-devflow-project-refresh
-  last_checkpoint_file: .planning/devflow/checkpoints/2026-08-07-delivered-add-versioned-devflow-project-refresh.md
+  last_checkpoint_id: 2026-08-07-release-verified-project-refreshed-readiness
+  last_checkpoint_file: .planning/devflow/checkpoints/2026-08-07-release-verified-project-refreshed-readiness.md
   compact_recommended: false
   compact_status: not_needed
   last_compact_result_file: none
   compact_source: checkpoint
-  compact_updated_at: 2026-08-07T12:13:36+08:00
+  compact_updated_at: 2026-08-07T18:18:23+08:00
   compact_skip_reason: none
   compact_error: none
   compact_after:
@@ -50,8 +53,8 @@ context_management:
 goal_gate:
   required: true
   status: complete
-  reason: the approved Project Refresh systemic repair and authorized source release remote and named-cache delivery are cross-context multi-slice work
-  suggested_goal: repair and deliver add-versioned-devflow-project-refresh with public-seam proof and exact scoped external effects
+  reason: the approved implementation-readiness contract is cross-context multi-slice migration-sensitive work with gated lifecycle integration
+  suggested_goal: implement and source-verify add-project-directed-implementation-readiness-gate within the authorized pre-release write set
 
 context_health:
   last_report: .planning/context-health/reports/20260629145923-context-health.json
@@ -59,42 +62,77 @@ context_health:
   last_confidence: high
   last_decision: continue
   last_goal_status: complete
-  goal_summary: Goal thread 019fda1b-d564-7c40-9d8a-e1fc47c2fe93 binds the four Project Refresh review corrections, exact direct-main submission, and named DevFlow cache refresh
+  goal_summary: Goal thread 019fdb33-75ae-76b1-a5dc-4435b4a202cc binds Requirement Evidence Receipt v1 source implementation, exact prerequisite migration and local skill activation, source verification, and closed external-effect boundaries
 ---
 
 # Workflow State
 
 ## Current Status
 
-`add-versioned-devflow-project-refresh` is at 45/45 tasks. Corrective source
-and release verification is complete: Project Refresh 42/42, Impact 10/10,
-pre-promotion 468/468, complete DevFlow 504/504, strict OpenSpec 61/61,
-runtime/parity/Skill/workflow/lint/diff checks, Plugin Eval with zero failures,
-and independent Standards plus Spec reviews are GREEN. The versioned contract
-is at head 2 and revision 2 with immutable v2 target, full v0/v1 migration
-coverage, future-marker fail-closed protection, and receipt evidence bound to
-migration state.
-The real analyzer reports `changed_covered`, `schemaDecision: advanced`, and no
-errors at tracked digest `ee6817cc…d597d1`. The user's explicit task 9.7
-DevFlow promotion authorization has been consumed by the generated release
-sync. The exact feature commit `ceb08a23a375685dc2a91afc0a3ff47a4ea36ff7`
-is on `origin/main`, and the named `dev-flow@cy-codex-skills` cache was refreshed
-and verified byte-equivalent. Goal thread
-`019fda1b-d564-7c40-9d8a-e1fc47c2fe93` binds source repair, generated DevFlow
-release, exact direct `origin/main` submission, and targeted refresh of only
-`dev-flow@cy-codex-skills`.
+`add-project-directed-implementation-readiness-gate` is verified and complete
+at `23/23`. Goal thread `019fdb33-75ae-76b1-a5dc-4435b4a202cc` completed the
+Requirement/Evidence/Receipt v1 source objective, and the user then authorized
+the separately gated generated release plus this worktree's reviewed Project
+Refresh. Both bounded actions are complete; `release_allowed` is closed again
+after use.
 
-The separate `repair-devflow-goal-gate-lifecycle` change is paused at its prior
-planning checkpoint without artifact deletion or implementation. Consumer-
-project migration, `AGENTS.md.generated` merge, broad plugin/Skill refresh,
-legacy cleanup, dependency changes, archive, PR, publication, and force-push
-remain closed. The pre-existing unrelated Git-transport evidence diff remains
-outside the intended commit at SHA-256
-`156697b2fda831afd5ac23a2e5ce8ffc98d18836f345535915bded204d812ba6`.
+Source and generated release are current at Project Refresh revision 3,
+project schema 2, tracked-input digest
+`90b855c9d6128cb5d0fdbc4d37030380723f96ca552291be7aee6fd68c1f9964`,
+and refresh-contract digest
+`sha256:2c08a92fbb084b4c2f5e251a801f8a4807328f5374849f7fe0369d92e5a126bd`.
+The final source-bound release-verification SHA-256 is
+`b219c7c605f0b16614e92849f5f099c8f8f0cb1d64661b5121682604930675b4`;
+the generated runtime archive SHA-256 is
+`7b46322c4c08d9358345979fbd7713017dadeac1bebf5faaa4eab3526ee60882`.
+Release gate status is `current` with no changed, stale, missing, or deleted
+asset.
+
+The release-root Project Refresh plan
+`sha256:1ef7bac8eed890768e96b4c421ba9447d03f327f568205ae9caabd7286ced6a4`
+applied exactly 16 DevFlow Skill-link replacements under
+`project-refresh-apply`. Apply receipt
+`.planning/devflow/plugin-project-migration/receipts/apply-8211525085fd4877810fe1ee3527ad06.json`
+and verification receipt
+`.planning/devflow/plugin-project-migration/receipts/verification-8211525085fd4877810fe1ee3527ad06.json`
+prove every technical check passed and rollback is available. A fresh plan has
+zero actions, and dependency diagnosis reports `workflowReady: true` with all
+16 links `already-linked`. Overall refresh remains truthfully
+`verified_incomplete` / `manual_review_required` only because
+`docs/superpowers/plans` is preserved historical or user-authored data. It is
+not an unfinished readiness task, and no cleanup authority was granted or used.
+
+`repair-devflow-goal-gate-lifecycle` is explicitly reprioritized behind this
+change, remains paused and unedited, and requires caller rebaseline after the
+readiness evaluator and lifecycle composition freeze. Installed-cache refresh,
+any other consumer apply, production dependency installation, Git, archive,
+publication, legacy cleanup, and every other excluded external effect remain
+closed. The pre-existing unrelated Git-transport evidence diff remains
+user-owned and untouched.
+
+Contract, lifecycle, Skills/templates, and Project Refresh revision 3 are
+complete. Approved state owns a durable `implementation_readiness.required`
+marker; promotion verifies the approved active plan and repository-derived
+semantic context; unresolved continuation persists both Human Gate fields
+before returning `AWAIT_HUMAN`; malformed Receipts and stale/missing guidance
+fail closed. Readiness tests are `26/26`, readiness plus Project Refresh is
+`69/69`, pre-promotion source verification is `495/495`, packaged runtime is
+`6/6`, release smoke is `30/30`, and final integrated discovery is `531/531`.
+Strict OpenSpec is `1/1` for the target and `34/34` repository-wide. Both
+independent read-only review axes ended with no blocking finding. Release-target
+Plugin Eval is `86/100` (`B`) with zero failures; its three static token-budget
+warnings remain the already registered `DF-IFL-001` deferred finding.
+
+The installed named cache remains independently at revision 2 and matches the
+untouched original checkout/release, not this worktree's revision-3 generated
+release. No cache, marketplace, other consumer, dependency, Git, archive, or
+publication action was taken. The pre-existing unrelated Git-transport
+evidence diff remains user-owned and untouched.
 
 ## Next Action
 
-No in-scope delivery action remains. The change is implemented, release-synced,
-verified, submitted to `origin/main`, and reflected in the named installed
-cache. Archive and every other closed external-effect boundary remain separate;
-the unrelated Git-transport worktree diff remains user-owned and untouched.
+No approved implementation item remains. Installed-cache refresh, refresh of
+any other consumer, dependency installation, Git, archive, publication, and
+cleanup of `docs/superpowers/plans` each require separate explicit authority.
+The paused Goal lifecycle change requires its own caller rebaseline before it
+can resume.

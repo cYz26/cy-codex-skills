@@ -12,6 +12,9 @@ diff, missing evidence, or approaching a checkpoint/compact boundary.
 
 1. Inspect `git status`, `git diff --stat`, `.planning/devflow/STATE.md`, the
    latest verification record, and active OpenSpec change files.
+   If `.planning/devflow/implementation-readiness/<change>/` exists, inspect its
+   Requirement, Evidence, current Receipt, semantic bindings, and override
+   state without rewriting any document.
 2. Run the health check:
 
 ```bash
@@ -50,3 +53,7 @@ For work that predates DevFlow events, read `references/session-recovery.md`
 before importing session history. Missing usage or attribution stays unknown.
 Store only sanitized metadata, never prompts, file or command bodies, or raw
 tool payloads.
+
+Readiness drift is not context drift to auto-repair. Report the stable issue
+codes and exact next action; never select a provider, refresh evidence, record
+an override, or promote a Requirement from this diagnostic route.

@@ -13,6 +13,23 @@
 - Unknown capability IDs, stale required resources, ambiguous ownership, and
   retired workflow keys fail closed.
 
+## Project-Directed Implementation Readiness
+
+- Create a Requirement only from an approved active plan that explicitly
+  selects an external implementation provider; advisory direction and chat are
+  not authority.
+- Record that selection first as `implementation_readiness.required: true` in
+  DevFlow state. Missing Requirement/Evidence then fails closed as Required;
+  `false` means the approved plan selected no external provider.
+- Bind Requirement, provider Evidence, and DevFlow Receipt to exact provider
+  artifact, consumer identity/revision, active semantic plan, target profile,
+  required capability set, limitations, and evaluator version.
+- Require one current Ready receipt and the independent ordinary implementation
+  authority before governed product mutation. Either gate may block the action.
+- Any semantic/identity drift or named-human provider override invalidates the
+  prior receipt. Never discover, install, activate, invoke, or silently select
+  a fallback provider from this gate.
+
 ## Continuous Execution
 
 - Default approved multi-item work to `auto-until-terminal`; a completed item,

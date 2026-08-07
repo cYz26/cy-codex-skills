@@ -108,6 +108,16 @@ def hook_diagnostic(
 
 def infer_hook_action(reason: str) -> dict[str, Any]:
     lowered = reason.lower()
+    if "implementation readiness" in lowered:
+        return {
+            "failed_gates": ["implementation_readiness"],
+            "next_action": "Inspect the current Requirement, Evidence, and Ready Receipt before product mutation.",
+            "recommended_skill": "project-orchestrator",
+            "recommended_command": (
+                "python3 dev/plugins/dev-flow/scripts/implementation_readiness.py "
+                "inspect --repo <repo> --change-id <change-id> --json"
+            ),
+        }
     if "legacy skill layout" in lowered or ".codex/skills" in lowered:
         return {
             "failed_gates": ["legacy_skill_layout"],

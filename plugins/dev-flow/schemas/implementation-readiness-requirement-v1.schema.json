@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://devflow.local/schemas/implementation-readiness-requirement-v1.schema.json",
+  "title": "ImplementationReadinessRequirement v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "requirementId",
+    "provider",
+    "consumer",
+    "activeChange",
+    "targetProfile",
+    "requiredCapabilities",
+    "acceptedEvidence",
+    "requiredLimitations",
+    "semanticInputDigest"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "1.0"},
+    "kind": {"const": "ImplementationReadinessRequirement"},
+    "requirementId": {"$ref": "#/$defs/stableId"},
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "policy", "fallbackPolicy"],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "policy": {"const": "project-selected"},
+        "fallbackPolicy": {"const": "named-human-override-only"}
+      }
+    },
+    "consumer": {"$ref": "#/$defs/consumer"},
+    "activeChange": {"$ref": "#/$defs/activeChange"},
+    "targetProfile": {"$ref": "#/$defs/targetProfile"},
+    "requiredCapabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "evidenceType"],
+        "properties": {
+          "id": {"$ref": "#/$defs/stableId"},
+          "evidenceType": {"const": "validator-receipt"}
+        }
+      }
+    },
+    "acceptedEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "maximumAgeSeconds", "requireImmutableReceipts"],
+      "properties": {
+        "schemaVersion": {"const": "1.0"},
+        "maximumAgeSeconds": {"type": "integer", "minimum": 1},
+        "requireImmutableReceipts": {"const": true}
+      }
+    },
+    "requiredLimitations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "semanticInputDigest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "stableId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "consumer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectId", "rootIdentity", "revision"],
+      "properties": {
+        "projectId": {"$ref": "#/$defs/stableId"},
+        "rootIdentity": {"$ref": "#/$defs/digest"},
+        "revision": {"type": "string", "minLength": 1}
+      }
+    },
+    "activeChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "semanticPlanDigest"],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "semanticPlanDigest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "targetProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "digest"],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "digest": {"$ref": "#/$defs/digest"}
+      }
+    }
+  }
+}

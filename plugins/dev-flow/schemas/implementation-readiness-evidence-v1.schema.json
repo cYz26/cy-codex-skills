@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://devflow.local/schemas/implementation-readiness-evidence-v1.schema.json",
+  "title": "ImplementationReadinessEvidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "evidenceId",
+    "requirementDigest",
+    "provider",
+    "consumer",
+    "activeChange",
+    "targetProfile",
+    "capabilities",
+    "limitations",
+    "binding",
+    "evidenceDigest"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "1.0"},
+    "kind": {"const": "ImplementationReadinessEvidence"},
+    "evidenceId": {"$ref": "#/$defs/stableId"},
+    "requirementDigest": {"$ref": "#/$defs/digest"},
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "artifactId", "version", "revision", "digest"],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "artifactId": {"$ref": "#/$defs/stableId"},
+        "version": {"type": "string", "minLength": 1},
+        "revision": {"type": "string", "minLength": 1},
+        "digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "consumer": {"$ref": "#/$defs/consumer"},
+    "activeChange": {"$ref": "#/$defs/activeChange"},
+    "targetProfile": {"$ref": "#/$defs/targetProfile"},
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "validator", "receipt"],
+        "properties": {
+          "id": {"$ref": "#/$defs/stableId"},
+          "status": {"enum": ["passed", "failed"]},
+          "validator": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "version"],
+            "properties": {
+              "id": {"$ref": "#/$defs/stableId"},
+              "version": {"type": "string", "minLength": 1}
+            }
+          },
+          "receipt": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "digest"],
+            "properties": {
+              "id": {"$ref": "#/$defs/stableId"},
+              "digest": {"$ref": "#/$defs/digest"}
+            }
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "binding": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["immutable"],
+          "properties": {"immutable": {"const": true}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["immutable", "issuedAt", "validUntil"],
+          "properties": {
+            "immutable": {"const": false},
+            "issuedAt": {"type": "string", "format": "date-time"},
+            "validUntil": {"type": "string", "format": "date-time"}
+          }
+        }
+      ]
+    },
+    "providerDetails": {"type": "object"},
+    "evidenceDigest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "stableId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "consumer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectId", "rootIdentity", "revision"],
+      "properties": {
+        "projectId": {"$ref": "#/$defs/stableId"},
+        "rootIdentity": {"$ref": "#/$defs/digest"},
+        "revision": {"type": "string", "minLength": 1}
+      }
+    },
+    "activeChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "semanticPlanDigest"],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "semanticPlanDigest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "targetProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "digest"],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "digest": {"$ref": "#/$defs/digest"}
+      }
+    }
+  }
+}

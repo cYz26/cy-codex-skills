@@ -19,6 +19,15 @@
 
 - <path>: <why changed>
 
+## Implementation Readiness
+
+- Applicability: not-applicable / Required / NotReady / Ready
+- Requirement digest: <sha256:... or not-applicable>
+- Evidence digest: <sha256:... or not-applicable>
+- Current Receipt: <path and digest or not-applicable>
+- Ordinary implementation authority: <independent gate result>
+- Issue codes / next action: <none or exact values>
+
 ## Risks / Gaps
 
 - none

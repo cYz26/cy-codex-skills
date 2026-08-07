@@ -5,6 +5,7 @@ from typing import Any
 
 from workflow_compact import record_compact_result
 from workflow_compact_options import clean_text
+from workflow_implementation_readiness import repository_mutation_gate
 from workflow_paths import repo_path
 from workflow_state import parse_state
 
@@ -43,11 +44,19 @@ def record_post_compact(repo: Path, payload: dict[str, Any]) -> dict[str, Any]:
             "action": "record_failed",
             "issues": report.get("issues", []),
         }
+    readiness = repository_mutation_gate(repo, ordinary_authority=True)
+    continuation_allowed = not readiness["applicable"] or readiness["allowed"]
     return {
         "ok": True,
-        "action": "compact_completed",
+        "action": (
+            "compact_completed"
+            if continuation_allowed
+            else "compact_completed_readiness_blocked"
+        ),
         "checkpoint_id": checkpoint["checkpoint_id"],
         "compact_result_file": report.get("compact_result_file"),
+        "continuationAllowed": continuation_allowed,
+        "implementationReadiness": readiness,
     }
 
 

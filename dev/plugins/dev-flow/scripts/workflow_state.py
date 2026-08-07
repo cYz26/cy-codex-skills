@@ -231,6 +231,7 @@ def default_state_values(project_mode: str, change_id: str, change_status: str =
         "change_id": change_id,
         "change_status": change_status,
         "plan_written": True,
+        "implementation_readiness_required": False,
         "status_text": f"Workflow initialized for a {project_mode} repository.",
         "next_action": f"Review and approve the `{change_id}` change before implementation.",
         "last_checkpoint_id": "none",
@@ -303,6 +304,13 @@ def merged_state_values(existing: dict[str, Any], overrides: dict[str, Any]) -> 
     )
     values["current_stage"] = str(overrides.get("current_stage", existing.get("current_stage", "planning")))
     values["plan_written"] = bool(overrides.get("plan_written", gates.get("plan_written", True)))
+    readiness = existing.get("implementation_readiness", {})
+    values["implementation_readiness_required"] = bool(
+        overrides.get(
+            "implementation_readiness_required",
+            readiness.get("required", False) if isinstance(readiness, dict) else False,
+        )
+    )
     values["status_text"] = str(
         overrides.get(
             "status_text",

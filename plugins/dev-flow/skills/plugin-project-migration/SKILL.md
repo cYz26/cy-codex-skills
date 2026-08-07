@@ -119,6 +119,9 @@ Old integration files and cleanup are never imported into this authority.
   `AGENTS.md.generated` merge candidate.
 - Preserve legacy `.codex/skills`, custom official-skill copies, and historical
   planning data.
+- Refreshing revision-3 Skills/templates never creates or changes an
+  implementation-readiness Requirement, provider Evidence/Receipt, provider
+  override, selection, installation, activation, or command execution.
 - Treat `applied_incomplete` and `verified_incomplete` as attention, not a
   refreshed/current claim.
 - Report generated files, conflicts, and validation commands before claiming

@@ -28,6 +28,29 @@ Classify the request and produce a routing decision before planning or code.
    requested per-stage confirmations. Ordinary item, review, verification, and
    checkpoint boundaries are not confirmation gates.
 
+## Project-Directed Implementation Readiness
+
+Treat project-owned engineering direction as intake input, never as provider
+authority. When the approved active plan explicitly selects an external
+implementation provider, record its stable identity, target profile, exact
+required capabilities, consumer identity/revision, accepted evidence, required
+limitations, and named-human-only fallback policy in an
+`ImplementationReadinessRequirement v1`. Promote only that explicit candidate
+with `scripts/implementation_readiness.py promote`; do not infer it from chat,
+parse a producer's private files, discover alternatives, or install/activate a
+provider.
+
+When approval adopts that selection, record
+`implementation_readiness.required: true` in `.planning/devflow/STATE.md`
+before promotion. Retain `false` when the approved active plan selects no
+external provider. The marker is applicability evidence, not readiness or
+implementation authority.
+
+Readiness may remain Required or NotReady while research and draft planning
+continue. Such a plan is non-executable. A Ready receipt proves only that the
+current evidence matches the current semantic plan and consumer; ordinary Goal,
+task, dependency, credential, cost, and Human Gates remain independent.
+
 ## Incidental Finding Intake
 
 Before planning an incidental problem as work, classify it against the

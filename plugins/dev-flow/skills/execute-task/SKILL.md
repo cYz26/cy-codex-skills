@@ -29,6 +29,20 @@ Use the same flags with `activate_project_dependencies.py` when activation is
 needed. This is dry-run by default; project-local skill writes occur only in
 explicit apply mode.
 
+When approved state records `implementation_readiness.required: true`, check
+the Requirement and current receipt and separately confirm the already-approved
+ordinary task authority before any product edit or mutating delegation. A
+missing Requirement is Required, not non-applicable:
+
+```bash
+python3 scripts/implementation_readiness.py check-mutation --repo <repo> \
+  --change-id <change> --ordinary-authority --json
+```
+
+Exit 2 is a fail-closed item gate. Read-only diagnosis, evidence review, and
+draft OpenSpec work may continue, but do not run provider commands, select a
+fallback, or treat provider presence as readiness.
+
 ## Procedure
 
 1. Read `AGENTS.md`, `.planning/devflow/STATE.md`, the active change or
@@ -38,16 +52,19 @@ explicit apply mode.
    use returned `artifactPaths` and `actionContext`.
 2. Confirm the workflow route is executable. Full OpenSpec work proceeds
    through `openspec-apply-change`; Prototype Mode remains non-production.
-3. Pick one unfinished Capability Slice or ledger item.
-4. Add or update the failing test and record RED. Implement the smallest
+3. If project-directed implementation readiness applies, require a current
+   Ready receipt and ordinary implementation authority. Ready is evidence, not
+   task authorization.
+4. Pick one unfinished Capability Slice or ledger item.
+5. Add or update the failing test and record RED. Implement the smallest
    complete behavior, then run focused and broader checks.
-5. Record changed files, commands, results, cleanup, and risks under
+6. Record changed files, commands, results, cleanup, and risks under
    `.planning/devflow/verification/`.
    When DevFlow refresh-sensitive bytes change, update the approved Project
    Refresh Impact evidence, contract revision, schema/migration decision, and
    fixtures in the same item; never leave that synchronization to a later
    unowned release step.
-6. Update the task, Execution Ledger, and state only after evidence passes or a
+7. Update the task, Execution Ledger, and state only after evidence passes or a
    blocker is recorded.
 
 ## Generated Artifact Contract

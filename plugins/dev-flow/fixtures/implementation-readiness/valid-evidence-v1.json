@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "ImplementationReadinessEvidence",
+  "evidenceId": "evidence-alpha",
+  "requirementDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "provider": {
+    "id": "provider.alpha",
+    "artifactId": "provider-runtime",
+    "version": "1.2.3",
+    "revision": "artifact-revision-7",
+    "digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  },
+  "consumer": {
+    "projectId": "consumer.alpha",
+    "rootIdentity": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "revision": "git:1111111111111111111111111111111111111111"
+  },
+  "activeChange": {
+    "id": "deliver-capability-alpha",
+    "semanticPlanDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "targetProfile": {
+    "id": "target.alpha",
+    "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "capabilities": [
+    {
+      "id": "build",
+      "status": "passed",
+      "validator": {
+        "id": "validator.build",
+        "version": "1.0"
+      },
+      "receipt": {
+        "id": "build-receipt",
+        "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    },
+    {
+      "id": "verify",
+      "status": "passed",
+      "validator": {
+        "id": "validator.verify",
+        "version": "1.0"
+      },
+      "receipt": {
+        "id": "verify-receipt",
+        "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    }
+  ],
+  "limitations": [
+    "no-production-publication"
+  ],
+  "binding": {
+    "immutable": true
+  },
+  "evidenceDigest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+}
