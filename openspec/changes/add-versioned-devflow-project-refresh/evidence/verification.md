@@ -348,6 +348,39 @@ project, including `/Users/cY/dev/game-dev`, was inspected for apply or mutated.
   SHA-256
   `156697b2fda831afd5ac23a2e5ce8ffc98d18836f345535915bded204d812ba6`.
 
+## Task 9.8 — Exact Submission and Named Cache Refresh
+
+- The reviewed index contained 96 approved Project Refresh source, generated
+  release, OpenSpec, and DevFlow control-plane paths. It contained neither
+  `openspec/changes/separate-git-transport-from-github-auth/**` nor any
+  `repair-devflow-goal-gate-lifecycle` artifact; `git diff --cached --check`
+  passed. The intended commit was created directly on `main` as
+  `ceb08a23a375685dc2a91afc0a3ff47a4ea36ff7` with subject
+  `feat(devflow): add versioned project refresh`.
+- Native Git transport preflight reported `GIT_TRANSPORT_READY`, SSH origin,
+  remote baseline `187c81cb25a13cde58b9c972a9ed050311f82775`, and no `gh` dependency.
+  `git push origin main` advanced `origin/main` to `ceb08a23…a36ff7`; both
+  `git ls-remote --heads origin refs/heads/main` and local `HEAD` read back the
+  exact full commit. No force-push, PR, tag, release publication, or GitHub
+  control-plane write occurred.
+- After the remote readback, the only cache mutation was
+  `codex plugin add dev-flow@cy-codex-skills --json`. It installed version
+  `0.3.0+codex.20260529145038` at
+  `/Users/cY/.codex/plugins/cache/cy-codex-skills/dev-flow/0.3.0+codex.20260529145038`
+  and exited 0. No broad updater apply was run.
+- Post-refresh readback reports the installed cache `matches-source`, project
+  migration/Skill layout `current`, and source/release/cache Project Refresh
+  parity `verified` with `errors: []`. All three tracked-input SHA-256 values
+  are exactly
+  `ee6817cc798f64d1976c815accbad39cc2966e6244b1eeb019778ba8d9d597d1`;
+  all three identities are head 2, revision 2, digest
+  `sha256:416b5119328c16202a3fc719179d79e34763ff929dee8afb340ef9c1ea79b6d1`.
+- The working tree after delivery contains only the pre-existing unrelated
+  Git-transport evidence diff, still excluded at diff SHA-256
+  `156697b2fda831afd5ac23a2e5ce8ffc98d18836f345535915bded204d812ba6`.
+  Consumer migration, `AGENTS.md.generated` merge, cleanup, archive, PR, and
+  publication remain unperformed and unauthorized.
+
 ## Task 8.1 — Final Diff and Two-Axis Review
 
 Completion dependencies for `change-review` and `completion-proof` reported
