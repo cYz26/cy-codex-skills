@@ -23,13 +23,13 @@ implementation_readiness:
 
 context_management:
   compact_policy: checkpoint_boundary
-  last_checkpoint_id: 2026-08-07-release-verified-project-refreshed-readiness
-  last_checkpoint_file: .planning/devflow/checkpoints/2026-08-07-release-verified-project-refreshed-readiness.md
+  last_checkpoint_id: 2026-08-07-remote-submitted-project-directed-readiness
+  last_checkpoint_file: .planning/devflow/checkpoints/2026-08-07-remote-submitted-project-directed-readiness.md
   compact_recommended: false
   compact_status: not_needed
   last_compact_result_file: none
   compact_source: checkpoint
-  compact_updated_at: 2026-08-07T18:18:23+08:00
+  compact_updated_at: 2026-08-07T19:48:36+08:00
   compact_skip_reason: none
   compact_error: none
   compact_after:
@@ -125,14 +125,22 @@ warnings remain the already registered `DF-IFL-001` deferred finding.
 
 The installed named cache remains independently at revision 2 and matches the
 untouched original checkout/release, not this worktree's revision-3 generated
-release. No cache, marketplace, other consumer, dependency, Git, archive, or
-publication action was taken. The pre-existing unrelated Git-transport
-evidence diff remains user-owned and untouched.
+release. The separately authorized Git submission created feature commit
+`b2b1976ac15efeb1bfaf6f69ebdf85ef25245ad5` on
+`codex/add-project-directed-implementation-readiness-gate`; native SSH readback
+proved the remote branch points to that exact commit. No PR, main merge, cache,
+marketplace, other consumer, dependency, archive, or publication action was
+taken. The pre-existing unrelated Git-transport evidence diff remains
+user-owned and byte-identical in both this worktree and the original checkout.
 
 ## Next Action
 
-No approved implementation item remains. Installed-cache refresh, refresh of
-any other consumer, dependency installation, Git, archive, publication, and
-cleanup of `docs/superpowers/plans` each require separate explicit authority.
-The paused Goal lifecycle change requires its own caller rebaseline before it
-can resume.
+No readiness implementation item remains. The 2026-08-07 user instruction
+authorizes a new Codex task to start from the submitted branch, reconstruct the
+ignored `repair-devflow-goal-gate-lifecycle` artifacts from the original
+checkout, rebaseline its callers against revision-3 readiness, and execute
+until its next genuine Human Gate. After that task is created successfully,
+this current worktree may be removed using the verified remote commit and
+content-addressed ignored-artifact backup. PR, main merge, installed-cache
+refresh, other consumer refresh, dependency installation, archive,
+publication, and cleanup of `docs/superpowers/plans` remain separate gates.
