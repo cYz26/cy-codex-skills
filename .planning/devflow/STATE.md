@@ -53,8 +53,8 @@ context_management:
 goal_gate:
   required: true
   status: complete
-  reason: the user resumed the existing goal-backed DevFlow refresh and explicitly authorized recoverable legacy workflow cleanup plus workflow configuration migration
-  suggested_goal: completed revision-9 schema-8 DevFlow release/cache/current-project refresh with recoverable project-local legacy cleanup and no Git, archive, global uninstall, or purge effect
+  reason: the user authorized recoverable legacy cleanup, workflow configuration migration, direct origin submission, and the final named-cache/current-project refresh
+  suggested_goal: completed revision-9 schema-8 DevFlow implementation, origin/main submission, named-cache refresh, and current-project verification without archive, global uninstall, or purge
 
 context_health:
   last_report: .planning/devflow/verification/20260807-authorized-legacy-workflow-uninstall.md
@@ -97,12 +97,18 @@ verified independently. A fresh source-repository plan is `current`, schema
 `8/8`, with zero actions, authorizations, or manual items. All 16 DevFlow links and exactly six
 OpenSpec 1.7 skills are current. Historical/recovery paths remain preserved.
 
-No commit, push, PR, publication, OpenSpec archive, global plugin uninstall,
-historical deletion, quarantine purge, or dependency installation occurred.
+Feature commit `a69340b8e2024e2368ce1ba65145916d0cbb66c4` was pushed
+directly to `origin/main` through native SSH Git. The local
+`dev-flow@cy-codex-skills` cache was then re-registered from the submitted
+release source. A fresh sealed project plan remains `current` at schema `8/8`
+with zero actions, authorizations, or manual items, and workflow diagnosis is
+healthy. This tracked closeout is authorized under the same direct-main push.
+No PR, OpenSpec archive, global plugin uninstall, historical deletion,
+quarantine purge, or dependency installation occurred.
 
 ## Next Action
 
 Start a new Codex task or reload the current task so the process-local surfaced
-skill inventory reflects the cleaned project. OpenSpec sync/archive, Git
-submission, global Superpowers uninstall, and quarantine purge remain separate
+skill inventory reflects the cleaned project. OpenSpec sync/archive, PR
+creation, global Superpowers uninstall, and quarantine purge remain separate
 future authorization boundaries.

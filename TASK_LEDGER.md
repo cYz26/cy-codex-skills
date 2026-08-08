@@ -1549,3 +1549,15 @@ three dependency-ordered slices without creating another queue.
   absent and 69/69 quarantine post-states intact: 59 GSD, 4 Superpowers, and 6
   obsolete OpenSpec. No global plugin uninstall, history deletion, quarantine
   purge, commit, push, PR, publication, or archive occurred.
+- 2026-08-08: The user explicitly authorized direct remote submission and the
+  final local upgrade/refresh. Feature commit
+  `a69340b8e2024e2368ce1ba65145916d0cbb66c4` was pushed to `origin/main`
+  through native SSH Git; remote readback matched exactly. The named
+  `dev-flow@cy-codex-skills` cache was re-registered from the local marketplace
+  release. Fresh plan
+  `sha256:93b3407df8bb5fba25800c58a82a477581148e905225a47163d12616f793240e`
+  remains current at schema 8/8 with zero actions, authorizations, or manual
+  items, and workflow diagnosis is healthy. This tracked closeout is submitted
+  under the same direct-main authorization; PR, archive, global Superpowers
+  uninstall, history deletion, quarantine purge, and dependency installation
+  remain outside scope.
