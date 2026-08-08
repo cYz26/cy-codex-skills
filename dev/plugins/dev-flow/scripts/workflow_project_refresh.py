@@ -14,10 +14,20 @@ from typing import Any, Callable
 
 from legacy_workflow_config import (
     LEGACY_WORKFLOW_FIELD_ALIASES,
+    SUPERPOWERS_SKILLS,
     inspect_legacy_workflow_config,
 )
 from plugin_preflight_hooks import hook_cache_drift_issues
 from workflow_contract_control_plane import CONTROL_PLANE_TEMPLATES
+from workflow_legacy_uninstall import (
+    GSD_SELECTION_GROUP,
+    LEGACY_SKILL_LAYOUT_AUTHORIZATION,
+    LEGACY_WORKFLOW_AUTHORIZATION,
+    OPENSPEC_SELECTION_GROUP,
+    SUPERPOWERS_SELECTION_GROUP,
+    inspect_legacy_workflow_uninstall,
+)
+from workflow_dependency_catalog import OPENSPEC_WORKFLOW_SKILLS
 from workflow_planning_paths import atomic_write_devflow, guard_devflow_write, plugin_migration_root
 from workflow_validate import missing_agents_guidance, validate_workflow_state
 
@@ -32,6 +42,16 @@ VERIFICATION_RECEIPT_KIND = "devflow-project-refresh-verification-receipt"
 ROLLBACK_RECEIPT_KIND = "devflow-project-refresh-rollback-receipt"
 PROJECT_REFRESH_AUTHORIZATION = "project-refresh-apply"
 WORKFLOW_CONFIG_AUTHORIZATION = "workflow-config-migration"
+LEGACY_UNINSTALL_OWNERSHIPS = frozenset(
+    {
+        "explicit-legacy-gsd",
+        "strict-gsd-config",
+        "strict-gsd-hooks-config",
+        "strict-gsd-package-marker",
+        "attested-superpowers-skill",
+        "obsolete-generated-openspec-skill",
+    }
+)
 MIGRATION_STEP_REGISTRY = {
     "legacy-selection-v0-to-v1": {
         "from": 0,
@@ -49,6 +69,54 @@ MIGRATION_STEP_REGISTRY = {
         "planner": "merge-config-target",
         "verifier": "configuration-schema-v2",
     },
+    "full-openspec-v2-to-v3": {
+        "from": 2,
+        "to": 3,
+        "authorization": WORKFLOW_CONFIG_AUTHORIZATION,
+        "configTarget": 3,
+        "planner": "merge-config-target",
+        "verifier": "configuration-schema-v3",
+    },
+    "full-openspec-v3-to-v4": {
+        "from": 3,
+        "to": 4,
+        "authorization": WORKFLOW_CONFIG_AUTHORIZATION,
+        "configTarget": 4,
+        "planner": "merge-config-target",
+        "verifier": "configuration-schema-v4",
+    },
+    "full-openspec-v4-to-v5": {
+        "from": 4,
+        "to": 5,
+        "authorization": WORKFLOW_CONFIG_AUTHORIZATION,
+        "configTarget": 5,
+        "planner": "merge-config-target",
+        "verifier": "configuration-schema-v5",
+    },
+    "full-openspec-v5-to-v6": {
+        "from": 5,
+        "to": 6,
+        "authorization": WORKFLOW_CONFIG_AUTHORIZATION,
+        "configTarget": 6,
+        "planner": "merge-config-target",
+        "verifier": "configuration-schema-v6",
+    },
+    "full-openspec-v6-to-v7": {
+        "from": 6,
+        "to": 7,
+        "authorization": WORKFLOW_CONFIG_AUTHORIZATION,
+        "configTarget": 7,
+        "planner": "merge-config-target",
+        "verifier": "configuration-schema-v7",
+    },
+    "full-openspec-v7-to-v8": {
+        "from": 7,
+        "to": 8,
+        "authorization": WORKFLOW_CONFIG_AUTHORIZATION,
+        "configTarget": 8,
+        "planner": "merge-config-target",
+        "verifier": "configuration-schema-v8",
+    },
 }
 
 
@@ -58,6 +126,7 @@ def plan_project_refresh(
     codex_home: str | Path | None = None,
     *,
     _active_transaction_id: str | None = None,
+    _allow_expected_schema_state_transition: bool = False,
 ) -> dict[str, Any]:
     """Return a deterministic, read-only refresh plan for one project."""
     del codex_home
@@ -121,6 +190,7 @@ def plan_project_refresh(
         and isinstance(observed_schema, int)
         and isinstance(recorded_schema, int)
         and observed_schema != recorded_schema
+        and not _allow_expected_schema_state_transition
     )
     if schema_evidence_conflict:
         config["status"] = "baseline_ambiguous"
@@ -134,6 +204,7 @@ def plan_project_refresh(
     actions.extend(control_surface["actions"])
     actions.extend(skill_surface["actions"])
     actions.extend(agents_surface["actions"])
+    actions.extend(legacy_surface["actions"])
     manual_actions = [config_manual] if config_manual else []
     manual_actions.extend(control_surface["manualActions"])
     manual_actions.extend(skill_surface["manualActions"])
@@ -149,7 +220,14 @@ def plan_project_refresh(
                 "reason": "configuration_state_schema_disagreement",
             }
         )
-    write_set = sorted({str(action["path"]) for action in actions})
+    write_set = sorted(
+        {
+            str(value)
+            for action in actions
+            for value in (action.get("path"), action.get("quarantinePath"))
+            if value
+        }
+    )
     authorizations = sorted({str(action["authorization"]) for action in actions})
     preserved_paths = sorted(
         {
@@ -157,6 +235,7 @@ def plan_project_refresh(
             for item in manual_actions
             if isinstance(item, dict) and item.get("path")
         }
+        | set(map(str, legacy_surface["preservedPaths"]))
     )
     if schema_evidence_conflict:
         migration_path, path_error = [], "configuration_state_schema_disagreement"
@@ -325,6 +404,16 @@ def apply_project_refresh(
         )
         result["conflicts"] = [f"unknown_action:{item}" for item in unknown]
         return result
+    selection_conflicts = _selection_group_conflicts(current["actions"], selected_ids)
+    if selection_conflicts:
+        result = _result(
+            current,
+            ok=False,
+            status="blocked",
+            next_action="Select every action in a legacy cleanup family or none of that family.",
+        )
+        result["conflicts"] = selection_conflicts
+        return result
     selected = _ordered_selected_actions(action_map, selected_ids)
     remaining_actions = [action for action_id, action in action_map.items() if action_id not in selected_ids]
     incomplete = bool(remaining_actions or current.get("manualActions"))
@@ -341,7 +430,7 @@ def apply_project_refresh(
         )
         result["missingAuthorizations"] = missing
         return result
-    conflicts = _preflight_actions(repo_path, selected)
+    conflicts = _preflight_actions(repo_path, selected, plugin_root=plugin_path)
     if conflicts:
         result = _result(
             current,
@@ -375,6 +464,7 @@ def apply_project_refresh(
     transactions_existed = transactions_root.exists()
     receipts_root = runtime / "receipts"
     receipts_existed = receipts_root.exists()
+    created_transaction_parents = _missing_transaction_parents(repo_path, transactions_root)
     transaction_id = uuid.uuid4().hex
     transaction_root = transactions_root / transaction_id
     stage_root = transaction_root / "stage"
@@ -430,8 +520,7 @@ def apply_project_refresh(
             try:
                 _promote_action(repo_path, item)
             except Exception:
-                target = _project_target(repo_path, str(item["action"]["path"]))
-                if _fingerprint(target) == item["action"].get("afterFingerprint"):
+                if _action_post_state_matches(repo_path, item["action"]):
                     promoted.append(item["action"])
                 raise
             promoted.append(item["action"])
@@ -522,6 +611,7 @@ def apply_project_refresh(
             promoted,
             state_path,
             state_before,
+            plugin_root=plugin_path,
             state_written=state_written,
             fail=fault_injection == "rollback",
         )
@@ -530,6 +620,7 @@ def apply_project_refresh(
                 transaction_root,
                 transactions_existed=transactions_existed,
                 runtime_existed=runtime_existed,
+                created_parents=created_transaction_parents,
             )
             result = _result(
                 current,
@@ -556,6 +647,7 @@ def apply_project_refresh(
         transaction_root,
         transactions_existed=transactions_existed,
         runtime_existed=runtime_existed,
+        created_parents=created_transaction_parents,
     )
     result = _result(
         current,
@@ -685,8 +777,8 @@ def rollback_project_refresh(
     *,
     apply: bool = False,
 ) -> dict[str, Any]:
-    del plugin_root
     repo_path = Path(repo).expanduser().resolve()
+    plugin_path = Path(plugin_root).expanduser().resolve()
     receipt_path = _receipt_path(repo_path, receipt)
     document = _read_receipt(receipt_path, APPLY_RECEIPT_KIND)
     if not apply:
@@ -716,8 +808,7 @@ def rollback_project_refresh(
     actions = document.get("actions") if isinstance(document.get("actions"), list) else []
     issues: list[str] = []
     for action in actions:
-        target = _project_target(repo_path, str(action.get("path") or ""))
-        if _fingerprint(target) != action.get("afterFingerprint"):
+        if not _action_post_state_matches(repo_path, action):
             issues.append(f"post_apply_edit:{action.get('path')}")
     state_path = plugin_migration_root(repo_path) / "state.json"
     if _fingerprint(state_path) != document.get("stateAfterFingerprint"):
@@ -734,13 +825,28 @@ def rollback_project_refresh(
             "retryability": _retryability("rollback_blocked"),
             "nextAction": "Preserve post-apply edits and review rollback manually.",
         }
+    rollback_preflight = _prepare_rollback_sources(repo_path, plugin_path, actions)
+    if not rollback_preflight["ok"]:
+        return {
+            "schemaVersion": RESULT_SCHEMA_VERSION,
+            "kind": RESULT_KIND,
+            "ok": False,
+            "status": "rollback_blocked",
+            "repo": str(repo_path),
+            "changedPaths": [],
+            "issues": rollback_preflight["issues"],
+            "retryability": _retryability("rollback_blocked"),
+            "nextAction": "Restore the receipt-bound rollback sources before retrying.",
+        }
     rollback = _rollback_promoted(
         repo_path,
         actions,
         state_path,
         document.get("stateBefore"),
+        plugin_root=plugin_path,
         state_written=True,
         fail=False,
+        prepared_rollback=rollback_preflight,
     )
     if not rollback["ok"]:
         return {
@@ -836,7 +942,28 @@ def _ordered_selected_actions(
     return ordered
 
 
-def _preflight_actions(repo: Path, actions: list[dict[str, Any]]) -> list[str]:
+def _selection_group_conflicts(
+    actions: list[dict[str, Any]],
+    selected_ids: set[str],
+) -> list[str]:
+    groups: dict[str, set[str]] = {}
+    for action in actions:
+        group = action.get("selectionGroup")
+        if isinstance(group, str) and group:
+            groups.setdefault(group, set()).add(str(action.get("id") or ""))
+    return sorted(
+        f"selection_group_incomplete:{group}"
+        for group, members in groups.items()
+        if members & selected_ids and not members <= selected_ids
+    )
+
+
+def _preflight_actions(
+    repo: Path,
+    actions: list[dict[str, Any]],
+    *,
+    plugin_root: Path | None = None,
+) -> list[str]:
     repo = Path(repo).expanduser().resolve()
     issues: list[str] = []
     raw_identifiers = [str(action.get("id")) for action in actions]
@@ -848,15 +975,23 @@ def _preflight_actions(repo: Path, actions: list[dict[str, Any]]) -> list[str]:
         identifier = str(action.get("id") or "")
         kind = str(action.get("kind") or "")
         relative = str(action.get("path") or "")
-        if kind not in {"create_file", "replace_json", "create_symlink", "replace_symlink"}:
+        if kind not in {
+            "create_file",
+            "replace_json",
+            "create_symlink",
+            "replace_symlink",
+            "quarantine_path",
+        }:
             issues.append(f"unknown_operation:{identifier}")
             continue
-        if action.get("ownership") not in {
+        allowed_ownership = {
             "devflow-workflow-config",
             "devflow-create-if-absent",
             "devflow-managed-project-skill",
             "human-merge-candidate",
-        }:
+            *LEGACY_UNINSTALL_OWNERSHIPS,
+        }
+        if action.get("ownership") not in allowed_ownership:
             issues.append(f"ownership_ambiguous:{identifier}")
         try:
             target = _project_target(repo, relative)
@@ -864,22 +999,34 @@ def _preflight_actions(repo: Path, actions: list[dict[str, Any]]) -> list[str]:
             issues.append(f"invalid_path:{identifier}:{error}")
             continue
         paths.append((identifier, Path(relative)))
-        if _fingerprint(target) != action.get("beforeFingerprint"):
+        if _action_path_fingerprint(action, target) != action.get("beforeFingerprint"):
             issues.append(f"before_fingerprint_changed:{identifier}")
         dependencies = action.get("dependencies")
         dependencies = dependencies if isinstance(dependencies, list) else []
         missing_dependencies = sorted(set(map(str, dependencies)) - identifiers)
         issues.extend(f"missing_dependency:{identifier}:{item}" for item in missing_dependencies)
-        rollback = action.get("rollback")
-        if not isinstance(rollback, dict):
+        raw_rollback = action.get("rollback")
+        rollback = raw_rollback if isinstance(raw_rollback, dict) else {}
+        if not isinstance(raw_rollback, dict):
             issues.append(f"rollback_missing:{identifier}")
-        elif kind == "replace_json" and rollback.get("kind") != "git_blob":
-            issues.append(f"rollback_incomplete:{identifier}")
-        elif kind == "replace_json" and not _git_rollback_is_available(repo, action):
-            issues.append(f"rollback_source_unavailable:{identifier}")
+        elif kind == "replace_json":
+            rollback_kind = rollback.get("kind")
+            if rollback_kind == "git_blob":
+                if not _git_rollback_is_available(repo, action):
+                    issues.append(f"rollback_source_unavailable:{identifier}")
+            elif rollback_kind == "config_target":
+                if plugin_root is None or not _config_target_rollback_is_available(
+                    plugin_root,
+                    action,
+                ):
+                    issues.append(f"rollback_source_unavailable:{identifier}")
+            else:
+                issues.append(f"rollback_incomplete:{identifier}")
         elif kind in {"create_file", "create_symlink"} and rollback.get("kind") != "remove_if_created":
             issues.append(f"rollback_incomplete:{identifier}")
         elif kind == "replace_symlink" and rollback.get("kind") != "restore_symlink":
+            issues.append(f"rollback_incomplete:{identifier}")
+        elif kind == "quarantine_path" and rollback.get("kind") != "restore_quarantine":
             issues.append(f"rollback_incomplete:{identifier}")
         source = action.get("source")
         if not isinstance(source, dict):
@@ -892,6 +1039,40 @@ def _preflight_actions(repo: Path, actions: list[dict[str, Any]]) -> list[str]:
                 or not _trusted_skill_source(Path(raw_source))
             ):
                 issues.append(f"source_untrusted:{identifier}")
+        elif kind == "quarantine_path" and (
+            source.get("kind") != "existing_project_path"
+            or source.get("path") != relative
+        ):
+            issues.append(f"source_untrusted:{identifier}")
+        if kind == "quarantine_path":
+            if action.get("authorization") not in {
+                LEGACY_WORKFLOW_AUTHORIZATION,
+                LEGACY_SKILL_LAYOUT_AUTHORIZATION,
+            }:
+                issues.append(f"authorization_invalid:{identifier}")
+            if action.get("ownership") == "obsolete-generated-openspec-skill":
+                if action.get("authorization") != LEGACY_SKILL_LAYOUT_AUTHORIZATION:
+                    issues.append(f"authorization_invalid:{identifier}")
+            elif action.get("authorization") != LEGACY_WORKFLOW_AUTHORIZATION:
+                issues.append(f"authorization_invalid:{identifier}")
+            if not isinstance(action.get("selectionGroup"), str) or not action["selectionGroup"]:
+                issues.append(f"selection_group_missing:{identifier}")
+            before = action.get("beforeFingerprint")
+            after = action.get("afterFingerprint")
+            if not isinstance(before, dict) or before.get("kind") not in {"file", "symlink", "tree"}:
+                issues.append(f"quarantine_preimage_invalid:{identifier}")
+            if not isinstance(after, dict) or after.get("kind") != "absent":
+                issues.append(f"quarantine_postimage_invalid:{identifier}")
+            try:
+                quarantine = _quarantine_target(repo, str(action.get("quarantinePath") or ""))
+            except ValueError as error:
+                issues.append(f"quarantine_path_invalid:{identifier}:{error}")
+            else:
+                paths.append((f"{identifier}:quarantine", Path(str(action["quarantinePath"]))))
+                if _quarantine_fingerprint(quarantine)["kind"] != "absent":
+                    issues.append(f"quarantine_occupied:{identifier}")
+                if rollback.get("quarantinePath") != action.get("quarantinePath"):
+                    issues.append(f"rollback_quarantine_mismatch:{identifier}")
         parents = rollback.get("pruneEmptyParents", []) if isinstance(rollback, dict) else []
         if not isinstance(parents, list):
             issues.append(f"rollback_parents_invalid:{identifier}")
@@ -920,6 +1101,9 @@ def _stage_actions(
     staged: list[dict[str, Any]] = []
     contract = _load_refresh_contract(plugin_root)
     for index, action in enumerate(actions):
+        if action["kind"] == "quarantine_path":
+            staged.append({"action": action, "stage": None})
+            continue
         stage = stage_root / f"{index:04d}-{action['id']}"
         target = _project_target(repo, str(action["path"]))
         if action["kind"] in {"create_symlink", "replace_symlink"}:
@@ -991,14 +1175,71 @@ def _action_content(
 
 def _promote_action(repo: Path, staged: dict[str, Any]) -> None:
     action = staged["action"]
-    stage = Path(staged["stage"])
     target = _project_target(repo, str(action["path"]))
-    if _fingerprint(target) != action.get("beforeFingerprint"):
+    if _action_path_fingerprint(action, target) != action.get("beforeFingerprint"):
         raise OSError(f"target changed after preflight: {action['id']}")
+    if action["kind"] == "quarantine_path":
+        quarantine = _quarantine_target(repo, str(action["quarantinePath"]))
+        if _quarantine_fingerprint(quarantine)["kind"] != "absent":
+            raise OSError(f"quarantine destination changed after preflight: {action['id']}")
+        quarantine.parent.mkdir(parents=True, exist_ok=True)
+        os.replace(target, quarantine)
+        if not _action_post_state_matches(repo, action):
+            raise OSError(f"quarantine promotion mismatch: {action['id']}")
+        return
+    stage = Path(staged["stage"])
     target.parent.mkdir(parents=True, exist_ok=True)
     os.replace(stage, target)
     if _fingerprint(target) != action.get("afterFingerprint"):
         raise OSError(f"promoted fingerprint mismatch: {action['id']}")
+
+
+def _quarantine_target(repo: Path, relative: str) -> Path:
+    requested = Path(relative)
+    prefix = (
+        ".planning",
+        "devflow",
+        "plugin-project-migration",
+        "quarantine",
+        "legacy-workflow-uninstall",
+    )
+    if (
+        len(requested.parts) != len(prefix) + 2
+        or requested.parts[: len(prefix)] != prefix
+        or requested.parts[-1] != "payload"
+        or len(requested.parts[-2]) != 64
+        or any(character not in "0123456789abcdef" for character in requested.parts[-2])
+    ):
+        raise ValueError("quarantine path is outside the deterministic legacy uninstall root")
+    return _project_target(repo, relative)
+
+
+def _action_path_fingerprint(action: dict[str, Any], path: Path) -> dict[str, str]:
+    if action.get("kind") == "quarantine_path":
+        return _quarantine_fingerprint(
+            path,
+            expected=action.get("beforeFingerprint"),
+        )
+    return _fingerprint(path)
+
+
+def _action_post_state_matches(repo: Path, action: dict[str, Any]) -> bool:
+    try:
+        target = _project_target(repo, str(action.get("path") or ""))
+    except ValueError:
+        return False
+    if _action_path_fingerprint(action, target) != action.get("afterFingerprint"):
+        return False
+    if action.get("kind") != "quarantine_path":
+        return True
+    try:
+        quarantine = _quarantine_target(repo, str(action.get("quarantinePath") or ""))
+    except ValueError:
+        return False
+    return _quarantine_fingerprint(
+        quarantine,
+        expected=action.get("beforeFingerprint"),
+    ) == action.get("beforeFingerprint")
 
 
 def _verify_actions(
@@ -1015,7 +1256,7 @@ def _verify_actions(
     check_results: list[dict[str, Any]] = []
     for action in actions:
         path = _project_target(repo, str(action.get("path") or ""))
-        if _fingerprint(path) != action.get("afterFingerprint"):
+        if not _action_post_state_matches(repo, action):
             issues.append(f"managed_path_mismatch:{action.get('id')}")
             continue
         if action.get("path") == ".dev-flow.json":
@@ -1039,11 +1280,19 @@ def _verify_actions(
     )
     non_blocking: list[str] = []
     if plugin_root is not None:
+        expected_schema_transition = any(
+            action.get("path") == ".dev-flow.json"
+            and isinstance(action.get("source"), dict)
+            and action["source"].get("kind")
+            in {"pure_migration_path", "pure_migration_step"}
+            for action in actions
+        )
         post_plan = plan_project_refresh(
             repo,
             plugin_root,
             codex_home,
             _active_transaction_id=active_transaction_id,
+            _allow_expected_schema_state_transition=expected_schema_transition,
         )
         remaining_selected = sorted(
             {str(action["id"]) for action in actions}
@@ -1353,17 +1602,72 @@ def _verification_receipt(
     return receipt
 
 
+def _prepare_rollback_sources(
+    repo: Path,
+    plugin_root: Path,
+    actions: list[dict[str, Any]],
+) -> dict[str, Any]:
+    issues: list[str] = []
+    source_bytes: dict[str, bytes] = {}
+    for action in reversed(actions):
+        relative = str(action.get("path") or "")
+        try:
+            rollback = action.get("rollback")
+            if not isinstance(rollback, dict):
+                raise ValueError("rollback metadata missing")
+            if not _action_post_state_matches(repo, action):
+                raise ValueError("promoted path changed before rollback")
+            kind = rollback.get("kind")
+            if kind == "restore_quarantine":
+                quarantine = _quarantine_target(repo, str(rollback.get("quarantinePath") or ""))
+                if rollback.get("quarantinePath") != action.get("quarantinePath"):
+                    raise ValueError("quarantine rollback path mismatch")
+                if _quarantine_fingerprint(
+                    quarantine,
+                    expected=action.get("beforeFingerprint"),
+                ) != action.get("beforeFingerprint"):
+                    raise ValueError("quarantine rollback source changed")
+            elif kind == "git_blob":
+                content = _git_rollback_bytes(repo, action)
+                if _bytes_fingerprint(content) != action.get("beforeFingerprint"):
+                    raise ValueError("git rollback source fingerprint mismatch")
+                source_bytes[relative] = content
+            elif kind == "config_target":
+                content = _config_target_rollback_bytes(plugin_root, action)
+                if _bytes_fingerprint(content) != action.get("beforeFingerprint"):
+                    raise ValueError("config rollback source fingerprint mismatch")
+                source_bytes[relative] = content
+            elif kind == "restore_symlink":
+                if not isinstance(rollback.get("target"), str):
+                    raise ValueError("symlink rollback target missing")
+            elif kind != "remove_if_created":
+                raise ValueError("unsupported rollback kind")
+        except (OSError, ValueError, subprocess.CalledProcessError) as error:
+            issues.append(f"rollback_preflight_failed:{relative}:{type(error).__name__}")
+    return {
+        "ok": not issues,
+        "issues": issues,
+        "sourceBytes": source_bytes,
+    }
+
+
 def _rollback_promoted(
     repo: Path,
     actions: list[dict[str, Any]],
     state_path: Path,
     state_before: dict[str, Any] | None,
     *,
+    plugin_root: Path,
     state_written: bool,
     fail: bool,
+    prepared_rollback: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if fail:
         return {"ok": False, "issues": ["injected_rollback_failure"], "changedPaths": []}
+    prepared = prepared_rollback or _prepare_rollback_sources(repo, plugin_root, actions)
+    if not prepared["ok"]:
+        return {"ok": False, "issues": prepared["issues"], "changedPaths": []}
+    source_bytes = prepared["sourceBytes"]
     issues: list[str] = []
     changed: list[str] = []
     if state_written:
@@ -1383,12 +1687,32 @@ def _rollback_promoted(
         try:
             if not isinstance(rollback, dict):
                 raise ValueError("rollback metadata missing")
-            if _fingerprint(target) != action.get("afterFingerprint"):
+            if not _action_post_state_matches(repo, action):
                 raise ValueError("promoted path changed before rollback")
-            if rollback.get("kind") == "remove_if_created":
+            if rollback.get("kind") == "restore_quarantine":
+                quarantine = _quarantine_target(repo, str(rollback.get("quarantinePath") or ""))
+                if rollback.get("quarantinePath") != action.get("quarantinePath"):
+                    raise ValueError("quarantine rollback path mismatch")
+                target.parent.mkdir(parents=True, exist_ok=True)
+                os.replace(quarantine, target)
+                if _quarantine_fingerprint(
+                    target,
+                    expected=action.get("beforeFingerprint"),
+                ) != action.get("beforeFingerprint"):
+                    raise ValueError("restored quarantine fingerprint mismatch")
+            elif rollback.get("kind") == "remove_if_created":
                 target.unlink()
             elif rollback.get("kind") == "git_blob":
-                content = _git_rollback_bytes(repo, action)
+                content = source_bytes.get(relative)
+                if not isinstance(content, bytes):
+                    raise ValueError("prepared git rollback source missing")
+                _atomic_project_write(target, content, int(rollback.get("mode") or 0o644))
+                if _fingerprint(target) != action.get("beforeFingerprint"):
+                    raise ValueError("restored fingerprint mismatch")
+            elif rollback.get("kind") == "config_target":
+                content = source_bytes.get(relative)
+                if not isinstance(content, bytes):
+                    raise ValueError("prepared config rollback source missing")
                 _atomic_project_write(target, content, int(rollback.get("mode") or 0o644))
                 if _fingerprint(target) != action.get("beforeFingerprint"):
                     raise ValueError("restored fingerprint mismatch")
@@ -1419,6 +1743,7 @@ def _cleanup_transaction_root(
     *,
     transactions_existed: bool,
     runtime_existed: bool,
+    created_parents: list[Path],
 ) -> None:
     shutil.rmtree(transaction_root, ignore_errors=True)
     transactions_root = transaction_root.parent
@@ -1433,6 +1758,7 @@ def _cleanup_transaction_root(
             runtime.rmdir()
         except OSError:
             pass
+    _prune_created_transaction_parents(created_parents)
 
 
 def _git_rollback_is_available(repo: Path, action: dict[str, Any]) -> bool:
@@ -1441,6 +1767,37 @@ def _git_rollback_is_available(repo: Path, action: dict[str, Any]) -> bool:
     except (OSError, ValueError, subprocess.CalledProcessError):
         return False
     return _bytes_fingerprint(content) == action.get("beforeFingerprint")
+
+
+def _config_target_rollback_is_available(
+    plugin_root: Path,
+    action: dict[str, Any],
+) -> bool:
+    try:
+        content = _config_target_rollback_bytes(plugin_root, action)
+    except (OSError, ValueError):
+        return False
+    return _bytes_fingerprint(content) == action.get("beforeFingerprint")
+
+
+def _config_target_rollback_bytes(
+    plugin_root: Path,
+    action: dict[str, Any],
+) -> bytes:
+    rollback = action.get("rollback")
+    if not isinstance(rollback, dict) or rollback.get("kind") != "config_target":
+        raise ValueError("config target rollback metadata missing")
+    target_version = rollback.get("targetVersion")
+    if not isinstance(target_version, int) or isinstance(target_version, bool):
+        raise ValueError("config target rollback version invalid")
+    contract = _load_refresh_contract(Path(plugin_root).expanduser().resolve())
+    target = contract["configTargets"].get(target_version)
+    if not isinstance(target, dict) or rollback.get("path") != target.get("path"):
+        raise ValueError("config target rollback identity changed")
+    content = target.get("bytes")
+    if not isinstance(content, bytes) or _bytes_fingerprint(content) != action.get("beforeFingerprint"):
+        raise ValueError("config target rollback bytes changed")
+    return content
 
 
 def _git_rollback_bytes(repo: Path, action: dict[str, Any]) -> bytes:
@@ -1645,6 +2002,12 @@ def apply_verified_skill_tree_transaction(
                 target_file.parent.mkdir(parents=True, exist_ok=True)
                 target_file.write_bytes(record["content"])
                 target_file.chmod(record["mode"])
+            staged.chmod(TRUSTED_TREE_DIRECTORY_MODE)
+            for directory in sorted(
+                (path for path in staged.rglob("*") if path.is_dir()),
+                key=lambda path: path.as_posix(),
+            ):
+                directory.chmod(TRUSTED_TREE_DIRECTORY_MODE)
             if _tree_fingerprint(staged) != item["after"]:
                 raise OSError(f"verified tree stage mismatch: {item['skill']}")
         for item in normalized:
@@ -1824,16 +2187,37 @@ def apply_managed_skill_link(
     }
 
 
+TRUSTED_TREE_DIRECTORY_MODE = 0o755
+
+
 def _tree_payload_fingerprint(files: dict[str, dict[str, Any]]) -> dict[str, str]:
+    directories = {"."}
+    for relative in files:
+        for parent in Path(relative).parents:
+            if parent == Path("."):
+                break
+            directories.add(parent.as_posix())
     records = [
         {
             "path": relative,
+            "kind": "directory",
+            "mode": TRUSTED_TREE_DIRECTORY_MODE,
+        }
+        for relative in sorted(directories)
+    ] + [
+        {
+            "path": relative,
+            "kind": "file",
             "mode": int(record["mode"]) & 0o777,
             "sha256": hashlib.sha256(record["content"]).hexdigest(),
         }
         for relative, record in sorted(files.items())
     ]
-    encoded = json.dumps(records, sort_keys=True, separators=(",", ":")).encode()
+    encoded = json.dumps(
+        sorted(records, key=lambda record: (str(record["path"]), str(record["kind"]))),
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
     return {"kind": "tree", "sha256": hashlib.sha256(encoded).hexdigest()}
 
 
@@ -1844,6 +2228,49 @@ def _tree_fingerprint(root: Path) -> dict[str, str]:
         return {"kind": "absent", "sha256": hashlib.sha256(b"").hexdigest()}
     if not root.is_dir():
         return {"kind": "non_regular", "sha256": hashlib.sha256(b"").hexdigest()}
+    records: list[dict[str, Any]] = []
+    try:
+        records.append(
+            {
+                "path": ".",
+                "kind": "directory",
+                "mode": stat.S_IMODE(root.stat().st_mode),
+            }
+        )
+        paths = list(root.rglob("*"))
+    except OSError:
+        return {"kind": "unreadable", "sha256": hashlib.sha256(b"").hexdigest()}
+    for path in paths:
+        if path.is_symlink() or (not path.is_file() and not path.is_dir()):
+            return {"kind": "untrusted", "sha256": hashlib.sha256(b"").hexdigest()}
+        try:
+            relative = path.relative_to(root).as_posix()
+            mode = stat.S_IMODE(path.stat().st_mode)
+            if path.is_dir():
+                records.append({"path": relative, "kind": "directory", "mode": mode})
+            else:
+                records.append(
+                    {
+                        "path": relative,
+                        "kind": "file",
+                        "mode": mode,
+                        "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                    }
+                )
+        except OSError:
+            return {"kind": "unreadable", "sha256": hashlib.sha256(b"").hexdigest()}
+    encoded = json.dumps(
+        sorted(records, key=lambda record: (str(record["path"]), str(record["kind"]))),
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    return {"kind": "tree", "sha256": hashlib.sha256(encoded).hexdigest()}
+
+
+def _legacy_tree_fingerprint(root: Path) -> dict[str, str]:
+    """Read the revision-5 file-only digest so retained receipts remain usable."""
+    if root.is_symlink() or not root.exists() or not root.is_dir():
+        return _tree_fingerprint(root)
     files: dict[str, dict[str, Any]] = {}
     try:
         paths = list(root.rglob("*"))
@@ -1860,7 +2287,16 @@ def _tree_fingerprint(root: Path) -> dict[str, str]:
                 }
             except OSError:
                 return {"kind": "unreadable", "sha256": hashlib.sha256(b"").hexdigest()}
-    return _tree_payload_fingerprint(files)
+    records = [
+        {
+            "path": relative,
+            "mode": int(record["mode"]) & 0o777,
+            "sha256": hashlib.sha256(record["content"]).hexdigest(),
+        }
+        for relative, record in sorted(files.items())
+    ]
+    encoded = json.dumps(records, sort_keys=True, separators=(",", ":")).encode()
+    return {"kind": "tree", "sha256": hashlib.sha256(encoded).hexdigest()}
 
 
 def _remove_central_path(path: Path) -> None:
@@ -2266,15 +2702,35 @@ def _validate_apply_receipt(
             )
             if authorization != PROJECT_REFRESH_AUTHORIZATION:
                 issues.append(f"receipt_action_authorization_invalid:{identifier}")
+        elif ownership in LEGACY_UNINSTALL_OWNERSHIPS:
+            expected_path = _legacy_receipt_path_allowed(raw_action, relative_path)
+            expected_authorization, expected_group = _legacy_action_authority(ownership)
+            if authorization != expected_authorization:
+                issues.append(f"receipt_action_authorization_invalid:{identifier}")
+            if raw_action.get("selectionGroup") != expected_group:
+                issues.append(f"receipt_action_selection_group_invalid:{identifier}")
         if not expected_path:
             issues.append(f"receipt_action_path_invalid:{identifier}")
         expected_rollback = {
             "create_file": "remove_if_created",
             "create_symlink": "remove_if_created",
-            "replace_json": "git_blob",
             "replace_symlink": "restore_symlink",
+            "quarantine_path": "restore_quarantine",
         }.get(kind)
-        if expected_rollback is None or rollback.get("kind") != expected_rollback:
+        if kind == "replace_json":
+            rollback_kind = rollback.get("kind")
+            if rollback_kind not in {"git_blob", "config_target"}:
+                issues.append(f"receipt_action_rollback_invalid:{identifier}")
+            elif rollback_kind == "config_target" and (
+                not isinstance(rollback.get("targetVersion"), int)
+                or isinstance(rollback.get("targetVersion"), bool)
+                or not isinstance(rollback.get("path"), str)
+                or not rollback.get("path")
+                or not isinstance(rollback.get("mode"), int)
+                or isinstance(rollback.get("mode"), bool)
+            ):
+                issues.append(f"receipt_action_rollback_invalid:{identifier}")
+        elif expected_rollback is None or rollback.get("kind") != expected_rollback:
             issues.append(f"receipt_action_rollback_invalid:{identifier}")
         if kind in {"create_file", "create_symlink"} and (
             not isinstance(before, dict) or before.get("kind") != "absent"
@@ -2298,6 +2754,32 @@ def _validate_apply_receipt(
             not isinstance(after, dict) or after.get("kind") != "file"
         ):
             issues.append(f"receipt_action_operation_invalid:{identifier}")
+        if kind == "quarantine_path":
+            source = raw_action.get("source")
+            if (
+                ownership not in LEGACY_UNINSTALL_OWNERSHIPS
+                or not isinstance(before, dict)
+                or before.get("kind") not in {"file", "symlink", "tree"}
+                or not isinstance(after, dict)
+                or after.get("kind") != "absent"
+                or not isinstance(source, dict)
+                or source.get("kind") != "existing_project_path"
+                or source.get("path") != relative
+            ):
+                issues.append(f"receipt_action_operation_invalid:{identifier}")
+            try:
+                quarantine = _quarantine_target(
+                    repo,
+                    str(raw_action.get("quarantinePath") or ""),
+                )
+                quarantine_relative = Path(str(raw_action["quarantinePath"]))
+                paths.append((f"{identifier}:quarantine", quarantine_relative))
+                if rollback.get("quarantinePath") != raw_action.get("quarantinePath"):
+                    issues.append(f"receipt_action_rollback_invalid:{identifier}")
+                if _quarantine_fingerprint(quarantine, expected=before) != before:
+                    issues.append(f"receipt_action_quarantine_mismatch:{identifier}")
+            except (KeyError, ValueError):
+                issues.append(f"receipt_action_quarantine_invalid:{identifier}")
         dependencies = raw_action.get("dependencies")
         if not isinstance(dependencies, list):
             issues.append(f"receipt_action_dependencies_invalid:{identifier}")
@@ -2383,10 +2865,78 @@ def _validate_verification_receipt(
 def _valid_fingerprint(value: Any) -> bool:
     return bool(
         isinstance(value, dict)
-        and value.get("kind") in {"absent", "file", "symlink", "non_regular", "unreadable"}
+        and value.get("kind") in {
+            "absent",
+            "file",
+            "symlink",
+            "tree",
+            "non_regular",
+            "unreadable",
+        }
         and isinstance(value.get("sha256"), str)
         and len(value["sha256"]) == 64
         and all(character in "0123456789abcdef" for character in value["sha256"])
+    )
+
+
+def _legacy_action_authority(ownership: str) -> tuple[str, str]:
+    if ownership == "obsolete-generated-openspec-skill":
+        return LEGACY_SKILL_LAYOUT_AUTHORIZATION, OPENSPEC_SELECTION_GROUP
+    if ownership == "attested-superpowers-skill":
+        return LEGACY_WORKFLOW_AUTHORIZATION, SUPERPOWERS_SELECTION_GROUP
+    return LEGACY_WORKFLOW_AUTHORIZATION, GSD_SELECTION_GROUP
+
+
+def _legacy_receipt_path_allowed(action: dict[str, Any], path: Path) -> bool:
+    ownership = str(action.get("ownership") or "")
+    parts = path.parts
+    if ownership == "strict-gsd-config":
+        return parts == (".codex", "config.toml")
+    if ownership == "strict-gsd-hooks-config":
+        return parts == (".codex", "hooks.json")
+    if ownership == "strict-gsd-package-marker":
+        return parts == (".codex", "package.json")
+    if ownership == "attested-superpowers-skill":
+        return bool(
+            len(parts) == 3
+            and parts[:2] in {(".agents", "skills"), (".codex", "skills")}
+            and parts[2] in SUPERPOWERS_SKILLS
+        )
+    if ownership == "obsolete-generated-openspec-skill":
+        return bool(
+            len(parts) == 3
+            and parts[:2] == (".codex", "skills")
+            and parts[2] in OPENSPEC_WORKFLOW_SKILLS
+        )
+    if ownership != "explicit-legacy-gsd":
+        return False
+    if parts in {
+        (".codex", "gsd-file-manifest.json"),
+        (".codex", "gsd-install-state.json"),
+        (".codex", ".gsd-profile"),
+        (".codex", ".gsd-surface.json"),
+        (".codex", "gsd-core"),
+    }:
+        return True
+    if (
+        len(parts) == 3
+        and parts[:2]
+        in {
+            (".agents", "skills"),
+            (".codex", "skills"),
+            (".codex", "agents"),
+            (".codex", "hooks"),
+        }
+        and parts[2].startswith("gsd-")
+    ):
+        return True
+    source = action.get("source")
+    evidence = source.get("evidence") if isinstance(source, dict) else None
+    return bool(
+        len(parts) >= 3
+        and parts[:2] in {(".codex", "agents"), (".codex", "scripts")}
+        and isinstance(evidence, dict)
+        and evidence.get("manifest") == ".codex/gsd-file-manifest.json"
     )
 
 
@@ -2642,72 +3192,175 @@ def _inspect_agents_guidance(
 
 
 def _inspect_legacy_skill_layout(repo: Path, contract: dict[str, Any]) -> dict[str, Any]:
-    items: list[dict[str, str]] = []
-    try:
-        root = _project_target(repo, ".codex/skills")
-    except ValueError:
-        root = None
-        items.append(
-            {
-                "kind": "legacy-project-skill",
-                "path": ".codex/skills",
-                "reason": "legacy_root_untrusted_ancestry",
-            }
-        )
-    if root is not None and root.exists() and not root.is_symlink() and root.is_dir():
-        for skill_file in sorted(root.glob("*/SKILL.md")):
-            skill = skill_file.parent.name
-            reason = (
-                "legacy_managed_skill_preserved"
-                if skill in contract["projectLocalSkills"]
-                else "custom_legacy_skill_preserved"
-            )
-            items.append(
-                {
-                    "kind": "legacy-project-skill",
-                    "path": skill_file.parent.relative_to(repo).as_posix(),
-                    "reason": reason,
-                }
-            )
-    elif root is not None and (root.exists() or root.is_symlink()):
-        items.append({"kind": "legacy-project-skill", "path": ".codex/skills", "reason": "legacy_root_ambiguous"})
+    uninstall = inspect_legacy_workflow_uninstall(repo)
     inspection = inspect_legacy_workflow_config(repo)
-    known = {(item["path"], item["reason"]) for item in items}
+    actions = [
+        _quarantine_action(repo, candidate)
+        for candidate in uninstall.get("candidates", [])
+        if isinstance(candidate, dict)
+    ]
+    manual_by_path = {
+        str(item["path"]): dict(item)
+        for item in uninstall.get("manualActions", [])
+        if isinstance(item, dict) and item.get("path")
+    }
+    preserved = set(map(str, uninstall.get("preservedPaths", [])))
+    known_paths = {
+        *manual_by_path,
+        *preserved,
+        *(str(action["path"]) for action in actions),
+    }
     for artifact in inspection.get("artifacts", []):
         if not isinstance(artifact, dict) or not artifact.get("path"):
             continue
-        item = {
+        relative = str(artifact["path"])
+        if relative in known_paths:
+            continue
+        classification = str(artifact.get("classification") or "")
+        if classification == "user_history_data":
+            preserved.add(relative)
+            known_paths.add(relative)
+            continue
+        manual_by_path[relative] = {
             "kind": str(artifact.get("kind") or "legacy-project-artifact"),
-            "path": str(artifact["path"]),
+            "path": relative,
             "reason": str(artifact.get("reason") or "legacy_content_preserved"),
         }
-        if (item["path"], item["reason"]) not in known:
-            items.append(item)
-            known.add((item["path"], item["reason"]))
+        known_paths.add(relative)
     for conflict in inspection.get("conflicts", []):
         if not isinstance(conflict, dict) or not conflict.get("path"):
             continue
-        item = {
+        relative = str(conflict["path"])
+        if relative in known_paths:
+            continue
+        manual_by_path[relative] = {
             "kind": "legacy-project-conflict",
-            "path": str(conflict["path"]),
+            "path": relative,
             "reason": str(conflict.get("reason") or "legacy_content_conflict"),
         }
-        if (item["path"], item["reason"]) not in known:
-            items.append(item)
-            known.add((item["path"], item["reason"]))
-    items.sort(key=lambda item: (item["path"], item["reason"]))
-    read_set = sorted({".codex/skills", *(item["path"] for item in items)})
+        known_paths.add(relative)
+    manual = [manual_by_path[path] for path in sorted(manual_by_path)]
+    items = sorted(
+        [
+            *(
+                {
+                    "kind": "legacy-cleanup-candidate",
+                    "path": str(action["path"]),
+                    "reason": str(action["source"].get("reason") or "cleanup_available"),
+                    "status": "cleanup_available",
+                    "selectionGroup": str(action["selectionGroup"]),
+                    "authorization": str(action["authorization"]),
+                }
+                for action in actions
+            ),
+            *manual,
+            *(
+                {
+                    "kind": "legacy-history",
+                    "path": path,
+                    "reason": "historical_or_recovery_evidence_preserved",
+                    "status": "preserved",
+                }
+                for path in sorted(preserved)
+            ),
+        ],
+        key=lambda item: (str(item["path"]), str(item.get("reason") or "")),
+    )
+    read_set = sorted(
+        {
+            *map(str, uninstall.get("readSet", [])),
+            *(str(action["quarantinePath"]) for action in actions),
+            *(
+                str(item["path"])
+                for item in inspection.get("artifacts", [])
+                if isinstance(item, dict) and item.get("path")
+            ),
+        }
+    )
+    if manual:
+        status = "manual_review_required"
+    elif actions:
+        status = "cleanup_available"
+    else:
+        status = "current"
     return {
-        "actions": [],
-        "manualActions": items,
+        "actions": actions,
+        "manualActions": manual,
+        "preservedPaths": sorted(preserved),
         "readSet": read_set,
         "summary": {
-            "status": "manual_review_required" if items else "current",
+            "status": status,
             "items": items,
             "inspectorStatus": inspection.get("status"),
+            "uninstallInspectorStatus": uninstall.get("status"),
             "valuesRedacted": True,
         },
     }
+
+
+def _quarantine_action(repo: Path, candidate: dict[str, Any]) -> dict[str, Any]:
+    relative = str(candidate["path"])
+    target = _project_target(repo, relative)
+    before = _quarantine_fingerprint(target)
+    if before["kind"] not in {"file", "symlink", "tree"}:
+        raise ValueError(f"legacy uninstall candidate is not quarantinable: {relative}")
+    canonical = json.dumps(
+        {"path": relative, "beforeFingerprint": before},
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    identity = hashlib.sha256(canonical).hexdigest()
+    quarantine = (
+        Path(".planning")
+        / "devflow"
+        / "plugin-project-migration"
+        / "quarantine"
+        / "legacy-workflow-uninstall"
+        / identity
+        / "payload"
+    ).as_posix()
+    return {
+        "id": f"quarantine-legacy:{identity}",
+        "kind": "quarantine_path",
+        "path": relative,
+        "quarantinePath": quarantine,
+        "beforeFingerprint": before,
+        "afterFingerprint": _absent_fingerprint(),
+        "authorization": str(candidate["authorization"]),
+        "selectionGroup": str(candidate["selectionGroup"]),
+        "dependencies": [],
+        "ownership": str(candidate["ownership"]),
+        "source": {
+            "kind": "existing_project_path",
+            "path": relative,
+            "reason": str(candidate.get("reason") or "recognized_legacy_capability"),
+            "evidence": candidate.get("evidence") if isinstance(candidate.get("evidence"), dict) else {},
+        },
+        "rollback": {
+            "kind": "restore_quarantine",
+            "quarantinePath": quarantine,
+            "pruneEmptyParents": _missing_parent_paths(repo, quarantine),
+        },
+        "verification": ["managed-path-readback", "quarantine-readback", "legacy-surface-current"],
+    }
+
+
+def _quarantine_fingerprint(
+    path: Path,
+    *,
+    expected: Any = None,
+) -> dict[str, str]:
+    if not path.is_dir() or path.is_symlink():
+        return _fingerprint(path)
+    current = _tree_fingerprint(path)
+    if current == expected:
+        return current
+    legacy = _legacy_tree_fingerprint(path)
+    return legacy if legacy == expected else current
+
+
+def _absent_fingerprint() -> dict[str, str]:
+    return {"kind": "absent", "sha256": hashlib.sha256(b"").hexdigest()}
 
 
 def _file_create_action(
@@ -3197,8 +3850,18 @@ def _plan_config_migration_action(
     if path_error or not migration_path:
         report["status"] = "manual_only"
         return None, _manual_config_action(path, path_error or "migration_step_unavailable")
-    preimage = _trusted_git_preimage(repo, path)
-    if preimage is None:
+    git_preimage = _trusted_git_preimage(repo, path)
+    rollback = (
+        {"kind": "git_blob", **git_preimage}
+        if git_preimage is not None
+        else _trusted_config_target_preimage(
+            path,
+            report,
+            contract,
+            observed_schema,
+        )
+    )
+    if rollback is None:
         report["status"] = "manual_only"
         return None, _manual_config_action(path, "recoverable_preimage_unavailable")
     try:
@@ -3240,10 +3903,38 @@ def _plan_config_migration_action(
         "dependencies": [],
         "ownership": "devflow-workflow-config",
         "source": {"kind": "pure_migration_path", "steps": migration_path},
-        "rollback": {"kind": "git_blob", **preimage},
+        "rollback": rollback,
         "verification": verifiers,
     }
     return action, None
+
+
+def _trusted_config_target_preimage(
+    path: Path,
+    report: dict[str, Any],
+    contract: dict[str, Any],
+    observed_schema: int,
+) -> dict[str, Any] | None:
+    target = contract["configTargets"].get(observed_schema)
+    if not isinstance(target, dict):
+        return None
+    target_bytes = target.get("bytes")
+    target_path = target.get("path")
+    if not isinstance(target_bytes, bytes) or not isinstance(target_path, str):
+        return None
+    try:
+        actual = path.read_bytes()
+        mode = stat.S_IMODE(path.stat().st_mode)
+    except OSError:
+        return None
+    if actual != target_bytes or _bytes_fingerprint(actual) != report.get("fingerprint"):
+        return None
+    return {
+        "kind": "config_target",
+        "targetVersion": observed_schema,
+        "path": target_path,
+        "mode": mode,
+    }
 
 
 def _inspect_config(

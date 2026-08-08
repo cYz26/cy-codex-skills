@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0",
+  "refreshContractRevision": 7,
+  "projectSchemaHead": 6,
+  "schemaDecision": "advanced",
+  "cases": [
+    {
+      "id": "uncommitted-exact-immutable-config-target",
+      "verificationResult": "recoverable_config_target"
+    },
+    {
+      "id": "uncommitted-custom-config-preimage",
+      "verificationResult": "manual_review_required"
+    },
+    {
+      "id": "config-target-bytes-drift",
+      "verificationResult": "rollback_source_unavailable"
+    }
+  ]
+}

@@ -666,7 +666,7 @@ context_health:
         )
         self.assertIn("loadTestsFromModule", lifecycle_shim.read_text())
 
-    def test_release_legacy_names_are_confined_to_inspector_runtime_and_negative_test(self):
+    def test_release_legacy_names_are_confined_to_explicit_cleanup_contracts(self):
         legacy_name = re.compile(
             r"(?:"
             r"superpowers|"
@@ -679,7 +679,14 @@ context_health:
             r")",
             re.IGNORECASE,
         )
-        allowed_files = {"tests/test_packaged_runtime.py"}
+        allowed_files = {
+            "fixtures/project-refresh/legacy-uninstall-cases-v4.json",
+            "fixtures/project-refresh/review-hardening-cases-v6.json",
+            "skills/dev-flow-refresh/SKILL.md",
+            "skills/dev-flow-refresh/references/project-refresh.md",
+            "skills/plugin-project-migration/SKILL.md",
+            "tests/test_packaged_runtime.py",
+        }
         actual_files = set()
         for path in RELEASE_PLUGIN_ROOT.rglob("*"):
             if not path.is_file() or path.name == "devflow_runtime.pyz":
@@ -700,7 +707,12 @@ context_health:
             }
         self.assertEqual(
             actual_members,
-            {"legacy_workflow_config.py", "workflow_mode_routing.py"},
+            {
+                "legacy_workflow_config.py",
+                "workflow_legacy_uninstall.py",
+                "workflow_mode_routing.py",
+                "workflow_project_refresh.py",
+            },
         )
 
     def test_context_health_disposition_cli_is_packaged(self):

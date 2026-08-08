@@ -4,12 +4,18 @@
   "plugin": "dev-flow",
   "stateKey": "dev-flow",
   "projectSchema": {
-    "head": 2,
+    "head": 8,
     "minimumSupported": 0
   },
   "configTargets": {
     "1": "assets/project-refresh/config-v1.json",
-    "2": "assets/project-refresh/config-v2.json"
+    "2": "assets/project-refresh/config-v2.json",
+    "3": "assets/project-refresh/config-v3.json",
+    "4": "assets/project-refresh/config-v4.json",
+    "5": "assets/project-refresh/config-v5.json",
+    "6": "assets/project-refresh/config-v6.json",
+    "7": "assets/project-refresh/config-v7.json",
+    "8": "assets/project-refresh/config-v8.json"
   },
   "migrationSteps": [
     {
@@ -25,17 +31,59 @@
       "to": 2,
       "authorization": "workflow-config-migration",
       "configTarget": 2
+    },
+    {
+      "id": "full-openspec-v2-to-v3",
+      "from": 2,
+      "to": 3,
+      "authorization": "workflow-config-migration",
+      "configTarget": 3
+    },
+    {
+      "id": "full-openspec-v3-to-v4",
+      "from": 3,
+      "to": 4,
+      "authorization": "workflow-config-migration",
+      "configTarget": 4
+    },
+    {
+      "id": "full-openspec-v4-to-v5",
+      "from": 4,
+      "to": 5,
+      "authorization": "workflow-config-migration",
+      "configTarget": 5
+    },
+    {
+      "id": "full-openspec-v5-to-v6",
+      "from": 5,
+      "to": 6,
+      "authorization": "workflow-config-migration",
+      "configTarget": 6
+    },
+    {
+      "id": "full-openspec-v6-to-v7",
+      "from": 6,
+      "to": 7,
+      "authorization": "workflow-config-migration",
+      "configTarget": 7
+    },
+    {
+      "id": "full-openspec-v7-to-v8",
+      "from": 7,
+      "to": 8,
+      "authorization": "workflow-config-migration",
+      "configTarget": 8
     }
   ],
   "refreshContract": {
-    "revision": 3,
+    "revision": 9,
     "impact": "changed",
     "evidence": {
-      "changeId": "add-project-directed-implementation-readiness-gate",
-      "refreshContractRevision": 3,
-      "projectSchemaHead": 2,
-      "trackedInputsSha256": "90b855c9d6128cb5d0fdbc4d37030380723f96ca552291be7aee6fd68c1f9964",
-      "schemaDecision": "managed-refresh",
+      "changeId": "add-authorized-legacy-workflow-uninstall",
+        "refreshContractRevision": 9,
+        "projectSchemaHead": 8,
+      "trackedInputsSha256": "fe1f16cc02885ea8814feaae7ccf3f519824ad4d37be54eb2a20eb8a8fbf9295",
+      "schemaDecision": "advanced",
       "inspectedSurfaces": [
         "agents-guidance",
         "configuration",
@@ -43,6 +91,7 @@
         "dependency-layout",
         "fixtures",
         "implementation-readiness",
+        "legacy-workflow-uninstall",
         "lifecycle-gates",
         "migration-runtime",
         "project-local-skills",
@@ -50,7 +99,7 @@
         "refresh-skill",
         "release-packaging"
       ],
-      "reason": "Adds domain-neutral project-directed implementation-readiness schemas, lifecycle gates, Skills, templates, CLI, and compatibility fixtures as a managed refresh while preserving immutable configuration targets, migration paths, and project schema head 2."
+        "reason": "Adds exact authorized and recoverable project-local legacy workflow uninstall behavior, preserves installed revision-4/schema-3 through revision-8/schema-7 contracts, closes independent review findings in revision 6, adds immutable-target rollback for a safe uncommitted consumer schema transition in revision 7/schema 6, preflights every receipt-bound file rollback source before any mutation in revision 8/schema 7, validates every prepared file source against the receipt-bound preimage fingerprint before any mutation in revision 9/schema 8, and preserves immutable v1/v2/v3/v4/v5/v6/v7 targets plus existing implementation-readiness behavior."
     },
     "trackedInputs": [
       ".codex-plugin/plugin.json",
@@ -58,6 +107,12 @@
       "README.md",
       "assets/project-refresh/config-v1.json",
       "assets/project-refresh/config-v2.json",
+      "assets/project-refresh/config-v3.json",
+      "assets/project-refresh/config-v4.json",
+      "assets/project-refresh/config-v5.json",
+        "assets/project-refresh/config-v6.json",
+        "assets/project-refresh/config-v7.json",
+        "assets/project-refresh/config-v8.json",
       "assets/templates/AGENTS.md.template",
       "assets/templates/ENGINEERING_POLICY.md.template",
       "assets/templates/EVIDENCE_TEMPLATE.md.template",
@@ -79,6 +134,18 @@
       "fixtures/project-refresh/manifest.json",
       "fixtures/project-refresh/current.json",
       "fixtures/project-refresh/current-v2.json",
+      "fixtures/project-refresh/current-v3.json",
+      "fixtures/project-refresh/current-v4.json",
+      "fixtures/project-refresh/current-v5.json",
+        "fixtures/project-refresh/current-v6.json",
+        "fixtures/project-refresh/current-v7.json",
+        "fixtures/project-refresh/current-v8.json",
+      "fixtures/project-refresh/legacy-uninstall-cases-v4.json",
+      "fixtures/project-refresh/schema-transition-cases-v5.json",
+      "fixtures/project-refresh/review-hardening-cases-v6.json",
+        "fixtures/project-refresh/config-preimage-cases-v7.json",
+        "fixtures/project-refresh/rollback-preflight-cases-v8.json",
+        "fixtures/project-refresh/file-source-fingerprint-cases-v9.json",
       "fixtures/project-refresh/legacy-conflicting-aliases.json",
       "fixtures/project-refresh/legacy-preserve-settings.json",
       "fixtures/project-refresh/legacy-root-selection.json",
@@ -109,6 +176,7 @@
       "scripts/workflow_dependency_catalog.py",
       "scripts/workflow_dependency_provenance.py",
       "scripts/workflow_hooks.py",
+      "scripts/workflow_legacy_uninstall.py",
       "scripts/workflow_implementation_readiness.py",
       "scripts/workflow_methodology.py",
       "scripts/workflow_mode_routing.py",

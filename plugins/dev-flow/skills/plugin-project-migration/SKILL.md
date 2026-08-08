@@ -61,7 +61,8 @@ python3 scripts/plugin_project_migration.py --repo <repo> --apply --json
 Apply mode may refresh safe project-local skill symlinks and writes audit
 artifacts under `.planning/devflow/plugin-project-migration/`. It routes through
 the same sealed transaction engine as the subcommands and never selects the
-workflow-configuration action.
+workflow-configuration action, `legacy-workflow-uninstall`, or
+`legacy-skill-layout-cleanup`.
 Official OpenSpec skill refresh is a separate isolated activation operation:
 preview and then explicitly apply `activate_project_dependencies.py
 --refresh-project-skills`. It copies verified OpenSpec 1.7 skills transactionally;
@@ -77,8 +78,18 @@ python3 scripts/plugin_project_migration.py apply \
   --repo <repo> --plugin-root <verified-dev-flow-root> \
   --expect-plan <sha256:...> \
   --allow project-refresh-apply \
-  --allow workflow-config-migration --json
+  --allow workflow-config-migration \
+  --allow legacy-workflow-uninstall \
+  --allow legacy-skill-layout-cleanup --json
 ```
+
+Supply only the authorizations present in the reviewed plan. Recognized GSD and
+Superpowers cleanup uses `legacy-workflow-uninstall`; verified obsolete
+generated OpenSpec copies use `legacy-skill-layout-cleanup`. Cleanup actions
+move exact file, symlink, or trusted-tree preimages into deterministic retained
+quarantine and are family-closed: select every action in a reported family or
+none. Ambiguous, mixed-ownership, historical, user-authored, or unclassified
+paths remain manual/preserved and are never imported into either authority.
 
 The executor preflights the complete selected transaction, stages in an
 isolated project-local root, promotes deterministically, verifies, advances
@@ -106,7 +117,9 @@ retired selectors, preserves unrelated values/types, sets
 `workflow.mode=full-openspec`, emits no raw values, and requires
 `workflow-config-migration`. All ambiguous, untracked, dirty, non-Git,
 unreadable, symlinked, or non-regular inputs remain unchanged and manual-only.
-Old integration files and cleanup are never imported into this authority.
+Old integration files and cleanup are never imported into configuration
+migration authority. Revision-4 project refresh may separately plan exact
+recognized legacy uninstall actions under the two named cleanup authorizations.
 
 ## Safety Rules
 
@@ -118,8 +131,10 @@ Old integration files and cleanup are never imported into this authority.
 - Never overwrite active `AGENTS.md`; create only a non-conflicting
   `AGENTS.md.generated` merge candidate.
 - Preserve legacy `.codex/skills`, custom official-skill copies, and historical
-  planning data.
-- Refreshing revision-3 Skills/templates never creates or changes an
+  planning data unless an exact obsolete generated OpenSpec copy is listed in a
+  sealed revision-4 cleanup plan and `legacy-skill-layout-cleanup` is supplied.
+- Never purge retained legacy-uninstall quarantine during ordinary refresh.
+- Refreshing revision-4 Skills/templates never creates or changes an
   implementation-readiness Requirement, provider Evidence/Receipt, provider
   override, selection, installation, activation, or command execution.
 - Treat `applied_incomplete` and `verified_incomplete` as attention, not a
@@ -138,4 +153,6 @@ Summarize:
 - conflicts and manual next steps;
 - report path under `.planning/devflow/plugin-project-migration/`.
 - plan digest, selected action IDs, authorizations, apply/verification receipts,
-  rollback status, and the exact next action.
+  active-to-quarantine mappings, rollback status, and the exact next action;
+- whether a new Codex task/session is required to reload the surfaced Skill
+  inventory after cleanup.

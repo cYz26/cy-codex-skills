@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "1.0",
+  "refreshContractRevision": 4,
+  "projectSchemaHead": 3,
+  "schemaDecision": "advanced",
+  "cases": [
+    {
+      "id": "recognized-gsd-family",
+      "selectionGroup": "legacy-gsd",
+      "authorization": "legacy-workflow-uninstall",
+      "result": "quarantine_path"
+    },
+    {
+      "id": "attested-superpowers-family",
+      "selectionGroup": "legacy-superpowers",
+      "authorization": "legacy-workflow-uninstall",
+      "result": "quarantine_path"
+    },
+    {
+      "id": "obsolete-openspec-layout-family",
+      "selectionGroup": "legacy-openspec-skill-layout",
+      "authorization": "legacy-skill-layout-cleanup",
+      "result": "quarantine_path"
+    },
+    {
+      "id": "historical-and-recovery-data",
+      "paths": [
+        ".codex/gsd-migration-journal",
+        ".codex/gsd-local-patches",
+        ".codex/legacy-skills-backup",
+        ".planning"
+      ],
+      "result": "preserved"
+    },
+    {
+      "id": "mixed-or-untrusted-ownership",
+      "result": "manual_review_required"
+    }
+  ]
+}

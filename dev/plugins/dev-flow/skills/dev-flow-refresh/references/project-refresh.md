@@ -26,9 +26,13 @@ git -C <project> status -sb
 
 The plan incorporates the inspector's known provider lock, legacy hook/agent,
 legacy Skill, and historical planning paths as redacted preserved/manual
-evidence. Do not clean any of those paths as part of refresh.
+evidence. At refresh contract revision 4, recognized project-local GSD,
+attested Superpowers skills, and verified obsolete generated OpenSpec copies
+are listed separately as exact `quarantine_path` actions. Every ambiguous,
+mixed-ownership, user-authored, historical, recovery, backup, or unclassified
+path remains preserved/manual.
 
-For refresh contract revision 3, also record the implementation-readiness
+For refresh contract revision 4, also record the implementation-readiness
 surface status: packaged CLI/schemas, project-local Skill links, maintained
 templates, compatibility fixture identity, and any pre-existing project-owned
 Requirement/Evidence/Receipt namespace. These are inspection and managed-
@@ -53,8 +57,18 @@ python3 dev/plugins/dev-flow/scripts/plugin_project_migration.py apply \
   --repo <project> --plugin-root <verified-dev-flow-root> \
   --expect-plan <sha256:...> \
   --allow project-refresh-apply \
-  --allow workflow-config-migration --json
+  --allow workflow-config-migration \
+  --allow legacy-workflow-uninstall \
+  --allow legacy-skill-layout-cleanup --json
 ```
+
+Use only the `--allow` values present in the reviewed plan. The two cleanup
+authorizations are never implied by project refresh or configuration migration.
+GSD/Superpowers and obsolete OpenSpec actions are grouped independently; a
+selected family is all-or-none. Each cleanup action moves its exact preimage to
+the plan's deterministic retained quarantine destination. An occupied
+destination, stale preimage, partial family selection, path overlap, or missing
+authorization fails before the first write.
 
 Repeat `--action <id>` to apply an explicitly selected safe subset. A safe
 subset remains `applied_incomplete` while another action, authorization, or
@@ -98,7 +112,7 @@ python3 dev/plugins/dev-flow/scripts/plugin_project_migration.py verify \
 Verification covers managed-path readback, configuration schema, migration
 sync, workflow validation, cache-drift diagnosis, AGENTS disposition, and
 migration-state identity. `verified_incomplete` is attention, not completion.
-For revision 3, verification additionally reports whether already-existing
+For revision 4, verification additionally reports whether already-existing
 readiness artifacts are current for the active consumer context; it does not
 write or repair those artifacts and does not turn their state into provider or
 ordinary implementation authority.
@@ -121,6 +135,13 @@ Receipt rollback is repository-, state-, and action-set-bound. Never edit or
 copy a receipt between projects. Never delete receipts or retained recovery
 evidence as routine cleanup; a retained transaction blocks later apply until a
 human completes and records recovery.
+
+For `quarantine_path`, receipt verification binds the absent active path to the
+retained quarantine preimage. Rollback restores from that quarantine only when
+neither side changed after apply. Retain the quarantine and receipts until the
+operator explicitly decides their lifecycle; ordinary refresh does not purge
+them. After verified uninstall, start a new Codex task/session before treating
+the surfaced Skill list as current.
 
 For non-Git projects, diagnostics remain available and create-if-absent actions
 may still be planned, but any rewrite requiring a Git rollback blob is

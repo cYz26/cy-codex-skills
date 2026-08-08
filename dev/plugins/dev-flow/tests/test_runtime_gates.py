@@ -747,7 +747,8 @@ goal_gate:
         )
         self.assertEqual(diagnostic["legacy_skill_layout_status"], "legacy_detected")
         self.assertEqual(diagnostic["recommended_skill"], "plugin-project-migration")
-        self.assertIn("--dry-run", diagnostic["recommended_command"])
+        self.assertIn("plugin_project_migration.py plan", diagnostic["recommended_command"])
+        self.assertIn("--json", diagnostic["recommended_command"])
 
     def test_workflow_mode_config_routes_low_risk_work_to_lightweight_ledger(self):
         repo = self.make_repo()

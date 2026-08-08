@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "refreshContractRevision": 9,
+  "projectSchemaHead": 8,
+  "schemaDecision": "advanced",
+  "cases": [
+    {
+      "id": "config-target-readable-fingerprint-mismatch-before-rollback",
+      "verificationResult": "rollback_blocked_zero_writes"
+    },
+    {
+      "id": "git-blob-readable-fingerprint-mismatch-before-rollback",
+      "verificationResult": "rollback_blocked_zero_writes"
+    }
+  ]
+}

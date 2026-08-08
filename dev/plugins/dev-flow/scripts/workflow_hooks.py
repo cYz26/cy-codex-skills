@@ -121,11 +121,11 @@ def infer_hook_action(reason: str) -> dict[str, Any]:
     if "legacy skill layout" in lowered or ".codex/skills" in lowered:
         return {
             "failed_gates": ["legacy_skill_layout"],
-            "next_action": "Run the project migration dry-run before applying skill-layout changes.",
+            "next_action": "Review the sealed project-refresh plan before applying any skill-layout or cleanup action.",
             "recommended_skill": "plugin-project-migration",
             "recommended_command": (
-                "python3 dev/plugins/dev-flow/scripts/plugin_project_migration.py "
-                "--repo <repo> --dry-run --json"
+                "python3 dev/plugins/dev-flow/scripts/plugin_project_migration.py plan "
+                "--repo <repo> --plugin-root <verified-dev-flow-root> --json"
             ),
             "legacy_skill_layout_status": "legacy_detected",
         }

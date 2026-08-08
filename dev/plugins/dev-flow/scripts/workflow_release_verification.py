@@ -73,6 +73,25 @@ PROJECT_REFRESH_REVISION3_REQUIRED_INPUTS = {
     "skills/verify-and-archive/SKILL.md",
     "skills/workflow-doctor/SKILL.md",
 }
+PROJECT_REFRESH_REVISION4_REQUIRED_INPUTS = {
+    "fixtures/project-refresh/legacy-uninstall-cases-v4.json",
+    "scripts/workflow_legacy_uninstall.py",
+}
+PROJECT_REFRESH_REVISION5_REQUIRED_INPUTS = {
+    "fixtures/project-refresh/schema-transition-cases-v5.json",
+}
+PROJECT_REFRESH_REVISION6_REQUIRED_INPUTS = {
+    "fixtures/project-refresh/review-hardening-cases-v6.json",
+}
+PROJECT_REFRESH_REVISION7_REQUIRED_INPUTS = {
+    "fixtures/project-refresh/config-preimage-cases-v7.json",
+}
+PROJECT_REFRESH_REVISION8_REQUIRED_INPUTS = {
+    "fixtures/project-refresh/rollback-preflight-cases-v8.json",
+}
+PROJECT_REFRESH_REVISION9_REQUIRED_INPUTS = {
+    "fixtures/project-refresh/file-source-fingerprint-cases-v9.json",
+}
 PROJECT_REFRESH_PARITY_FILES = (
     ".codex-plugin/project-migration.json",
     "skills/dev-flow-refresh/SKILL.md",
@@ -206,6 +225,18 @@ def analyze_project_refresh_impact(
     required_inputs = set(PROJECT_REFRESH_REQUIRED_INPUTS)
     if source_revision >= 3:
         required_inputs.update(PROJECT_REFRESH_REVISION3_REQUIRED_INPUTS)
+    if source_revision >= 4:
+        required_inputs.update(PROJECT_REFRESH_REVISION4_REQUIRED_INPUTS)
+    if source_revision >= 5:
+        required_inputs.update(PROJECT_REFRESH_REVISION5_REQUIRED_INPUTS)
+    if source_revision >= 6:
+        required_inputs.update(PROJECT_REFRESH_REVISION6_REQUIRED_INPUTS)
+    if source_revision >= 7:
+        required_inputs.update(PROJECT_REFRESH_REVISION7_REQUIRED_INPUTS)
+    if source_revision >= 8:
+        required_inputs.update(PROJECT_REFRESH_REVISION8_REQUIRED_INPUTS)
+    if source_revision >= 9:
+        required_inputs.update(PROJECT_REFRESH_REVISION9_REQUIRED_INPUTS)
     for relative in sorted(required_inputs - tracked_set):
         errors.append(f"refresh_required_input_missing:{relative}")
     config_targets = source_document.get("configTargets")

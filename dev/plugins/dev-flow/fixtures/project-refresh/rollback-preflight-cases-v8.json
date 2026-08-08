@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "refreshContractRevision": 8,
+  "projectSchemaHead": 7,
+  "schemaDecision": "advanced",
+  "cases": [
+    {
+      "id": "config-target-source-drift-before-explicit-rollback",
+      "verificationResult": "rollback_blocked_zero_writes"
+    },
+    {
+      "id": "git-blob-source-unavailable-before-explicit-rollback",
+      "verificationResult": "rollback_blocked_zero_writes"
+    }
+  ]
+}

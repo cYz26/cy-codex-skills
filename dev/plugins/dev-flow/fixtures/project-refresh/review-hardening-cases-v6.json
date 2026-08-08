@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0",
+  "refreshContractRevision": 6,
+  "projectSchemaHead": 5,
+  "schemaDecision": "advanced",
+  "cases": [
+    {
+      "id": "post-plan-empty-directory",
+      "verificationResult": "before_fingerprint_changed"
+    },
+    {
+      "id": "post-plan-directory-mode-change",
+      "verificationResult": "before_fingerprint_changed"
+    },
+    {
+      "id": "unattested-using-superpowers-directory",
+      "verificationResult": "manual_review_required"
+    },
+    {
+      "id": "incomplete-restore-quarantine-metadata",
+      "verificationResult": "schema_rejected"
+    }
+  ]
+}

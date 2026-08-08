@@ -404,6 +404,68 @@ class PluginProjectMigrationTests(unittest.TestCase):
         self.assertIn("--migrate-official-skill-layout", result["detail"])
         self.assertIn("--dry-run", result["skillLayoutDryRunCommand"])
 
+    def test_updater_result_reports_exact_authorized_legacy_cleanup_plan(self):
+        repo = self.make_repo()
+        plugin = self.make_plugin_root(version="1.2.0")
+        core = repo / ".codex" / "gsd-core" / "VERSION"
+        core.parent.mkdir(parents=True)
+        core.write_text("1.6.1\n")
+        manifest = repo / ".codex" / "gsd-file-manifest.json"
+        manifest.write_text(
+            json.dumps(
+                {
+                    "version": "1.6.1",
+                    "files": {
+                        "gsd-core/VERSION": hashlib.sha256(core.read_bytes()).hexdigest(),
+                    },
+                }
+            )
+            + "\n"
+        )
+
+        result = project_migration_sync_result(
+            repo=repo,
+            plugin_root=plugin,
+            codex_home=self.make_codex_home(),
+        )
+
+        self.assertIn("legacy-workflow-uninstall", result["cleanupRequiredAuthorizations"])
+        self.assertTrue(result["cleanupActionIds"], result)
+        self.assertIn("--allow legacy-workflow-uninstall", result["detail"])
+        self.assertNotIn("activate_project_dependencies.py", result["detail"])
+
+    def test_ordinary_apply_never_selects_authorized_legacy_cleanup(self):
+        repo = self.make_repo()
+        plugin = self.make_plugin_root(version="1.2.0")
+        core = repo / ".codex" / "gsd-core" / "VERSION"
+        core.parent.mkdir(parents=True)
+        core.write_text("1.6.1\n")
+        manifest = repo / ".codex" / "gsd-file-manifest.json"
+        manifest.write_text(
+            json.dumps(
+                {
+                    "version": "1.6.1",
+                    "files": {
+                        "gsd-core/VERSION": hashlib.sha256(core.read_bytes()).hexdigest(),
+                    },
+                }
+            )
+            + "\n"
+        )
+
+        report = apply_project_migrations(
+            repo=repo,
+            plugin_root=plugin,
+            codex_home=self.make_codex_home(),
+        )
+
+        self.assertTrue(core.is_file())
+        self.assertTrue(manifest.is_file())
+        self.assertIn(
+            "legacy-workflow-uninstall",
+            report["refreshEngine"]["remainingAuthorizations"],
+        )
+
     def test_updater_result_explains_blocked_project_migration(self):
         report = {
             "status": "blocked",

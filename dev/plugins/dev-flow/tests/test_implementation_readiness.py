@@ -52,6 +52,12 @@ from workflow_continuation import (
 )
 from workflow_release_verification import (
     PROJECT_REFRESH_REVISION3_REQUIRED_INPUTS,
+    PROJECT_REFRESH_REVISION4_REQUIRED_INPUTS,
+    PROJECT_REFRESH_REVISION5_REQUIRED_INPUTS,
+    PROJECT_REFRESH_REVISION6_REQUIRED_INPUTS,
+    PROJECT_REFRESH_REVISION7_REQUIRED_INPUTS,
+    PROJECT_REFRESH_REVISION8_REQUIRED_INPUTS,
+    PROJECT_REFRESH_REVISION9_REQUIRED_INPUTS,
     analyze_project_refresh_impact,
     release_promotion_readiness,
 )
@@ -1040,7 +1046,7 @@ context_health:
 
 
 class ImplementationReadinessRegressionTests(unittest.TestCase):
-    def test_revision_three_retains_schema_two_and_covers_readiness_inputs(self):
+    def test_revision_nine_advances_schema_and_retains_readiness_inputs(self):
         manifest = json.loads(
             (PLUGIN_ROOT / ".codex-plugin" / "project-migration.json").read_text()
         )
@@ -1048,11 +1054,17 @@ class ImplementationReadinessRegressionTests(unittest.TestCase):
         tracked = set(refresh["trackedInputs"])
         release_root = PLUGIN_ROOT.parents[2] / "plugins" / "dev-flow"
 
-        self.assertEqual(manifest["projectSchema"]["head"], 2)
-        self.assertEqual(refresh["revision"], 3)
-        self.assertEqual(refresh["evidence"]["schemaDecision"], "managed-refresh")
+        self.assertEqual(manifest["projectSchema"]["head"], 8)
+        self.assertEqual(refresh["revision"], 9)
+        self.assertEqual(refresh["evidence"]["schemaDecision"], "advanced")
         self.assertLessEqual(PROJECT_REFRESH_REVISION3_REQUIRED_INPUTS, tracked)
-        for version in (1, 2):
+        self.assertLessEqual(PROJECT_REFRESH_REVISION4_REQUIRED_INPUTS, tracked)
+        self.assertLessEqual(PROJECT_REFRESH_REVISION5_REQUIRED_INPUTS, tracked)
+        self.assertLessEqual(PROJECT_REFRESH_REVISION6_REQUIRED_INPUTS, tracked)
+        self.assertLessEqual(PROJECT_REFRESH_REVISION7_REQUIRED_INPUTS, tracked)
+        self.assertLessEqual(PROJECT_REFRESH_REVISION8_REQUIRED_INPUTS, tracked)
+        self.assertLessEqual(PROJECT_REFRESH_REVISION9_REQUIRED_INPUTS, tracked)
+        for version in (1, 2, 3, 4, 5, 6, 7):
             relative = Path("assets") / "project-refresh" / f"config-v{version}.json"
             with self.subTest(config=relative.as_posix()):
                 self.assertEqual(
@@ -1062,7 +1074,7 @@ class ImplementationReadinessRegressionTests(unittest.TestCase):
         impact = analyze_project_refresh_impact(
             PLUGIN_ROOT,
             release_root,
-            expected_change="add-project-directed-implementation-readiness-gate",
+            expected_change="add-authorized-legacy-workflow-uninstall",
         )
         self.assertTrue(impact["ok"], impact)
         expected_status = (
@@ -1071,7 +1083,18 @@ class ImplementationReadinessRegressionTests(unittest.TestCase):
             else "changed_covered"
         )
         self.assertEqual(impact["status"], expected_status)
-        self.assertEqual(impact["configSensitiveChanges"], [])
+        if impact["sourceRevision"] > impact["baselineRevision"]:
+            self.assertIn(
+                "scripts/workflow_project_refresh.py",
+                impact["configSensitiveChanges"],
+            )
+            if impact["baselineRevision"] < 4:
+                self.assertIn(
+                    "scripts/plugin_project_migration.py",
+                    impact["configSensitiveChanges"],
+                )
+        else:
+            self.assertEqual(impact["configSensitiveChanges"], [])
 
     def test_project_refresh_revision_three_compatibility_matrix_has_live_proofs(self):
         matrix = json.loads((FIXTURE_ROOT / "project-refresh-cases-v3.json").read_text())

@@ -65,12 +65,75 @@
       "additionalProperties": false,
       "required": ["kind", "sha256"],
       "properties": {
-        "kind": {"enum": ["absent", "file", "symlink", "non_regular", "unreadable"]},
+        "kind": {"enum": ["absent", "file", "symlink", "tree", "non_regular", "unreadable"]},
         "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
       }
     },
     "action": {
       "type": "object",
+      "allOf": [
+        {
+          "if": {
+            "required": ["kind"],
+            "properties": {"kind": {"const": "quarantine_path"}}
+          },
+          "then": {
+            "required": ["quarantinePath", "selectionGroup"],
+            "properties": {
+              "rollback": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["kind", "quarantinePath", "pruneEmptyParents"],
+                "properties": {
+                  "kind": {"const": "restore_quarantine"},
+                  "quarantinePath": {"type": "string", "minLength": 1},
+                  "pruneEmptyParents": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": {"type": "string", "minLength": 1}
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["kind"],
+            "properties": {"kind": {"const": "replace_json"}}
+          },
+          "then": {
+            "properties": {
+              "rollback": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["kind", "commit", "blob", "mode"],
+                    "properties": {
+                      "kind": {"const": "git_blob"},
+                      "commit": {"type": "string", "minLength": 1},
+                      "blob": {"type": "string", "minLength": 1},
+                      "mode": {"type": "integer", "minimum": 0, "maximum": 511}
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["kind", "targetVersion", "path", "mode"],
+                    "properties": {
+                      "kind": {"const": "config_target"},
+                      "targetVersion": {"type": "integer", "minimum": 0},
+                      "path": {"type": "string", "minLength": 1},
+                      "mode": {"type": "integer", "minimum": 0, "maximum": 511}
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
       "required": [
         "id",
         "kind",
@@ -86,8 +149,10 @@
       ],
       "properties": {
         "id": {"type": "string", "minLength": 1},
-        "kind": {"enum": ["create_file", "replace_json", "create_symlink", "replace_symlink"]},
+        "kind": {"enum": ["create_file", "replace_json", "create_symlink", "replace_symlink", "quarantine_path"]},
         "path": {"type": "string", "minLength": 1},
+        "quarantinePath": {"type": "string", "minLength": 1},
+        "selectionGroup": {"type": "string", "minLength": 1},
         "beforeFingerprint": {"$ref": "#/$defs/fingerprint"},
         "afterFingerprint": {"$ref": "#/$defs/fingerprint"},
         "authorization": {"type": "string", "minLength": 1},

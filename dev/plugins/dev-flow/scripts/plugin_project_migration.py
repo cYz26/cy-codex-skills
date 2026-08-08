@@ -53,6 +53,9 @@ def sync_project_migrations(
         report = base_report(repo, plugin_root, codex_home_path, "not_applicable", [])
     else:
         plugin = inspect_plugin(repo, plugin_root, adapter)
+        plugin["projectRefresh"] = _project_refresh_summary(
+            plan_project_refresh(repo, plugin_root, codex_home_path)
+        )
         status = plugin_report_status(plugin)
         report = base_report(repo, plugin_root, codex_home_path, status, [plugin])
     if write_report:
@@ -240,7 +243,24 @@ def project_migration_sync_result(
     status = report["status"].replace("_", "-")
     skill_layout = plugin.get("skillLayout", {}) if isinstance(plugin, dict) else {}
     layout_status = skill_layout.get("status")
-    if layout_status in {"legacy_detected", "legacy_duplicate", "skill_layout_conflict"}:
+    refresh = plugin.get("projectRefresh", {}) if isinstance(plugin, dict) else {}
+    cleanup_actions = refresh.get("cleanupActions", []) if isinstance(refresh, dict) else []
+    cleanup_authorizations = (
+        refresh.get("cleanupRequiredAuthorizations", [])
+        if isinstance(refresh, dict)
+        else []
+    )
+    if cleanup_actions:
+        allow_flags = " ".join(
+            f"--allow {authorization}"
+            for authorization in cleanup_authorizations
+        )
+        detail = (
+            "authorized legacy cleanup is pending; review the sealed project-refresh plan "
+            f"{refresh.get('planSha256')} and use versioned apply with {allow_flags}; "
+            "ordinary --apply will not select cleanup actions"
+        )
+    elif layout_status in {"legacy_detected", "legacy_duplicate", "skill_layout_conflict"}:
         command = " ".join(skill_layout.get("dryRunCommand", []))
         detail = f"legacy skill layout {layout_status.replace('_', '-')}; run dry-run migration first: {command}"
     elif status == "migration-pending":
@@ -266,6 +286,14 @@ def project_migration_sync_result(
         "repo": str(normalize_path(repo)),
         "skillLayoutStatus": layout_status,
         "skillLayoutDryRunCommand": skill_layout.get("dryRunCommand"),
+        "planSha256": refresh.get("planSha256") if isinstance(refresh, dict) else None,
+        "cleanupRequiredAuthorizations": list(cleanup_authorizations),
+        "cleanupActionIds": [
+            str(action.get("id"))
+            for action in cleanup_actions
+            if isinstance(action, dict) and action.get("id")
+        ],
+        "preservedPaths": list(refresh.get("preservedPaths", [])) if isinstance(refresh, dict) else [],
     }
 
 
@@ -371,6 +399,7 @@ def plugin_report_status(plugin: dict[str, Any]) -> str:
         or plugin["conflicts"]
         or plugin.get("controlPlane", {}).get("status") != "current"
         or plugin.get("skillLayout", {}).get("status") != "current"
+        or bool(plugin.get("projectRefresh", {}).get("cleanupActions"))
     ):
         return "migration_pending"
     return "current"
@@ -495,6 +524,14 @@ def base_report(
 def recommendation(status: str, plugins: list[dict[str, Any]] | None = None) -> str:
     if status == "migration_pending":
         for plugin in plugins or []:
+            refresh = plugin.get("projectRefresh", {})
+            cleanup = refresh.get("cleanupActions", []) if isinstance(refresh, dict) else []
+            if cleanup:
+                authorizations = refresh.get("cleanupRequiredAuthorizations", [])
+                return (
+                    "Review the sealed project-refresh legacy cleanup actions and apply only "
+                    "with their named authorizations: " + ", ".join(map(str, authorizations))
+                )
             layout = plugin.get("skillLayout", {})
             if layout.get("status") in {"legacy_detected", "legacy_duplicate", "skill_layout_conflict"}:
                 return "Run the official skill-layout dry-run migration after reviewing the sync report: " + " ".join(
@@ -504,6 +541,40 @@ def recommendation(status: str, plugins: list[dict[str, Any]] | None = None) -> 
     if status == "blocked":
         return "Resolve conflicts, then rerun plugin-project-migration migrate."
     return "No project migration action needed."
+
+
+def _project_refresh_summary(plan: dict[str, Any]) -> dict[str, Any]:
+    cleanup_actions = [
+        {
+            key: action[key]
+            for key in (
+                "id",
+                "path",
+                "quarantinePath",
+                "selectionGroup",
+                "authorization",
+                "ownership",
+            )
+            if key in action
+        }
+        for action in plan.get("actions", [])
+        if isinstance(action, dict) and action.get("kind") == "quarantine_path"
+    ]
+    return {
+        "status": str(plan.get("status") or "blocked"),
+        "planSha256": plan.get("planSha256"),
+        "requiredAuthorizations": list(plan.get("requiredAuthorizations", [])),
+        "cleanupRequiredAuthorizations": sorted(
+            {
+                str(action["authorization"])
+                for action in cleanup_actions
+                if action.get("authorization")
+            }
+        ),
+        "cleanupActions": cleanup_actions,
+        "preservedPaths": list(plan.get("preservedPaths", [])),
+        "manualActions": list(plan.get("manualActions", [])),
+    }
 
 
 def skill_record(skill: str, target: Path, source: Path, status: str) -> dict[str, Any]:

@@ -1,17 +1,80 @@
 {
   "schemaVersion": "1.0",
-  "currentProjectSchema": 2,
+  "currentProjectSchema": 8,
   "fixtures": [
+    {
+      "path": "current-v8.json",
+      "observedSchema": 8,
+      "expectedMigrationPath": []
+    },
+    {
+      "path": "current-v7.json",
+      "observedSchema": 7,
+      "expectedMigrationPath": [
+        "full-openspec-v7-to-v8"
+      ]
+    },
+    {
+      "path": "current-v6.json",
+      "observedSchema": 6,
+      "expectedMigrationPath": [
+        "full-openspec-v6-to-v7",
+        "full-openspec-v7-to-v8"
+      ]
+    },
+    {
+      "path": "current-v5.json",
+      "observedSchema": 5,
+      "expectedMigrationPath": [
+        "full-openspec-v5-to-v6",
+        "full-openspec-v6-to-v7",
+        "full-openspec-v7-to-v8"
+      ]
+    },
+    {
+      "path": "current-v4.json",
+      "observedSchema": 4,
+      "expectedMigrationPath": [
+        "full-openspec-v4-to-v5",
+        "full-openspec-v5-to-v6",
+        "full-openspec-v6-to-v7",
+        "full-openspec-v7-to-v8"
+      ]
+    },
+    {
+      "path": "current-v3.json",
+      "observedSchema": 3,
+      "expectedMigrationPath": [
+        "full-openspec-v3-to-v4",
+        "full-openspec-v4-to-v5",
+        "full-openspec-v5-to-v6",
+        "full-openspec-v6-to-v7",
+        "full-openspec-v7-to-v8"
+      ]
+    },
     {
       "path": "current-v2.json",
       "observedSchema": 2,
-      "expectedMigrationPath": []
+      "expectedMigrationPath": [
+        "full-openspec-v2-to-v3",
+        "full-openspec-v3-to-v4",
+        "full-openspec-v4-to-v5",
+        "full-openspec-v5-to-v6",
+        "full-openspec-v6-to-v7",
+        "full-openspec-v7-to-v8"
+      ]
     },
     {
       "path": "current.json",
       "observedSchema": 1,
       "expectedMigrationPath": [
-        "full-openspec-v1-to-v2"
+        "full-openspec-v1-to-v2",
+        "full-openspec-v2-to-v3",
+        "full-openspec-v3-to-v4",
+        "full-openspec-v4-to-v5",
+        "full-openspec-v5-to-v6",
+        "full-openspec-v6-to-v7",
+        "full-openspec-v7-to-v8"
       ]
     },
     {
@@ -19,7 +82,13 @@
       "observedSchema": 0,
       "expectedMigrationPath": [
         "legacy-selection-v0-to-v1",
-        "full-openspec-v1-to-v2"
+        "full-openspec-v1-to-v2",
+        "full-openspec-v2-to-v3",
+        "full-openspec-v3-to-v4",
+        "full-openspec-v4-to-v5",
+        "full-openspec-v5-to-v6",
+        "full-openspec-v6-to-v7",
+        "full-openspec-v7-to-v8"
       ]
     },
     {
@@ -27,7 +96,13 @@
       "observedSchema": 0,
       "expectedMigrationPath": [
         "legacy-selection-v0-to-v1",
-        "full-openspec-v1-to-v2"
+        "full-openspec-v1-to-v2",
+        "full-openspec-v2-to-v3",
+        "full-openspec-v3-to-v4",
+        "full-openspec-v4-to-v5",
+        "full-openspec-v5-to-v6",
+        "full-openspec-v6-to-v7",
+        "full-openspec-v7-to-v8"
       ]
     },
     {
@@ -35,7 +110,13 @@
       "observedSchema": 0,
       "expectedMigrationPath": [
         "legacy-selection-v0-to-v1",
-        "full-openspec-v1-to-v2"
+        "full-openspec-v1-to-v2",
+        "full-openspec-v2-to-v3",
+        "full-openspec-v3-to-v4",
+        "full-openspec-v4-to-v5",
+        "full-openspec-v5-to-v6",
+        "full-openspec-v6-to-v7",
+        "full-openspec-v7-to-v8"
       ]
     },
     {

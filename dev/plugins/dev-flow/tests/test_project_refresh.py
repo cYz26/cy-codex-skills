@@ -1,6 +1,8 @@
 import hashlib
 import json
+import shutil
 import subprocess
+import stat
 import sys
 import tempfile
 import unittest
@@ -15,6 +17,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 import workflow_project_refresh as refresh_module
 from workflow_project_refresh import plan_project_refresh
+from workflow_dependency_catalog import OPENSPEC_WORKFLOW_SKILLS
 
 LEGACY_PROFILE_KEY = "methodology" + "_profile"
 LEGACY_PROFILE_CAMEL_KEY = "methodology" + "Profile"
@@ -162,6 +165,44 @@ class ProjectRefreshTests(unittest.TestCase):
     def commit_all(self, repo: Path, message: str = "fixture") -> None:
         subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
         subprocess.run(["git", "-C", str(repo), "commit", "-qm", message], check=True)
+
+    def make_legacy_cleanup_repo(self) -> Path:
+        repo = self.make_repo()
+        self.write_json(repo / ".dev-flow.json", {"workflow": {"mode": "full-openspec"}})
+        core = repo / ".codex" / "gsd-core" / "VERSION"
+        core.parent.mkdir(parents=True)
+        core.write_text("1.6.1\n")
+        self.write_json(
+            repo / ".codex" / "gsd-file-manifest.json",
+            {
+                "version": "1.6.1",
+                "files": {
+                    "gsd-core/VERSION": hashlib.sha256(core.read_bytes()).hexdigest(),
+                },
+            },
+        )
+        superpowers = repo / ".agents" / "skills" / "brainstorming"
+        superpowers.parent.mkdir(parents=True)
+        superpowers.symlink_to(
+            "/tmp/superpowers-dev/superpowers/6.0.3/skills/brainstorming",
+            target_is_directory=True,
+        )
+        for skill in OPENSPEC_WORKFLOW_SKILLS:
+            official = repo / ".agents" / "skills" / skill / "SKILL.md"
+            official.parent.mkdir(parents=True)
+            official.write_text(
+                f"---\nname: {skill}\ngeneratedBy: \"1.7.0\"\n"
+                "allowed-tools: Bash(openspec:*)\n---\n"
+            )
+            legacy = repo / ".codex" / "skills" / skill / "SKILL.md"
+            legacy.parent.mkdir(parents=True)
+            legacy.write_text(
+                f"---\nname: {skill}\ngeneratedBy: \"1.6.0\"\n---\n"
+            )
+        history = repo / ".codex" / "gsd-migration-journal" / "old.json"
+        history.parent.mkdir(parents=True)
+        history.write_text("{}\n")
+        return repo
 
     def test_plan_for_non_adopted_directory_is_read_only_and_not_applicable(self):
         repo = self.make_repo()
@@ -317,6 +358,45 @@ class ProjectRefreshTests(unittest.TestCase):
         self.assertEqual(future_plan["status"], "blocked")
         self.assertEqual(future_plan["config"]["status"], "baseline_unsupported")
         self.assertNotIn(".dev-flow.json", future_plan["writeSet"])
+
+    def test_schema_advance_verifies_before_trusted_migration_state_is_updated(self):
+        repo = self.make_repo(git=True)
+        target_v1 = self.config_plugin / "assets" / "project-refresh" / "config-v1.json"
+        (repo / ".dev-flow.json").write_bytes(target_v1.read_bytes())
+        self.commit_all(repo)
+        initial = plan_project_refresh(repo, self.config_plugin)
+        initial_apply = refresh_module.apply_project_refresh(
+            repo,
+            self.config_plugin,
+            expected_plan=initial["planSha256"],
+            authorizations={"project-refresh-apply"},
+        )
+        self.assertTrue(initial_apply["ok"], initial_apply)
+
+        future_plugin = self.make_future_contract_plugin()
+        pending = plan_project_refresh(repo, future_plugin)
+        self.assertEqual(pending["projectSchema"], {"observed": 1, "target": 2})
+
+        advanced = refresh_module.apply_project_refresh(
+            repo,
+            future_plugin,
+            expected_plan=pending["planSha256"],
+            authorizations={"workflow-config-migration"},
+        )
+
+        self.assertTrue(advanced["ok"], advanced)
+        self.assertEqual(advanced["status"], "applied_and_verified")
+        state = json.loads(
+            (
+                repo
+                / ".planning"
+                / "devflow"
+                / "plugin-project-migration"
+                / "state.json"
+            ).read_text()
+        )
+        self.assertEqual(state["plugins"]["dev-flow"]["projectSchemaVersion"], 2)
+        self.assertEqual(plan_project_refresh(repo, future_plugin)["status"], "current")
 
     def test_trusted_configuration_and_state_schema_disagreement_is_ambiguous(self):
         repo = self.make_repo(git=True)
@@ -1356,6 +1436,309 @@ class ProjectRefreshTests(unittest.TestCase):
         self.assertIn(".codex/skills/managed-skill", plan["preservedPaths"])
         self.assertEqual(self.snapshot(repo), before)
 
+    def test_recognized_legacy_capabilities_plan_exact_authorized_quarantine_actions(self):
+        repo = self.make_repo()
+        self.write_json(
+            repo / ".dev-flow.json",
+            {"workflow": {"mode": "full-openspec"}},
+        )
+        core = repo / ".codex" / "gsd-core" / "VERSION"
+        core.parent.mkdir(parents=True)
+        core.write_text("1.6.1\n")
+        self.write_json(
+            repo / ".codex" / "gsd-file-manifest.json",
+            {
+                "version": "1.6.1",
+                "files": {
+                    "gsd-core/VERSION": hashlib.sha256(core.read_bytes()).hexdigest(),
+                },
+            },
+        )
+        superpowers = repo / ".agents" / "skills" / "brainstorming"
+        superpowers.parent.mkdir(parents=True)
+        superpowers.symlink_to(
+            "/tmp/superpowers-dev/superpowers/6.0.3/skills/brainstorming",
+            target_is_directory=True,
+        )
+        for skill in OPENSPEC_WORKFLOW_SKILLS:
+            official = repo / ".agents" / "skills" / skill / "SKILL.md"
+            official.parent.mkdir(parents=True)
+            official.write_text(
+                f"---\nname: {skill}\ngeneratedBy: \"1.7.0\"\n"
+                "allowed-tools: Bash(openspec:*)\n---\n"
+            )
+            legacy = repo / ".codex" / "skills" / skill / "SKILL.md"
+            legacy.parent.mkdir(parents=True)
+            legacy.write_text(
+                f"---\nname: {skill}\ngeneratedBy: \"1.6.0\"\n---\n"
+            )
+        history = repo / ".codex" / "gsd-migration-journal" / "old.json"
+        history.parent.mkdir(parents=True)
+        history.write_text("{}\n")
+        before = self.snapshot(repo)
+
+        plan = plan_project_refresh(repo, self.config_plugin)
+
+        self.assertTrue(plan["ok"], plan)
+        self.assertEqual(plan["status"], "migration_pending")
+        cleanup = [action for action in plan["actions"] if action["kind"] == "quarantine_path"]
+        by_path = {action["path"]: action for action in cleanup}
+        self.assertIn(".codex/gsd-core", by_path)
+        self.assertIn(".codex/gsd-file-manifest.json", by_path)
+        self.assertIn(".agents/skills/brainstorming", by_path)
+        self.assertIn(".codex/skills/openspec-propose", by_path)
+        self.assertEqual(by_path[".codex/gsd-core"]["selectionGroup"], "legacy-gsd")
+        self.assertEqual(
+            by_path[".agents/skills/brainstorming"]["selectionGroup"],
+            "legacy-superpowers",
+        )
+        self.assertEqual(
+            by_path[".codex/skills/openspec-propose"]["authorization"],
+            "legacy-skill-layout-cleanup",
+        )
+        self.assertEqual(by_path[".codex/gsd-core"]["beforeFingerprint"]["kind"], "tree")
+        self.assertEqual(by_path[".codex/gsd-core"]["afterFingerprint"]["kind"], "absent")
+        self.assertTrue(
+            by_path[".codex/gsd-core"]["quarantinePath"].startswith(
+                ".planning/devflow/plugin-project-migration/quarantine/"
+                "legacy-workflow-uninstall/"
+            )
+        )
+        self.assertIn(by_path[".codex/gsd-core"]["quarantinePath"], plan["writeSet"])
+        self.assertEqual(
+            plan["requiredAuthorizations"],
+            ["legacy-skill-layout-cleanup", "legacy-workflow-uninstall"],
+        )
+        self.assertIn(".codex/gsd-migration-journal", plan["preservedPaths"])
+        self.assertEqual(self.snapshot(repo), before)
+
+    def test_legacy_cleanup_requires_complete_families_and_supports_apply_verify_rollback(self):
+        repo = self.make_legacy_cleanup_repo()
+        plan = plan_project_refresh(repo, self.config_plugin)
+        active_paths = [
+            str(action["path"])
+            for action in plan["actions"]
+            if action["kind"] == "quarantine_path"
+        ]
+        before = self.snapshot(repo)
+
+        unauthorized = refresh_module.apply_project_refresh(
+            repo,
+            self.config_plugin,
+            expected_plan=plan["planSha256"],
+            authorizations={"legacy-workflow-uninstall"},
+        )
+
+        self.assertFalse(unauthorized["ok"], unauthorized)
+        self.assertEqual(unauthorized["status"], "authorization_required")
+        self.assertEqual(unauthorized["missingAuthorizations"], ["legacy-skill-layout-cleanup"])
+        self.assertEqual(self.snapshot(repo), before)
+
+        gsd_actions = [
+            str(action["id"])
+            for action in plan["actions"]
+            if action.get("selectionGroup") == "legacy-gsd"
+        ]
+        partial = refresh_module.apply_project_refresh(
+            repo,
+            self.config_plugin,
+            expected_plan=plan["planSha256"],
+            authorizations={"legacy-workflow-uninstall"},
+            selected_actions={gsd_actions[0]},
+        )
+
+        self.assertFalse(partial["ok"], partial)
+        self.assertEqual(partial["status"], "blocked")
+        self.assertIn("selection_group_incomplete:legacy-gsd", partial["conflicts"])
+        self.assertEqual(self.snapshot(repo), before)
+
+        applied = refresh_module.apply_project_refresh(
+            repo,
+            self.config_plugin,
+            expected_plan=plan["planSha256"],
+            authorizations={
+                "legacy-workflow-uninstall",
+                "legacy-skill-layout-cleanup",
+            },
+        )
+
+        self.assertTrue(applied["ok"], applied)
+        self.assertEqual(applied["status"], "applied_and_verified")
+        receipt = json.loads(Path(applied["receiptPath"]).read_text())
+        quarantine_by_active = {
+            str(action["path"]): str(action["quarantinePath"])
+            for action in receipt["actions"]
+            if action["kind"] == "quarantine_path"
+        }
+        self.assertEqual(set(quarantine_by_active), set(active_paths))
+        for active, quarantine in quarantine_by_active.items():
+            self.assertFalse((repo / active).exists() or (repo / active).is_symlink())
+            self.assertTrue((repo / quarantine).exists() or (repo / quarantine).is_symlink())
+        self.assertTrue((repo / ".codex/gsd-migration-journal/old.json").is_file())
+
+        verified = refresh_module.verify_project_refresh(
+            repo,
+            self.config_plugin,
+            applied["receiptPath"],
+        )
+        self.assertTrue(verified["ok"], verified)
+        self.assertEqual(plan_project_refresh(repo, self.config_plugin)["status"], "current")
+
+        rolled_back = refresh_module.rollback_project_refresh(
+            repo,
+            self.config_plugin,
+            applied["receiptPath"],
+            apply=True,
+        )
+
+        self.assertTrue(rolled_back["ok"], rolled_back)
+        self.assertEqual(rolled_back["status"], "rolled_back")
+        for active, quarantine in quarantine_by_active.items():
+            self.assertTrue((repo / active).exists() or (repo / active).is_symlink())
+            self.assertFalse((repo / quarantine).exists() or (repo / quarantine).is_symlink())
+
+    def test_legacy_cleanup_faults_restore_exact_project_snapshot(self):
+        for fault in ("after-promotion:0", "verification"):
+            with self.subTest(fault=fault):
+                repo = self.make_legacy_cleanup_repo()
+                plan = plan_project_refresh(repo, self.config_plugin)
+                before = self.snapshot(repo)
+
+                result = refresh_module.apply_project_refresh(
+                    repo,
+                    self.config_plugin,
+                    expected_plan=plan["planSha256"],
+                    authorizations={
+                        "legacy-workflow-uninstall",
+                        "legacy-skill-layout-cleanup",
+                    },
+                    fault_injection=fault,
+                )
+
+                self.assertFalse(result["ok"], result)
+                self.assertEqual(result["status"], "verification_failed_rolled_back")
+                self.assertEqual(self.snapshot(repo), before)
+
+    def test_occupied_legacy_quarantine_blocks_without_mutation(self):
+        repo = self.make_legacy_cleanup_repo()
+        plan = plan_project_refresh(repo, self.config_plugin)
+        action = next(
+            action for action in plan["actions"] if action["kind"] == "quarantine_path"
+        )
+        occupied = repo / action["quarantinePath"]
+        occupied.parent.mkdir(parents=True)
+        occupied.write_text("operator-owned recovery evidence\n")
+        occupied_plan = plan_project_refresh(repo, self.config_plugin)
+        before = self.snapshot(repo)
+
+        result = refresh_module.apply_project_refresh(
+            repo,
+            self.config_plugin,
+            expected_plan=occupied_plan["planSha256"],
+            authorizations={
+                "legacy-workflow-uninstall",
+                "legacy-skill-layout-cleanup",
+            },
+        )
+
+        self.assertFalse(result["ok"], result)
+        self.assertEqual(result["status"], "blocked")
+        self.assertIn(f"quarantine_occupied:{action['id']}", result["conflicts"])
+        self.assertEqual(self.snapshot(repo), before)
+
+    def test_legacy_tree_preimage_binds_empty_directories_and_directory_modes(self):
+        repo = self.make_legacy_cleanup_repo()
+        plan = plan_project_refresh(repo, self.config_plugin)
+        action = next(
+            action
+            for action in plan["actions"]
+            if action["kind"] == "quarantine_path"
+            and action["path"] == ".codex/gsd-core"
+        )
+        active = repo / action["path"]
+
+        empty = active / "post-plan-empty"
+        empty.mkdir()
+        self.assertNotEqual(
+            refresh_module._tree_fingerprint(active),
+            action["beforeFingerprint"],
+        )
+        self.assertIn(
+            f"before_fingerprint_changed:{action['id']}",
+            refresh_module._preflight_actions(repo, [action]),
+        )
+
+        empty.rmdir()
+        original_mode = stat.S_IMODE(active.stat().st_mode)
+        active.chmod(0o700 if original_mode != 0o700 else 0o755)
+        self.assertNotEqual(
+            refresh_module._tree_fingerprint(active),
+            action["beforeFingerprint"],
+        )
+        self.assertIn(
+            f"before_fingerprint_changed:{action['id']}",
+            refresh_module._preflight_actions(repo, [action]),
+        )
+
+    def test_legacy_quarantine_with_missing_rollback_metadata_fails_closed(self):
+        repo = self.make_legacy_cleanup_repo()
+        plan = plan_project_refresh(repo, self.config_plugin)
+        action = json.loads(
+            json.dumps(
+                next(
+                    action
+                    for action in plan["actions"]
+                    if action["kind"] == "quarantine_path"
+                )
+            )
+        )
+        action["rollback"] = None
+        before = self.snapshot(repo)
+
+        issues = refresh_module._preflight_actions(repo, [action])
+
+        self.assertIn(f"rollback_missing:{action['id']}", issues)
+        self.assertEqual(self.snapshot(repo), before)
+
+    def test_legacy_rollback_refuses_to_overwrite_edited_quarantine(self):
+        repo = self.make_legacy_cleanup_repo()
+        plan = plan_project_refresh(repo, self.config_plugin)
+        applied = refresh_module.apply_project_refresh(
+            repo,
+            self.config_plugin,
+            expected_plan=plan["planSha256"],
+            authorizations={
+                "legacy-workflow-uninstall",
+                "legacy-skill-layout-cleanup",
+            },
+        )
+        receipt = json.loads(Path(applied["receiptPath"]).read_text())
+        action = next(
+            action
+            for action in receipt["actions"]
+            if action["kind"] == "quarantine_path"
+            and action["beforeFingerprint"]["kind"] == "tree"
+        )
+        quarantine = repo / action["quarantinePath"]
+        tamper = quarantine / "post-apply-edit.txt"
+        tamper.write_text("must survive blocked rollback\n")
+
+        rollback = refresh_module.rollback_project_refresh(
+            repo,
+            self.config_plugin,
+            applied["receiptPath"],
+            apply=True,
+        )
+
+        self.assertFalse(rollback["ok"], rollback)
+        self.assertEqual(rollback["status"], "rollback_blocked")
+        self.assertIn(
+            f"receipt_action_quarantine_mismatch:{action['id']}",
+            rollback["issues"],
+        )
+        self.assertFalse((repo / action["path"]).exists())
+        self.assertEqual(tamper.read_text(), "must survive blocked rollback\n")
+
     def test_managed_skill_source_with_a_symlinked_ancestor_is_manual_only(self):
         plugin = self.make_contract_plugin()
         external = self.make_repo()
@@ -1389,10 +1772,11 @@ class ProjectRefreshTests(unittest.TestCase):
 
         plan = plan_project_refresh(repo, self.config_plugin)
 
-        self.assertEqual(plan["status"], "manual_review_required")
+        self.assertEqual(plan["status"], "migration_pending")
         self.assertIn(".planning/ROADMAP.md", plan["preservedPaths"])
         self.assertIn(".planning/ROADMAP.md", plan["readSet"])
         self.assertEqual(plan["legacySkillLayout"]["inspectorStatus"], "legacy_detected")
+        self.assertEqual(plan["legacySkillLayout"]["status"], "current")
         self.assertEqual(self.snapshot(repo), before)
 
     def test_v1_migration_state_is_upgraded_compatibly_and_restored_on_rollback(self):
@@ -1439,7 +1823,7 @@ class ProjectRefreshTests(unittest.TestCase):
         self.assertEqual(json.loads(state_path.read_text()), state_v1)
 
     def test_contract_plan_and_receipt_match_their_published_json_schemas(self):
-        from jsonschema import Draft202012Validator
+        from jsonschema import Draft202012Validator, ValidationError
 
         schema_root = PLUGIN_ROOT / "schemas"
         contract_schema = json.loads((schema_root / "project-refresh-contract.schema.json").read_text())
@@ -1487,6 +1871,36 @@ class ProjectRefreshTests(unittest.TestCase):
         self.assertEqual(verification_receipt["authorizations"], receipt["authorizations"])
         self.assertEqual(verification_receipt["actionSetSha256"], receipt["actionSetSha256"])
         self.assertEqual(verification_receipt["rollbackStatus"], "available")
+
+        cleanup_repo = self.make_legacy_cleanup_repo()
+        cleanup_plan = plan_project_refresh(cleanup_repo, self.config_plugin)
+        invalid_plan = json.loads(json.dumps(cleanup_plan))
+        next(
+            action
+            for action in invalid_plan["actions"]
+            if action["kind"] == "quarantine_path"
+        )["rollback"] = {}
+        with self.assertRaises(ValidationError):
+            Draft202012Validator(plan_schema).validate(invalid_plan)
+
+        cleanup_applied = refresh_module.apply_project_refresh(
+            cleanup_repo,
+            self.config_plugin,
+            expected_plan=cleanup_plan["planSha256"],
+            authorizations={
+                "legacy-workflow-uninstall",
+                "legacy-skill-layout-cleanup",
+            },
+        )
+        self.assertTrue(cleanup_applied["ok"], cleanup_applied)
+        invalid_receipt = json.loads(Path(cleanup_applied["receiptPath"]).read_text())
+        next(
+            action
+            for action in invalid_receipt["actions"]
+            if action["kind"] == "quarantine_path"
+        )["rollback"] = {}
+        with self.assertRaises(ValidationError):
+            Draft202012Validator(receipt_schema).validate(invalid_receipt)
 
     def test_apply_and_verification_receipts_reject_runtime_evidence_tampering(self):
         repo = self.make_repo(git=True)
@@ -1675,12 +2089,404 @@ class ProjectRefreshTests(unittest.TestCase):
         self.assertFalse(verification_tamper["ok"], verification_tamper)
         self.assertIn("receipt_evidence_digest_mismatch", verification_tamper["issues"])
 
+    def test_revision_four_legacy_uninstall_fixture_has_live_contract_proofs(self):
+        matrix = json.loads(
+            (
+                PLUGIN_ROOT
+                / "fixtures"
+                / "project-refresh"
+                / "legacy-uninstall-cases-v4.json"
+            ).read_text()
+        )
+        self.assertEqual(matrix["refreshContractRevision"], 4)
+        self.assertEqual(matrix["projectSchemaHead"], 3)
+        self.assertEqual(matrix["schemaDecision"], "advanced")
+        self.assertEqual(
+            {case["id"] for case in matrix["cases"]},
+            {
+                "recognized-gsd-family",
+                "attested-superpowers-family",
+                "obsolete-openspec-layout-family",
+                "historical-and-recovery-data",
+                "mixed-or-untrusted-ownership",
+            },
+        )
+        proof_text = "\n".join(
+            path.read_text()
+            for path in (
+                PLUGIN_ROOT / "scripts" / "workflow_legacy_uninstall.py",
+                PLUGIN_ROOT / "scripts" / "workflow_project_refresh.py",
+                PLUGIN_ROOT / "tests" / "test_legacy_workflow_uninstall.py",
+                PLUGIN_ROOT / "tests" / "test_project_refresh.py",
+            )
+        )
+        for case in matrix["cases"]:
+            for field in ("selectionGroup", "authorization", "result"):
+                if field in case:
+                    self.assertIn(case[field], proof_text)
+
+    def test_revision_five_schema_transition_fixture_has_live_contract_proofs(self):
+        matrix = json.loads(
+            (
+                PLUGIN_ROOT
+                / "fixtures"
+                / "project-refresh"
+                / "schema-transition-cases-v5.json"
+            ).read_text()
+        )
+        self.assertEqual(matrix["refreshContractRevision"], 5)
+        self.assertEqual(matrix["projectSchemaHead"], 4)
+        self.assertEqual(matrix["schemaDecision"], "advanced")
+        self.assertEqual(
+            {case["id"] for case in matrix["cases"]},
+            {
+                "sealed-config-promotion-with-trusted-prior-state",
+                "ordinary-unexplained-trusted-schema-disagreement",
+                "project-path-verification-failure",
+            },
+        )
+        self.assertIn(
+            "expected_state_sync_pending",
+            {case["verificationResult"] for case in matrix["cases"]},
+        )
+        self.assertIn(
+            "verification_failed_rolled_back",
+            {case["verificationResult"] for case in matrix["cases"]},
+        )
+
+    def test_revision_six_review_hardening_fixture_has_live_contract_proofs(self):
+        matrix = json.loads(
+            (
+                PLUGIN_ROOT
+                / "fixtures"
+                / "project-refresh"
+                / "review-hardening-cases-v6.json"
+            ).read_text()
+        )
+        self.assertEqual(matrix["refreshContractRevision"], 6)
+        self.assertEqual(matrix["projectSchemaHead"], 5)
+        self.assertEqual(matrix["schemaDecision"], "advanced")
+        self.assertEqual(
+            {case["id"] for case in matrix["cases"]},
+            {
+                "post-plan-empty-directory",
+                "post-plan-directory-mode-change",
+                "unattested-using-superpowers-directory",
+                "incomplete-restore-quarantine-metadata",
+            },
+        )
+
+    def test_revision_seven_config_preimage_fixture_has_live_contract_proofs(self):
+        matrix = json.loads(
+            (
+                PLUGIN_ROOT
+                / "fixtures"
+                / "project-refresh"
+                / "config-preimage-cases-v7.json"
+            ).read_text()
+        )
+        self.assertEqual(matrix["refreshContractRevision"], 7)
+        self.assertEqual(matrix["projectSchemaHead"], 6)
+        self.assertEqual(matrix["schemaDecision"], "advanced")
+        self.assertEqual(
+            {case["id"] for case in matrix["cases"]},
+            {
+                "uncommitted-exact-immutable-config-target",
+                "uncommitted-custom-config-preimage",
+                "config-target-bytes-drift",
+            },
+        )
+
+    def test_revision_eight_rollback_preflight_fixture_has_live_contract_proofs(self):
+        matrix = json.loads(
+            (
+                PLUGIN_ROOT
+                / "fixtures"
+                / "project-refresh"
+                / "rollback-preflight-cases-v8.json"
+            ).read_text()
+        )
+        self.assertEqual(matrix["refreshContractRevision"], 8)
+        self.assertEqual(matrix["projectSchemaHead"], 7)
+        self.assertEqual(matrix["schemaDecision"], "advanced")
+        self.assertEqual(
+            {case["id"] for case in matrix["cases"]},
+            {
+                "config-target-source-drift-before-explicit-rollback",
+                "git-blob-source-unavailable-before-explicit-rollback",
+            },
+        )
+        self.assertEqual(
+            {case["verificationResult"] for case in matrix["cases"]},
+            {"rollback_blocked_zero_writes"},
+        )
+
+    def test_revision_nine_file_source_fingerprint_fixture_has_live_contract_proofs(self):
+        matrix = json.loads(
+            (
+                PLUGIN_ROOT
+                / "fixtures"
+                / "project-refresh"
+                / "file-source-fingerprint-cases-v9.json"
+            ).read_text()
+        )
+        self.assertEqual(matrix["refreshContractRevision"], 9)
+        self.assertEqual(matrix["projectSchemaHead"], 8)
+        self.assertEqual(matrix["schemaDecision"], "advanced")
+        self.assertEqual(
+            {case["id"] for case in matrix["cases"]},
+            {
+                "config-target-readable-fingerprint-mismatch-before-rollback",
+                "git-blob-readable-fingerprint-mismatch-before-rollback",
+            },
+        )
+        self.assertEqual(
+            {case["verificationResult"] for case in matrix["cases"]},
+            {"rollback_blocked_zero_writes"},
+        )
+
+    def test_revision_nine_schema_eight_migration_preserves_unrelated_configuration(self):
+        manifest = json.loads(
+            (PLUGIN_ROOT / ".codex-plugin" / "project-migration.json").read_text()
+        )
+        self.assertEqual(manifest["refreshContract"]["revision"], 9)
+        self.assertEqual(manifest["projectSchema"]["head"], 8)
+        self.assertIn("full-openspec-v2-to-v3", refresh_module.MIGRATION_STEP_REGISTRY)
+        self.assertIn("full-openspec-v3-to-v4", refresh_module.MIGRATION_STEP_REGISTRY)
+        self.assertIn("full-openspec-v4-to-v5", refresh_module.MIGRATION_STEP_REGISTRY)
+        self.assertIn("full-openspec-v5-to-v6", refresh_module.MIGRATION_STEP_REGISTRY)
+        self.assertIn("full-openspec-v6-to-v7", refresh_module.MIGRATION_STEP_REGISTRY)
+        self.assertIn("full-openspec-v7-to-v8", refresh_module.MIGRATION_STEP_REGISTRY)
+        repo = self.make_repo(git=True)
+        self.write_json(
+            repo / ".dev-flow.json",
+            {
+                "projectContract": 2,
+                "workflow": {"mode": "full-openspec", "customFlag": True},
+                "customRoot": [1, "two", {"preserved": True}],
+            },
+        )
+        self.commit_all(repo)
+
+        plan = plan_project_refresh(repo, PLUGIN_ROOT)
+        config_action = next(
+            action for action in plan["actions"] if action["path"] == ".dev-flow.json"
+        )
+        expected_steps = [
+            "full-openspec-v2-to-v3",
+            "full-openspec-v3-to-v4",
+            "full-openspec-v4-to-v5",
+            "full-openspec-v5-to-v6",
+            "full-openspec-v6-to-v7",
+            "full-openspec-v7-to-v8",
+        ]
+        self.assertEqual(plan["migrationPath"], expected_steps)
+        self.assertEqual(config_action["source"]["steps"], expected_steps)
+        result = refresh_module.apply_project_refresh(
+            repo,
+            PLUGIN_ROOT,
+            expected_plan=plan["planSha256"],
+            authorizations={"workflow-config-migration"},
+            selected_actions={config_action["id"]},
+        )
+
+        self.assertTrue(result["ok"], result)
+        payload = json.loads((repo / ".dev-flow.json").read_text())
+        self.assertEqual(payload["projectContract"], 8)
+        self.assertTrue(payload["workflow"]["customFlag"])
+        self.assertEqual(payload["customRoot"], [1, "two", {"preserved": True}])
+        self.assertNotIn("provider", json.dumps(payload).lower())
+
+    def test_uncommitted_immutable_config_target_is_a_recoverable_migration_preimage(self):
+        repo = self.make_repo(git=True)
+        self.write_json(
+            repo / ".dev-flow.json",
+            {"projectContract": 2, "workflow": {"mode": "full-openspec"}},
+        )
+        self.commit_all(repo)
+        config_v4 = PLUGIN_ROOT / "assets" / "project-refresh" / "config-v4.json"
+        (repo / ".dev-flow.json").write_bytes(config_v4.read_bytes())
+        before = (repo / ".dev-flow.json").read_bytes()
+
+        plan = plan_project_refresh(repo, PLUGIN_ROOT)
+        action = next(
+            action for action in plan["actions"] if action["path"] == ".dev-flow.json"
+        )
+        self.assertEqual(action["rollback"]["kind"], "config_target")
+        self.assertEqual(action["rollback"]["targetVersion"], 4)
+        self.assertEqual(
+            action["rollback"]["path"],
+            "assets/project-refresh/config-v4.json",
+        )
+
+        result = refresh_module.apply_project_refresh(
+            repo,
+            PLUGIN_ROOT,
+            expected_plan=plan["planSha256"],
+            authorizations={"workflow-config-migration"},
+            selected_actions={action["id"]},
+            fault_injection="verification",
+        )
+
+        self.assertFalse(result["ok"], result)
+        self.assertEqual(result["status"], "verification_failed_rolled_back")
+        self.assertEqual((repo / ".dev-flow.json").read_bytes(), before)
+
+        custom_repo = self.make_repo(git=True)
+        self.write_json(
+            custom_repo / ".dev-flow.json",
+            {"projectContract": 2, "workflow": {"mode": "full-openspec"}},
+        )
+        self.commit_all(custom_repo)
+        self.write_json(
+            custom_repo / ".dev-flow.json",
+            {
+                "projectContract": 4,
+                "workflow": {"mode": "full-openspec", "customFlag": True},
+            },
+        )
+        custom_plan = plan_project_refresh(custom_repo, PLUGIN_ROOT)
+        self.assertEqual(custom_plan["config"]["status"], "manual_only")
+        config_manual = next(
+            item
+            for item in custom_plan["manualActions"]
+            if item["kind"] == "workflow-config-migration"
+        )
+        self.assertEqual(
+            config_manual,
+            {
+                "kind": "workflow-config-migration",
+                "path": ".dev-flow.json",
+                "reason": "recoverable_preimage_unavailable",
+            },
+        )
+
+    def test_explicit_rollback_preflights_config_target_before_state_mutation(self):
+        plugin = Path(tempfile.mkdtemp(prefix="devflow-project-refresh-plugin-copy-"))
+        shutil.copytree(PLUGIN_ROOT, plugin, dirs_exist_ok=True)
+
+        repo = self.make_repo(git=True)
+        self.write_json(
+            repo / ".dev-flow.json",
+            {"projectContract": 2, "workflow": {"mode": "full-openspec"}},
+        )
+        self.commit_all(repo)
+        config_v4 = plugin / "assets" / "project-refresh" / "config-v4.json"
+        (repo / ".dev-flow.json").write_bytes(config_v4.read_bytes())
+        plan = plan_project_refresh(repo, plugin)
+        action = next(
+            item for item in plan["actions"] if item["path"] == ".dev-flow.json"
+        )
+        self.assertEqual(action["rollback"]["kind"], "config_target")
+        applied = refresh_module.apply_project_refresh(
+            repo,
+            plugin,
+            expected_plan=plan["planSha256"],
+            authorizations={"workflow-config-migration"},
+            selected_actions={action["id"]},
+        )
+        self.assertTrue(applied["ok"], applied)
+        state_path = (
+            repo / ".planning" / "devflow" / "plugin-project-migration" / "state.json"
+        )
+        config_after = (repo / ".dev-flow.json").read_bytes()
+        state_after = state_path.read_bytes()
+        self.write_json(
+            config_v4,
+            {"projectContract": 4, "workflow": {"mode": "full-openspec"}, "drift": True},
+        )
+
+        rollback = refresh_module.rollback_project_refresh(
+            repo,
+            plugin,
+            applied["receiptPath"],
+            apply=True,
+        )
+
+        self.assertFalse(rollback["ok"], rollback)
+        self.assertEqual(rollback["status"], "rollback_blocked")
+        self.assertEqual(rollback["changedPaths"], [])
+        self.assertEqual((repo / ".dev-flow.json").read_bytes(), config_after)
+        self.assertEqual(state_path.read_bytes(), state_after)
+
+    def test_explicit_rollback_preflights_git_blob_before_state_mutation(self):
+        repo = self.make_repo(git=True)
+        self.write_json(repo / ".dev-flow.json", {LEGACY_PROFILE_KEY: "legacy"})
+        self.commit_all(repo)
+        plan = plan_project_refresh(repo, self.config_plugin)
+        applied = refresh_module.apply_project_refresh(
+            repo,
+            self.config_plugin,
+            expected_plan=plan["planSha256"],
+            authorizations={"workflow-config-migration"},
+        )
+        self.assertTrue(applied["ok"], applied)
+        state_path = (
+            repo / ".planning" / "devflow" / "plugin-project-migration" / "state.json"
+        )
+        config_after = (repo / ".dev-flow.json").read_bytes()
+        state_after = state_path.read_bytes()
+
+        with mock.patch.object(
+            refresh_module,
+            "_git_rollback_bytes",
+            side_effect=ValueError("git rollback source unavailable"),
+        ):
+            rollback = refresh_module.rollback_project_refresh(
+                repo,
+                self.config_plugin,
+                applied["receiptPath"],
+                apply=True,
+            )
+
+        self.assertFalse(rollback["ok"], rollback)
+        self.assertEqual(rollback["status"], "rollback_blocked")
+        self.assertEqual(rollback["changedPaths"], [])
+        self.assertEqual((repo / ".dev-flow.json").read_bytes(), config_after)
+        self.assertEqual(state_path.read_bytes(), state_after)
+
+    def test_explicit_rollback_rejects_mismatched_git_blob_before_state_mutation(self):
+        repo = self.make_repo(git=True)
+        self.write_json(repo / ".dev-flow.json", {LEGACY_PROFILE_KEY: "legacy"})
+        self.commit_all(repo)
+        plan = plan_project_refresh(repo, self.config_plugin)
+        applied = refresh_module.apply_project_refresh(
+            repo,
+            self.config_plugin,
+            expected_plan=plan["planSha256"],
+            authorizations={"workflow-config-migration"},
+        )
+        self.assertTrue(applied["ok"], applied)
+        state_path = (
+            repo / ".planning" / "devflow" / "plugin-project-migration" / "state.json"
+        )
+        config_after = (repo / ".dev-flow.json").read_bytes()
+        state_after = state_path.read_bytes()
+
+        with mock.patch.object(
+            refresh_module,
+            "_git_rollback_bytes",
+            return_value=b"wrong-but-readable\n",
+        ):
+            rollback = refresh_module.rollback_project_refresh(
+                repo,
+                self.config_plugin,
+                applied["receiptPath"],
+                apply=True,
+            )
+
+        self.assertFalse(rollback["ok"], rollback)
+        self.assertEqual(rollback["status"], "rollback_blocked")
+        self.assertEqual(rollback["changedPaths"], [])
+        self.assertEqual((repo / ".dev-flow.json").read_bytes(), config_after)
+        self.assertEqual(state_path.read_bytes(), state_after)
+
     def test_supported_project_refresh_fixture_matrix_reaches_the_current_schema(self):
         fixture_root = PLUGIN_ROOT / "fixtures" / "project-refresh"
         matrix = json.loads((fixture_root / "manifest.json").read_text())
-        self.assertEqual(matrix["currentProjectSchema"], 2)
+        self.assertEqual(matrix["currentProjectSchema"], 8)
         plugin = self.make_contract_plugin(
-            head=2,
+            head=8,
             steps=[
                 {
                     "id": "legacy-selection-v0-to-v1",
@@ -1696,9 +2502,51 @@ class ProjectRefreshTests(unittest.TestCase):
                     "authorization": "workflow-config-migration",
                     "configTarget": 2,
                 },
+                {
+                    "id": "full-openspec-v2-to-v3",
+                    "from": 2,
+                    "to": 3,
+                    "authorization": "workflow-config-migration",
+                    "configTarget": 3,
+                },
+                {
+                    "id": "full-openspec-v3-to-v4",
+                    "from": 3,
+                    "to": 4,
+                    "authorization": "workflow-config-migration",
+                    "configTarget": 4,
+                },
+                {
+                    "id": "full-openspec-v4-to-v5",
+                    "from": 4,
+                    "to": 5,
+                    "authorization": "workflow-config-migration",
+                    "configTarget": 5,
+                },
+                {
+                    "id": "full-openspec-v5-to-v6",
+                    "from": 5,
+                    "to": 6,
+                    "authorization": "workflow-config-migration",
+                    "configTarget": 6,
+                },
+                {
+                    "id": "full-openspec-v6-to-v7",
+                    "from": 6,
+                    "to": 7,
+                    "authorization": "workflow-config-migration",
+                    "configTarget": 7,
+                },
+                {
+                    "id": "full-openspec-v7-to-v8",
+                    "from": 7,
+                    "to": 8,
+                    "authorization": "workflow-config-migration",
+                    "configTarget": 8,
+                },
             ],
         )
-        for version in (1, 2):
+        for version in (1, 2, 3, 4, 5, 6, 7, 8):
             target = plugin / "assets" / "project-refresh" / f"config-v{version}.json"
             target.write_bytes(
                 (PLUGIN_ROOT / "assets" / "project-refresh" / f"config-v{version}.json").read_bytes()
@@ -1708,6 +2556,12 @@ class ProjectRefreshTests(unittest.TestCase):
         manifest["configTargets"] = {
             "1": "assets/project-refresh/config-v1.json",
             "2": "assets/project-refresh/config-v2.json",
+            "3": "assets/project-refresh/config-v3.json",
+            "4": "assets/project-refresh/config-v4.json",
+            "5": "assets/project-refresh/config-v5.json",
+            "6": "assets/project-refresh/config-v6.json",
+            "7": "assets/project-refresh/config-v7.json",
+            "8": "assets/project-refresh/config-v8.json",
         }
         self.write_json(manifest_path, manifest)
 

@@ -28,14 +28,21 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   static deferred-cost failure, four warnings, and an 11,463-token active
   budget. The continuous-execution recheck remains 68/D with the same finding
   classes, a 12,640-token active budget, and every changed skill still within
-  the evaluator's good line-count range
+  the evaluator's good line-count range. The 2026-08-07 release-target recheck
+  for `add-authorized-legacy-workflow-uninstall` scores 77/C with one static
+  invoke-cost failure, two token-budget warnings, and a 17,624-token active
+  estimate. The revision-8 release recheck remains 77/C with trigger `403`,
+  invoke `17,221`, deferred `55,776`, and active `17,624` tokens; every skill
+  remains within the evaluator's good line-count range
 - Affected Contract: none; the current change requires the result and
   disposition to be recorded but sets no development-source score threshold
 - Impact: the full development tree remains expensive under Plugin Eval's
   static estimate and may impose avoidable prompt cost in some routes
-- Current Mitigation: lifecycle text is limited to the six public routing
-  skills and generated control-plane templates; no runtime, dependency, hook,
-  or automatic writer was added, and all source tests pass
+- Current Mitigation: behavior-specific text remains confined to the directly
+  affected refresh and migration skills/reference; no unrelated skill was
+  expanded, release parity and runtime tests pass, and the evaluator reports no
+  structural or correctness finding beyond static budget and missing optional
+  coverage artifacts
 - Disposition Reason: reducing the plugin-wide budget or Python complexity
   requires a separate measurement and architecture effort with an expanded
   write set, so it is not one bounded guard for this behavior change
@@ -1412,3 +1419,133 @@ three dependency-ordered slices without creating another queue.
   commits were pushed by SSH to `origin/main`; local and remote refs matched
   before this documentation-only ledger closeout. The consumed release gate is
   closed again, while OpenSpec archive remains separately unauthorized.
+
+## Active Change: Authorized Legacy Workflow Uninstall
+
+### Goal Contract
+
+- goal_id: OpenSpec change `add-authorized-legacy-workflow-uninstall`
+- objective: make established-project DevFlow refresh plan and execute exact,
+  separately authorized, recoverable removal of active project-local GSD,
+  attested Superpowers, and obsolete OpenSpec skill copies while preserving
+  historical evidence.
+- scope_in: Project Refresh revision 9/project schema 8; deterministic
+  classification; family-closed quarantine; schemas, fixtures, CLI, guidance,
+  release/cache refresh; current-project cleanup and configuration migration.
+- scope_out: global Superpowers uninstall; history or quarantine purge;
+  dependency change; commit, push, PR, publication, or OpenSpec archive.
+- acceptance_criteria: source/release/cache identities match; exact cleanup
+  actions require their named authorization; active legacy paths are absent;
+  all quarantine preimages remain intact; current project is schema 8 with a
+  zero-action fresh plan; full source/release validation passes.
+- stop_conditions: ambiguous/user-authored candidate, stale or unrecoverable
+  preimage, family-incomplete selection, missing authorization, or failed
+  verification stops before additional project mutation.
+
+### Execution Log
+
+- 2026-08-07: The user confirmed that this project no longer uses GSD or
+  Superpowers and explicitly authorized project-local uninstall cleanup plus
+  `workflow-config-migration`. Historical GSD planning, patches, journals,
+  backups, and `docs/superpowers/plans` remain preserve-only.
+- 2026-08-08: Revision-5 cleanup plan
+  `sha256:fad06513bc93030c461327bed308bf91b00971c3352cfa95915eb0b255ff9a22`
+  applied and verified 86 actions: one configuration migration, 16 managed
+  skill-link replacements, and 69 quarantine actions (59 GSD, 4 Superpowers,
+  6 obsolete OpenSpec). Apply receipt is
+  `.planning/devflow/plugin-project-migration/receipts/apply-d450bbca197547f2984073fa3a7c4b64.json`.
+- 2026-08-08: Independent review found directory fingerprint, same-name
+  `using-superpowers`, and rollback-schema gaps. RED/GREEN fixes bind every
+  directory path/mode and empty directory, require provider evidence, and
+  constrain `restore_quarantine`, `git_blob`, and `config_target` metadata.
+- 2026-08-08: The installed revision-6 plan exposed that an uncommitted but
+  byte-identical immutable config target had no safe rollback representation.
+  Revision 7/schema 6 now accepts only an exact declared immutable target as a
+  rollback preimage; arbitrary uncommitted configuration remains manual.
+- 2026-08-08: Revision-7 source pre-promotion passed 514/514; strict OpenSpec
+  passed 49/49; diff checks passed. Targeted promotion made `plugins/dev-flow`
+  current and runtime verification passed with archive SHA-256
+  `ea10ebb8247ca836cbc5b91cc5de6f872c7b3582a6d41da51b31541e73242d00`;
+  packaged tests passed 6/6 and release smoke passed 30/30 after removing one
+  obsolete test-only manifest allowlist expectation.
+- 2026-08-08: Release-target Plugin Eval remains 77/C with one invoke-budget
+  failure, two budget warnings, and no observed-usage sample. `DF-IFL-001`
+  retains `DEFER_AND_CONTINUE`; reducing plugin-wide static cost is a separate
+  measurement/architecture change.
+- 2026-08-08: Only `dev-flow@cy-codex-skills` was refreshed. Source, release,
+  and named cache identity match at refresh revision 7/project schema 6.
+  Sealed plan
+  `sha256:386ee2846a5a5b4e8594a4843ca150e0f4fe964e03c31cbac81eb51476e0f884`
+  then migrated `.dev-flow.json` from schema 4 to 6 using the already granted
+  `workflow-config-migration` authorization. Apply receipt is
+  `.planning/devflow/plugin-project-migration/receipts/apply-efd26eed325740a2aa203753f0b9795e.json`;
+  independent verification passed.
+- 2026-08-08: Fresh plan
+  `sha256:94d440a65d80a89b6054c67d261b3321d185828a1fcb64066a0021eaf8046e42`
+  is current with schema 6/6, zero actions, zero authorizations, and no manual
+  item. All 69 cleanup action paths remain absent and all 69 quarantine
+  preimages match their sealed fingerprints. Dependency activation dry-run is
+  ready, all 16 DevFlow links are current, and exactly six OpenSpec 1.7 skills
+  are present.
+- 2026-08-08: No commit, push, PR, publication, archive, global plugin
+  uninstall, history deletion, quarantine purge, or dependency install ran.
+  The current configuration-only receipt is the directly usable rollback head;
+  the older cleanup receipt is retained as provenance but is no longer the
+  current state binding after the later configuration transaction.
+- 2026-08-08: Final spec re-review found one P1: explicit rollback restored
+  migration state before proving a `config_target` or `git_blob` rollback
+  source was still usable. RED reproduced a drifted immutable target leaving
+  the new config in place while deleting state. The fix preflights all action
+  postconditions and file sources before mutation, snapshots the exact source
+  bytes, and reuses them during rollback; both config-target drift and mocked
+  Git-blob unavailability now return `rollback_blocked` with zero changed paths.
+- 2026-08-08: Because revision 7 was already installed, the safety fix advanced
+  immutably to Project Refresh revision 8/schema 7 with `config-v7`,
+  `full-openspec-v6-to-v7`, rollback-preflight fixtures, tracked-input SHA-256
+  `417f851f6994b54ed429654f2cc02e1216d7cc84b886b25fe6d57470d62d5e6a`,
+  and unchanged v1-v6 targets. Source pre-promotion passed 517/517; runtime
+  verification passed at archive SHA-256
+  `f753abd7e04a8cfc20d3fde3b7aa04324e41c752807dde7ba0e00c1446f96881`;
+  packaged/release smoke remained 6/6 and 30/30; Plugin Eval remained 77/C.
+- 2026-08-08: The named DevFlow cache was refreshed again. Exact plan
+  `sha256:126fb3ea7d8fd1df697e643669639c23772c73ee74aad1b0d5a137bbcbbe9d52`
+  used only the already granted `workflow-config-migration` authorization to
+  advance this project from schema 6 to 7. Apply receipt
+  `.planning/devflow/plugin-project-migration/receipts/apply-a818b726db98468a8b659efc09a5a83e.json`
+  verified independently; fresh plan
+  `sha256:25c4d85539052552783eebf897e0bc107ccf3738224912481ff47024c5ea4553`
+  is current with zero actions, authorizations, or manual items.
+- 2026-08-08: Adversarial final review supplied readable but incorrect Git
+  rollback bytes and reproduced a partial explicit rollback after state
+  mutation. RED/GREEN coverage now compares every prepared file source to the
+  receipt-bound `beforeFingerprint` before any mutation; unavailable or
+  mismatched bytes return `rollback_blocked`, `changedPaths=[]`, with config and
+  state unchanged. Independent re-review reports no remaining P1/P2.
+- 2026-08-08: Because revision 8 was already installed, the final safety fix
+  advanced immutably to Project Refresh revision 9/schema 8 with `config-v8`,
+  `full-openspec-v7-to-v8`, file-source-fingerprint fixtures, tracked-input
+  SHA-256 `fe1f16cc02885ea8814feaae7ccf3f519824ad4d37be54eb2a20eb8a8fbf9295`,
+  and unchanged v1-v7 targets. Pre-promotion passed 519/519, full source
+  discovery passed 555/555, strict OpenSpec passed 49/49, packaged tests passed
+  66/66, release smoke plus sync passed 75/75, and runtime archive SHA-256 is
+  `ce7fcbf7b36e85d632b0e634e4042d778006f3be633cc408b9a1c0939ebc64a4`.
+- 2026-08-08: Release-target Plugin Eval remains 77/C: trigger 403, invoke
+  17,221, deferred 55,924, active 17,624. `DF-IFL-001` remains
+  `DEFER_AND_CONTINUE` because this pre-existing whole-plugin budget refactor
+  requires separate measured architecture scope and does not invalidate the
+  tested cleanup/rollback behavior.
+- 2026-08-08: `dev-flow@cy-codex-skills` was refreshed and source, release, and
+  installed cache identities match revision 9/schema 8. Sealed plan
+  `sha256:e8b73acd9ab7d29936fcedff76e29b8af2c7dae5b8a7b1c598f2efb38368d105`
+  migrated `.dev-flow.json` from 7 to 8. The cache-side link targets were then
+  reconciled to this source repository's canonical development paths through
+  plan `sha256:97cf1225c4849ed91bb443abcb24a3ebf7a6800e45abf9822e296afbaf56ba09`.
+  Current receipt
+  `.planning/devflow/plugin-project-migration/receipts/apply-931da5cd66994d98b052499f1ceb2f33.json`
+  verifies independently; fresh plan
+  `sha256:93b3407df8bb5fba25800c58a82a477581148e905225a47163d12616f793240e`
+  is current at schema 8/8 with zero actions or authorizations.
+- 2026-08-08: The original cleanup receipt still proves 69/69 active paths
+  absent and 69/69 quarantine post-states intact: 59 GSD, 4 Superpowers, and 6
+  obsolete OpenSpec. No global plugin uninstall, history deletion, quarantine
+  purge, commit, push, PR, publication, or archive occurred.

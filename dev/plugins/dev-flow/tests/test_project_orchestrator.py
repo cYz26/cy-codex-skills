@@ -187,13 +187,12 @@ class ProjectOrchestratorTests(unittest.TestCase):
         release_manifest = json.loads((RELEASE_PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text())
         self.assertLessEqual(len(release_manifest["interface"]["defaultPrompt"]), 3)
         self.assertTrue((RELEASE_PLUGIN_ROOT / "tests" / "test_packaged_runtime.py").exists())
-        self.assertEqual(
-            {
-                path.relative_to(RELEASE_PLUGIN_ROOT).as_posix()
-                for path in (RELEASE_PLUGIN_ROOT / "fixtures").rglob("*")
-                if path.is_file()
-            },
-            {
+        release_fixtures = {
+            path.relative_to(RELEASE_PLUGIN_ROOT).as_posix()
+            for path in (RELEASE_PLUGIN_ROOT / "fixtures").rglob("*")
+            if path.is_file()
+        }
+        expected_release_fixtures = {
                 "fixtures/implementation-readiness/agents-guidance-markers-revision2.json",
                 "fixtures/implementation-readiness/invalid-evidence-missing-capabilities-v1.json",
                 "fixtures/implementation-readiness/invalid-provider-override-anonymous-v1.json",
@@ -205,15 +204,55 @@ class ProjectOrchestratorTests(unittest.TestCase):
                 "fixtures/implementation-readiness/valid-receipt-v1.json",
                 "fixtures/implementation-readiness/valid-requirement-v1.json",
                 "fixtures/project-refresh/current-v2.json",
+                "fixtures/project-refresh/current-v3.json",
                 "fixtures/project-refresh/current.json",
                 "fixtures/project-refresh/legacy-conflicting-aliases.json",
                 "fixtures/project-refresh/legacy-preserve-settings.json",
                 "fixtures/project-refresh/legacy-root-selection.json",
+                "fixtures/project-refresh/legacy-uninstall-cases-v4.json",
                 "fixtures/project-refresh/legacy-workflow-selection.json",
                 "fixtures/project-refresh/manifest.json",
                 "fixtures/test_generated_artifact_lifecycle.py",
-            },
+        }
+        release_refresh = json.loads(
+            (RELEASE_PLUGIN_ROOT / ".codex-plugin" / "project-migration.json").read_text()
         )
+        if release_refresh["refreshContract"]["revision"] >= 5:
+            expected_release_fixtures.update(
+                {
+                    "fixtures/project-refresh/current-v4.json",
+                    "fixtures/project-refresh/schema-transition-cases-v5.json",
+                }
+            )
+        if release_refresh["refreshContract"]["revision"] >= 6:
+            expected_release_fixtures.update(
+                {
+                    "fixtures/project-refresh/current-v5.json",
+                    "fixtures/project-refresh/review-hardening-cases-v6.json",
+                }
+            )
+        if release_refresh["refreshContract"]["revision"] >= 7:
+            expected_release_fixtures.update(
+                {
+                    "fixtures/project-refresh/current-v6.json",
+                    "fixtures/project-refresh/config-preimage-cases-v7.json",
+                }
+            )
+        if release_refresh["refreshContract"]["revision"] >= 8:
+            expected_release_fixtures.update(
+                {
+                    "fixtures/project-refresh/current-v7.json",
+                    "fixtures/project-refresh/rollback-preflight-cases-v8.json",
+                }
+            )
+        if release_refresh["refreshContract"]["revision"] >= 9:
+            expected_release_fixtures.update(
+                {
+                    "fixtures/project-refresh/current-v8.json",
+                    "fixtures/project-refresh/file-source-fingerprint-cases-v9.json",
+                }
+            )
+        self.assertEqual(release_fixtures, expected_release_fixtures)
         self.assertFalse((RELEASE_PLUGIN_ROOT / "log").exists())
 
         dev_path, dev_entry = registered_plugin_path(DEV_MARKETPLACE, PLUGIN_ID)
