@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codex-fleet"
+version = "0.1.0"
+description = "Declarative, receipt-bound synchronization for Codex plugin fleets and adopted projects."
+requires-python = ">=3.11"
+readme = "README.md"
+authors = [{name = "cy-codex-skills"}]
+dependencies = []
+
+[project.scripts]
+codex-fleet = "codex_fleet.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

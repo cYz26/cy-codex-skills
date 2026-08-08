@@ -4,7 +4,7 @@ project_mode: brownfield
 current_stage: verified
 
 current_change:
-  id: add-authorized-legacy-workflow-uninstall
+  id: add-codex-fleet-sync
   status: verified
 
 gates:
@@ -23,14 +23,14 @@ implementation_readiness:
 
 context_management:
   compact_policy: checkpoint_boundary
-  last_checkpoint_id: 2026-08-08-revision-nine-refresh-complete
-  last_checkpoint_file: .planning/devflow/verification/20260807-authorized-legacy-workflow-uninstall.md
+  last_checkpoint_id: 2026-08-08-codex-fleet-skill-front-door-verified
+  last_checkpoint_file: .planning/devflow/verification/20260808-codex-fleet-skill-front-door.md
   compact_recommended: false
   compact_status: not_needed
   last_compact_result_file: none
-  compact_source: checkpoint
-  compact_updated_at: 2026-08-08T00:50:00+08:00
-  compact_skip_reason: active_execution_context_is_healthy
+  compact_source: verification
+  compact_updated_at: 2026-08-08T12:44:24+08:00
+  compact_skip_reason: verified_completion_context_is_durable
   compact_error: none
   compact_after:
     - project_setup_completed
@@ -52,63 +52,50 @@ context_management:
 
 goal_gate:
   required: true
-  status: complete
-  reason: the user authorized recoverable legacy cleanup, workflow configuration migration, direct origin submission, and the final named-cache/current-project refresh
-  suggested_goal: completed revision-9 schema-8 DevFlow implementation, origin/main submission, named-cache refresh, and current-project verification without archive, global uninstall, or purge
+  status: skipped-with-reason
+  reason: the change has six governed capability slices, but the user requested direct implementation rather than an explicit Codex Goal; the complete Goal Contract is durable in the approved OpenSpec design and Task Ledger
+  suggested_goal: none
 
 context_health:
-  last_report: .planning/devflow/verification/20260807-authorized-legacy-workflow-uninstall.md
-  last_risk: medium
+  last_report: .planning/devflow/verification/20260808-codex-fleet-skill-front-door.md
+  last_risk: low
   last_confidence: high
   last_decision: complete
-  last_goal_status: ready_to_complete
-  goal_summary: revision 9 release and named cache are current; project schema 8 is verified; active GSD, Superpowers, and obsolete OpenSpec surfaces are quarantined with retained preimages
+  last_goal_status: skipped-with-reason
+  goal_summary: expose the verified standalone codex-fleet reconciler through the existing codex-updater Skill while preserving CLI authority, legacy fallback, and live-update boundaries
 ---
 
 # Workflow State
 
 ## Current Status
 
-`add-authorized-legacy-workflow-uninstall` is verified through Project Refresh
-revision 9/project schema 8. The sealed refresh engine plans exact GSD,
-content-attested Superpowers, and obsolete OpenSpec cleanup families behind
-separate named authorization; quarantines recoverable file, symlink, and exact
-tree preimages; binds directory modes and empty directories; and accepts an
-uncommitted configuration rollback only when the complete preimage exactly
-matches a declared immutable config target. Explicit and automatic rollback now
-resolve every `config_target` and `git_blob`, compare the prepared bytes with
-the receipt-bound preimage fingerprint before any state or path mutation, and
-reuse those exact bytes.
+`add-codex-fleet-sync` is implementation-complete and verified. The updated
+`dev-flow:codex-updater` Skill routes Fleet profiles through the independent
+CLI, preserves legacy fallback only when no Fleet profile exists, and retains
+separate apply, advance-lock, and rollback authorization. Source and release
+Skill bytes match, target release sync is current, DevFlow passes 556/556,
+Fleet passes 33/33, release runtime passes 301/301, and Plugin Eval reports
+100/100 A with zero failures or warnings. Project Refresh Contract revision 10
+is covered at unchanged project schema 8.
 
-The canonical pre-promotion suite passes `519/519`, the final broad source suite
-passes `555/555`, strict OpenSpec passes `49/49`, packaged tests pass `66/66`,
-and release smoke plus sync tests pass `75/75`. Runtime
-verification passes with archive SHA-256
-`ce7fcbf7b36e85d632b0e634e4042d778006f3be633cc408b9a1c0939ebc64a4`.
-Source, `plugins/dev-flow`, and the named installed cache match at revision 9.
-Plugin Eval remains `77/C`; the pre-existing whole-plugin static budget finding
-is durably deferred as `DF-IFL-001`.
+The verified contract includes portable manifest/lock plus a machine-local
+device overlay, dry-run-by-default sealed sync, explicit lock advancement,
+bounded native runtime effects, full source/cache and packaged-Skill identity,
+double-adopted project refresh through `devflow-v1`, per-project locks,
+before/after receipt identities, fresh verification, and durable fail-closed
+partial rollback evidence. Stateless plugins require no plugin-specific CLI.
 
-The successful cleanup receipt quarantined 69 active paths: 59 GSD, 4
-Superpowers, and 6 obsolete OpenSpec copies. Every active path remains absent
-and every retained quarantine preimage remains intact. The subsequent
-configuration receipts migrated `.dev-flow.json` from schema 4 through 8 and
-verified independently. A fresh source-repository plan is `current`, schema
-`8/8`, with zero actions, authorizations, or manual items. All 16 DevFlow links and exactly six
-OpenSpec 1.7 skills are current. Historical/recovery paths remain preserved.
-
-Feature commit `a69340b8e2024e2368ce1ba65145916d0cbb66c4` was pushed
-directly to `origin/main` through native SSH Git. The local
-`dev-flow@cy-codex-skills` cache was then re-registered from the submitted
-release source. A fresh sealed project plan remains `current` at schema `8/8`
-with zero actions, authorizations, or manual items, and workflow diagnosis is
-healthy. This tracked closeout is authorized under the same direct-main push.
-No PR, OpenSpec archive, global plugin uninstall, historical deletion,
-quarantine purge, or dependency installation occurred.
+No external implementation provider is selected. The one-time local release
+promotion completed successfully and its authorization is consumed;
+`release_allowed` is false. The required read-only updater diagnosis shows the
+new checked-in release is intentionally ahead of the installed DevFlow cache,
+while this repository's project migration is current. No Plugin installation,
+live cache refresh, consumer-project apply, publication, archive, commit, push,
+or PR was performed.
 
 ## Next Action
 
-Start a new Codex task or reload the current task so the process-local surfaced
-skill inventory reflects the cleaned project. OpenSpec sync/archive, PR
-creation, global Superpowers uninstall, and quarantine purge remain separate
-future authorization boundaries.
+No approved automatic action remains. Installing/refreshing the DevFlow cache,
+applying refresh to any consumer project, publishing, archiving, committing,
+pushing, or creating a PR each requires its own explicit authorization. The
+active OpenSpec change may remain unarchived.

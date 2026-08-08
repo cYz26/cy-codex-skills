@@ -1046,7 +1046,7 @@ context_health:
 
 
 class ImplementationReadinessRegressionTests(unittest.TestCase):
-    def test_revision_nine_advances_schema_and_retains_readiness_inputs(self):
+    def test_revision_ten_retains_schema_eight_and_refresh_inputs(self):
         manifest = json.loads(
             (PLUGIN_ROOT / ".codex-plugin" / "project-migration.json").read_text()
         )
@@ -1055,8 +1055,8 @@ class ImplementationReadinessRegressionTests(unittest.TestCase):
         release_root = PLUGIN_ROOT.parents[2] / "plugins" / "dev-flow"
 
         self.assertEqual(manifest["projectSchema"]["head"], 8)
-        self.assertEqual(refresh["revision"], 9)
-        self.assertEqual(refresh["evidence"]["schemaDecision"], "advanced")
+        self.assertEqual(refresh["revision"], 10)
+        self.assertEqual(refresh["evidence"]["schemaDecision"], "managed-refresh")
         self.assertLessEqual(PROJECT_REFRESH_REVISION3_REQUIRED_INPUTS, tracked)
         self.assertLessEqual(PROJECT_REFRESH_REVISION4_REQUIRED_INPUTS, tracked)
         self.assertLessEqual(PROJECT_REFRESH_REVISION5_REQUIRED_INPUTS, tracked)
@@ -1074,7 +1074,7 @@ class ImplementationReadinessRegressionTests(unittest.TestCase):
         impact = analyze_project_refresh_impact(
             PLUGIN_ROOT,
             release_root,
-            expected_change="add-authorized-legacy-workflow-uninstall",
+            expected_change="add-codex-fleet-sync",
         )
         self.assertTrue(impact["ok"], impact)
         expected_status = (
@@ -1083,18 +1083,7 @@ class ImplementationReadinessRegressionTests(unittest.TestCase):
             else "changed_covered"
         )
         self.assertEqual(impact["status"], expected_status)
-        if impact["sourceRevision"] > impact["baselineRevision"]:
-            self.assertIn(
-                "scripts/workflow_project_refresh.py",
-                impact["configSensitiveChanges"],
-            )
-            if impact["baselineRevision"] < 4:
-                self.assertIn(
-                    "scripts/plugin_project_migration.py",
-                    impact["configSensitiveChanges"],
-                )
-        else:
-            self.assertEqual(impact["configSensitiveChanges"], [])
+        self.assertEqual(impact["configSensitiveChanges"], [])
 
     def test_project_refresh_revision_three_compatibility_matrix_has_live_proofs(self):
         matrix = json.loads((FIXTURE_ROOT / "project-refresh-cases-v3.json").read_text())

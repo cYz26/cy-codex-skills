@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cy-codex-skills.local/codex-fleet/manifest-v1.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "marketplaces": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "channel": {"enum": ["stable", "development", "device-local"]},
+          "name": {"minLength": 1, "type": "string"},
+          "ref": {"minLength": 1, "type": "string"},
+          "source": {"minLength": 1, "type": "string"},
+          "sourceType": {"enum": ["git", "local"]}
+        },
+        "required": ["name", "sourceType", "source", "channel"],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "plugins": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {"const": true},
+          "projectAdapter": {"enum": ["devflow-v1", null]},
+          "selector": {"pattern": "^[^@]+@[^@]+$", "type": "string"}
+        },
+        "required": ["selector", "enabled", "projectAdapter"],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "profile": {"minLength": 1, "type": "string"},
+    "projects": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {"pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$", "type": "string"},
+          "plugins": {"items": {"type": "string"}, "type": "array", "uniqueItems": true}
+        },
+        "required": ["id", "plugins"],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "schemaVersion": {"const": "1.0"}
+  },
+  "required": ["schemaVersion", "profile", "marketplaces", "plugins", "projects"],
+  "type": "object"
+}

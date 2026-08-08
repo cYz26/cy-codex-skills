@@ -1,0 +1,28 @@
+{
+  "marketplaces": [
+    {
+      "channel": "stable",
+      "name": "cy-codex-skills",
+      "ref": "v0.3.0",
+      "source": "git@github.com:cYz26/cy-codex-skills.git",
+      "sourceType": "git"
+    }
+  ],
+  "plugins": [
+    {
+      "enabled": true,
+      "projectAdapter": "devflow-v1",
+      "selector": "dev-flow@cy-codex-skills"
+    }
+  ],
+  "profile": "stable",
+  "projects": [
+    {
+      "id": "game0724",
+      "plugins": [
+        "dev-flow@cy-codex-skills"
+      ]
+    }
+  ],
+  "schemaVersion": "1.0"
+}

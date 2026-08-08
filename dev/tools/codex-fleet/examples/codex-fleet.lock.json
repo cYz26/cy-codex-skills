@@ -1,0 +1,18 @@
+{
+  "manifestSha256": "sha256:replace-with-bootstrap-output",
+  "marketplaces": {
+    "cy-codex-skills": {
+      "ref": "v0.3.0",
+      "revision": "0000000000000000000000000000000000000000",
+      "source": "git@github.com:cYz26/cy-codex-skills.git",
+      "sourceType": "git"
+    }
+  },
+  "plugins": {
+    "dev-flow@cy-codex-skills": {
+      "treeSha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "version": "0.3.0"
+    }
+  },
+  "schemaVersion": "1.0"
+}

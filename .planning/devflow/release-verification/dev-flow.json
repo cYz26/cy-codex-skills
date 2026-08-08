@@ -1,5 +1,5 @@
 {
-  "change": "add-authorized-legacy-workflow-uninstall",
+  "change": "add-codex-fleet-sync",
   "checks": {
     "development": {
       "command": "PYTHONDONTWRITEBYTECODE=1 python3.12 dev/scripts/run_devflow_prepromotion_tests.py",
@@ -15,49 +15,34 @@
     }
   },
   "projectRefreshImpact": {
-    "baselineManifestIdentitySha256": "5c3938fdc1aa5213350958ad73a01ca68bf844b4d8949245ddf75fd62879be9c",
-    "baselineProjectSchemaHead": 7,
-    "baselineRefreshContractDigest": "sha256:e92a812c51f4fd93e5e2a4f2856b2e81730b06c232fc5f20d37aa061a6462eb7",
-    "baselineRevision": 8,
+    "baselineManifestIdentitySha256": "41d438d17372d43ee220bb046273d1d7b9a1d01242145a9db245d17f5c307fd0",
+    "baselineProjectSchemaHead": 8,
+    "baselineRefreshContractDigest": "sha256:d83db0c2d30294baf188ffbf5461f0578c2cf3a4329fc63942163c39bbcded1b",
+    "baselineRevision": 9,
     "baselineRoot": "/Users/cy/Dev/agents-dev/cy-codex-skills/plugins/dev-flow",
     "changedInputs": [
-      "assets/project-refresh/config-v8.json",
-      "fixtures/project-refresh/current-v8.json",
-      "fixtures/project-refresh/file-source-fingerprint-cases-v9.json",
-      "fixtures/project-refresh/manifest.json",
-      "scripts/workflow_project_refresh.py",
-      "scripts/workflow_release_verification.py"
+      "skills/codex-updater/SKILL.md"
     ],
-    "configSensitiveChanges": [
-      "assets/project-refresh/config-v8.json",
-      "manifest:configTargets",
-      "manifest:migrationSteps",
-      "manifest:projectSchema",
-      "scripts/workflow_project_refresh.py"
-    ],
+    "configSensitiveChanges": [],
     "errors": [],
-    "evidenceChange": "add-authorized-legacy-workflow-uninstall",
-    "expectedChange": "add-authorized-legacy-workflow-uninstall",
+    "evidenceChange": "add-codex-fleet-sync",
+    "expectedChange": "add-codex-fleet-sync",
     "impact": "changed",
-    "manifestChanged": true,
+    "manifestChanged": false,
     "manifestIdentitySha256": "41d438d17372d43ee220bb046273d1d7b9a1d01242145a9db245d17f5c307fd0",
-    "migrationCoverage": {
-      "7": [
-        "full-openspec-v7-to-v8"
-      ]
-    },
+    "migrationCoverage": {},
     "nextAction": "Project Refresh Impact is covered by the versioned contract and fixture matrix.",
     "ok": true,
     "refreshContractDigestChanged": true,
-    "schemaDecision": "advanced",
+    "schemaDecision": "managed-refresh",
     "sourceProjectSchemaHead": 8,
-    "sourceRefreshContractDigest": "sha256:d83db0c2d30294baf188ffbf5461f0578c2cf3a4329fc63942163c39bbcded1b",
-    "sourceRevision": 9,
+    "sourceRefreshContractDigest": "sha256:991200e46017f800c99d67bbc52feaf31b5b7747dcc791007de0df08e0de2a09",
+    "sourceRevision": 10,
     "sourceRoot": "/Users/cy/Dev/agents-dev/cy-codex-skills/dev/plugins/dev-flow",
     "status": "changed_covered",
-    "trackedInputsSha256": "fe1f16cc02885ea8814feaae7ccf3f519824ad4d37be54eb2a20eb8a8fbf9295"
+    "trackedInputsSha256": "1e2ab543b32e451695ace8cae510c70c9cb5453cb4ada4af95faa05dcc3dff7b"
   },
-  "recordedAt": "2026-08-07T17:11:56.334755+00:00",
+  "recordedAt": "2026-08-08T04:15:42.677999+00:00",
   "schemaVersion": 1,
   "sourceFiles": [
     {
@@ -66,7 +51,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/.codex-plugin/project-migration.json",
-      "sha256": "39bb231b1aa704935361dbadbebd69b6edd0a69d9599e390d59e9c4b1bd186a9"
+      "sha256": "3926d16bfb1e907b7bfe53090eb548b0243458875c44e63c1cc81da5396a566f"
     },
     {
       "path": "dev/plugins/dev-flow/.codex-plugin/release-sync.json",
@@ -1102,7 +1087,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/skills/codex-updater/SKILL.md",
-      "sha256": "6d362670d3c7ede848be47e1e9cf736b29905190b328c71cb35451b5ee000a77"
+      "sha256": "4598cefcd9836304d2eafafe47474151ff5d45ff97fbd49d5cd856310ac7e58b"
     },
     {
       "path": "dev/plugins/dev-flow/skills/context-health-check/SKILL.md",
@@ -1206,7 +1191,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_implementation_readiness.py",
-      "sha256": "7b83dfdf2de96706c293b77c0ffde95a8d51ec0053e99a02c5bb85118f482d31"
+      "sha256": "c17b5d6ca32426bd427d9c14f8e041c9dda2320311f2964a5e68ec11745afa01"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_incidental_finding_lifecycle.py",
@@ -1246,7 +1231,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_project_refresh.py",
-      "sha256": "12e3379b0e17747b16e6dd33e380bc1c45e1f1c44d2b6eb0231de2ae0482494a"
+      "sha256": "37de627b35af2375d9b86b56562a4f1160590d879dae2260a021c540e7ef45ac"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_release_promotion_targets.py",
@@ -1254,7 +1239,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_release_smoke.py",
-      "sha256": "192fd68eda32734444bc8e30fa6a2ab756fd7ae43e65361d13258631c3725f0f"
+      "sha256": "4fdacad6c5da0444b62f244408e0a970da02a7bb12dd8973c13d1b9294043295"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_release_sync.py",
@@ -1329,6 +1314,6 @@
       "sha256": "dbcf2aa885704bef9780cd5779dc8a2f11d77210326654e236e2283a272b5c86"
     }
   ],
-  "sourceSha256": "3e27a6056911dec3d92df0f798c05e42193c1833ede5ee896fad9f41bc28897a",
+  "sourceSha256": "2623df3eeb84173ccbd13c4d66e02bf55e70f3d00d492c8b6e39b6207f60304d",
   "target": "dev-flow"
 }

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cy-codex-skills.local/codex-fleet/project-marker-v1.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "adopted": {"const": true},
+    "managedPlugins": {"items": {"type": "string"}, "type": "array", "uniqueItems": true},
+    "profile": {"type": "string"},
+    "projectId": {"type": "string"},
+    "schemaVersion": {"const": "1.0"}
+  },
+  "required": ["schemaVersion", "profile", "projectId", "adopted", "managedPlugins"],
+  "type": "object"
+}

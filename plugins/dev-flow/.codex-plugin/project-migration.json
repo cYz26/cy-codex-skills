@@ -76,20 +76,21 @@
     }
   ],
   "refreshContract": {
-    "revision": 9,
+    "revision": 10,
     "impact": "changed",
     "evidence": {
-      "changeId": "add-authorized-legacy-workflow-uninstall",
-        "refreshContractRevision": 9,
+      "changeId": "add-codex-fleet-sync",
+        "refreshContractRevision": 10,
         "projectSchemaHead": 8,
-      "trackedInputsSha256": "fe1f16cc02885ea8814feaae7ccf3f519824ad4d37be54eb2a20eb8a8fbf9295",
-      "schemaDecision": "advanced",
+      "trackedInputsSha256": "1e2ab543b32e451695ace8cae510c70c9cb5453cb4ada4af95faa05dcc3dff7b",
+      "schemaDecision": "managed-refresh",
       "inspectedSurfaces": [
         "agents-guidance",
         "configuration",
         "control-plane-templates",
         "dependency-layout",
         "fixtures",
+        "fleet-skill-routing",
         "implementation-readiness",
         "legacy-workflow-uninstall",
         "lifecycle-gates",
@@ -99,7 +100,7 @@
         "refresh-skill",
         "release-packaging"
       ],
-        "reason": "Adds exact authorized and recoverable project-local legacy workflow uninstall behavior, preserves installed revision-4/schema-3 through revision-8/schema-7 contracts, closes independent review findings in revision 6, adds immutable-target rollback for a safe uncommitted consumer schema transition in revision 7/schema 6, preflights every receipt-bound file rollback source before any mutation in revision 8/schema 7, validates every prepared file source against the receipt-bound preimage fingerprint before any mutation in revision 9/schema 8, and preserves immutable v1/v2/v3/v4/v5/v6/v7 targets plus existing implementation-readiness behavior."
+        "reason": "Routes declarative Fleet profiles through the existing codex-updater Skill while retaining the independent Fleet CLI as the only execution and receipt authority. Revision 10 changes one already-managed project-local Skill and its release counterpart; project schema head 8, immutable configuration targets, migration steps, readers, templates, managed files, and adoption markers remain unchanged, so established projects use the existing routine Skill refresh without workflow configuration migration."
     },
     "trackedInputs": [
       ".codex-plugin/plugin.json",

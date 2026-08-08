@@ -1,0 +1,13 @@
+{
+  "codexHome": "/absolute/path/to/.codex",
+  "manifestSha256": "sha256:replace-with-bootstrap-output",
+  "marketplaces": {},
+  "profile": "stable",
+  "projects": {
+    "game0724": {
+      "path": "/absolute/path/to/game0724",
+      "trusted": true
+    }
+  },
+  "schemaVersion": "1.0"
+}

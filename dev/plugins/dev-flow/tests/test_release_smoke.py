@@ -362,6 +362,32 @@ context_health:
         self.assertIn("plugin-cache-verify", text)
         self.assertIn("do not check, update, or run Agent Reach", text)
 
+    def test_release_codex_updater_skill_routes_fleet_profiles(self):
+        source_path = PLUGIN_ROOT / "skills" / "codex-updater" / "SKILL.md"
+        release_path = RELEASE_PLUGIN_ROOT / "skills" / "codex-updater" / "SKILL.md"
+        source = source_path.read_text()
+        release = release_path.read_text()
+        normalized_release = " ".join(release.split())
+
+        self.assertEqual(source, release)
+        for phrase in [
+            "Select Fleet or Legacy Mode",
+            "codex-fleet.json",
+            "codex-fleet` on `PATH",
+            "dev/scripts/codex_fleet.py",
+            "codex-fleet inventory",
+            "codex-fleet bootstrap",
+            "codex-fleet sync --apply",
+            "codex-fleet sync --advance-lock",
+            "codex-fleet sync --apply --advance-lock",
+            "codex-fleet verify --receipt",
+            "codex-fleet rollback --receipt",
+            "Do not fall back to the legacy updater",
+            "Rollback apply requires a new explicit user request",
+        ]:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, normalized_release)
+
     def test_release_dev_flow_refresh_skill_is_packaged(self):
         skill_path = PLUGIN_ROOT / "skills" / "dev-flow-refresh" / "SKILL.md"
         text = skill_path.read_text()

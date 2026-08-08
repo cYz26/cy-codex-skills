@@ -314,6 +314,35 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
   diagnostics change
 - Human Disposition: `pending`
 
+### DF-IFL-011: Fleet identity documents remain dynamically shaped mappings
+
+- Finding ID: `DF-IFL-011`
+- Disposition: `DEFER_AND_CONTINUE`
+- Severity: low internal maintainability risk; no failed fleet behavior or
+  public automation-contract gap
+- Evidence: the final Standards review identified primitive obsession and
+  data-clump/shotgun-surgery risk because plans, bindings, lock identities, and
+  receipts cross `sync.py`, `executor.py`, and `lifecycle.py` as validated
+  `dict[str, Any]` records
+- Affected Contract: none; receipt structure now validates sealed plan,
+  before/after marketplace/plugin/cache identities, restart guidance, project
+  bindings, and digests, while 33 public CLI scenarios pass
+- Impact: a future schema revision could require coordinated internal edits and
+  allow an unchecked access path if its public regression is incomplete
+- Current Mitigation: finite v1 schemas, centralized trusted-byte and tree
+  identity primitives, strict fail-closed validators, canonical digests, and
+  public failure-path tests cover every current mutation boundary
+- Disposition Reason: introducing typed PlanBindings, LockIdentity, and Receipt
+  records is an internal architecture refactor across three completed slices;
+  it is not required to satisfy any current scenario and would expand final
+  review risk without changing the v1 CLI contract
+- Recommended Follow-up: introduce typed immutable domain records behind the
+  unchanged JSON schema when a v2 identity field or second stateful Adapter
+  creates a concrete change pressure
+- Follow-up Trigger: the first FleetReceipt schema revision, a second Adapter,
+  or a reproduced cross-module validation drift defect
+- Human Disposition: `pending`
+
 ## Active Change: OpenSpec 1.7 Upgrade
 
 - authoritative_queue: OpenSpec change `upgrade-devflow-openspec-1-7`
@@ -1561,3 +1590,163 @@ three dependency-ordered slices without creating another queue.
   under the same direct-main authorization; PR, archive, global Superpowers
   uninstall, history deletion, quarantine purge, and dependency installation
   remain outside scope.
+
+## Active Change: Codex Fleet Sync
+
+### Goal Contract
+
+- goal_id: OpenSpec change `add-codex-fleet-sync`
+- objective: deliver one independent `codex-fleet` CLI that aligns explicitly
+  managed marketplace snapshots, installed plugin caches, and adopted project
+  state across device profiles through sealed plan/apply/verify/rollback, with
+  `dev-flow:codex-updater` as its natural-language front door.
+- scope_in: `dev/tools/codex-fleet`, its repository wrapper and documentation,
+  fake-boundary public CLI tests, development/release `codex-updater` Skill,
+  focused DevFlow release tests, Project Refresh Contract, OpenSpec, Task
+  Ledger, DevFlow state, and verification evidence.
+- scope_out: live plugin/marketplace/cache/project mutation; source pull; Codex
+  or dependency update; arbitrary Adapter commands; installed-cache refresh;
+  release publication; install, archive, commit, push, or PR.
+- acceptance_criteria: default sync is write-free; desired/lock/device/project
+  identities fail closed; native work is deduplicated and ordered; verified
+  cache gates project apply; only adopted projects and routine DevFlow actions
+  mutate; receipts verify afresh and roll back only proven reversible state;
+  the packaged Skill fails closed on a missing Fleet runtime, preserves legacy
+  fallback only without a Fleet profile, and all exact validators pass.
+- stop_conditions: new dependency, further public-scope expansion, arbitrary
+  execution, destructive or live workstation effects, a configuration-
+  sensitive project schema/migration change, or unsupported native behavior
+  that requires a new compatibility decision.
+
+### Execution Ledger
+
+| Item | Owner | Write set | Status | Evidence | Human gate / next action |
+| --- | --- | --- | --- | --- | --- |
+| CF-1 | main agent | OpenSpec, Task Ledger, State | complete | 4/4 artifacts, strict OpenSpec, workflow validation, TDD dependency ready | none; continued to CF-2 |
+| CF-2 | main agent | `dev/tools/codex-fleet` schemas, inventory, bootstrap, tests | complete | RED module missing; GREEN 5/5 public CLI tests | none; continued to CF-3 |
+| CF-3 | main agent | planner, executor, identity, tests | complete | RED apply unavailable; GREEN 12/12 integrated tests | none; continued to CF-4 |
+| CF-4 | main agent | adapters, locking, receipts, lifecycle tests | complete | RED adapter/lifecycle absent; GREEN 19/19 + real read-only plan | none; continued to CF-5 |
+| CF-5 | main agent | wrapper, docs, verification, State/Ledger/tasks | complete | 32/32 tests, package/help smoke, strict OpenSpec, workflow/dependency/Adapter/diff proof | `COMPLETE`; external effects remain separate |
+| CF-6 | main agent | `codex-updater` source/release Skill, release tests, refresh contract, OpenSpec/Ledger/State/evidence | complete | release gate consumed; Skill parity; runtime 301/301; DevFlow 556/556; Fleet 33/33; Plugin Eval 100/A; OpenSpec 50/50 | `COMPLETE`; cache/project/install/publish/archive/Git effects remain separate |
+
+### Execution Log
+
+- 2026-08-08: The user approved implementation of the previously aligned
+  central Module design. Capability evidence reconfirmed Codex CLI
+  `0.147.0-alpha.6.5`, native Git marketplace upgrade, per-plugin add, current
+  local/Git marketplace differences, and the existing DevFlow sealed project
+  migration interface.
+- 2026-08-08: OpenSpec proposal, specification, design, and tasks are complete;
+  strict validation passes. The Skill Routing Ledger selects capability
+  research, AI-native planning, architecture guidance, Full OpenSpec, and TDD.
+  DevFlow Project Refresh Impact is `not-applicable` because this standalone
+  consumer Module does not change any DevFlow source/release contract.
+- 2026-08-08: Workflow-state validation passes with no issue or warning, and
+  the selection-scoped dependency check reports `test-first-execution` ready
+  with the trusted project-local TDD skill. CF-1 is complete; CF-2 starts at the
+  public `inventory`/bootstrap-preview CLI seam.
+- 2026-08-08: CF-2 RED failed both initial tests because `codex_fleet` did not
+  exist. GREEN now passes 5/5 public CLI tests: candidate inventory and preview
+  are write-free; explicit adoption atomically writes the reviewed manifest,
+  lock, device overlay, and named project marker; portable files contain no
+  device path; target conflicts, duplicate project IDs, and `stable + main`
+  stop before writes. No live Codex or consumer project was used.
+- 2026-08-08: CF-3 planning RED failed 0/3 because sync was not implemented;
+  apply RED failed 0/4 because no state/receipt apply interface existed. GREEN
+  passes 12/12: dry-run is deterministic and deduplicated, lock/source drift
+  blocks projects, locked apply repairs cache without marketplace advancement,
+  advance-lock upgrades once and promotes only verified identity, and stale
+  input or corrupt cache preserves the old lock and writes a failure receipt.
+- 2026-08-08: CF-4 Adapter RED initially failed at the explicit
+  `not_implemented` gate and exposed one stateless marker-path lookup defect;
+  lifecycle RED failed because verify/rollback did not exist. GREEN passes
+  19/19. Only verified-cache `devflow-v1` can execute, only routine action IDs
+  receive `project-refresh-apply`, privileged actions remain manual, project
+  mutation is locked, verify is fresh, rollback previews by default and applies
+  projects in reverse, and lock-postimage drift blocks before writes. A real
+  release-side DevFlow plan remains `current`, schema 8/8, zero actions.
+- 2026-08-08: Independent Standards and Spec/Security review found and drove
+  bounded repairs for cache reattestation, mutation-time symlink substitution,
+  structured filesystem-race failures, unrelated runtime effects, packaged
+  Skill symlinks, before/after cache evidence, restart guidance, and durable
+  partial rollback. The six-scenario review regression moved from five failures
+  plus one traceback to 6/6 GREEN. The remaining typed-domain-record
+  maintainability judgment is deferred as `DF-IFL-011` with public-schema and
+  failure-path mitigation.
+- 2026-08-08: CF-5 is complete. The complete public CLI suite passes 32/32 in
+  23.480 seconds; wrapper/module help and package metadata/import pass; strict
+  OpenSpec is valid at 4/4; workflow validation has zero issues/warnings;
+  change-review and completion-proof dependencies are ready. The real read-only
+  DevFlow Adapter plan remains current at schema 8/8 with digest
+  `sha256:93b3407df8bb5fba25800c58a82a477581148e905225a47163d12616f793240e`
+  and zero actions. `git diff --check` passes and no tracked or untracked path
+  under `dev/plugins/dev-flow/**` or `plugins/dev-flow/**` changed. No Plugin
+  Eval applies because no Plugin/Skill source or release path changed. No live
+  install/update/migration/release/archive/Git external effect occurred.
+- 2026-08-08: The user approved exposing Fleet through the existing
+  `dev-flow:codex-updater` Skill rather than requiring operators to compose
+  scripts or adding an overlapping Skill. OpenSpec now adds CF-6: Fleet profile
+  selection is fail-closed, every write class retains its own current intent,
+  the legacy updater is fallback-only when no Fleet profile is selected, and
+  the CLI remains the sole execution/evidence authority. Project Refresh Impact
+  changes to revision 10 with schema head 8 because the tracked Skill changes
+  but no configuration-sensitive reader, target, migration, or project marker
+  does. The trusted TDD capability is ready; the packaged Skill RED is next.
+- 2026-08-08: CF-6 RED is recorded at the public packaged-Skill seam. The
+  focused `ReleaseSmokeTests.test_release_codex_updater_skill_routes_fleet_profiles`
+  fails 13 subtests because the current source/release Skill has no Fleet mode,
+  executable resolution, lifecycle command map, missing-runtime stop, or
+  rollback reauthorization language. Source and release were byte-identical at
+  the old behavior, so the failure isolates the requested interface delta.
+- 2026-08-08: CF-6 source GREEN is complete. The development Skill now selects
+  Fleet versus legacy mode, resolves installed CLI or repository wrapper,
+  maps read-only/bootstrap/locked/advance/verify/rollback intent, fails closed
+  instead of broad fallback, and retains the legacy updater unchanged. Refresh
+  revision 10 keeps schema 8 with `managed-refresh`; focused refresh tests pass,
+  the source-only pre-promotion suite passes 519/519, repository-wide strict
+  OpenSpec passes 50/50, `git diff --check` passes, and the source-bound release
+  receipt is `.planning/devflow/release-verification/dev-flow.json` with source
+  SHA-256 `2623df3eeb84173ccbd13c4d66e02bf55e70f3d00d492c8b6e39b6207f60304d`.
+  The Skill Creator validator could not run because every available Python
+  lacks its optional PyYAML import; an independent frontmatter/line-count check
+  passes and release-target Plugin Eval remains mandatory after generation.
+  Local release promotion is a separate policy effect, so execution pauses for
+  explicit authorization before changing `plugins/dev-flow`; no cache,
+  consumer project, installation, publication, Git, or archive effect ran.
+- 2026-08-08: The user explicitly authorized the one-time local DevFlow
+  release promotion. This authority is limited to generating the checked-in
+  `plugins/dev-flow` counterpart from the already verified source and will be
+  consumed immediately after that apply. It does not authorize installation,
+  installed-cache refresh, consumer-project apply, publication, archive,
+  commit, push, or PR creation. CF-6 returns to verified execution state and
+  proceeds to the release gate and final validation.
+- 2026-08-08: The one-time release gate returned `synced`: it copied the
+  revision-10 Project Refresh Contract and Fleet-aware `codex-updater` Skill
+  into `plugins/dev-flow` and regenerated the managed DevFlow runtime metadata.
+  The gate reported its repo/target-bound authorization as `consumed`;
+  `release_allowed` is false again. Final release/runtime/Skill validation is
+  now in progress and no live cache, project, publication, installation, or Git
+  effect occurred.
+- 2026-08-08: CF-6 task 6.3 is GREEN. Source and release
+  `codex-updater/SKILL.md` are byte-identical, the public packaged-Skill route
+  test passes, and release runtime verification passes 301/301 checks. One
+  initially failing assertion was a test-only raw-whitespace match across a
+  Markdown line wrap; normalizing whitespace at the public text seam preserved
+  the exact behavioral requirement without changing or re-promoting the Skill.
+- 2026-08-08: CF-6 final review repaired two required public-contract gaps:
+  non-object marketplace/plugin metadata now returns structured
+  `identity_unavailable` blockers instead of traceback, and lock promotion in a
+  mixed stateful/stateless profile explicitly depends on every cache and
+  project verification terminal. Their focused RED/GREEN tests pass and the
+  final Fleet suite passes 33/33.
+- 2026-08-08: CF-6 and `add-codex-fleet-sync` are complete. Full DevFlow
+  discovery passes 556/556, release runtime passes 301/301, source/release
+  updater Skill bytes match, target release sync is `current`, Plugin Eval is
+  100/100 A with zero failures/warnings, strict OpenSpec is 50/50, dependency
+  and workflow gates pass, and `git diff --check` is clean. The required
+  read-only updater diagnosis confirms the new release is intentionally ahead
+  of the unauthorized installed DevFlow cache while project migration remains
+  `current`. Evidence is
+  `.planning/devflow/verification/20260808-codex-fleet-skill-front-door.md`.
+  No install, cache/project refresh, publication, archive, commit, push, or PR
+  occurred.

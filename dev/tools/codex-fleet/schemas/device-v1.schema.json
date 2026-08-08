@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cy-codex-skills.local/codex-fleet/device-v1.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "codexHome": {"type": "string"},
+    "manifestSha256": {"type": "string"},
+    "marketplaces": {"additionalProperties": {"type": "object"}, "type": "object"},
+    "profile": {"type": "string"},
+    "projects": {"additionalProperties": {"type": "object"}, "type": "object"},
+    "schemaVersion": {"const": "1.0"}
+  },
+  "required": ["schemaVersion", "profile", "manifestSha256", "codexHome", "marketplaces", "projects"],
+  "type": "object"
+}

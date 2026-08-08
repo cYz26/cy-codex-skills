@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cy-codex-skills.local/codex-fleet/receipt-v1.schema.json",
+  "additionalProperties": true,
+  "properties": {
+    "afterIdentities": {"type": "object"},
+    "beforeIdentities": {"type": "object"},
+    "changedManagedFiles": {"items": {"type": "string"}, "type": "array"},
+    "identities": {"type": "object"},
+    "kind": {"const": "codex-fleet-receipt"},
+    "lockChange": {"type": "object"},
+    "manualActions": {"items": {"type": "object"}, "type": "array"},
+    "nonReversibleEffects": {"items": {"type": "object"}, "type": "array"},
+    "ok": {"type": "boolean"},
+    "plan": {"type": "object"},
+    "planSha256": {"type": "string"},
+    "projectResults": {"items": {"type": "object"}, "type": "array"},
+    "receiptSha256": {"type": "string"},
+    "results": {"items": {"type": "object"}, "type": "array"},
+    "restart": {
+      "properties": {
+        "guidance": {"minLength": 1, "type": "string"},
+        "required": {"type": "boolean"},
+        "scope": {"const": "codex-session"}
+      },
+      "required": ["required", "scope", "guidance"],
+      "type": "object"
+    },
+    "restartRequired": {"type": "boolean"},
+    "schemaVersion": {"const": "1.0"},
+    "status": {"type": "string"}
+  },
+  "required": [
+    "schemaVersion",
+    "kind",
+    "ok",
+    "status",
+    "planSha256",
+    "plan",
+    "results",
+    "beforeIdentities",
+    "afterIdentities",
+    "identities",
+    "projectResults",
+    "changedManagedFiles",
+    "lockChange",
+    "nonReversibleEffects",
+    "manualActions",
+    "restartRequired",
+    "restart",
+    "receiptSha256"
+  ],
+  "type": "object"
+}

@@ -2245,11 +2245,11 @@ class ProjectRefreshTests(unittest.TestCase):
             {"rollback_blocked_zero_writes"},
         )
 
-    def test_revision_nine_schema_eight_migration_preserves_unrelated_configuration(self):
+    def test_revision_ten_retains_schema_eight_migration_behavior(self):
         manifest = json.loads(
             (PLUGIN_ROOT / ".codex-plugin" / "project-migration.json").read_text()
         )
-        self.assertEqual(manifest["refreshContract"]["revision"], 9)
+        self.assertEqual(manifest["refreshContract"]["revision"], 10)
         self.assertEqual(manifest["projectSchema"]["head"], 8)
         self.assertIn("full-openspec-v2-to-v3", refresh_module.MIGRATION_STEP_REGISTRY)
         self.assertIn("full-openspec-v3-to-v4", refresh_module.MIGRATION_STEP_REGISTRY)

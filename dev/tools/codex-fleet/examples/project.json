@@ -1,0 +1,9 @@
+{
+  "adopted": true,
+  "managedPlugins": [
+    "dev-flow@cy-codex-skills"
+  ],
+  "profile": "stable",
+  "projectId": "game0724",
+  "schemaVersion": "1.0"
+}

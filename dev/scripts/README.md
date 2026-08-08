@@ -54,3 +54,20 @@ Agent Reach is deprecated in this repository and is not recommended for new use;
 it is intentionally excluded from automatic update planning.
 
 Use Python 3.11 or newer; the script uses the standard-library `tomllib` module.
+
+## Codex Fleet Sync
+
+Use the independent declarative reconciler when the desired scope is only
+managed marketplace snapshots, installed plugin caches, and explicitly adopted
+project state:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3.12 dev/scripts/codex_fleet.py sync --json
+```
+
+It is dry-run by default. `sync --apply` converges to the existing portable
+lock; `sync --apply --advance-lock` explicitly advances managed Git snapshots.
+See `dev/tools/codex-fleet/README.md` for bootstrap, additional-device,
+authorization, receipt, verification, and rollback behavior. This narrower CLI
+does not inherit Codex application, external dependency, mirror, cleanup,
+release, or Git publication maintenance from the legacy broad updater.

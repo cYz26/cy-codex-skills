@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cy-codex-skills.local/codex-fleet/lock-v1.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "manifestSha256": {"type": "string"},
+    "marketplaces": {"additionalProperties": {"type": "object"}, "type": "object"},
+    "plugins": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "treeSha256": {"type": "string"},
+          "version": {"type": "string"}
+        },
+        "required": ["version", "treeSha256"],
+        "type": "object"
+      },
+      "type": "object"
+    },
+    "schemaVersion": {"const": "1.0"}
+  },
+  "required": ["schemaVersion", "manifestSha256", "marketplaces", "plugins"],
+  "type": "object"
+}
