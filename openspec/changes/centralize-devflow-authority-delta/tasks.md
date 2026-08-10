@@ -87,14 +87,14 @@ All items are owned by the primary agent unless an item explicitly names an inde
 
 ## 8. Execute the preauthorized milestone external effects
 
-- [ ] 8.1 Stage only the frozen candidate, verify the index manifest is exact and secret/blocker-free, create one `feat(dev-flow): centralize authority-delta execution` commit, and record commit/tree readback.
-- [ ] 8.2 Revalidate `origin`, `refs/heads/main`, expected base, and fast-forward ancestry; push exactly the candidate commit without force and require remote branch readback to equal it.
-- [ ] 8.3 Verify the tagged commit contains the reviewed publication workflow/assets contract, prove no conflicting tag/release exists, create/push immutable `dev-flow-v0.4.0`, and read back its exact commit.
-- [ ] 8.4 Observe the canonical GitHub Actions publication, perform at most the contract's one same-identity diagnosis/remediation if needed, and require public Release/tag/version/state/asset name/size/SHA-256 readback before any refresh.
-- [ ] 8.5 Fast-forward only the named clean DevFlow source checkout to the published commit, refresh only `dev-flow@cy-codex-skills`, and record target-specific marketplace/cache plan/apply/verify receipts.
-- [ ] 8.6 Run project migration plan/apply/verify only for `/Users/cy/Dev/agents-dev/cy-codex-skills`, then prove source/release/published/cache/project five-layer identity and terminal milestone receipt consistency.
+- [x] 8.1 Stage only the frozen candidate, verify the index manifest is exact and secret/blocker-free, create one `feat(dev-flow): centralize authority-delta execution` commit, and record commit/tree readback.
+- [x] 8.2 Revalidate `origin`, `refs/heads/main`, expected base, and fast-forward ancestry; push exactly the candidate commit without force and require remote branch readback to equal it.
+- [x] 8.3 Verify the tagged commit contains the reviewed publication workflow/assets contract, prove no conflicting tag/release exists, create/push immutable `dev-flow-v0.4.0`, and read back its exact commit.
+- [x] 8.4 Observe the canonical GitHub Actions publication, perform at most the contract's one same-identity diagnosis/remediation if needed, and require public Release/tag/version/state/asset name/size/SHA-256 readback before any refresh.
+- [x] 8.5 Fast-forward only the named clean DevFlow source checkout to the published commit, refresh only `dev-flow@cy-codex-skills`, and record target-specific marketplace/cache plan/apply/verify receipts.
+- [x] 8.6 Run project migration plan/apply/verify only for `/Users/cy/Dev/agents-dev/cy-codex-skills`, then prove source/release/published/cache/project five-layer identity and terminal milestone receipt consistency.
 
 ## 9. Completion evidence without archive
 
 - [x] 9.1 Freeze tracked workflow state before the reviewed commit with matching `external_effects` stage/status and current standing/evidence digests; after commit, treat the verified terminal receipt as authoritative completion evidence without creating a second tracked diff/commit. Prove zero unresolved blockers, zero false Human Gates, and no duplicate effects.
-- [ ] 9.2 Report the milestone commit, remote branch/tag readbacks, GitHub Release and asset hashes, cache/project refresh receipts, five-layer identities, validation/Plugin Eval/review results, compatibility impact, and residual risks; do not create a PR, merge, force-push, archive the change, or refresh an unnamed consumer.
+- [x] 9.2 Report the milestone commit, remote branch/tag readbacks, GitHub Release and asset hashes, cache/project refresh receipts, five-layer identities, validation/Plugin Eval/review results, compatibility impact, and residual risks; do not create a PR, merge, force-push, archive the change, or refresh an unnamed consumer.
