@@ -30,7 +30,7 @@ authoritative and OpenSpec is canonical.
    cover Target State, Completion Contract, Capability Slices, Execution
    Ledger, Acceptance Criteria, Validation Commands, risks, rollback, Critical
    Path, Incidental Finding Budget, Escalation Triggers, default continuation
-   policy, and genuine Human Gates.
+   policy, authority deltas, genuine Human Gates, and exact standing effects.
    For DevFlow changes, include Project Refresh Impact as `changed`,
    `verified-unchanged`, or `not-applicable`, with the inspected surfaces,
    project-schema decision, refresh-contract revision/digest, migration and

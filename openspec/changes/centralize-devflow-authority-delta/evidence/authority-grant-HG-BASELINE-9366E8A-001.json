@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "devflow-authority-grant",
+  "status": "approved",
+  "decisionId": "HG-BASELINE-9366E8A-001",
+  "goalId": "019fdf0e-4539-7f93-88db-8574f952c115",
+  "changeId": "centralize-devflow-authority-delta",
+  "gateKey": "sha256:ffae4a986d53a71919fef19cfcc9ec35bc651220ca78b109b30c949b4c7bbb18",
+  "priorReceiptSha256": "sha256:f252b7dca13a96459937384c178924fe08ed169806f880a9c7129d0f5d1421fb",
+  "priorAuthorityContractSha256": "sha256:48e6cf2d03e0a90423cba8e9a77d26f415716f51dba9e5862114a726b329869b",
+  "priorEvidenceSha256": "sha256:9b1e12856911eb7d4c1fef0fcc3d6e8c68e0ae0b5ad25d68bfa4f817077ae4bb",
+  "grantedAuthority": [
+    "standing_milestone.contract"
+  ],
+  "repositoryExpectedBase": "9366e8ae63752a9ce86bd52a814233ca74edc16e",
+  "reconciliation": {
+    "overlapCount": 10,
+    "required": [
+      "exact-base reconstruction",
+      "Task 7.7 validation",
+      "Task 7.8 Spec review P0=0/P1=0",
+      "Task 7.8 Standards review P0=0/P1=0",
+      "candidate and standing refreeze",
+      "transport readback before mutation"
+    ],
+    "excluded": [
+      "merge",
+      "rebase",
+      "force-push",
+      "PR",
+      "archive",
+      "unnamed refresh"
+    ]
+  },
+  "downstreamAuthority": {
+    "unchanged": true,
+    "effects": [
+      "git.commit",
+      "git.push",
+      "git.tag.push",
+      "github.release",
+      "devflow.source.fast_forward",
+      "codex.cache.refresh",
+      "devflow.project.refresh"
+    ]
+  }
+}

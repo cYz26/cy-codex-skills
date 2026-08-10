@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import re
 from pathlib import Path
 from typing import Any, Optional
 
@@ -16,6 +18,7 @@ from workflow_implementation_readiness import (
 from workflow_mode_routing import read_workflow_mode_config
 from workflow_paths import repo_path
 from workflow_state import parse_state, resolve_state
+from workflow_standing_milestone import resolve_standing_milestone
 
 
 def validate_workflow_state(
@@ -30,6 +33,8 @@ def validate_workflow_state(
     check_required_roots(repo, issues)
     check_agents_guidance(repo, issues, warnings)
     state = read_state_or_issue(repo, issues, warnings)
+    check_authority_gate_state(repo, state, issues)
+    check_standing_milestone_state(repo, state, issues)
     check_workflow_config(repo, issues)
     check_change(repo, state, issues, warnings)
     check_compact_state(repo, state, issues, warnings)
@@ -142,6 +147,90 @@ def read_state_or_issue(
         )
         return resolution["data"]
     return parse_state(repo)
+
+
+def check_authority_gate_state(
+    repo: Path,
+    state: dict[str, Any],
+    issues: list[str],
+) -> None:
+    stage_awaiting = str(state.get("current_stage") or "") == "awaiting_human"
+    change = state.get("current_change", {})
+    change_awaiting = bool(
+        isinstance(change, dict) and str(change.get("status") or "") == "awaiting_human"
+    )
+    if stage_awaiting != change_awaiting:
+        issues.append(
+            "Human Gate awaiting markers disagree: current_stage and "
+            "current_change.status must change together"
+        )
+        return
+
+    gate = state.get("authority_gate", {})
+    if not isinstance(gate, dict):
+        gate = {}
+    active = str(gate.get("status") or "") == "active"
+    if not stage_awaiting:
+        if active:
+            issues.append("Active authority gate requires both awaiting_human markers")
+        return
+
+    gate_key = str(gate.get("key") or "")
+    missing = gate.get("missing_authority")
+    if not active or not re.fullmatch(r"sha256:[0-9a-f]{64}", gate_key):
+        issues.append(
+            "Awaiting Human Gate requires an active authority gate with a valid gate key"
+        )
+        return
+    if not isinstance(missing, list) or not missing or not all(
+        isinstance(item, str) and item.strip() for item in missing
+    ):
+        issues.append(
+            "Awaiting Human Gate requires concrete non-empty missing authority"
+        )
+        return
+
+    receipt_path = (
+        repo
+        / ".planning"
+        / "devflow"
+        / "authority-gates"
+        / f"{gate_key.removeprefix('sha256:')}.json"
+    )
+    try:
+        receipt = json.loads(receipt_path.read_text())
+    except (OSError, json.JSONDecodeError):
+        issues.append("Awaiting Human Gate is missing its valid authority gate receipt")
+        return
+    if (
+        not isinstance(receipt, dict)
+        or receipt.get("gateKey") != gate_key
+        or receipt.get("missingAuthority") != missing
+    ):
+        issues.append("Authority gate state and receipt identity do not match")
+
+
+def check_standing_milestone_state(
+    repo: Path,
+    state: dict[str, Any],
+    issues: list[str],
+) -> None:
+    standing = state.get("standing_milestone", {})
+    if not isinstance(standing, dict):
+        issues.append("Standing milestone state must be a mapping")
+        return
+    status = str(standing.get("status") or "inactive")
+    if status == "inactive":
+        return
+    effect = "release.promote_local" if status == "declared" else "git.commit"
+    resolution = resolve_standing_milestone(
+        repo,
+        state,
+        requested_effect=effect,
+    )
+    if resolution.get("decision") != "CONTINUE":
+        reasons = ",".join(map(str, resolution.get("reasonCodes", []))) or "unknown"
+        issues.append(f"Standing milestone contract is not current: {reasons}")
 
 
 def check_workflow_config(repo: Path, issues: list[str]) -> None:

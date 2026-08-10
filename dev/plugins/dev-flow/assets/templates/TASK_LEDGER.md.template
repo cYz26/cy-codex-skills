@@ -35,6 +35,8 @@ these fields:
 - validation_commands: pending
 - stop_conditions: pending
 - knowledge_update_target: none
+- standing_milestone_contract: none
+- standing_milestone_exclusions: archive, pr, merge, force-push, unnamed-targets
 
 ## Capability Routing
 
@@ -60,3 +62,15 @@ cleanup receipt in task evidence before closing the item.
 ## Execution Log
 
 - No task evidence recorded yet.
+
+## Authority-Delta Log
+
+Record resolver decision, request/authority/evidence digests, concrete
+`missingAuthority`, deterministic gate key when applicable, and the reused
+standing milestone identity. Technical repair stops never write awaiting state.
+
+## Milestone External Effects Log
+
+For a declared milestone, record the frozen candidate/review/validation
+digests, exact index, commit/remote/tag/publication readbacks, asset SHA-256,
+named cache/project receipts, and source/release/published/cache/project parity.

@@ -11,6 +11,7 @@ from workflow_planning_paths import atomic_write_devflow, release_verification_r
 from workflow_implementation_readiness import repository_mutation_gate
 from workflow_project_refresh import project_refresh_contract_snapshot
 from workflow_state import resolve_state, trusted_repo_regular_file
+from workflow_standing_milestone import resolve_standing_milestone
 
 
 SCHEMA_VERSION = 1
@@ -92,6 +93,39 @@ PROJECT_REFRESH_REVISION8_REQUIRED_INPUTS = {
 PROJECT_REFRESH_REVISION9_REQUIRED_INPUTS = {
     "fixtures/project-refresh/file-source-fingerprint-cases-v9.json",
 }
+PROJECT_REFRESH_REVISION10_REQUIRED_INPUTS = {
+    "assets/templates/AGENT_TASK_CONTRACT.md.template",
+    "assets/templates/ENGINEERING_POLICY.md.template",
+    "assets/templates/STATE.md.template",
+    "docs/dev-flow-release-policy.json",
+    "docs/side_effect_policy.json",
+    "fixtures/project-refresh/authority-milestone-cases-v10.json",
+    "schemas/authority-delta-resolution-v1.schema.json",
+    "schemas/authority-gate-receipt-v1.schema.json",
+    "schemas/milestone-candidate-manifest-v1.schema.json",
+    "schemas/milestone-effect-receipt-v1.schema.json",
+    "schemas/milestone-external-effects-contract-v1.schema.json",
+    "schemas/milestone-review-evidence-v1.schema.json",
+    "schemas/milestone-review-receipt-v1.schema.json",
+    "schemas/milestone-terminal-receipt-v1.schema.json",
+    "schemas/milestone-validation-evidence-v1.schema.json",
+    "schemas/milestone-validation-receipt-v1.schema.json",
+    "scripts/authority_gate.py",
+    "scripts/milestone_external_effects.py",
+    "scripts/workflow_authority_delta.py",
+    "scripts/workflow_authority_gate.py",
+    "scripts/workflow_continuation.py",
+    "scripts/workflow_milestone_contract.py",
+    "scripts/workflow_milestone_external_effects.py",
+    "scripts/workflow_milestone_real_boundaries.py",
+    "scripts/workflow_side_effect_policy.py",
+    "scripts/workflow_standing_milestone.py",
+    "scripts/workflow_state.py",
+    "scripts/workflow_validate.py",
+}
+PROJECT_REFRESH_REVISION11_REQUIRED_INPUTS = {
+    "fixtures/project-refresh/standing-execution-cases-v11.json",
+}
 PROJECT_REFRESH_PARITY_FILES = (
     ".codex-plugin/project-migration.json",
     "skills/dev-flow-refresh/SKILL.md",
@@ -150,6 +184,7 @@ def analyze_project_refresh_impact(
     baseline_root: Path | None = None,
     *,
     expected_change: str | None = None,
+    allow_same_change_repromotion: bool = False,
 ) -> dict[str, Any]:
     source_root = Path(source_root).expanduser().resolve()
     baseline_root = Path(baseline_root).expanduser().resolve() if baseline_root is not None else None
@@ -237,6 +272,10 @@ def analyze_project_refresh_impact(
         required_inputs.update(PROJECT_REFRESH_REVISION8_REQUIRED_INPUTS)
     if source_revision >= 9:
         required_inputs.update(PROJECT_REFRESH_REVISION9_REQUIRED_INPUTS)
+    if source_revision >= 10:
+        required_inputs.update(PROJECT_REFRESH_REVISION10_REQUIRED_INPUTS)
+    if source_revision >= 11:
+        required_inputs.update(PROJECT_REFRESH_REVISION11_REQUIRED_INPUTS)
     for relative in sorted(required_inputs - tracked_set):
         errors.append(f"refresh_required_input_missing:{relative}")
     config_targets = source_document.get("configTargets")
@@ -275,7 +314,24 @@ def analyze_project_refresh_impact(
         ]
         + manifest_config_sensitive
     )
-    if changed_inputs and source_revision <= baseline_revision:
+    baseline_evidence = (
+        baseline_refresh.get("evidence")
+        if isinstance(baseline_refresh, dict)
+        else None
+    )
+    same_change_repromotion = bool(
+        allow_same_change_repromotion
+        and changed_inputs
+        and expected_change
+        and source_revision == baseline_revision
+        and source_head == baseline_head
+        and not config_sensitive
+        and not manifest_changed
+        and evidence.get("changeId") == expected_change
+        and isinstance(baseline_evidence, dict)
+        and baseline_evidence.get("changeId") == expected_change
+    )
+    if changed_inputs and source_revision <= baseline_revision and not same_change_repromotion:
         errors.append("tracked_change_requires_refresh_revision_advance")
     if manifest_changed and source_revision <= baseline_revision:
         errors.append("manifest_change_requires_refresh_revision_advance")
@@ -326,6 +382,7 @@ def analyze_project_refresh_impact(
             baseline_contract_digest is not None
             and source_contract_digest != baseline_contract_digest
         ),
+        "sameChangeRepromotion": same_change_repromotion,
         "changedInputs": changed_inputs,
         "configSensitiveChanges": config_sensitive,
         "migrationCoverage": coverage,
@@ -559,6 +616,7 @@ def record_release_verification(
             repo / "dev" / "plugins" / target,
             repo / "plugins" / target,
             expected_change=change,
+            allow_same_change_repromotion=True,
         )
     checks = {
         "development": check_record(development_command, development_result),
@@ -631,6 +689,7 @@ def verify_release_verification(repo: Path, target: str, change: str) -> dict[st
                 repo / "dev" / "plugins" / target,
                 repo / "plugins" / target,
                 expected_change=change,
+                allow_same_change_repromotion=True,
             )
             if not current_impact["ok"]:
                 return verification_report(
@@ -653,6 +712,7 @@ def verify_release_verification(repo: Path, target: str, change: str) -> dict[st
                 "sourceRefreshContractDigest",
                 "baselineRefreshContractDigest",
                 "refreshContractDigestChanged",
+                "sameChangeRepromotion",
                 "changedInputs",
                 "configSensitiveChanges",
                 "migrationCoverage",
@@ -695,7 +755,24 @@ def release_promotion_readiness(
     )
     if not evidence.get("ready"):
         blockers.append("fresh_complete_release_verification")
-    if require_authorization and not bool(gates.get("release_allowed")):
+    standing_resolution: dict[str, Any] | None = None
+    standing = state.get("standing_milestone", {})
+    if isinstance(standing, dict) and str(standing.get("status") or "inactive") in {
+        "declared",
+        "current",
+    }:
+        standing_resolution = resolve_standing_milestone(
+            repo,
+            state,
+            requested_effect="release.promote_local",
+            requested_target=f"plugins/{target}",
+        )
+    standing_authorized = bool(
+        standing_resolution and standing_resolution.get("decision") == "CONTINUE"
+    )
+    if require_authorization and not (
+        bool(gates.get("release_allowed")) or standing_authorized
+    ):
         blockers.append("durable_release_authorization")
     implementation_readiness = repository_mutation_gate(
         repo,
@@ -712,7 +789,9 @@ def release_promotion_readiness(
         "stateGates": gates,
         "evidence": evidence,
         "blockers": sorted(set(blockers)),
-        "durableReleaseAuthorization": bool(gates.get("release_allowed")),
+        "durableReleaseAuthorization": bool(gates.get("release_allowed")) or standing_authorized,
+        "legacyReleaseAuthorization": bool(gates.get("release_allowed")),
+        "standingMilestoneAuthorization": standing_resolution,
         "implementationReadiness": implementation_readiness,
     }
 

@@ -37,9 +37,14 @@ DevFlow owns implementation planning; architecture work may use
    incidental work.
 6. Incidental Finding Budget — normally one bounded RED/GREEN cycle inside the
    approved contract and write set.
-7. Escalation Triggers — scope, authority, dependency, schema, migration,
-   public behavior, architecture, external effect, destructive work, or write-
-   set expansion that requires replanning or human approval.
+7. Escalation Triggers (Authority Delta) — separate technical repair from
+   concrete missing permission/risk; bind standing milestones to exact effects
+   and targets.
+   For model execution, define Standing Goal Execution Authority with exact
+   task/provider/model/existing-auth credential policy/cost policy/serial
+   identity. State that a one-use attempt receipt is technical evidence rather
+   than one-use permission; record actual monetary cost without per-call
+   confirmation, and route non-blocking related work to `DEFER_AND_CONTINUE`.
 8. Capability Slices — dependency-ordered, production-complete slices; each
    includes implementation, validation, and cleanup.
 9. Execution Ledger — owner, write set, status, evidence, and human gate.
@@ -48,8 +53,8 @@ DevFlow owns implementation planning; architecture work may use
     Gate. A phase label alone is not a gate.
 11. Generated Artifact Strategy — state whether disposable output exists. When
     it does, define pre-creation registration, a task/run isolated root or
-    constrained adjacent scope, owner exit, retention, exact cleanup, receipt,
-    and Human Gate behavior.
+    constrained adjacent scope, owner exit, retention, receipt, exact
+    `AUTO_CLEAN`, repair, and Human Gate behavior.
 12. Validation Commands — focused, broad, runtime, docs, and release checks.
 13. Project Refresh Impact — for DevFlow changes, record disposition, inspected
     surfaces, schema decision, contract revision/digest, migration/fixture

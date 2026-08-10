@@ -15,7 +15,7 @@ migrations, stale project-local skill links, or missing migration state, but
 they do not edit `AGENTS.md`, `.agents/skills`, legacy `.codex/skills`,
 `openspec/`, `.planning/`, or project scripts.
 
-Project mutation requires explicit user intent to migrate/apply. Retired
+Project writes require exact direct or named-standing authority. Retired
 workflow configuration requires its own `workflow-config-migration`
 authorization; ordinary compatibility apply never has it.
 
@@ -52,7 +52,7 @@ and source contract identity.
 
 ## Ordinary Apply
 
-Run ordinary project apply only when the user explicitly authorizes migration:
+Apply only with current direct or named-standing authority:
 
 ```bash
 python3 scripts/plugin_project_migration.py --repo <repo> --apply --json
@@ -70,7 +70,7 @@ legacy `.codex/skills` remain migration inputs and are not auto-deleted.
 
 ## Versioned Apply, Verify, and Rollback
 
-Apply a reviewed plan with explicit authorizations and optional repeated
+Apply a reviewed plan with exact current authorizations and optional repeated
 `--action` selections:
 
 ```bash
@@ -90,6 +90,8 @@ move exact file, symlink, or trusted-tree preimages into deterministic retained
 quarantine and are family-closed: select every action in a reported family or
 none. Ambiguous, mixed-ownership, historical, user-authored, or unclassified
 paths remain manual/preserved and are never imported into either authority.
+
+Standing authority never widens a plan; identity/action drift stops.
 
 The executor preflights the complete selected transaction, stages in an
 isolated project-local root, promotes deterministically, verifies, advances

@@ -39,6 +39,22 @@
 - Ordinary implementation authority: <independent gate result>
 - Issue codes / next action: <none or exact values>
 
+## Authority-Delta Resolution
+
+- Decision: CONTINUE / CONTINUE_WITH_MINIMAL_GUARD / DEFER_AND_CONTINUE /
+  WAIT_OWNER / AUTO_CLEAN / FAIL_CLOSED_REPAIR / AWAIT_HUMAN
+- Request / authority / evidence digests: <sha256 values>
+- Missing authority and gate key: <none, or one concrete bound gate>
+- Awaiting markers written: <false unless AWAIT_HUMAN with a gate receipt>
+
+## Milestone External Effects
+
+- Standing contract / candidate / validation / review digests: <values or n/a>
+- Commit / branch / tag readbacks: <values or n/a>
+- Publication assets and SHA-256 readback: <values or n/a>
+- Cache / project receipt paths: <values or n/a>
+- Five-layer identity: <source/release/published/cache/project or n/a>
+
 ## Risks / Gaps
 
 - none

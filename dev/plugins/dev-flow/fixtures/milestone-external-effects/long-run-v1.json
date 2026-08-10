@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "1.0",
+  "simulationId": "dev-flow-authority-delta-28-events",
+  "contractFixture": "standing-contract-v1.json",
+  "events": [
+    {"id": "LR-01", "stage": "ORDINARY_SLICE_CONTINUED", "decision": "CONTINUE", "dependsOn": []},
+    {"id": "LR-02", "stage": "MINIMAL_GUARD_RED", "decision": "CONTINUE_WITH_MINIMAL_GUARD", "dependsOn": ["LR-01"]},
+    {"id": "LR-03", "stage": "MINIMAL_GUARD_GREEN", "decision": "CONTINUE", "dependsOn": ["LR-02"]},
+    {"id": "LR-04", "stage": "DERIVED_EVIDENCE_REFRESHED", "decision": "CONTINUE", "dependsOn": ["LR-03"]},
+    {"id": "LR-05", "stage": "OWNER_WAITED", "decision": "WAIT_OWNER", "dependsOn": ["LR-04"]},
+    {"id": "LR-06", "stage": "OWNER_EXITED", "decision": "CONTINUE", "dependsOn": ["LR-05"]},
+    {"id": "LR-07", "stage": "AUTO_CLEAN_PLANNED", "decision": "AUTO_CLEAN", "dependsOn": ["LR-06"]},
+    {"id": "LR-08", "stage": "AUTO_CLEAN_VERIFIED", "decision": "CONTINUE", "dependsOn": ["LR-07"]},
+    {"id": "LR-09", "stage": "CONTRACT_VALIDATED", "decision": "CONTINUE", "dependsOn": ["LR-08"]},
+    {"id": "LR-10", "stage": "LOCAL_RELEASE_PROMOTED", "decision": "CONTINUE", "dependsOn": ["LR-09"]},
+    {"id": "LR-11", "stage": "FOCUSED_VALIDATION_CURRENT", "decision": "CONTINUE", "dependsOn": ["LR-10"]},
+    {"id": "LR-12", "stage": "BROAD_VALIDATION_CURRENT", "decision": "CONTINUE", "dependsOn": ["LR-11"]},
+    {"id": "LR-13", "stage": "DEVFLOW_VALIDATORS_CURRENT", "decision": "CONTINUE", "dependsOn": ["LR-12"]},
+    {"id": "LR-14", "stage": "SOURCE_RELEASE_PARITY_CURRENT", "decision": "CONTINUE", "dependsOn": ["LR-13"]},
+    {"id": "LR-15", "stage": "PLUGIN_EVAL_CURRENT", "decision": "CONTINUE", "dependsOn": ["LR-14"]},
+    {"id": "LR-16", "stage": "REVIEW_CURRENT", "decision": "CONTINUE", "dependsOn": ["LR-15"]},
+    {"id": "LR-17", "stage": "CANDIDATE_FROZEN", "decision": "CONTINUE", "dependsOn": ["LR-16"]},
+    {"id": "LR-18", "stage": "INDEX_EXACT", "decision": "CONTINUE", "dependsOn": ["LR-17"]},
+    {"id": "LR-19", "stage": "COMMITTED", "decision": "CONTINUE", "dependsOn": ["LR-18"], "externalEffect": "git.commit"},
+    {"id": "LR-20", "stage": "PUSH_PREFLIGHT_CURRENT", "decision": "CONTINUE", "dependsOn": ["LR-19"]},
+    {"id": "LR-21", "stage": "PUSHED_READBACK_CURRENT", "decision": "CONTINUE", "dependsOn": ["LR-20"], "externalEffect": "git.push"},
+    {"id": "LR-22", "stage": "TAGGED_READBACK_CURRENT", "decision": "CONTINUE", "dependsOn": ["LR-21"], "externalEffect": "git.tag.push"},
+    {"id": "LR-23", "stage": "PUBLISHED_READBACK_CURRENT", "decision": "CONTINUE", "dependsOn": ["LR-22"], "externalEffect": "github.release"},
+    {"id": "LR-24", "stage": "SOURCE_FAST_FORWARDED", "decision": "CONTINUE", "dependsOn": ["LR-23"], "externalEffect": "devflow.source.fast_forward"},
+    {"id": "LR-25", "stage": "CACHE_REFRESHED", "decision": "CONTINUE", "dependsOn": ["LR-24"], "externalEffect": "codex.cache.refresh"},
+    {"id": "LR-26", "stage": "PROJECT_REFRESHED", "decision": "CONTINUE", "dependsOn": ["LR-25"], "externalEffect": "devflow.project.refresh"},
+    {"id": "LR-27", "stage": "FIVE_LAYER_VERIFIED", "decision": "CONTINUE", "dependsOn": ["LR-26"]},
+    {"id": "LR-28", "stage": "COMPLETE", "decision": "CONTINUE", "dependsOn": ["LR-27"]}
+  ],
+  "crashInjectionAfter": [
+    "LR-19",
+    "LR-21",
+    "LR-22",
+    "LR-23",
+    "LR-24",
+    "LR-25",
+    "LR-26"
+  ],
+  "injectedFailures": [
+    {"id": "F-AMBIGUOUS-REF", "at": "LR-09", "kind": "contract_ambiguity", "expectedDecision": "AWAIT_HUMAN", "expectedMissingAuthority": "repository.ref", "expectedMutationCount": 0},
+    {"id": "F-REVIEW-DRIFT", "at": "LR-17", "kind": "reviewed_diff_drift", "expectedDecision": "FAIL_CLOSED_REPAIR", "expectedMissingAuthority": null, "expectedMutationCount": 0},
+    {"id": "F-REMOTE-DIVERGENCE", "at": "LR-20", "kind": "remote_divergence", "expectedDecision": "AWAIT_HUMAN", "expectedMissingAuthority": "repository.expectedBase", "expectedMutationCount": 0},
+    {"id": "F-TAG-COLLISION", "at": "LR-22", "kind": "tag_collision", "expectedDecision": "AWAIT_HUMAN", "expectedMissingAuthority": "publication.tag", "expectedMutationCount": 0},
+    {"id": "F-UNNAMED-REFRESH", "at": "LR-25", "kind": "undeclared_refresh_target", "expectedDecision": "AWAIT_HUMAN", "expectedMissingAuthority": "refreshTargets.cache", "expectedMutationCount": 0}
+  ]
+}

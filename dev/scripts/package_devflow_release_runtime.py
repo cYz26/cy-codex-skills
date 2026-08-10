@@ -8,7 +8,6 @@ import hashlib
 import json
 import re
 import stat
-import subprocess
 import sys
 import zipfile
 
@@ -20,14 +19,16 @@ ARCHIVE_NAME = "devflow_runtime.pyz"
 MANIFEST_NAME = "devflow_runtime.MANIFEST.json"
 SHA256_NAME = "devflow_runtime.sha256"
 SOURCE_COMMIT_NAME = "devflow_runtime.SOURCE_COMMIT"
-BUILD_COMMAND = [sys.executable, "dev/scripts/package_devflow_release_runtime.py"]
+BUILD_COMMAND = ["python3", "dev/scripts/package_devflow_release_runtime.py"]
 ENTRYPOINT_SCAN_ROOTS = (
     SOURCE_SCRIPTS.parent / "hooks.json",
     SOURCE_SCRIPTS.parent / "README.md",
     SOURCE_SCRIPTS.parent / "skills",
 )
 PUBLIC_ENTRYPOINT_NAMES = {
+    "authority_gate.py",
     "generated_artifact_lifecycle.py",
+    "milestone_external_effects.py",
     "validate_goal_quality.py",
     "workflow_decision_grilling.py",
 }
@@ -127,32 +128,57 @@ def managed_output_paths(sources: list[Path]) -> list[str]:
 def write_archive(sources: list[Path]) -> Path:
     RELEASE_SCRIPTS.mkdir(parents=True, exist_ok=True)
     archive = RELEASE_SCRIPTS / ARCHIVE_NAME
-    with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as package:
+    with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_STORED) as package:
         for source in sources:
             info = zipfile.ZipInfo(source.name, date_time=(1980, 1, 1, 0, 0, 0))
-            info.compress_type = zipfile.ZIP_DEFLATED
-            info.external_attr = (source.stat().st_mode & 0o777) << 16
+            info.compress_type = zipfile.ZIP_STORED
+            info.create_system = 3
+            info.create_version = 20
+            info.extract_version = 20
+            info.flag_bits = 0
+            info.volume = 0
+            info.reserved = 0
+            info.internal_attr = 0
+            info.external_attr = (stat.S_IFREG | 0o644) << 16
+            info.extra = b""
+            info.comment = b""
             package.writestr(info, source.read_bytes())
     return archive
 
 
 def write_audit_artifacts(sources: list[Path], archive: Path) -> None:
     archive_sha = file_sha256(archive)
-    source_commit = git_source_commit()
+    source_records = [source_record(source) for source in sources]
+    source_tree_sha = hashlib.sha256(
+        json.dumps(
+            source_records,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+    source_identity = f"sha256:{source_tree_sha}"
     manifest = {
-        "schemaVersion": 1,
-        "sourceCommit": source_commit,
+        "schemaVersion": 3,
+        "sourceCommit": source_identity,
+        "sourceIdentity": {
+            "kind": "source-tree",
+            "algorithm": "sha256",
+            "sha256": source_tree_sha,
+        },
+        "sourceTreeSha256": source_tree_sha,
         "buildCommand": BUILD_COMMAND,
         "archive": {
             "path": release_relative_path(archive),
             "sha256": archive_sha,
             "bytes": archive.stat().st_size,
         },
-        "sources": [source_record(source) for source in sources],
+        "sources": source_records,
     }
-    (RELEASE_SCRIPTS / MANIFEST_NAME).write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    (RELEASE_SCRIPTS / MANIFEST_NAME).write_text(
+        json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n"
+    )
     (RELEASE_SCRIPTS / SHA256_NAME).write_text(f"{archive_sha}  {release_relative_path(archive)}\n")
-    (RELEASE_SCRIPTS / SOURCE_COMMIT_NAME).write_text(f"{source_commit}\n")
+    (RELEASE_SCRIPTS / SOURCE_COMMIT_NAME).write_text(f"{source_identity}\n")
 
 
 def source_record(source: Path) -> dict[str, object]:
@@ -169,18 +195,6 @@ def file_sha256(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
-
-
-def git_source_commit() -> str:
-    result = subprocess.run(
-        ["git", "-C", str(REPO_ROOT), "rev-parse", "HEAD"],
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-    if result.returncode == 0:
-        return result.stdout.strip()
-    return "unknown"
 
 
 def repo_relative_path(path: Path) -> str:

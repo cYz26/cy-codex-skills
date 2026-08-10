@@ -45,9 +45,8 @@ from workflow_agent_task_contract import validate_agent_task_contract_file
 from workflow_archive_policy import archive_status
 from workflow_compact_recovery import handle_compact_recovery_event
 from workflow_continuation import (
-    AWAIT_HUMAN,
-    CHECKPOINT_AND_CONTINUE,
     CONTINUE_NEXT_ITEM,
+    FAIL_CLOSED_REPAIR,
     continuation_decision,
 )
 from workflow_release_verification import (
@@ -58,6 +57,8 @@ from workflow_release_verification import (
     PROJECT_REFRESH_REVISION7_REQUIRED_INPUTS,
     PROJECT_REFRESH_REVISION8_REQUIRED_INPUTS,
     PROJECT_REFRESH_REVISION9_REQUIRED_INPUTS,
+    PROJECT_REFRESH_REVISION10_REQUIRED_INPUTS,
+    PROJECT_REFRESH_REVISION11_REQUIRED_INPUTS,
     analyze_project_refresh_impact,
     release_promotion_readiness,
 )
@@ -907,9 +908,9 @@ context_health:
 
         self.assertIn("implementation readiness", pre_edit.stdout.lower())
         self.assertEqual(planning_edit.stdout.strip(), "")
-        self.assertEqual(continuation["action"], CHECKPOINT_AND_CONTINUE)
-        self.assertFalse(continuation["stopAllowed"])
-        self.assertIn("awaiting_human", continuation["nextAction"])
+        self.assertEqual(continuation["action"], FAIL_CLOSED_REPAIR)
+        self.assertTrue(continuation["stopAllowed"])
+        self.assertNotIn("awaiting_human", continuation["nextAction"])
         self.assertFalse(validation["ok"], validation)
         self.assertTrue(any("implementation readiness" in issue.lower() for issue in validation["issues"]))
         self.assertFalse(delegation["ok"], delegation)
@@ -925,7 +926,7 @@ context_health:
             .replace("  status: executing", "  status: awaiting_human")
         )
         persisted = continuation_decision(repo)
-        self.assertEqual(persisted["action"], AWAIT_HUMAN)
+        self.assertEqual(persisted["action"], FAIL_CLOSED_REPAIR)
         self.assertTrue(persisted["stopAllowed"])
 
     def test_validation_preserves_readiness_error_code(self):
@@ -1046,7 +1047,7 @@ context_health:
 
 
 class ImplementationReadinessRegressionTests(unittest.TestCase):
-    def test_revision_ten_retains_schema_eight_and_refresh_inputs(self):
+    def test_revision_eleven_managed_refresh_retains_authority_and_readiness_inputs(self):
         manifest = json.loads(
             (PLUGIN_ROOT / ".codex-plugin" / "project-migration.json").read_text()
         )
@@ -1055,7 +1056,7 @@ class ImplementationReadinessRegressionTests(unittest.TestCase):
         release_root = PLUGIN_ROOT.parents[2] / "plugins" / "dev-flow"
 
         self.assertEqual(manifest["projectSchema"]["head"], 8)
-        self.assertEqual(refresh["revision"], 10)
+        self.assertEqual(refresh["revision"], 11)
         self.assertEqual(refresh["evidence"]["schemaDecision"], "managed-refresh")
         self.assertLessEqual(PROJECT_REFRESH_REVISION3_REQUIRED_INPUTS, tracked)
         self.assertLessEqual(PROJECT_REFRESH_REVISION4_REQUIRED_INPUTS, tracked)
@@ -1064,6 +1065,16 @@ class ImplementationReadinessRegressionTests(unittest.TestCase):
         self.assertLessEqual(PROJECT_REFRESH_REVISION7_REQUIRED_INPUTS, tracked)
         self.assertLessEqual(PROJECT_REFRESH_REVISION8_REQUIRED_INPUTS, tracked)
         self.assertLessEqual(PROJECT_REFRESH_REVISION9_REQUIRED_INPUTS, tracked)
+        self.assertLessEqual(PROJECT_REFRESH_REVISION10_REQUIRED_INPUTS, tracked)
+        self.assertLessEqual(PROJECT_REFRESH_REVISION11_REQUIRED_INPUTS, tracked)
+        self.assertLessEqual(
+            {
+                "schemas/milestone-review-evidence-v1.schema.json",
+                "schemas/milestone-validation-evidence-v1.schema.json",
+                "scripts/workflow_milestone_contract.py",
+            },
+            tracked,
+        )
         for version in (1, 2, 3, 4, 5, 6, 7):
             relative = Path("assets") / "project-refresh" / f"config-v{version}.json"
             with self.subTest(config=relative.as_posix()):
@@ -1074,15 +1085,21 @@ class ImplementationReadinessRegressionTests(unittest.TestCase):
         impact = analyze_project_refresh_impact(
             PLUGIN_ROOT,
             release_root,
-            expected_change="add-codex-fleet-sync",
+            expected_change="centralize-devflow-authority-delta",
+            allow_same_change_repromotion=True,
         )
         self.assertTrue(impact["ok"], impact)
         expected_status = (
-            "current"
-            if impact["sourceRevision"] == impact["baselineRevision"]
-            else "changed_covered"
+            "changed_covered"
+            if impact["sameChangeRepromotion"]
+            or impact["sourceRevision"] > impact["baselineRevision"]
+            else "current"
         )
         self.assertEqual(impact["status"], expected_status)
+        # Revision 11 is a managed guidance/runtime refresh, not a project
+        # configuration migration. Advancing the refresh evidence revision
+        # therefore must not manufacture a configuration-sensitive change or
+        # require a project-schema advance.
         self.assertEqual(impact["configSensitiveChanges"], [])
 
     def test_project_refresh_revision_three_compatibility_matrix_has_live_proofs(self):

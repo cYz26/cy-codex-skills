@@ -66,19 +66,26 @@ membership. It exclusively moves each leaf into the protected DevFlow recovery
 quarantine and verifies the moved inode without a later pathname-based
 unlink/rmdir. A replacement is restored with no-replace semantics and never
 overwritten or deleted. The receipt records every source-to-quarantine mapping.
-Cleanup uses no wildcard, recursive deletion, or symlink following. Physical
-quarantine purge is separate destructive cleanup and requires its own Human
-Gate.
+Cleanup uses no wildcard, recursive deletion, or symlink following. Direct CLI
+use retains the explicit `--apply` safeguard. The trusted continuation
+orchestrator may supply it automatically only after independently recomputing a
+fresh `AUTO_CLEAN` plan and must terminally verify the receipt. Physical
+quarantine purge is separate destructive cleanup and requires its own material
+authority decision.
 
 ## Decisions
 
-- `AUTO_CLEAN`: every invariant passes after owner exit. The orchestrator may
-  invoke explicit `cleanup --apply` and must retain the terminal receipt.
+- `AUTO_CLEAN`: every invariant passes after owner exit. The trusted
+  orchestrator applies the exact guarded cleanup and retains the terminal
+  receipt without opening a Human Gate.
 - `WAIT_OWNER`: the process or lease is active. Wait, then observe and plan
   again; do not delete and do not open a routine Human Gate.
 - `RETAIN`: evidence or promoted output remains under the owning workflow.
-- `HUMAN_GATE`: registration, baseline, ownership, scope, tracked/protected
-  state, identity, membership, or another invariant is missing or unsafe.
+- `HUMAN_GATE`: legacy lifecycle vocabulary for missing or unsafe registration,
+  baseline, ownership evidence, scope, tracked/protected state, identity, or
+  membership. The authority resolver maps repairable cases to
+  `FAIL_CLOSED_REPAIR`; only a concrete material permission/risk delta may
+  persist `AWAIT_HUMAN`.
 
 A failed operating-system move stops immediately and records exact removed,
 quarantined, and remaining entries. It never reports completion or retries
@@ -100,5 +107,6 @@ authority.
 
 Workflow validation, Doctor, review, hooks, and stop policies inspect the
 registered documents and report the decision plus exact next action. They never
-invoke `cleanup --apply`. A post-creation or self-authored document cannot
-convert pre-existing residue into owned output.
+invoke cleanup; only the trusted continuation orchestrator may do so. A
+post-creation or self-authored document cannot convert pre-existing residue
+into owned output.

@@ -74,7 +74,9 @@ The worker must report:
 
 ## Human Gate
 
-The worker must wait for human review before expanding scope, touching
-forbidden files, changing public APIs or compatibility behavior, running
-destructive commands, skipping required validation, or continuing with failing
-tests or unresolved risk notes.
+The worker must stop through the primary agent only when continuing needs a
+concrete new permission or material risk acceptance: scope/write-set expansion,
+a forbidden/shared path, dependency or public-contract change, undeclared
+external/destructive effect, or unresolved ownership/risk. Ordinary failing
+tests, repairable evidence drift, and implementation choices inside this
+contract are fail-closed technical work, not Human Gates.

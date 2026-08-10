@@ -193,11 +193,19 @@ def git_transport_preflight(
     *,
     remote: str = "origin",
     branch: str | None = None,
+    expected_remote_commit: str | None = None,
+    require_fast_forward: bool = False,
     timeout_seconds: float = DEFAULT_GIT_TRANSPORT_TIMEOUT_SECONDS,
     runner: GitRunner = subprocess.run,
 ) -> dict[str, Any]:
     repository = Path(repo).expanduser().resolve()
-    report = _initial_preflight_report(repository, remote, branch)
+    report = _initial_preflight_report(
+        repository,
+        remote,
+        branch,
+        expected_remote_commit=expected_remote_commit,
+        require_fast_forward=require_fast_forward,
+    )
 
     if timeout_seconds <= 0:
         return _block_preflight(report, "invalid_timeout", "timeout must be greater than zero")
@@ -205,6 +213,14 @@ def git_transport_preflight(
         return _block_preflight(report, "invalid_remote_name", "remote name is invalid")
     if branch is not None and not _valid_branch_name(branch):
         return _block_preflight(report, "invalid_branch_name", "branch name is invalid")
+    if expected_remote_commit is not None and not re.fullmatch(
+        r"[0-9a-f]{40}", expected_remote_commit
+    ):
+        return _block_preflight(
+            report,
+            "invalid_expected_remote_commit",
+            "expected remote commit must be a full lowercase SHA-1 object id",
+        )
 
     try:
         _checked_git(
@@ -247,6 +263,39 @@ def git_transport_preflight(
             runner=runner,
             timeout_seconds=timeout_seconds,
         )
+        if (
+            expected_remote_commit is not None
+            and report["remoteCommit"] != expected_remote_commit
+        ):
+            return _block_preflight(
+                report,
+                "remote_commit_mismatch",
+                "remote branch does not equal the contract-bound expected commit",
+            )
+        if require_fast_forward:
+            remote_commit = report["remoteCommit"]
+            if remote_commit is None:
+                return _block_preflight(
+                    report,
+                    "remote_branch_absent",
+                    "fast-forward proof requires an existing remote branch",
+                )
+            ancestry = _run_git_result(
+                repository,
+                "merge-base",
+                "--is-ancestor",
+                remote_commit,
+                str(report["localCommit"]),
+                runner=runner,
+                timeout_seconds=timeout_seconds,
+            )
+            report["fastForwardSafe"] = ancestry.returncode == 0
+            if not report["fastForwardSafe"]:
+                return _block_preflight(
+                    report,
+                    "remote_not_ancestor",
+                    "local candidate is not a proven fast-forward of the remote branch",
+                )
         return _ready_preflight(report)
     except _PreflightFailure as error:
         return _block_preflight(report, error.reason, error.diagnostic)
@@ -275,6 +324,9 @@ def _initial_preflight_report(
     repository: Path,
     remote: str,
     branch: str | None,
+    *,
+    expected_remote_commit: str | None,
+    require_fast_forward: bool,
 ) -> dict[str, Any]:
     return {
         "schemaVersion": 1,
@@ -286,6 +338,9 @@ def _initial_preflight_report(
         "branch": branch,
         "localCommit": None,
         "remoteCommit": None,
+        "expectedRemoteCommit": expected_remote_commit,
+        "requireFastForward": require_fast_forward,
+        "fastForwardSafe": False if require_fast_forward else None,
         "remote": {"name": remote, "url": None, "transport": "unknown"},
         "requiresGh": False,
         "pushAttempted": False,

@@ -19,6 +19,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--remote", default="origin", help="Configured Git remote name")
     parser.add_argument("--branch", help="Local branch to evaluate; defaults to the current branch")
     parser.add_argument(
+        "--expected-remote-commit",
+        help="Contract-bound full commit currently expected at the remote ref",
+    )
+    parser.add_argument(
+        "--require-fast-forward",
+        action="store_true",
+        help="Require the remote commit to be an ancestor of the local candidate",
+    )
+    parser.add_argument(
         "--timeout-seconds",
         type=float,
         default=15.0,
@@ -31,6 +40,8 @@ def main(argv: list[str] | None = None) -> int:
         Path(args.repo),
         remote=args.remote,
         branch=args.branch,
+        expected_remote_commit=args.expected_remote_commit,
+        require_fast_forward=args.require_fast_forward,
         timeout_seconds=args.timeout_seconds,
     )
     if args.json:

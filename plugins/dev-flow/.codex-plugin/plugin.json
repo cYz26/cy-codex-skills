@@ -1,7 +1,7 @@
 {
   "name": "dev-flow",
-  "version": "0.3.0+codex.20260529145038",
-  "description": "Codex dev workflow with contract-first implementation readiness.",
+  "version": "0.4.0",
+  "description": "Codex dev workflow with authority-delta continuation and recoverable milestones.",
   "author": {
     "name": "cY",
     "url": "https://github.com/cYz26"

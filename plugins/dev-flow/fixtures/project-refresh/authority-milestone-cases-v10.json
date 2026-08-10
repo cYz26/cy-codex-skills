@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "1.0",
+  "refreshContractRevision": 10,
+  "projectSchemaHead": 8,
+  "schemaDecision": "managed-refresh",
+  "cases": [
+    {
+      "id": "existing-project-has-no-standing-milestone-authority",
+      "input": "legacy-or-absent-standing-contract",
+      "expectedDecision": "AWAIT_HUMAN",
+      "expectedMissingAuthority": "standingMilestone.contract",
+      "silentAuthorityExpansion": false
+    },
+    {
+      "id": "authority-contract-drift-fails-closed",
+      "input": "contract-or-bound-evidence-digest-mismatch",
+      "expectedDecision": "FAIL_CLOSED_REPAIR",
+      "awaitingHumanWritten": false
+    },
+    {
+      "id": "exact-task-owned-cleanup-does-not-touch-history",
+      "input": "owner-exited-registered-exact-temporary-candidate",
+      "expectedDecision": "AUTO_CLEAN",
+      "historicalUserFilesRemoved": false
+    },
+    {
+      "id": "named-devflow-refresh-only",
+      "input": "current-published-dev-flow-identity",
+      "allowedCacheTarget": "dev-flow@cy-codex-skills",
+      "allowedProjectTarget": "/Users/cy/Dev/agents-dev/cy-codex-skills",
+      "unnamedConsumersAllowed": false
+    }
+  ]
+}

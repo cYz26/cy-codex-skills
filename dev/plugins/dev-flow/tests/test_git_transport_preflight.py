@@ -184,6 +184,54 @@ class GitTransportPreflightTests(unittest.TestCase):
         self.assertFalse(report["pushAttempted"])
         self.assertTrue(calls)
 
+    def test_contract_bound_remote_and_fast_forward_are_proven_read_only(self):
+        from workflow_git import GIT_TRANSPORT_READY, git_transport_preflight
+
+        repo, remote = self.make_remote_fixture()
+        expected = self.run_git("rev-parse", "refs/heads/main", cwd=remote).stdout.strip()
+        (repo / "NEXT.md").write_text("candidate\n")
+        self.run_git("add", "NEXT.md", cwd=repo)
+        self.run_git(
+            "-c",
+            "user.name=DevFlow Tests",
+            "-c",
+            "user.email=devflow@example.invalid",
+            "commit",
+            "-m",
+            "candidate",
+            cwd=repo,
+        )
+
+        report = git_transport_preflight(
+            repo,
+            remote="origin",
+            branch="main",
+            expected_remote_commit=expected,
+            require_fast_forward=True,
+        )
+
+        self.assertEqual(report["status"], GIT_TRANSPORT_READY)
+        self.assertEqual(report["remoteCommit"], expected)
+        self.assertTrue(report["fastForwardSafe"])
+        self.assertFalse(report["pushAttempted"])
+
+    def test_contract_bound_remote_drift_fails_closed_before_push(self):
+        from workflow_git import GIT_TRANSPORT_BLOCKED, git_transport_preflight
+
+        repo, _ = self.make_remote_fixture()
+        report = git_transport_preflight(
+            repo,
+            remote="origin",
+            branch="main",
+            expected_remote_commit="0" * 40,
+            require_fast_forward=True,
+        )
+
+        self.assertEqual(report["status"], GIT_TRANSPORT_BLOCKED)
+        self.assertEqual(report["reason"], "remote_commit_mismatch")
+        self.assertFalse(report["fastForwardSafe"])
+        self.assertFalse(report["pushAttempted"])
+
     def test_remote_url_credentials_query_and_fragment_are_redacted(self):
         from workflow_git import redact_remote_url, sanitize_git_diagnostic
 

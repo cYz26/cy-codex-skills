@@ -1,0 +1,42 @@
+name: Publish DevFlow 0.4.0
+
+on:
+  push:
+    tags:
+      - 'dev-flow-v0.4.0'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the immutable tag
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.ref }}
+      - name: Rebuild the deterministic runtime
+        run: python3 dev/scripts/package_devflow_release_runtime.py
+      - name: Verify source and release runtime parity
+        run: python3 dev/plugins/dev-flow/scripts/verify_release_runtime.py --plugin-root plugins/dev-flow --repo-root . --json
+      - name: Build the exact release assets
+        run: python3 dev/scripts/package_devflow_release_bundle.py --repo . --output-dir release-assets --json
+      - name: Verify the frozen release asset identity
+        run: >-
+          python3 dev/scripts/verify_devflow_release_assets.py --repo . --contract openspec/changes/centralize-devflow-authority-delta/evidence/standing-milestone-contract.json --expectation openspec/changes/centralize-devflow-authority-delta/evidence/dev-flow-0.4.0.release-assets.json --asset-dir release-assets --json
+      - name: Create the immutable GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create 'dev-flow-v0.4.0'
+          release-assets/dev-flow-0.4.0.zip
+          release-assets/dev-flow-0.4.0.release-manifest.json
+          release-assets/dev-flow-0.4.0.sha256
+          release-assets/devflow_runtime.pyz
+          release-assets/devflow_runtime.MANIFEST.json
+          release-assets/devflow_runtime.sha256
+          release-assets/dev-flow-v0.4.0.md
+          --title 'DevFlow 0.4.0'
+          --notes-file release-assets/dev-flow-v0.4.0.md
+          --verify-tag

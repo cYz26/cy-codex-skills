@@ -1,0 +1,47 @@
+{
+  "assetSetDigest": "ed304161de2dc7bd3364a7f38aff562de962dac75fa5d5910018ea95757e5d50",
+  "assets": [
+    {
+      "name": "dev-flow-0.4.0.zip",
+      "sha256": "eb1aadcbea485f1563b234bd6aa52f56b06e61feba4ef092253fced29349479a",
+      "size": 3075482
+    },
+    {
+      "name": "dev-flow-0.4.0.release-manifest.json",
+      "sha256": "cfd72b15ecc3b764f1c2e746b23ee27f18318005baae55c9ae2a692d9d71acc4",
+      "size": 593
+    },
+    {
+      "name": "dev-flow-0.4.0.sha256",
+      "sha256": "52ce8b24455dd3da75427b6c314f70f7cbb5d634efcded3777283e08fb6cc16c",
+      "size": 544
+    },
+    {
+      "name": "devflow_runtime.pyz",
+      "sha256": "34a9e36a2760b9edfec35f789caa0f6829c942fab2074a350216d70475a8ce81",
+      "size": 1410453
+    },
+    {
+      "name": "devflow_runtime.MANIFEST.json",
+      "sha256": "e8b996e285d4dadcc2f1588ade2784c2d7999061849f11a7c65984f941177068",
+      "size": 23256
+    },
+    {
+      "name": "devflow_runtime.sha256",
+      "sha256": "c4547d3084c985e76334d7e142a5a63163fff55b8672129fca5c93bff12f4db1",
+      "size": 94
+    },
+    {
+      "name": "dev-flow-v0.4.0.md",
+      "sha256": "992d82b2d2bae9d796d6dea3a7922c6f7bfe090e30957e34381d588cf1f9ad22",
+      "size": 1658
+    }
+  ],
+  "channel": "stable",
+  "contractId": "dev-flow-authority-delta-v0.4.0",
+  "kind": "devflow-release-asset-expectation",
+  "plugin": "dev-flow",
+  "schemaVersion": "1.0",
+  "tag": "dev-flow-v0.4.0",
+  "version": "0.4.0"
+}

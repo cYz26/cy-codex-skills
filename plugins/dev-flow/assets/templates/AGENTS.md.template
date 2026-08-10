@@ -168,20 +168,22 @@ before expanding work:
 - `BLOCKED_AWAITING_HUMAN`: continuing would expand material scope or authority,
   risk severe harm, or choose an unresolved product or ownership decision.
 
-Apply fail-closed precedence: `BLOCKED_AWAITING_HUMAN` wins over a possible
-guard or deferral. The required Completion Contract behavior and failing
-acceptance criteria may not be deferred. Record every deferred or blocked
-finding in the tracked `TASK_LEDGER.md` Incidental Finding Register; chat and
-`.planning/devflow/` alone are not durable cross-machine records. The register
-does not authorize follow-up work.
+Classify through the versioned authority-delta resolver. `AWAIT_HUMAN` has
+precedence only when it names non-empty concrete `missingAuthority`; incomplete
+tests, stale evidence, repairable drift, or an implementation choice inside the
+approved slice use `FAIL_CLOSED_REPAIR` or a bounded guard and never fabricate a
+Human Gate. Record every deferred or blocked finding in the tracked
+`TASK_LEDGER.md` Incidental Finding Register; the register does not authorize
+follow-up work.
 
-For a severe or ambiguous finding, stop mutation after safe read-only diagnosis,
-record evidence and options, and ask the human one concrete decision. Promote
-that decision into OpenSpec or the active ledger before resuming. A truthful
-completion may disclose non-blocking deferred findings and ask the human to
-accept, reject, or defer the recommended follow-up; it may not automatically
-start that follow-up. An unresolved `BLOCKED_AWAITING_HUMAN` finding blocks
-continuation, completion, verification claims, and archive readiness.
+The required Completion Contract behavior and failing acceptance criteria may
+not be deferred. They remain on the critical path unless a real authority delta
+is recorded through the resolver.
+
+Only the authority-gate recorder may write awaiting state. It atomically keeps
+`current_stage` and `current_change.status` aligned, binds a deterministic gate
+key and evidence receipt, and suppresses repeat questions for the same missing
+authority. An unresolved real authority gate blocks completion and archive.
 
 ## Workflow Mode Routing
 
@@ -229,9 +231,13 @@ before creation by the bound task/run command; prefer an absent or empty
 isolated root. A filename, extension, ignore rule, apparent cache/build
 directory, or contract written after creation never proves ownership.
 
-Observation and planning are read-only. Only a fresh `AUTO_CLEAN` plan after
-the owner exits may reach explicit exact-path cleanup. `WAIT_OWNER` retries,
-`RETAIN` preserves evidence, and unsafe or drifted state enters `HUMAN_GATE`.
+Observation and planning are read-only. A trusted orchestrator automatically
+supplies the existing apply safeguard only for a fresh `AUTO_CLEAN` plan after
+the owner exits. `WAIT_OWNER` retries, `RETAIN` preserves evidence, and unsafe
+or drifted state uses `FAIL_CLOSED_REPAIR` without awaiting markers. The
+lifecycle engine's legacy `HUMAN_GATE` label is resolver input, not permission
+to persist `AWAIT_HUMAN`; only concrete missing authority can produce that
+decision.
 Cleanup uses no wildcard or recursive deletion and retains the immutable
 contract, manifest, plan, terminal receipt, and recoverable quarantine mapping
 under `.planning/devflow/`. Physical quarantine purge is a separate Human
@@ -253,24 +259,39 @@ Prefer the active Full OpenSpec task list as the execution source and use
 `TASK_LEDGER.md` only when it is the configured active ledger. Do not merge the
 two or create another queue. A phase label is not a Human Gate.
 
-Stop only for unresolved product or ownership decisions, material scope/write-
-set/public-contract expansion, dependencies or migrations, destructive or
-external effects, severe or unknown risk, explicit per-stage confirmation, or
-another missing authority. Before asking, record the concrete gate and next
-question durably; use both `current_stage: awaiting_human` and
-`current_change.status: awaiting_human` so read-only Stop policy can distinguish
-a real gate from premature completion. Promote the answer into OpenSpec or the
-active ledger, restore executable state, and resume automatically.
+Stop for a Human Gate only when the resolver identifies a material authority
+delta: an unresolved product/ownership decision, scope/write-set/public-contract
+expansion, a new dependency or migration, an undeclared destructive/external
+effect, severe or unknown material risk, or another concrete missing
+permission. Technical failure stops mutation fail-closed as
+`FAIL_CLOSED_REPAIR` without awaiting markers. Before asking, record the one
+concrete missing authority and next question through the authority-gate
+recorder; promote the answer into OpenSpec or the active ledger and resume.
+
+For `model.*` work, a durable exact task/provider/model/existing-auth credential
+policy/cost policy/serial grant is Standing Goal Execution Authority. A one-use
+attempt receipt protects replay and evidence identity; it does not consume that
+human authority. Record actual monetary cost and report it at completion, but
+do not invent a per-call or per-retry currency gate. Failed or stale attempts
+use bounded repair, evidence refresh, refreeze, and same-authority retry. Keep
+the critical path focused: safely mitigate optional related improvements, mark
+them `DEFER_AND_CONTINUE`, and summarize them at completion instead of opening
+an intermediate task or Human Gate.
 
 Checkpoint/compact is advisory and recoverable. Active-change verification is
-not overall completion when approved work remains. Release, archive, commit,
-push, PR, install/update, migration apply, and destructive work remain separate
-authorization boundaries and are never implied by automatic continuation.
+not overall completion when approved work remains. A predeclared Standing
+Milestone External Effects Contract may cover its exact reviewed
+commit/push/tag/publication/readback/named-source-fast-forward/cache/project
+refresh chain as one authority slice;
+ordinary steps cannot infer that grant. PR, merge, force-push, archive,
+undeclared install/update or migration, broad deletion, and unnamed targets
+remain excluded unless separately and explicitly declared.
 
 ## Git Transport vs GitHub Control Plane
 
-A gh authentication failure is not Git transport failure. For an explicitly
-authorized push, use `git_transport_preflight.py` based on `git ls-remote`.
+A gh authentication failure is not Git transport failure. For an authorized
+push, use `git_transport_preflight.py` with contract-bound `git ls-remote`
+readback, the expected remote commit, and fast-forward proof.
 Native push uses `git.push`; PR/release/settings use
 `github.control_plane_write`. For deterministic tag-bound releases, prefer
 validated repository GitHub Actions over local gh authentication, require
@@ -307,8 +328,8 @@ python3 dev/scripts/codex_auto_update_plugins_skills.py --json
 ```
 
 Report source/release drift, installed plugin cache freshness, and project-local
-skill links drift. Applying cache refresh or project migration requires explicit
-authorization.
+skill links drift. Applying cache refresh or project migration requires exact
+authority; a current standing milestone may supply it only for its named target.
 
 ## Project Refresh Impact Gate
 
@@ -361,11 +382,14 @@ At setup, design, OpenSpec planning, verification, and archive boundaries,
 persist state, changed files, command results, risks, and next action.
 Repository artifacts remain authoritative after compaction.
 
-## Forbidden Without Explicit Approval
+## Forbidden Without Current Authority
 
 - destructive cleanup or broad architecture rewrite;
 - public API or persistence-schema changes;
 - production dependencies;
 - bypassing failed tests;
-- project migration apply, release sync apply, archive, commit, push, or PR
-  creation.
+- project migration apply, release sync apply, archive, commit, push, formal
+  publication, cache/project refresh, or PR creation unless the exact effect and
+  target are covered by a current approved slice or Standing Milestone External
+  Effects Contract. A current milestone never grants archive, PR, merge, force,
+  broad cleanup, or unnamed-consumer authority by implication.

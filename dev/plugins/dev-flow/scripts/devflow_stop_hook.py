@@ -95,7 +95,7 @@ def generated_artifact_stop_check(repo: Path) -> dict[str, Any]:
 
 def continuation_stop_check(repo: Path, release_status: str | None = None) -> dict[str, Any]:
     result = continuation_decision(repo, release_status=release_status)
-    return {
+    check = {
         "id": "execution_continuation",
         "ok": bool(result["stopAllowed"]),
         "status": result["action"].lower(),
@@ -105,6 +105,10 @@ def continuation_stop_check(repo: Path, release_status: str | None = None) -> di
         "continuationRequired": result["continuationRequired"],
         "executionSource": result["executionSource"],
     }
+    for key in ("missingAuthority", "gateKey", "reasonCodes", "authorityResolution"):
+        if key in result:
+            check[key] = result[key]
+    return check
 
 
 def contextual_stop_check(check: dict[str, Any], action: str) -> dict[str, Any]:
@@ -142,7 +146,9 @@ def contextual_release_promotion_stop_check(
         "ok": True,
         "status": "authorization_boundary" if action == READY_FOR_EXTERNAL_EFFECT else "not_applicable",
         "detail": (
-            "release promotion is ready for separate explicit authorization"
+            "release promotion is ready for authority-delta resolution; "
+            "execute automatically when the exact effect is covered by a "
+            "current standing contract"
             if action == READY_FOR_EXTERNAL_EFFECT
             else "release promotion is not required before presenting the Human Gate"
         ),

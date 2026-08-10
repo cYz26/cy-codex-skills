@@ -2971,7 +2971,8 @@ def wait_owner_next_action() -> str:
 
 def human_gate_next_action() -> str:
     return (
-        "Record the failed invariants and resolve the Human Gate before any cleanup."
+        "Record the failed invariants and repair or revalidate the same owned identity "
+        "before cleanup; open a Human Gate only for a concrete missing authority or material risk decision."
     )
 
 

@@ -180,6 +180,111 @@ context_management:
         self.assertTrue(report["ok"], report)
         return report
 
+    def write_declared_standing_promotion_contract(self, repo, target="sample"):
+        contract = {
+            "schemaVersion": "1.0",
+            "contractId": f"{target}-local-promotion",
+            "goalId": "release-goal",
+            "goal": "Promote the verified local release candidate.",
+            "change": "release-fixture",
+            "milestone": f"{target}-local-promotion",
+            "plugin": {
+                "id": target,
+                "marketplace": "cy-codex-skills",
+                "versionRule": "checked-in-test-policy",
+                "version": "0.4.0",
+            },
+            "repository": {
+                "remote": "origin",
+                "remoteUrl": "git@example.invalid:fixture.git",
+                "ref": "refs/heads/main",
+                "expectedBase": "a" * 40,
+            },
+            "commit": {"message": "test release promotion"},
+            "publication": {
+                "tag": f"{target}-v0.4.0",
+                "channel": "stable",
+                "mechanism": "github_actions",
+                "workflow": ".github/workflows/publish.yml",
+                "assets": [f"{target}-0.4.0.zip"],
+                "assetExpectation": (
+                    "openspec/changes/release-fixture/evidence/"
+                    f"{target}-0.4.0.release-assets.json"
+                ),
+            },
+            "requestedEffects": [
+                "git.commit",
+                "git.push",
+                "git.tag.push",
+                "github.release",
+                "devflow.source.fast_forward",
+                "codex.cache.refresh",
+                "devflow.project.refresh",
+            ],
+            "writeSet": [
+                f"plugins/{target}/.codex-plugin/plugin.json",
+                (
+                    "openspec/changes/release-fixture/evidence/"
+                    f"{target}-0.4.0.release-assets.json"
+                ),
+            ],
+            "refreshTargets": {
+                "cache": f"{target}@cy-codex-skills",
+                "project": str(repo),
+            },
+            "failurePolicy": {
+                "preserveCommit": True,
+                "preserveTag": True,
+                "maxDiagnoses": 1,
+                "maxRemediations": 1,
+                "allowAlternatePublication": False,
+            },
+            "reentryPolicy": {
+                "sameIdentityOnly": True,
+                "resume": "first_incomplete_step",
+                "duplicateEffects": False,
+            },
+            "exclusions": [
+                "archive",
+                "force-push",
+                "game-dev-plugins",
+                "merge",
+                "pr",
+                "rebase",
+                "unnamed-consumer",
+                "unnamed-plugin",
+                "unrelated-release",
+            ],
+        }
+        relative = Path("openspec/changes/release-fixture/evidence/standing-contract.json")
+        path = repo / relative
+        path.parent.mkdir(parents=True)
+        payload = (json.dumps(contract, sort_keys=True, separators=(",", ":")) + "\n").encode()
+        path.write_bytes(payload)
+        state_path = repo / ".planning" / "devflow" / "STATE.md"
+        text = state_path.read_text()
+        text = text.replace(
+            "gates:\n",
+            "standing_milestone:\n"
+            "  status: declared\n"
+            f"  contract_path: {relative.as_posix()}\n"
+            f"  contract_sha256: {hashlib.sha256(payload).hexdigest()}\n"
+            "  goal_id: release-goal\n"
+            "  change_id: release-fixture\n"
+            "  candidate_digest: none\n"
+            "  validation_digest: none\n"
+            "  review_digest: none\n"
+            "gates:\n",
+            1,
+        )
+        text = text.replace(
+            "context_management:\n",
+            "goal_gate:\n  id: release-goal\n  required: true\n  status: active\n"
+            "context_management:\n",
+            1,
+        )
+        state_path.write_text(text)
+
     def load_runtime_packager(self):
         path = PLUGIN_ROOT.parents[2] / "dev" / "scripts" / "package_devflow_release_runtime.py"
         spec = importlib.util.spec_from_file_location("package_devflow_release_runtime_fixture", path)
@@ -296,7 +401,12 @@ context_management:
         manifest = json.loads(manifest_path.read_text())
         self.assertEqual(
             manifest["buildCommand"],
-            [sys.executable, "dev/scripts/package_devflow_release_runtime.py"],
+            ["python3", "dev/scripts/package_devflow_release_runtime.py"],
+        )
+        self.assertEqual(manifest["schemaVersion"], 3)
+        self.assertEqual(
+            manifest["sourceCommit"],
+            f"sha256:{manifest['sourceTreeSha256']}",
         )
         self.assertEqual(manifest["archive"]["path"], "scripts/devflow_runtime.pyz")
         self.assertEqual(manifest["archive"]["sha256"], archive_sha)
@@ -916,6 +1026,27 @@ context_management:
             "old\n",
         )
 
+    def test_declared_standing_contract_authorizes_only_exact_local_promotion(self):
+        repo = self.make_repo()
+        self.write_plugin(repo)
+        self.write_state(repo, verification_passed=True, release_allowed=False)
+        self.write_declared_standing_promotion_contract(repo)
+        self.write_release_verification(repo)
+
+        readiness = release_promotion_readiness(
+            repo,
+            "sample",
+            require_authorization=True,
+        )
+
+        self.assertTrue(readiness["ready"], readiness)
+        self.assertTrue(readiness["durableReleaseAuthorization"])
+        self.assertFalse(readiness["legacyReleaseAuthorization"])
+        self.assertEqual(
+            readiness["standingMilestoneAuthorization"]["decision"],
+            "CONTINUE",
+        )
+
     def test_symlinked_external_state_cannot_authorize_release(self):
         repo = self.make_repo()
         _, release_root = self.write_plugin(repo)
@@ -962,10 +1093,10 @@ context_management:
                 "fixtures/project-refresh/**",
                 "fixtures/test_generated_artifact_lifecycle.py",
                 "tests/test_generated_artifact_lifecycle.py",
-                "tests/test_packaged_runtime.py",
                 "vendor/**",
             ],
         )
+        self.assertNotIn("tests/test_packaged_runtime.py", metadata["include"])
         self.assertEqual(
             metadata["defaultExcludeOverrides"],
             ["fixtures/**", "tests/**"],
@@ -1399,6 +1530,16 @@ class ProjectRefreshImpactTests(unittest.TestCase):
         self.refresh_evidence(no_revision)
         no_revision_report = analyze_project_refresh_impact(no_revision, baseline)
         self.assertIn("tracked_change_requires_refresh_revision_advance", no_revision_report["errors"])
+
+        same_change = analyze_project_refresh_impact(
+            no_revision,
+            baseline,
+            expected_change="refresh-impact-fixture",
+            allow_same_change_repromotion=True,
+        )
+        self.assertTrue(same_change["ok"], same_change)
+        self.assertTrue(same_change["sameChangeRepromotion"])
+        self.assertEqual(same_change["status"], "changed_covered")
 
     def test_impact_gate_rejects_manifest_only_adapter_changes_without_revision_advance(self):
         mutations = {

@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "1.0",
+  "contractId": "dev-flow-authority-delta-v0.4.0",
+  "goalId": "019fdf0e-4539-7f93-88db-8574f952c115",
+  "goal": "Systemically reduce false Human Gates while preserving fail-closed safety and complete the verified DevFlow release chain.",
+  "change": "centralize-devflow-authority-delta",
+  "milestone": "dev-flow-authority-delta-v0.4.0",
+  "plugin": {
+    "id": "dev-flow",
+    "marketplace": "cy-codex-skills",
+    "versionRule": "first-non-breaking-capability-release-after-0.3.x",
+    "version": "0.4.0"
+  },
+  "repository": {
+    "remote": "origin",
+    "remoteUrl": "@REMOTE_URL@",
+    "ref": "refs/heads/main",
+    "expectedBase": "@EXPECTED_BASE@"
+  },
+  "commit": {
+    "message": "feat(dev-flow): centralize authority-delta execution"
+  },
+  "publication": {
+    "tag": "dev-flow-v0.4.0",
+    "channel": "stable",
+    "mechanism": "github_actions",
+    "workflow": ".github/workflows/publish-dev-flow.yml",
+    "assets": [
+      "dev-flow-0.4.0.zip",
+      "dev-flow-0.4.0.release-manifest.json",
+      "dev-flow-0.4.0.sha256",
+      "devflow_runtime.pyz",
+      "devflow_runtime.MANIFEST.json",
+      "devflow_runtime.sha256",
+      "dev-flow-v0.4.0.md"
+    ]
+  },
+  "writeSet": [
+    ".github/workflows/publish-dev-flow.yml",
+    "dev/plugins/dev-flow/.codex-plugin/plugin.json",
+    "feature.txt",
+    "plugins/dev-flow/.codex-plugin/plugin.json",
+    "release-assets/dev-flow-0.4.0.release-manifest.json",
+    "release-assets/dev-flow-0.4.0.sha256",
+    "release-assets/dev-flow-0.4.0.zip",
+    "release-assets/dev-flow-v0.4.0.md",
+    "release-assets/devflow_runtime.MANIFEST.json",
+    "release-assets/devflow_runtime.pyz",
+    "release-assets/devflow_runtime.sha256"
+  ],
+  "refreshTargets": {
+    "cache": "dev-flow@cy-codex-skills",
+    "project": "@PROJECT_PATH@"
+  },
+  "failurePolicy": {
+    "preserveCommit": true,
+    "preserveTag": true,
+    "maxDiagnoses": 1,
+    "maxRemediations": 1,
+    "allowAlternatePublication": false
+  },
+  "reentryPolicy": {
+    "sameIdentityOnly": true,
+    "resume": "first_incomplete_step",
+    "duplicateEffects": false
+  },
+  "exclusions": [
+    "archive",
+    "force-push",
+    "game-dev-plugins",
+    "merge",
+    "pr",
+    "rebase",
+    "unnamed-consumer",
+    "unnamed-plugin",
+    "unrelated-release"
+  ]
+}

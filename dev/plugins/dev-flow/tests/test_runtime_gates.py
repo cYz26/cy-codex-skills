@@ -199,6 +199,39 @@ Keep this durable next action.
 
         self.assertTrue(validation["ok"], validation)
 
+    def test_validator_and_doctor_accept_derived_current_standing_commit_target(self):
+        from workflow_validate import check_standing_milestone_state
+
+        helper_spec = importlib.util.spec_from_file_location(
+            "standing_milestone_test_helpers",
+            Path(__file__).with_name("test_standing_milestone.py"),
+        )
+        self.assertIsNotNone(helper_spec)
+        self.assertIsNotNone(helper_spec.loader)
+        helpers = importlib.util.module_from_spec(helper_spec)
+        helper_spec.loader.exec_module(helpers)
+
+        repo = self.make_repo()
+        contract_path, contract_sha256 = helpers.write_contract(
+            repo,
+            helpers.standing_contract(),
+        )
+        state = helpers.current_state(
+            contract_path=contract_path,
+            contract_sha256=contract_sha256,
+        )
+        issues: list[str] = []
+
+        check_standing_milestone_state(repo, state, issues)
+        with mock.patch("workflow_validate.read_state_or_issue", return_value=state):
+            doctor = doctor_workflow(repo)
+
+        self.assertEqual(issues, [])
+        self.assertFalse(
+            any("Standing milestone contract is not current" in issue for issue in doctor["issues"]),
+            doctor,
+        )
+
     def test_workflow_config_rejects_invalid_utf8_without_exposing_bytes(self):
         repo = self.make_repo()
         (repo / ".dev-flow.json").write_bytes(b'\xff\xfe"secret-token"')
@@ -465,6 +498,69 @@ goal_gate:
         self.assertIn("release_promotion", report["failedChecks"])
         gate.assert_called_once_with(repo.resolve(), apply=False)
         sync.assert_not_called()
+
+    def test_stop_diagnostics_preserve_real_authority_gate_identity_read_only(self):
+        from workflow_authority_gate import (
+            canonical_authority_gate_key,
+            record_authority_gate,
+        )
+
+        module = importlib.import_module("devflow_stop_hook")
+        repo = self.make_incomplete_stop_repo()
+        authority_digest = "sha256:" + "a" * 64
+        evidence_digest = "sha256:" + "b" * 64
+        request_digest = "sha256:" + "c" * 64
+        missing = ["public_contract_choice"]
+        gate_key = canonical_authority_gate_key(
+            missing_authority=missing,
+            authority_contract_sha256=authority_digest,
+            evidence_sha256=evidence_digest,
+            request_sha256=request_digest,
+        )
+        receipt = record_authority_gate(
+            repo,
+            {
+                "decision": "AWAIT_HUMAN",
+                "reasonCodes": ["public_contract_authority_missing"],
+                "missingAuthority": missing,
+                "invalidations": [],
+                "materialDelta": True,
+                "authorityContractSha256": authority_digest,
+                "evidenceSha256": evidence_digest,
+                "requestSha256": request_digest,
+                "gateKey": gate_key,
+            },
+            next_question="Choose the public compatibility behavior.",
+        )
+        tracked = (
+            repo / "TASK_LEDGER.md",
+            repo / ".planning" / "devflow" / "STATE.md",
+            repo / receipt["receiptPath"],
+        )
+        before = {path: path.read_bytes() for path in tracked}
+
+        with mock.patch.object(
+            module,
+            "context_health_check",
+            return_value={"risk": "low", "decision": "continue"},
+        ), mock.patch.object(
+            module,
+            "release_promotion_run_gate",
+            return_value={"status": "not_applicable", "message": "not applicable"},
+        ):
+            report = module.run_stop_checks(repo)
+
+        continuation = next(
+            item for item in report["checks"] if item["id"] == "execution_continuation"
+        )
+        self.assertEqual(continuation["action"], "AWAIT_HUMAN")
+        self.assertEqual(continuation["missingAuthority"], missing)
+        self.assertEqual(
+            continuation["reasonCodes"],
+            ["public_contract_authority_missing"],
+        )
+        self.assertEqual(continuation["gateKey"], gate_key)
+        self.assertEqual(before, {path: path.read_bytes() for path in tracked})
 
     def test_devflow_stop_hook_stays_silent_without_workflow_state(self):
         module = importlib.import_module("devflow_stop_hook")

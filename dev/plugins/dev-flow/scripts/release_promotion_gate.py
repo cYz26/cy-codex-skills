@@ -41,8 +41,8 @@ def run_gate(repo: Path, apply: bool = False, target: str = "dev-flow") -> dict:
     )
     authorization = side_effect_decision(
         default_plugin_root(),
-        "archive_release",
-        {"verified_and_explicit_user_request"} if apply else set(),
+        "release.promote_local",
+        {"verified_approved_write_set"} if apply else set(),
     )
     if not readiness["ready"]:
         return {
@@ -60,7 +60,7 @@ def run_gate(repo: Path, apply: bool = False, target: str = "dev-flow") -> dict:
     if apply and (not authorization["authorized"] or not apply_readiness["ready"]):
         return {
             "status": "authorization_required",
-            "message": "Release promotion requires explicit archive/release authorization.",
+            "message": "Release promotion requires a verified approved local write set.",
             "assets": [],
             "sideEffect": authorization,
             "releaseReadiness": apply_readiness,

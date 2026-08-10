@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "1.0",
+  "refreshContractRevision": 11,
+  "projectSchemaHead": 8,
+  "schemaDecision": "managed-refresh",
+  "cases": [
+    {
+      "id": "standing-model-authority-survives-attempt-receipt",
+      "input": "exact-task-provider-model-credential-cost-serial-authority",
+      "attemptReceiptOneUse": true,
+      "humanAuthorityConsumed": false
+    },
+    {
+      "id": "consumed-attempt-requires-technical-refreeze",
+      "input": "consumed-stale-or-failed-attempt-receipt",
+      "expectedDecision": "FAIL_CLOSED_REPAIR",
+      "awaitingHumanWritten": false
+    },
+    {
+      "id": "same-authority-new-attempt-continues",
+      "input": "new-attempt-id-with-current-evidence",
+      "expectedDecision": "CONTINUE",
+      "missingAuthority": []
+    },
+    {
+      "id": "stable-model-boundary-delta-awaits-human",
+      "input": "provider-model-account-credential-cost-or-serial-policy-drift",
+      "expectedDecision": "AWAIT_HUMAN",
+      "expectedMissingAuthorityPrefix": "execution:"
+    },
+    {
+      "id": "actual-cost-is-recorded-without-currency-gate",
+      "input": "record_actual_no_currency_gate",
+      "costRecorded": true,
+      "currencyGate": false
+    },
+    {
+      "id": "nonblocking-improvement-defers-and-continues",
+      "input": "safe-related-optimization-outside-critical-path",
+      "expectedDecision": "DEFER_AND_CONTINUE",
+      "intermediateHumanGate": false
+    }
+  ]
+}

@@ -1,11 +1,29 @@
 ---
-workflow_version: 0.3.0
+workflow_version: {{workflow_version}}
 project_mode: {{project_mode}}
 current_stage: {{current_stage}}
 
 current_change:
   id: {{change_id}}
   status: {{change_status}}
+
+standing_milestone:
+  status: {{standing_milestone_status}}
+  contract_path: {{standing_milestone_contract_path}}
+  contract_sha256: {{standing_milestone_contract_sha256}}
+  goal_id: {{standing_milestone_goal_id}}
+  change_id: {{standing_milestone_change_id}}
+  candidate_digest: {{standing_milestone_candidate_digest}}
+  validation_digest: {{standing_milestone_validation_digest}}
+  review_digest: {{standing_milestone_review_digest}}
+
+authority_gate:
+  key: {{authority_gate_key}}
+  status: {{authority_gate_status}}
+  resolution_digest: {{authority_gate_resolution_digest}}
+  evidence_digest: {{authority_gate_evidence_digest}}
+  next_question: {{authority_gate_next_question}}
+  missing_authority: {{authority_gate_missing_authority_json}}
 
 gates:
   workflow_initialized: true
@@ -51,6 +69,7 @@ context_management:
     - validation_recorded_if_applicable
 
 goal_gate:
+  id: {{goal_gate_id}}
   required: {{goal_gate_required}}
   status: {{goal_gate_status}}
   reason: {{goal_gate_reason}}

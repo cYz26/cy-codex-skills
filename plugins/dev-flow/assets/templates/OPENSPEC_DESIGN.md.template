@@ -20,15 +20,18 @@ Describe the complete behavior, internal structure, boundaries, and validation s
 
 The default budget is one bounded RED/GREEN cycle when a minimal guard is
 needed for safe completion and stays inside the approved contract and write
-set. Otherwise record `DEFER_AND_CONTINUE` in `TASK_LEDGER.md` or stop as
-`BLOCKED_AWAITING_HUMAN`.
+set. Otherwise record `DEFER_AND_CONTINUE` in `TASK_LEDGER.md`, stop as
+`FAIL_CLOSED_REPAIR`, or create `BLOCKED_AWAITING_HUMAN` only for concrete
+missing authority.
 
 ## Escalation Triggers
 
-Replan or obtain human approval before continuing when a finding requires a
-new dependency, schema, migration, public contract, architectural component,
-parser or standards-conformance effort, external or destructive effect, or an
-expanded write set. Required Completion Contract behavior cannot be deferred.
+Run the authority-delta resolver before escalating. Replan and repair technical
+evidence locally when the approved authority is unchanged. Obtain human
+authority only for a material delta such as a new dependency, schema,
+migration, public contract, architectural component, undeclared external or
+destructive effect, or expanded write set. Required Completion Contract
+behavior cannot be deferred.
 
 ## Architecture Decisions
 
@@ -122,6 +125,17 @@ For DevFlow changes, record `changed`, `verified-unchanged`, or
 contract revision/digest, required migration/fixture coverage, packaged CLI and
 Skill effects, and source/release/cache verification. For other projects,
 record why this gate is not applicable.
+
+## Standing Milestone External Effects
+
+If this change preauthorizes downstream effects, bind the exact Goal/change,
+candidate/write set, deterministic version/tag/channel, authoritative
+remote/ref, commit message, publication workflow/assets, named refresh targets,
+failure/reentry policy, and exclusions. One current standing contract covers
+only that ordered commit/push/tag/publication/readback/named-source-fast-forward/
+cache/project-refresh chain. Ordinary
+steps cannot infer the grant; archive, PR, merge, force-push, broad cleanup, and
+unnamed targets remain excluded unless explicitly added.
 
 ## Testing
 

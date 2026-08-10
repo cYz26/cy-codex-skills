@@ -55,13 +55,47 @@
       "authorization": "explicit_named_dependency_request",
       "denial": "dry_run_only"
     },
+    "model.invoke": {
+      "authorization": "current_standing_goal_execution_authority",
+      "denial": "do_not_invoke"
+    },
     "destructive.cleanup": {
       "authorization": "explicit_file_list_and_rollback",
       "denial": "preserve_and_report"
     },
+    "release.promote_local": {
+      "authorization": "verified_approved_write_set",
+      "denial": "ready_not_applied"
+    },
+    "release.publish": {
+      "authorization": "current_standing_milestone_contract",
+      "denial": "do_not_publish"
+    },
+    "devflow.source.fast_forward_named": {
+      "authorization": "current_standing_milestone_contract",
+      "denial": "do_not_update_source"
+    },
+    "plugin.cache.refresh_named": {
+      "authorization": "current_standing_milestone_contract",
+      "denial": "do_not_refresh"
+    },
+    "devflow.project.refresh_named": {
+      "authorization": "current_standing_milestone_contract",
+      "denial": "do_not_refresh"
+    },
+    "openspec.archive": {
+      "authorization": "explicit_archive_intent",
+      "denial": "do_not_archive"
+    },
     "archive_release": {
       "authorization": "verified_and_explicit_user_request",
-      "denial": "ready_not_applied"
+      "denial": "ready_not_applied",
+      "compatibilityAlias": true,
+      "replacementEffects": [
+        "release.promote_local",
+        "release.publish",
+        "openspec.archive"
+      ]
     },
     "goal.state": {
       "authorization": "explicit_user_request_and_quality_gate",

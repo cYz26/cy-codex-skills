@@ -36,14 +36,24 @@
   phase, checkpoint, review, or active change is a technical boundary rather
   than an implicit human confirmation gate.
 - `execute-task` owns one item and evidence receipt. `project-orchestrator` owns
-  next-item selection and continues until a genuine Human Gate, separately
-  authorized external effect, or verified overall completion.
+  next-item selection and continues until a genuine missing-authority gate, a
+  technical fail-closed repair stop, or verified overall completion.
 - Prefer the active Full OpenSpec task list for remaining-work decisions and
   fall back to `TASK_LEDGER.md` only when no active OpenSpec list exists. Never
   merge them into another queue.
-- Record a genuine Human Gate durably before stopping. Missing decisions,
-  expanded authority/scope, severe or unknown risk, and explicit per-stage
-  confirmation qualify; a phase label does not.
+- Resolve every stop through the versioned authority-delta seam. Only non-empty
+  concrete `missingAuthority` may create a Human Gate; ordinary drift, failed
+  validation, stage boundaries, and in-slice implementation choices do not.
+- The single gate recorder writes both awaiting markers and a deterministic
+  receipt together. Stop/doctor/hooks are read-only consumers and cannot invent
+  or persist a gate.
+- A Standing Goal Execution Authority binds exact task/provider/model,
+  existing-auth credential policy, cost policy, and serial execution. A one-use
+  attempt receipt is technical replay evidence, not a one-use human grant.
+  Record actual monetary cost; do not create per-call or per-retry currency
+  confirmation. Same-authority failure, repair, refreeze, and retry remain
+  technical execution, while `DEFER_AND_CONTINUE` keeps non-blocking related
+  improvements out of the critical path until the completion summary.
 - Stop hooks remain read-only. They may block premature termination and report
   the continuation outcome, but they do not execute tasks, write workflow
   state, or perform side effects.
@@ -61,11 +71,12 @@
 
 ## Severe Finding Human Stop
 
-- Classify a finding as `BLOCKED_AWAITING_HUMAN` before further mutation when
-  continuing could cause data loss or corruption, a security bypass or
-  authority bypass, an irreversible or destructive effect, a public-contract or required-
-  behavior change, a production dependency/schema/migration/external effect,
-  ambiguous ownership, or an unresolved product tradeoff.
+- Classify a finding as `BLOCKED_AWAITING_HUMAN` only when continuing requires a
+  concrete new permission or material risk acceptance, such as an unresolved
+  product/ownership decision, expanded public contract, production dependency,
+  irreversible migration, undeclared external effect, credible data loss or
+  authority bypass risk, or ambiguous material ownership/risk. Repairable
+  evidence ambiguity remains fail-closed but is not automatically a Human Gate.
 - Finish only safe read-only diagnosis, preserve the current work, and record
   evidence, impact, safe options, and a recommended decision in
   `TASK_LEDGER.md`.
@@ -96,15 +107,17 @@
   rules, apparent cache/build purpose, or post-creation evidence.
 - Prefer task/run-isolated roots. Adjacent output requires a complete
   before-state and may remove only exact paths absent from that baseline.
-- Apply only a fresh `AUTO_CLEAN` plan after owner exit. Use no wildcard,
+- A trusted orchestrator applies a fresh `AUTO_CLEAN` plan after owner exit and
+  terminally verifies its receipt. Direct CLI callers still supply the explicit
+  mutation safeguard. Use no wildcard,
   recursive deletion, symlink following, process kill, configuration change,
   or Git mutation.
 - Automatic cleanup exclusively moves exact paths into recoverable DevFlow
   quarantine and records each mapping. Physical quarantine purge requires a
   separate Human Gate.
 - Retain the immutable manifest, plan, and cleanup receipt; unresolved,
-  pre-existing, tracked, protected, shared, escaped, or drifted targets require
-  a Human Gate.
+  pre-existing, tracked, protected, shared, escaped, or drifted targets stop as
+  technical repair unless the resolver identifies a concrete new authority.
 
 ## Dependencies and Source Integrity
 
@@ -130,8 +143,14 @@
 - Run release runtime verification, source/release parity checks, packaged
   project-refresh/fixture parity, tests, and release-target Plugin Eval before
   readiness.
-- Release apply, installed-cache refresh, project migration, archive, commit,
-  push, and PR creation remain distinct authorization boundaries.
+- A predeclared Standing Milestone External Effects Contract may cover one exact
+  reviewed commit, fast-forward-only push, immutable tag-bound publication,
+  public asset readback, receipt-bound fast-forward of the named clean DevFlow
+  source checkout, and named cache/current-project refresh. Its
+  downstream steps reuse that standing authority and cannot prompt again.
+- Archive, PR, merge, force-push, unnamed consumers/plugins, unrelated release,
+  broad cleanup, and effects absent from the standing contract remain separate
+  default-deny boundaries.
 
 ## Review and Completion
 

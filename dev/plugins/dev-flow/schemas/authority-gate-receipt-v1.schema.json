@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://devflow.local/schemas/authority-gate-receipt-v1.schema.json",
+  "title": "DevFlow authority gate receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "status", "gateKey", "decision", "reasonCodes", "missingAuthority", "invalidations", "materialDelta", "authorityContractSha256", "evidenceSha256", "requestSha256", "nextQuestion", "receiptPath"],
+  "properties": {
+    "schemaVersion": {"const": "1.0"},
+    "kind": {"const": "devflow-authority-gate-receipt"},
+    "status": {"const": "recorded"},
+    "gateKey": {"$ref": "#/$defs/sha"},
+    "decision": {"const": "AWAIT_HUMAN"},
+    "reasonCodes": {"$ref": "#/$defs/strings"},
+    "missingAuthority": {"$ref": "#/$defs/nonEmptyStrings"},
+    "invalidations": {"$ref": "#/$defs/strings"},
+    "materialDelta": {"const": true},
+    "authorityContractSha256": {"$ref": "#/$defs/sha"},
+    "evidenceSha256": {"$ref": "#/$defs/sha"},
+    "requestSha256": {"$ref": "#/$defs/sha"},
+    "nextQuestion": {"type": "string", "minLength": 1},
+    "receiptPath": {"type": "string", "pattern": "^\\.planning/devflow/authority-gates/[0-9a-f]{64}\\.json$"}
+  },
+  "$defs": {
+    "sha": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "strings": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "nonEmptyStrings": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+  }
+}

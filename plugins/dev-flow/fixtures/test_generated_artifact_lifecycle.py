@@ -1357,7 +1357,8 @@ class GeneratedArtifactInspectionTests(GeneratedArtifactTestSupport, unittest.Te
         self.assertEqual(decisions["contract-3"][0], "RETAIN")
         self.assertIn("do not apply cleanup", decisions["contract-3"][1])
         self.assertEqual(decisions["contract-4"][0], "HUMAN_GATE")
-        self.assertIn("resolve the Human Gate", decisions["contract-4"][1])
+        self.assertIn("repair or revalidate", decisions["contract-4"][1])
+        self.assertIn("concrete missing authority", decisions["contract-4"][1])
         self.assertFalse(inspection["ok"])
 
     def assert_surfaces_are_read_only(self):
@@ -2258,7 +2259,7 @@ class GeneratedArtifactInspectionTests(GeneratedArtifactTestSupport, unittest.Te
         self.assertIn("invalid_owner_uid", manifest_errors)
         self.assertIn("invalid_repository_inode", manifest_errors)
 
-    def test_issue_only_registry_reports_a_human_gate_next_action(self):
+    def test_issue_only_registry_reports_a_fail_closed_repair_next_action(self):
         from devflow_stop_hook import generated_artifact_stop_check
         from workflow_generated_artifacts import inspect_generated_artifact_lifecycle
 
@@ -2276,7 +2277,10 @@ class GeneratedArtifactInspectionTests(GeneratedArtifactTestSupport, unittest.Te
         self.assertFalse(inspection["ok"])
         self.assertEqual(
             inspection["nextActions"],
-            ["Record the failed invariants and resolve the Human Gate before any cleanup."],
+            [
+                "Record the failed invariants and repair or revalidate the same owned identity "
+                "before cleanup; open a Human Gate only for a concrete missing authority or material risk decision."
+            ],
         )
         self.assertEqual(stop["nextActions"], inspection["nextActions"])
 
@@ -2646,7 +2650,7 @@ class GeneratedArtifactCleanupTests(GeneratedArtifactTestSupport, unittest.TestC
         self.assertEqual(first["status"], "complete", first)
         self.assertEqual(replay, first)
 
-    def test_orchestrator_only_routes_fresh_auto_clean_after_owner_exit(self):
+    def test_orchestrator_applies_only_fresh_auto_clean_after_owner_exit(self):
         from workflow_continuation import generated_artifact_orchestration
 
         repo = self.make_repo()
@@ -2668,8 +2672,11 @@ class GeneratedArtifactCleanupTests(GeneratedArtifactTestSupport, unittest.TestC
         )
         self.assertTrue(routed["applyAllowed"])
         self.assertTrue(routed["requiresExplicitApply"])
+        self.assertTrue(routed["applySafeguardSupplied"])
         self.assertTrue(routed["receiptRequired"])
-        self.assertTrue(artifact.exists())
+        self.assertEqual(routed["status"], "complete")
+        self.assertEqual(routed["receipt"]["status"], "complete")
+        self.assertFalse(artifact.exists())
         self.assertFalse(target.exists())
 
         active_contract = self.prepare(
@@ -2702,7 +2709,8 @@ class GeneratedArtifactCleanupTests(GeneratedArtifactTestSupport, unittest.TestC
             manifest,
             stale_plan,
         )
-        self.assertEqual(stale["action"], "AWAIT_HUMAN")
+        self.assertEqual(stale["action"], "FAIL_CLOSED_REPAIR")
+        self.assertFalse(stale["awaitingHumanWritten"])
         self.assertFalse(stale["applyAllowed"])
         self.assertIn("stale_or_self_authored_plan", stale["reasons"])
 

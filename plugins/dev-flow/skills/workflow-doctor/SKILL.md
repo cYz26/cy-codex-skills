@@ -37,6 +37,8 @@ user-owned files. `AGENTS.md.generated` remains a merge candidate. A doctor
 result is complete when it separates blockers from warnings, names owners and
 hashes, and supplies a safe next command.
 
+Report resolver evidence read-only; repairable drift is not `AWAIT_HUMAN` and no marker is written.
+
 The doctor never creates or promotes a Requirement, writes a Receipt or
 override, selects a fallback, runs provider commands, or installs/activates a
 provider.

@@ -26,6 +26,7 @@ def verify_release_runtime(plugin_root: Path, repo_root: Path | None = None) -> 
     checks: list[dict[str, Any]] = []
 
     manifest = read_manifest(manifest_path, checks)
+    check_manifest_contract(manifest, checks)
     archive_path = plugin_root / manifest.get("archive", {}).get("path", DEFAULT_ARCHIVE)
     expected_archive_sha = str(manifest.get("archive", {}).get("sha256", ""))
 
@@ -85,6 +86,67 @@ def read_manifest(path: Path, checks: list[dict[str, Any]]) -> dict[str, Any]:
     add_check(checks, "runtime manifest exists", True, str(path))
     add_check(checks, "runtime manifest parses", True, str(path))
     return manifest
+
+
+def check_manifest_contract(manifest: dict[str, Any], checks: list[dict[str, Any]]) -> None:
+    schema = manifest.get("schemaVersion")
+    if schema in (1, 2):
+        add_check(
+            checks,
+            "runtime manifest schema is supported",
+            True,
+            f"legacy schema {schema}",
+        )
+        return
+    if schema != 3:
+        add_check(
+            checks,
+            "runtime manifest schema is supported",
+            False,
+            f"unsupported schema {schema!r}",
+        )
+        return
+    sources = manifest.get("sources")
+    actual_tree = (
+        hashlib.sha256(
+            json.dumps(sources, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        if isinstance(sources, list)
+        else ""
+    )
+    recorded_tree = str(manifest.get("sourceTreeSha256") or "")
+    source_identity = manifest.get("sourceIdentity")
+    expected_identity = {
+        "algorithm": "sha256",
+        "kind": "source-tree",
+        "sha256": recorded_tree,
+    }
+    add_check(
+        checks,
+        "runtime manifest schema is supported",
+        True,
+        "schema 3",
+    )
+    add_check(
+        checks,
+        "runtime source tree digest matches source records",
+        bool(recorded_tree) and recorded_tree == actual_tree,
+        f"expected {recorded_tree or 'missing'}, actual {actual_tree or 'missing'}",
+    )
+    add_check(
+        checks,
+        "runtime source identity is deterministic",
+        source_identity == expected_identity
+        and manifest.get("sourceCommit") == f"sha256:{recorded_tree}",
+        json.dumps(source_identity, sort_keys=True),
+    )
+    add_check(
+        checks,
+        "runtime build command is logical",
+        manifest.get("buildCommand")
+        == ["python3", "dev/scripts/package_devflow_release_runtime.py"],
+        json.dumps(manifest.get("buildCommand")),
+    )
 
 
 def check_archive(path: Path, expected_sha: str, checks: list[dict[str, Any]]) -> str | None:

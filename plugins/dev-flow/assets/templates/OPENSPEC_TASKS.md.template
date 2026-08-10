@@ -17,11 +17,14 @@ checkpoints; OpenSpec remains the canonical plan.
   set. Record every deferred or blocked finding in the `TASK_LEDGER.md`
   Incidental Finding Register; the register does not authorize follow-up work.
 
-## Escalation Triggers
+## Escalation Triggers (Authority Delta)
 
-- Stop and replan or ask the human when a finding expands scope, authority,
-  dependency, schema, migration, public behavior, architecture, external
-  effects, destructive work, or the approved write set.
+- Resolve every deviation through the centralized authority-delta seam. Ask the
+  human only for non-empty concrete `missingAuthority`; repairable evidence or
+  validation drift uses `FAIL_CLOSED_REPAIR`, not awaiting state.
+- A material expansion of scope, authority, dependency, schema, migration,
+  public behavior, external target/effect, destructive risk, or write set is a
+  Human Gate only when the approved contract does not already cover it.
 - Required behavior and failing acceptance criteria remain on the Critical
   Path and may not be deferred.
 
@@ -36,6 +39,9 @@ checkpoints; OpenSpec remains the canonical plan.
 - [ ] Any applicable project-directed implementation-readiness Requirement has
   a current Ready receipt and independent ordinary authority before product
   mutation.
+- [ ] Any automatic external-effect chain has a predeclared Standing Milestone
+  External Effects Contract bound to exact identities, evidence, exclusions,
+  failure policy, and reentry policy.
 
 ## Continuation Policy
 
@@ -46,8 +52,11 @@ checkpoints; OpenSpec remains the canonical plan.
   `COMPLETE`.
 - List genuine Human Gates explicitly. A phase, review, verification, or
   checkpoint label alone is not a Human Gate.
-- Release, archive, commit, push, PR, dependency/migration apply, destructive
-  work, and other external effects retain their separate authorization.
+- A current standing milestone covers only its declared exact
+  commit/push/tag/publication/readback/named-source-fast-forward/cache/project
+  refresh chain without repeat gates.
+  Archive, PR, merge, force-push, broad cleanup, dependencies/migrations, and
+  unnamed targets remain separate default-deny effects.
 
 ## Capability Slices
 

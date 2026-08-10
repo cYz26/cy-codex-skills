@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 from typing import Any, Optional
@@ -221,11 +222,20 @@ def parse_yaml_subset(frontmatter: str, state: dict[str, Any]) -> None:
 
 def parse_scalar(value: str) -> Any:
     scalars = {"true": True, "false": False, "null": None}
-    return scalars.get(value, value)
+    if value in scalars:
+        return scalars[value]
+    if value.startswith("[") and value.endswith("]"):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return value
+        return parsed if isinstance(parsed, list) else value
+    return value
 
 
 def default_state_values(project_mode: str, change_id: str, change_status: str = "planned") -> dict[str, Any]:
     return {
+        "workflow_version": current_plugin_version(),
         "project_mode": project_mode,
         "current_stage": "planning",
         "change_id": change_id,
@@ -250,9 +260,24 @@ def default_state_values(project_mode: str, change_id: str, change_status: str =
         "last_goal_status": "unknown",
         "goal_summary": "none",
         "goal_gate_required": False,
+        "goal_gate_id": "none",
         "goal_gate_status": "not_required",
         "goal_gate_reason": "none",
         "goal_gate_suggested_goal": "none",
+        "authority_gate_key": "none",
+        "authority_gate_status": "inactive",
+        "authority_gate_resolution_digest": "none",
+        "authority_gate_evidence_digest": "none",
+        "authority_gate_next_question": "none",
+        "authority_gate_missing_authority_json": "[]",
+        "standing_milestone_status": "inactive",
+        "standing_milestone_contract_path": "none",
+        "standing_milestone_contract_sha256": "none",
+        "standing_milestone_goal_id": "none",
+        "standing_milestone_change_id": "none",
+        "standing_milestone_candidate_digest": "none",
+        "standing_milestone_validation_digest": "none",
+        "standing_milestone_review_digest": "none",
     }
 
 
@@ -302,6 +327,9 @@ def merged_state_values(existing: dict[str, Any], overrides: dict[str, Any]) -> 
         str(overrides.get("change_id", change.get("id", "none"))),
         str(overrides.get("change_status", change.get("status", "planned"))),
     )
+    values["workflow_version"] = str(
+        overrides.get("workflow_version", existing.get("workflow_version", current_plugin_version()))
+    )
     values["current_stage"] = str(overrides.get("current_stage", existing.get("current_stage", "planning")))
     values["plan_written"] = bool(overrides.get("plan_written", gates.get("plan_written", True)))
     readiness = existing.get("implementation_readiness", {})
@@ -344,6 +372,7 @@ def merged_state_values(existing: dict[str, Any], overrides: dict[str, Any]) -> 
     )
     values["compact_error"] = str(overrides.get("compact_error", context.get("compact_error", "none")))
     goal_gate = existing.get("goal_gate", {})
+    values["goal_gate_id"] = str(overrides.get("goal_gate_id", goal_gate.get("id", "none")))
     values["goal_gate_required"] = bool(
         overrides.get("goal_gate_required", goal_gate.get("required", False))
     )
@@ -351,6 +380,60 @@ def merged_state_values(existing: dict[str, Any], overrides: dict[str, Any]) -> 
     values["goal_gate_reason"] = str(overrides.get("goal_gate_reason", goal_gate.get("reason", "none")))
     values["goal_gate_suggested_goal"] = str(
         overrides.get("goal_gate_suggested_goal", goal_gate.get("suggested_goal", "none"))
+    )
+    standing = existing.get("standing_milestone", {})
+    if not isinstance(standing, dict):
+        standing = {}
+    for key, fallback in (
+        ("status", "inactive"),
+        ("contract_path", "none"),
+        ("contract_sha256", "none"),
+        ("goal_id", "none"),
+        ("change_id", "none"),
+        ("candidate_digest", "none"),
+        ("validation_digest", "none"),
+        ("review_digest", "none"),
+    ):
+        values[f"standing_milestone_{key}"] = str(
+            overrides.get(f"standing_milestone_{key}", standing.get(key, fallback))
+        )
+    authority_gate = existing.get("authority_gate", {})
+    if not isinstance(authority_gate, dict):
+        authority_gate = {}
+    values["authority_gate_key"] = str(
+        overrides.get("authority_gate_key", authority_gate.get("key", "none"))
+    )
+    values["authority_gate_status"] = str(
+        overrides.get("authority_gate_status", authority_gate.get("status", "inactive"))
+    )
+    values["authority_gate_resolution_digest"] = str(
+        overrides.get(
+            "authority_gate_resolution_digest",
+            authority_gate.get("resolution_digest", "none"),
+        )
+    )
+    values["authority_gate_evidence_digest"] = str(
+        overrides.get(
+            "authority_gate_evidence_digest",
+            authority_gate.get("evidence_digest", "none"),
+        )
+    )
+    values["authority_gate_next_question"] = str(
+        overrides.get(
+            "authority_gate_next_question",
+            authority_gate.get("next_question", "none"),
+        )
+    )
+    missing_authority = overrides.get(
+        "authority_gate_missing_authority",
+        authority_gate.get("missing_authority", []),
+    )
+    if not isinstance(missing_authority, list):
+        missing_authority = []
+    values["authority_gate_missing_authority_json"] = json.dumps(
+        [str(item) for item in missing_authority],
+        ensure_ascii=False,
+        separators=(",", ":"),
     )
     health = existing.get("context_health", {})
     values["last_context_health_report"] = str(

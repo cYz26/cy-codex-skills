@@ -239,8 +239,8 @@ def _issue_release_apply_authorization(
     ]
     side_effect = side_effect_decision(
         default_plugin_root(),
-        "archive_release",
-        {"verified_and_explicit_user_request"},
+        "release.promote_local",
+        {"verified_approved_write_set"},
     )
     if not all(item["ready"] for item in readiness) or not side_effect.get("authorized", False):
         raise PermissionError(

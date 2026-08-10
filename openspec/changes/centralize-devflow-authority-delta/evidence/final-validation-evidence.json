@@ -1,0 +1,143 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "devflow-milestone-validation-evidence",
+  "contractId": "dev-flow-authority-delta-v0.4.0",
+  "checks": [
+    {
+      "id": "completion-contract",
+      "command": "openspec validate centralize-devflow-authority-delta --strict --json && openspec validate --all --strict --json",
+      "exitCode": 0,
+      "status": "pass",
+      "counts": {
+        "passed": 34,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "focused-tests",
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3.12 dev/plugins/dev-flow/tests/test_milestone_external_effects.py",
+      "exitCode": 0,
+      "status": "pass",
+      "counts": {
+        "passed": 79,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "broad-tests",
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3.12 dev/scripts/run_devflow_prepromotion_tests.py && PYTHONDONTWRITEBYTECODE=1 python3.12 -m unittest discover -s dev/plugins/dev-flow/tests -p 'test_*.py' && PYTHONDONTWRITEBYTECODE=1 python3.12 -m unittest discover -s plugins/dev-flow/tests -p 'test_*.py'",
+      "exitCode": 0,
+      "status": "pass",
+      "counts": {
+        "passed": 1600,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "devflow-validators",
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3.12 dev/plugins/dev-flow/scripts/validate_workflow_state.py --repo . --json && PYTHONDONTWRITEBYTECODE=1 python3.12 dev/plugins/dev-flow/scripts/doctor_workflow.py --repo . --json",
+      "exitCode": 0,
+      "status": "pass",
+      "counts": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "source-release-parity",
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3.12 dev/plugins/dev-flow/scripts/release_promotion_gate.py --repo . --target dev-flow --check --json && PYTHONDONTWRITEBYTECODE=1 python3.12 dev/plugins/dev-flow/scripts/verify_release_runtime.py --plugin-root plugins/dev-flow --repo-root . --json",
+      "exitCode": 0,
+      "status": "pass",
+      "counts": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "secret-scan",
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3.12 -c \"import json,pathlib,re,sys;p=pathlib.Path('.');m=json.loads((p/'.planning/devflow/milestone-external-effects/dev-flow-authority-delta-v0.4.0/candidate-manifest.json').read_text());q=re.compile(r'AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9_]{36,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----');sys.exit(any(q.search((p/x['path']).read_text(errors='ignore')) for x in m['files']))\"",
+      "exitCode": 0,
+      "status": "pass",
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "unexpected-candidate-scan",
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3.12 -c \"import json,pathlib,subprocess,sys;p=pathlib.Path('.');m=json.loads((p/'.planning/devflow/milestone-external-effects/dev-flow-authority-delta-v0.4.0/candidate-manifest.json').read_text());e={x['path'] for x in m['files']}|set(m.get('deletions',[]));a=subprocess.check_output(['git','diff','--name-only','-z','HEAD','--']);b=subprocess.check_output(['git','ls-files','--others','--exclude-standard','-z','--']);o={x for x in (a+b).decode().split('\\0') if x};sys.exit(bool(o-e))\"",
+      "exitCode": 0,
+      "status": "pass",
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "blocker-scan",
+      "command": "openspec status --change centralize-devflow-authority-delta --json",
+      "exitCode": 0,
+      "status": "pass",
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      }
+    }
+  ],
+  "pluginEval": {
+    "target": "plugins/dev-flow",
+    "command": "plugin-eval analyze plugins/dev-flow --format markdown",
+    "exitCode": 0,
+    "status": "pass",
+    "score": 86,
+    "grade": "B",
+    "failFindings": 0,
+    "warnFindings": 3,
+    "findings": [
+      {
+        "id": "trigger_cost_tokens-budget-high",
+        "severity": "warning",
+        "decision": "accepted-nonblocking",
+        "rationale": "The warning is a static portfolio-size advisory; reducing the trigger surface would change skill routing beyond this authority-delta milestone."
+      },
+      {
+        "id": "invoke_cost_tokens-budget-high",
+        "severity": "warning",
+        "decision": "accepted-nonblocking",
+        "rationale": "A bounded reduction to the already-authorized project-orchestrator lowered release invoke cost to 17,093 tokens, below the excessive threshold; the remaining heavy warning is nonblocking and a broader portfolio rewrite is outside this milestone."
+      },
+      {
+        "id": "deferred_cost_tokens-budget-high",
+        "severity": "warning",
+        "decision": "accepted-nonblocking",
+        "rationale": "Deferred reference size is not a release safety failure and is retained to avoid an unrelated documentation architecture rewrite."
+      },
+      {
+        "id": "coverage-artifacts-unavailable",
+        "severity": "info",
+        "decision": "accepted-with-regression-evidence",
+        "rationale": "Plugin Eval did not find a coverage artifact; the completion contract instead requires the fresh focused, pre-promotion, development, release, and long-run regression suites recorded here."
+      },
+      {
+        "id": "observed-usage-not-supplied",
+        "severity": "info",
+        "decision": "deferred-measurement",
+        "rationale": "Observed token benchmarking is a separate measurement exercise and is not required to prove this milestone's authority or publication safety."
+      }
+    ]
+  },
+  "secretScan": {
+    "status": "pass",
+    "findings": []
+  },
+  "unexpectedCandidateFiles": [],
+  "unresolvedBlockers": []
+}

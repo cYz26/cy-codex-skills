@@ -65,9 +65,9 @@ results; old claims are not evidence.
 
 ## Git Transport vs GitHub Control Plane
 
-A gh authentication failure is not Git transport failure. Once push is
-explicitly authorized, verify `git.push` with `git_transport_preflight.py`; its
-`git ls-remote` probe never calls `gh` or pushes. Record its ready/blocked
+A gh authentication failure is not Git transport failure. For a covered push,
+run `git_transport_preflight.py` with commit/fast-forward proof; `git ls-remote`
+never calls `gh` or pushes. Record ready/blocked
 status without treating readiness as authorization. GitHub platform writes use
 `github.control_plane_write`.
 
@@ -76,7 +76,7 @@ paths `github_actions`, `github_cli`, and `human_web`. Select Actions only when
 the reviewed workflow exists in the immutable tag target, repository policy
 permits it, and `GITHUB_TOKEN` has explicit least privilege permissions. Record
 the workflow identity, expected tag target, release inputs, conflict checks,
-and separate authorization for `git.push` and `github.control_plane_write`.
+and exact standing or separate authority.
 
 Do not infer publication from tag transport or workflow dispatch. Require
 publication readback of the expected tag, target, published state, draft state,
@@ -95,10 +95,10 @@ legacy `git.push_pr` effect is compatibility-only.
 Active-change verification is not overall completion. After evidence passes,
 return to `project-orchestrator` and inspect the overall Target State plus the
 canonical execution source. Continue the next approved task or change without
-routine confirmation. Return `READY_FOR_EXTERNAL_EFFECT` when the only next
-step is release, archive, commit, push, PR, dependency/migration apply, or
-another separately authorized effect; never perform it from verification
-readiness alone. Return `COMPLETE` only when the overall contract, not merely
+routine confirmation. For `READY_FOR_EXTERNAL_EFFECT`, continue only when a
+current standing milestone covers the exact effect; otherwise resolve missing
+authority. Verification readiness alone grants nothing. Return
+`COMPLETE` only when the overall contract, not merely
 the current change, is closed and verified.
 
 Source verification, generated release, installed cache, and each consumer
@@ -151,10 +151,10 @@ python3 scripts/record_release_verification.py --repo <repo> \
   --diff-command 'git diff --check' --diff-result pass --json
 ```
 
-Release apply additionally requires `gates.release_allowed: true`, set only
-after explicit user authorization. A focused pass, stale receipt, incomplete
-implementation gate, unverified current change, or command-line `--apply`
-alone cannot authorize promotion.
+Release apply requires legacy `gates.release_allowed: true` or current standing
+coverage of `release.promote_local`. Focused/stale/incomplete evidence and
+`--apply` alone grant nothing; external effects require frozen current
+candidate, validation, and review digests.
 
 After authorized promotion, run the full development discovery including both
 release-dependent modules, plus packaged/runtime checks. Runtime verification

@@ -1,8 +1,8 @@
 {
-  "change": "add-codex-fleet-sync",
+  "change": "centralize-devflow-authority-delta",
   "checks": {
     "development": {
-      "command": "PYTHONDONTWRITEBYTECODE=1 python3.12 dev/scripts/run_devflow_prepromotion_tests.py",
+      "command": "pythondontwritebytecode=1 python3.12 dev/scripts/run_devflow_prepromotion_tests.py",
       "result": "pass"
     },
     "diff": {
@@ -10,52 +10,51 @@
       "result": "pass"
     },
     "openspec": {
-      "command": "openspec validate --all --strict",
+      "command": "openspec validate centralize-devflow-authority-delta --strict --json && openspec validate --all --strict --json",
       "result": "pass"
     }
   },
   "projectRefreshImpact": {
     "baselineManifestIdentitySha256": "41d438d17372d43ee220bb046273d1d7b9a1d01242145a9db245d17f5c307fd0",
     "baselineProjectSchemaHead": 8,
-    "baselineRefreshContractDigest": "sha256:d83db0c2d30294baf188ffbf5461f0578c2cf3a4329fc63942163c39bbcded1b",
-    "baselineRevision": 9,
-    "baselineRoot": "/Users/cy/Dev/agents-dev/cy-codex-skills/plugins/dev-flow",
-    "changedInputs": [
-      "skills/codex-updater/SKILL.md"
-    ],
+    "baselineRefreshContractDigest": "sha256:f4a68a8e345f058955633af474ff1ced0e3c1bbd1ce90e1edb38d828473cf9aa",
+    "baselineRevision": 11,
+    "baselineRoot": "/Users/cy/.codex/worktrees/4a63/cy-codex-skills/plugins/dev-flow",
+    "changedInputs": [],
     "configSensitiveChanges": [],
     "errors": [],
-    "evidenceChange": "add-codex-fleet-sync",
-    "expectedChange": "add-codex-fleet-sync",
+    "evidenceChange": "centralize-devflow-authority-delta",
+    "expectedChange": "centralize-devflow-authority-delta",
     "impact": "changed",
     "manifestChanged": false,
     "manifestIdentitySha256": "41d438d17372d43ee220bb046273d1d7b9a1d01242145a9db245d17f5c307fd0",
     "migrationCoverage": {},
     "nextAction": "Project Refresh Impact is covered by the versioned contract and fixture matrix.",
     "ok": true,
-    "refreshContractDigestChanged": true,
+    "refreshContractDigestChanged": false,
+    "sameChangeRepromotion": false,
     "schemaDecision": "managed-refresh",
     "sourceProjectSchemaHead": 8,
-    "sourceRefreshContractDigest": "sha256:991200e46017f800c99d67bbc52feaf31b5b7747dcc791007de0df08e0de2a09",
-    "sourceRevision": 10,
-    "sourceRoot": "/Users/cy/Dev/agents-dev/cy-codex-skills/dev/plugins/dev-flow",
-    "status": "changed_covered",
-    "trackedInputsSha256": "1e2ab543b32e451695ace8cae510c70c9cb5453cb4ada4af95faa05dcc3dff7b"
+    "sourceRefreshContractDigest": "sha256:f4a68a8e345f058955633af474ff1ced0e3c1bbd1ce90e1edb38d828473cf9aa",
+    "sourceRevision": 11,
+    "sourceRoot": "/Users/cy/.codex/worktrees/4a63/cy-codex-skills/dev/plugins/dev-flow",
+    "status": "current",
+    "trackedInputsSha256": "d150af3690a925d75373b97f4c21d595afbf83357ce6c7bc15b6fd543b663c5a"
   },
-  "recordedAt": "2026-08-08T04:15:42.677999+00:00",
+  "recordedAt": "2026-08-09T19:09:27.672821+00:00",
   "schemaVersion": 1,
   "sourceFiles": [
     {
       "path": "dev/plugins/dev-flow/.codex-plugin/plugin.json",
-      "sha256": "057283bd861b1ad48ea8473353d8188ddc7fd3c6579dd4cda735dbf8db44bb08"
+      "sha256": "9bb75498658016b6368a145730c9d669e057a1b1594ad16f2d379fb897b55d51"
     },
     {
       "path": "dev/plugins/dev-flow/.codex-plugin/project-migration.json",
-      "sha256": "3926d16bfb1e907b7bfe53090eb548b0243458875c44e63c1cc81da5396a566f"
+      "sha256": "fdee54a5523e7b834c8eac2deb5feb778fe29936e0879325fc83fbbd65a46ed5"
     },
     {
       "path": "dev/plugins/dev-flow/.codex-plugin/release-sync.json",
-      "sha256": "fbd7adc97ea2399d3f69e761ffddd8c441aac9149d9719035aaad7ebdaa0bbd5"
+      "sha256": "5c5cff87edd6472ba18fb52d3885b256949f97ba8671aa68441d79978dbd3b85"
     },
     {
       "path": "dev/plugins/dev-flow/.planning/STATE.md",
@@ -107,7 +106,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/README.md",
-      "sha256": "7ab2171f6785f0b79c37b38a83d4fb5da166f22b7dc9c22ea1a60c739ce7c80a"
+      "sha256": "f5c4678a42bba94aba09a5733502ac081154cc7266fe1b167c6f7c2f79d19f1e"
     },
     {
       "path": "dev/plugins/dev-flow/assets/dev-flow.png",
@@ -151,11 +150,11 @@
     },
     {
       "path": "dev/plugins/dev-flow/assets/templates/AGENTS.md.template",
-      "sha256": "051a4ee8a2723374766800a150075a79954fa662a657606f9b5a8b7a54a4f288"
+      "sha256": "0e8f656b9b7d81a563633d508a27e09979268e7e60601caff316190a639f2b05"
     },
     {
       "path": "dev/plugins/dev-flow/assets/templates/AGENT_TASK_CONTRACT.md.template",
-      "sha256": "e5cd1f4ede0deaa714f054efa708f73ceb6ff87ef69a626b33e463f9d8cf8d64"
+      "sha256": "3cd741993127f6b660cea32c06841961ed7ad5ae3f9d91ee21e871b2b21121f7"
     },
     {
       "path": "dev/plugins/dev-flow/assets/templates/CHECKPOINT.md.template",
@@ -175,19 +174,19 @@
     },
     {
       "path": "dev/plugins/dev-flow/assets/templates/ENGINEERING_POLICY.md.template",
-      "sha256": "a3c8f1a69582701b4a123fb189996829124554b94f5e27a2780223659360a215"
+      "sha256": "2bd532389bb676e8451ad7e03d77b35d2fa70409cc4a87e6960332ca12571213"
     },
     {
       "path": "dev/plugins/dev-flow/assets/templates/EVIDENCE_TEMPLATE.md.template",
-      "sha256": "126408dd7f55d5d39ad20a26f4c97be30eff1d2940b5684da6d81b7456975102"
+      "sha256": "a96d895686ffd59392fd0bb8c40e59e553b0fa6bd56412a5a12beee86bde3166"
     },
     {
       "path": "dev/plugins/dev-flow/assets/templates/OPENSPEC_CONFIG.yaml.template",
-      "sha256": "1d869eb650a008a474b21b6ba45e1e2242391b3ec5acc47678dcf5618cf0a186"
+      "sha256": "d57f73dc73b652758a7b38725ae66ca519da38529daee1c03a54b91bfcbc44cc"
     },
     {
       "path": "dev/plugins/dev-flow/assets/templates/OPENSPEC_DESIGN.md.template",
-      "sha256": "95f4074037b69ddf0b048de4fd69507e3ac8043b652cb6b5bf4badd27c714494"
+      "sha256": "165dc4c51333611b2816be69bc2122270c3a0e04e37b1c45ab2c087b744b67bc"
     },
     {
       "path": "dev/plugins/dev-flow/assets/templates/OPENSPEC_PROPOSAL.md.template",
@@ -199,7 +198,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/assets/templates/OPENSPEC_TASKS.md.template",
-      "sha256": "035c71a9173eefa44ec25e7eb4b4c93519c4fc8d47a2b75ffbf5283d615540af"
+      "sha256": "442c0d7017727bdee5e25d8f229e3f8589cb472665f21c4f09911f2351c93d0e"
     },
     {
       "path": "dev/plugins/dev-flow/assets/templates/REPAIR_PLAN.md.template",
@@ -207,7 +206,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/assets/templates/REVIEW_CHECKLIST.md.template",
-      "sha256": "7bcd21387e9db300fc4e0e435832126c327d894fbdce6d127fb286bee6ed218c"
+      "sha256": "6ebb3da1b054415def1fda0e153c239ff8511288deafe6533ae1111cb556aec1"
     },
     {
       "path": "dev/plugins/dev-flow/assets/templates/SETUP_REPORT.md.template",
@@ -215,11 +214,11 @@
     },
     {
       "path": "dev/plugins/dev-flow/assets/templates/STATE.md.template",
-      "sha256": "34c60eacd2f653af836d341f5e75915197297e5f3af94d9efe8e7c60e1db6984"
+      "sha256": "7d7b71aa27b3c393c23b0790e82620c819abd78125ef207b0580449878875234"
     },
     {
       "path": "dev/plugins/dev-flow/assets/templates/TASK_LEDGER.md.template",
-      "sha256": "adf8c9ff26556b20f6baa074687480d1f1f1d874a9de4075f52fa806303f47a0"
+      "sha256": "22939f7b794f6cd60180b470ffcda60b5ba2185ffbf3f543896db37ab4df9eb9"
     },
     {
       "path": "dev/plugins/dev-flow/assets/templates/VERIFICATION.md.template",
@@ -227,7 +226,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/docs/artifact-ownership.md",
-      "sha256": "a847b63ed3e6c9154f02c3e59a951fd01867c334dde80946d5cdfb2440c6a13a"
+      "sha256": "e7d4a691d8e4949e55e0a18c10a2b309deaa312e42655f0fc5f0f377ac44da34"
     },
     {
       "path": "dev/plugins/dev-flow/docs/decision_grilling_matrix.json",
@@ -238,12 +237,24 @@
       "sha256": "a85f0509d0e14c05facc593d6f8f56de4a005e9ebcdcee05fa0acb092cb57808"
     },
     {
+      "path": "dev/plugins/dev-flow/docs/dev-flow-0.4.0.release-manifest.json",
+      "sha256": "cfd72b15ecc3b764f1c2e746b23ee27f18318005baae55c9ae2a692d9d71acc4"
+    },
+    {
+      "path": "dev/plugins/dev-flow/docs/dev-flow-release-policy.json",
+      "sha256": "69e9f4da7bc8b0055257a2589346abdb7771401467ede8523768a16bea4744a1"
+    },
+    {
+      "path": "dev/plugins/dev-flow/docs/dev-flow-v0.4.0.md",
+      "sha256": "992d82b2d2bae9d796d6dea3a7922c6f7bfe090e30957e34381d588cf1f9ad22"
+    },
+    {
       "path": "dev/plugins/dev-flow/docs/generated-artifact-lifecycle.md",
-      "sha256": "de579fb9bd0d719565e925a0e2fabc5bb385179de84de8c0f249b1c022a71108"
+      "sha256": "8529e411612dad45920758a54ac28617da68b26eea188b25c32e2a3c39c1165e"
     },
     {
       "path": "dev/plugins/dev-flow/docs/git_transport_routing.md",
-      "sha256": "3208e29829512ade9804a2d6655ab9389546682de3e67c5ea5ba42d09a81627c"
+      "sha256": "5dde6dac9ba6c213597d8ebdc0d2013d9a72881f16c1c06d3d8caa910fe88d03"
     },
     {
       "path": "dev/plugins/dev-flow/docs/history/2026-05-18-audit-context-tools-design.md",
@@ -267,7 +278,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/docs/side_effect_policy.json",
-      "sha256": "f487d1f2f57bac5f140267386d75c3fbe1e1528c5e46582d6af8bb7a2c826daf"
+      "sha256": "6d99c7a802be4112f5cbf23f60a1eaf46ccfc89d9fde918e111295849293370c"
     },
     {
       "path": "dev/plugins/dev-flow/fixtures/brownfield-node/package.json",
@@ -350,6 +361,18 @@
       "sha256": "ff6d91b4d4bfb4750bc1380ef6207f47467a2b68e43e233cf33e9300289a7f8a"
     },
     {
+      "path": "dev/plugins/dev-flow/fixtures/milestone-external-effects/long-run-v1.json",
+      "sha256": "abd82048615a5caaff7b36d13b81a482cc7fc0d45e37665c805aa7f2f7fa856a"
+    },
+    {
+      "path": "dev/plugins/dev-flow/fixtures/milestone-external-effects/standing-contract-v1.json",
+      "sha256": "7d7ae114f5840ceb3aace33f100f7080d2eaa76f6444a9020ab60b311842205e"
+    },
+    {
+      "path": "dev/plugins/dev-flow/fixtures/project-refresh/authority-milestone-cases-v10.json",
+      "sha256": "6ba6ea3d34fb738692494f1711eafcb71aaeca23a1f684ea58337591a50c84b9"
+    },
+    {
       "path": "dev/plugins/dev-flow/fixtures/project-refresh/config-preimage-cases-v7.json",
       "sha256": "e817b0b048de733b3dfbf7aa032a8477bd68e1e78665747d591c875db3e27706"
     },
@@ -426,8 +449,12 @@
       "sha256": "4a151b9db7b2d1f9ca0dfc1f565700eee28fd231a41125f7f91fa84f1a664293"
     },
     {
+      "path": "dev/plugins/dev-flow/fixtures/project-refresh/standing-execution-cases-v11.json",
+      "sha256": "79a2952f155759522dc976ea8ee39cd9c7cef1ddafd249fc7a4a367c46af1be7"
+    },
+    {
       "path": "dev/plugins/dev-flow/fixtures/test_generated_artifact_lifecycle.py",
-      "sha256": "b27f907bd6aa6d0558884f48d0cc34ca10c360492e02f5686ee914ad53d866a0"
+      "sha256": "2ee088feab8dc0a72369803ee4ae7ec936e487b84034a5b21093815660c3cff9"
     },
     {
       "path": "dev/plugins/dev-flow/hooks.json",
@@ -466,6 +493,14 @@
       "sha256": "0a123166a4bba1a1d8d8869b61105d2b20308c3972230a0e1af7c3ebb677e06c"
     },
     {
+      "path": "dev/plugins/dev-flow/schemas/authority-delta-resolution-v1.schema.json",
+      "sha256": "77da14608d53136ea69da12c68c64f285c75aeb4037b2e2df3b226ea9ae979ef"
+    },
+    {
+      "path": "dev/plugins/dev-flow/schemas/authority-gate-receipt-v1.schema.json",
+      "sha256": "d70146ca032c8c271edc5982c02d5b22c0a42fc37ab143972236d135524713ad"
+    },
+    {
       "path": "dev/plugins/dev-flow/schemas/generated-artifact-cleanup-receipt.schema.json",
       "sha256": "ed53e512002af9c0eadda8c860718fe599cd6e323bd4ab28f190134f6dd7d5d6"
     },
@@ -494,6 +529,38 @@
       "sha256": "d68859ebebe947587cd5c9b2a9f2a98d80128e9d7cc4391e5168aacc3bc9e56c"
     },
     {
+      "path": "dev/plugins/dev-flow/schemas/milestone-candidate-manifest-v1.schema.json",
+      "sha256": "f8587af365466bcf539c1f26ffe69f33986447df7b7e51e12b831d053dd6a77f"
+    },
+    {
+      "path": "dev/plugins/dev-flow/schemas/milestone-effect-receipt-v1.schema.json",
+      "sha256": "0997de1648943abd3082f38bcaaad5355985e1b976ff0b241b75a34c4646e6f1"
+    },
+    {
+      "path": "dev/plugins/dev-flow/schemas/milestone-external-effects-contract-v1.schema.json",
+      "sha256": "8896d0c89c971c09ed4b8aeddbc6132fa71c9b1166ff3bfe94fe193b82f52f67"
+    },
+    {
+      "path": "dev/plugins/dev-flow/schemas/milestone-review-evidence-v1.schema.json",
+      "sha256": "7ad4af768b0a83e3ab5f5d0e8e62ea9702014d1b2a4a98378cf7a742628b42bd"
+    },
+    {
+      "path": "dev/plugins/dev-flow/schemas/milestone-review-receipt-v1.schema.json",
+      "sha256": "c9495306f2b96afcee1e42882c3f0bbe836ae82c151ff81a028e0125d9e8c560"
+    },
+    {
+      "path": "dev/plugins/dev-flow/schemas/milestone-terminal-receipt-v1.schema.json",
+      "sha256": "caa989f6fe04a5738b11e2c9eca1420cdd8debe890babc28cf260c3be450b623"
+    },
+    {
+      "path": "dev/plugins/dev-flow/schemas/milestone-validation-evidence-v1.schema.json",
+      "sha256": "b55113eb3d8d7b8c152e96114dafdc3a63d32a3ea4cfad80bf302b6d4378867c"
+    },
+    {
+      "path": "dev/plugins/dev-flow/schemas/milestone-validation-receipt-v1.schema.json",
+      "sha256": "e76d86d5ad65b244208ec2d42e3fa51d9c630259a400ccb419ea038c6ddb8786"
+    },
+    {
       "path": "dev/plugins/dev-flow/schemas/project-refresh-contract.schema.json",
       "sha256": "72f44ed1ec4b4d672cffbb39372b23937813a4e368d52361264325324d3d0096"
     },
@@ -520,6 +587,10 @@
     {
       "path": "dev/plugins/dev-flow/scripts/audit_context_tools.py",
       "sha256": "2c1aec9c557b1a7a96738ed78d781c22ea786a70570fb76970a8da46db185dc1"
+    },
+    {
+      "path": "dev/plugins/dev-flow/scripts/authority_gate.py",
+      "sha256": "38bf86d699eb13c7601e6d26397f522b04fae6d4e69e80c34c88f30e95bb3cfe"
     },
     {
       "path": "dev/plugins/dev-flow/scripts/check_dependencies.py",
@@ -579,7 +650,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/scripts/devflow_stop_hook.py",
-      "sha256": "9f2fe49c1cd35edb1eaf1e39300f4dad2268cba9ee8ed613bd3f872b04ef5f33"
+      "sha256": "ea26c0c6c8467908ada5a0285a9f483f0719eebb87bc2edccd36c0f536b7cfec"
     },
     {
       "path": "dev/plugins/dev-flow/scripts/doctor_workflow.py",
@@ -591,7 +662,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/scripts/git_transport_preflight.py",
-      "sha256": "dca7833f99e7c03af23318ef4feab0c97974bbeb823486acfcf66ab96c7fd72f"
+      "sha256": "9c75a981aa44b4394597c76044e99960349026e80fbef0e792c2707f6131bb40"
     },
     {
       "path": "dev/plugins/dev-flow/scripts/hook_response_adapter.py",
@@ -616,6 +687,10 @@
     {
       "path": "dev/plugins/dev-flow/scripts/lint_ai_plan.py",
       "sha256": "f7ff37c9b6f8a7d89f271fc59480ff46f067657b4704b9444c753458ca7a590b"
+    },
+    {
+      "path": "dev/plugins/dev-flow/scripts/milestone_external_effects.py",
+      "sha256": "4cb68ff0d5330c5742c592edae7b3b4e965287129906347afb6b90831b2dd9e6"
     },
     {
       "path": "dev/plugins/dev-flow/scripts/plugin_preflight_common.py",
@@ -679,7 +754,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/scripts/release_promotion_gate.py",
-      "sha256": "71961e1fe18ea0c2e400facaa70cd925f0909d476ffaf0257353c72244e2a7a7"
+      "sha256": "9694f46e588e0f3b6f267ad030560b55caaeba9f2790ab61cbfcaca434ed13d6"
     },
     {
       "path": "dev/plugins/dev-flow/scripts/render_setup_report.py",
@@ -727,7 +802,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/scripts/verify_release_runtime.py",
-      "sha256": "201aaff634c8751689df29505483222f42c065893e304dee136aff2d50605634"
+      "sha256": "17e1db7470b8a725c69b5bec302dc0b36d6f43814c96f64205f8f079a8273830"
     },
     {
       "path": "dev/plugins/dev-flow/scripts/workflow_agent_task_contract.py",
@@ -736,6 +811,14 @@
     {
       "path": "dev/plugins/dev-flow/scripts/workflow_archive_policy.py",
       "sha256": "24b2aaa57b80a79c41f17d6dc9f655a0d2f2a06dada2ce12a1a3afe0f7beb6ae"
+    },
+    {
+      "path": "dev/plugins/dev-flow/scripts/workflow_authority_delta.py",
+      "sha256": "b74dccb452c7d0933f5db55e78a0c42dbe93927e161a0af93f2db49c02c874b8"
+    },
+    {
+      "path": "dev/plugins/dev-flow/scripts/workflow_authority_gate.py",
+      "sha256": "6c5748bc5c64a32825fe1bc09e3fa24de23dccb0c507a5c80f1c6c8b63b736ed"
     },
     {
       "path": "dev/plugins/dev-flow/scripts/workflow_change.py",
@@ -903,7 +986,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/scripts/workflow_continuation.py",
-      "sha256": "b67bcec41c9f1376618e863af537ab8b66b955548eb5fd05690ed0d911e75353"
+      "sha256": "25d9de310926cce4c1f88222dcb676987aaf97a467e498823fc7bd1babe6eb38"
     },
     {
       "path": "dev/plugins/dev-flow/scripts/workflow_contract_control_plane.py",
@@ -939,11 +1022,11 @@
     },
     {
       "path": "dev/plugins/dev-flow/scripts/workflow_generated_artifacts.py",
-      "sha256": "ae45eb96a01a345f1db1826a2ce9c40f9a83bd0578f9ed9aed9b2f34fc71c05b"
+      "sha256": "ad3af7539e6646e319b1c52b9aa67135ca5a6f3bc8c83c20bcbc4e07e930b326"
     },
     {
       "path": "dev/plugins/dev-flow/scripts/workflow_git.py",
-      "sha256": "2811b4cffcd4c420978c3a91e0ed6419d8de887293af7536516182d305f09927"
+      "sha256": "63a190030e90c9d8a6af36db9520faabb2825561b4dcdf9a3aa1186643780125"
     },
     {
       "path": "dev/plugins/dev-flow/scripts/workflow_goal_gate.py",
@@ -978,6 +1061,18 @@
       "sha256": "d59148e1eddb6f19384787399ff3887254d268ea3a6dc8227af10616ea3fb0d0"
     },
     {
+      "path": "dev/plugins/dev-flow/scripts/workflow_milestone_contract.py",
+      "sha256": "f273ed6eafeefdf0b691ae6a0b2e20802c3de5fee25fd9d06ce0df035d89a63a"
+    },
+    {
+      "path": "dev/plugins/dev-flow/scripts/workflow_milestone_external_effects.py",
+      "sha256": "5719f7b43081ad994e9faab5a45a236d781091486cc9f4aa1023f7ce924d4914"
+    },
+    {
+      "path": "dev/plugins/dev-flow/scripts/workflow_milestone_real_boundaries.py",
+      "sha256": "074c35f0107c2ff9fb0b9cffdcb8e4380229f01edd2270d369462951ade011e4"
+    },
+    {
       "path": "dev/plugins/dev-flow/scripts/workflow_mode_routing.py",
       "sha256": "da5f01be2503942b7f9d4c9a85a969df13f73993cb255bebc7e3aface152b340"
     },
@@ -1007,11 +1102,11 @@
     },
     {
       "path": "dev/plugins/dev-flow/scripts/workflow_release_sync.py",
-      "sha256": "8d72f1fee66dfa9cd62d86353f7f325af39ea60eb8237d6638095b849f97be0e"
+      "sha256": "96461c8b49de65a320e95ee84953ba603bd5ce7a5141e904a135df4d00a33793"
     },
     {
       "path": "dev/plugins/dev-flow/scripts/workflow_release_verification.py",
-      "sha256": "ab9ba3ef1041aaa371ba8357e761b57f5fa0c64721ea99659a496487fe88e3a3"
+      "sha256": "aa9fb2e5cac89b67c183ba0bcff733663057bd45dfcb8d779936c54586d1ceec"
     },
     {
       "path": "dev/plugins/dev-flow/scripts/workflow_repo_docs.py",
@@ -1031,15 +1126,19 @@
     },
     {
       "path": "dev/plugins/dev-flow/scripts/workflow_side_effect_policy.py",
-      "sha256": "667e6a0b3c3a7e2e3833dda7d39e445757d13c32f1ce118ab700484fd94a6996"
+      "sha256": "f0eb079b3e94688c1255d9db3158f566e479ca14979f2aa8ede747df70ad3691"
     },
     {
       "path": "dev/plugins/dev-flow/scripts/workflow_spec_sync_evidence.py",
       "sha256": "aa8eae0f12e41403a67029b81532af351c2ccc518d034e38f447e8ad004e4da1"
     },
     {
+      "path": "dev/plugins/dev-flow/scripts/workflow_standing_milestone.py",
+      "sha256": "805402238e60d6ff42d6aeb9e22325f1f809e5d66ab7b381e223e110318a39e9"
+    },
+    {
       "path": "dev/plugins/dev-flow/scripts/workflow_state.py",
-      "sha256": "f9505d0a8868017839ea6801d8849a7476cde77076dd20a4f87c6b29bb78ed79"
+      "sha256": "f3a115fed7aa613a553d4f804fefb12e41e632247b2a354fb74a8ff90932bec3"
     },
     {
       "path": "dev/plugins/dev-flow/scripts/workflow_stop_scope.py",
@@ -1047,7 +1146,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/scripts/workflow_validate.py",
-      "sha256": "6b75fc2608771803c6aebe9fc19409a02a657294a2d26b4a663b96fc9b6b6def"
+      "sha256": "9595a8c5502bc7859800f650b55f8d6343cb7eb81ab62dbefdb0a30c7f1d2cb1"
     },
     {
       "path": "dev/plugins/dev-flow/scripts/workflow_verification.py",
@@ -1055,7 +1154,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/skills/ai-native-tech-plan/SKILL.md",
-      "sha256": "2bf52cc1e13b447b482f3b206d25079a05950381def5e32b459116e031c04c8a"
+      "sha256": "b17d1ad43c42eb387f9c243ec52cff929d3c1e5730cef3de2a91121c6adb8ccb"
     },
     {
       "path": "dev/plugins/dev-flow/skills/ai-native-tech-plan/assets/task-ledger-template.md",
@@ -1071,7 +1170,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/skills/change-plan/SKILL.md",
-      "sha256": "191bd7b1346457baa8cbbe96fa919e41b689f6917bb070c4c138a2fa1f9a3108"
+      "sha256": "3eff04e75e5ca036e03527a23f2c0174811ee146f4ada6ad85b84328b69d6799"
     },
     {
       "path": "dev/plugins/dev-flow/skills/checkpoint-compact/SKILL.md",
@@ -1107,7 +1206,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/skills/dev-flow-refresh/SKILL.md",
-      "sha256": "8817f88fd07b10cdd19c4c6048c201ae29be0048a3ca69e1b1d6f19ee696499a"
+      "sha256": "314ff5da3b31b4b0309e79587b26a679bc7050337c137aef838fe0abc6885fe3"
     },
     {
       "path": "dev/plugins/dev-flow/skills/dev-flow-refresh/references/project-refresh.md",
@@ -1115,19 +1214,19 @@
     },
     {
       "path": "dev/plugins/dev-flow/skills/execute-task/SKILL.md",
-      "sha256": "ae3b7c0a34b77385624d69cf4a0dca32e42ccf40a9d8b593077c640ed6c752d8"
+      "sha256": "6a5a50d6cc737fa868eb0ec9c10759bca1f89168c227a64dc486a12c99d75ec4"
     },
     {
       "path": "dev/plugins/dev-flow/skills/feature-intake/SKILL.md",
-      "sha256": "86a3f265314132a2eb8ee3b602d89c8c94d37ddb269500ff3c9914d2cc51a283"
+      "sha256": "00a7786c01c231f2b3007f801ddae1e43c7a306ab4e0e4fcf9639babfce9e3e9"
     },
     {
       "path": "dev/plugins/dev-flow/skills/plugin-project-migration/SKILL.md",
-      "sha256": "1ad1bf8ed079ecc5e0ac0a0bf49f146924453d6321dbecbd1a07c11047973365"
+      "sha256": "82cbcd5829ed8d888d946be4a27ee5a3a0d12b60cb20602a76ecf32640b38f58"
     },
     {
       "path": "dev/plugins/dev-flow/skills/project-orchestrator/SKILL.md",
-      "sha256": "0009616ac02317fd4bf0dde8d12a6b699b21e1c7dee61ef3e59a9d641950be71"
+      "sha256": "c573e3e8f0f6ca2ffa156ddf89be72cc917a2c4a13fc672c4bf0850e43c7e7f5"
     },
     {
       "path": "dev/plugins/dev-flow/skills/project-setup/SKILL.md",
@@ -1135,11 +1234,11 @@
     },
     {
       "path": "dev/plugins/dev-flow/skills/verify-and-archive/SKILL.md",
-      "sha256": "e039202de863a4546c622a0afd8354353981d4ea3ef685807d8d89aa089a3cd6"
+      "sha256": "3b008edbeac777be4a82f79567e142b356323a3b9ff9e3494580d8e69dd059e2"
     },
     {
       "path": "dev/plugins/dev-flow/skills/workflow-doctor/SKILL.md",
-      "sha256": "be2a64dc5db80d50d8a627473cee9662b93e4e73ddd3670f8d994d29c297f43b"
+      "sha256": "9f817389fc1485e1f59fd13a1ffe57c6d86111cb8d5d50106efbec56e9c24d2f"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_agent_task_contract.py",
@@ -1148,6 +1247,18 @@
     {
       "path": "dev/plugins/dev-flow/tests/test_archive_policy.py",
       "sha256": "0aafc42ac3d8f270f6305b49c3c21ae3d43a1dd22efd4e8b42f9f922378f59dc"
+    },
+    {
+      "path": "dev/plugins/dev-flow/tests/test_authority_delta_policy.py",
+      "sha256": "d84f1590307c513c664c98070dc3acd56332625dfeafdb7832da2ae1400333bb"
+    },
+    {
+      "path": "dev/plugins/dev-flow/tests/test_authority_gate.py",
+      "sha256": "b3e0087f681d4eef2e8250d8ec80e98620284f43e2698bc88ccbbac2ba01b0c4"
+    },
+    {
+      "path": "dev/plugins/dev-flow/tests/test_auto_clean_orchestration.py",
+      "sha256": "3313a421725ecc9d09056a9c4e210fa6c2e5f2adfe11d7a06fe65fe249c058fb"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_checkpoint_compact_contract.py",
@@ -1171,11 +1282,15 @@
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_continuous_execution_contract.py",
-      "sha256": "071e243672b5a26df2b9e27c9a79bacaa8014c676a0230215722b266cc0cdde3"
+      "sha256": "d4e00e9a5f61673c078f8b474fa6e6931dff6f9ab596b8efc975b5f3b6384406"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_dependencies.py",
       "sha256": "15ba174a27b3b01b711528a387d67ef16266e2e3ac962e34d24ab1983debd649"
+    },
+    {
+      "path": "dev/plugins/dev-flow/tests/test_devflow_release_bundle.py",
+      "sha256": "33d245272c7d06e8e36f237509f0ba7e642924f229bf1ab207e3fb1194ee6269"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_generated_artifact_lifecycle.py",
@@ -1183,7 +1298,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_git_transport_preflight.py",
-      "sha256": "a8fb59a39efdfdae7f3f06a4c5acfb82451f1ec742977de53b7b51be2bed5afb"
+      "sha256": "5c207536ac5afc7fc2ec8a4613c9a593dd1ffe7865c9de221682789371a620b6"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_goal_quality.py",
@@ -1191,7 +1306,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_implementation_readiness.py",
-      "sha256": "c17b5d6ca32426bd427d9c14f8e041c9dda2320311f2964a5e68ec11745afa01"
+      "sha256": "0b18d9f723f8cdc738ee168a7e2a7ce309fd7edf9ac47132d8caf2b47364088d"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_incidental_finding_lifecycle.py",
@@ -1208,6 +1323,18 @@
     {
       "path": "dev/plugins/dev-flow/tests/test_methodology.py",
       "sha256": "4ef3cb4e747560fd944ae5787e8b98b268af88cbcb217d31a747760622a2c37c"
+    },
+    {
+      "path": "dev/plugins/dev-flow/tests/test_milestone_contract.py",
+      "sha256": "1f5acba57487548f07a9b2ed41fe950ebadfe01d8f8cc1127e210dae0c988055"
+    },
+    {
+      "path": "dev/plugins/dev-flow/tests/test_milestone_external_effects.py",
+      "sha256": "82f8718eeb76b8ab37814f7fa8090c3e1d5d44daebfa4315c7d7d7bfd180b88b"
+    },
+    {
+      "path": "dev/plugins/dev-flow/tests/test_milestone_real_boundaries.py",
+      "sha256": "2fc43f3709822dd283fad6aaba59c67939becb3101c6ab57d3a530eb9b8de774"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_openspec_1_7.py",
@@ -1227,11 +1354,15 @@
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_project_orchestrator.py",
-      "sha256": "2fa721f545661c6adaba76bfca12ad5f2d9e2b34fd7ef4977fe9917f4a9243f5"
+      "sha256": "f3325ce17f14fbdf50382005b7de18bb13bc240151acf64338ade76db12fcffd"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_project_refresh.py",
-      "sha256": "37de627b35af2375d9b86b56562a4f1160590d879dae2260a021c540e7ef45ac"
+      "sha256": "08f8fc96515a4207da1eec9afe653422de8000b21d5e478b189aefca85c1e6ea"
+    },
+    {
+      "path": "dev/plugins/dev-flow/tests/test_release_asset_expectation.py",
+      "sha256": "6a9049eb4a0869419fb90e8e3545986af24ceebb5c76e7494964cc2cd010e8bd"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_release_promotion_targets.py",
@@ -1239,15 +1370,19 @@
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_release_smoke.py",
-      "sha256": "4fdacad6c5da0444b62f244408e0a970da02a7bb12dd8973c13d1b9294043295"
+      "sha256": "0bb7ae18d78e0c4851e955c36396fc08d9668d41a0b4ce999c790e6bcfe8762f"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_release_sync.py",
-      "sha256": "e6e8453a9d449173902215331fc31b23a466353e5993f949135316a86db31e34"
+      "sha256": "193d03f90e004f8bd51c1aac4ba93b9e9f995db2929dd38c96602783dab1b0a9"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_runtime_gates.py",
-      "sha256": "6191085471e6fe06632e046fa3a9adb30d60f672d1dfc8378cbb6461458250b9"
+      "sha256": "a9b0cb8522b8deedc0c7206c6e2604b668054b9bf55108e3578d69bdc9936a4c"
+    },
+    {
+      "path": "dev/plugins/dev-flow/tests/test_standing_milestone.py",
+      "sha256": "8c0442dea1a17fdb2914546b8fb7ce9ed400045a2e76a8126ba61af0065236f8"
     },
     {
       "path": "dev/plugins/dev-flow/vendor/mattpocock-skills/UPSTREAM_LICENSE.txt",
@@ -1307,13 +1442,13 @@
     },
     {
       "path": "dev/scripts/package_devflow_release_runtime.py",
-      "sha256": "fc8c866d95d4c3f9b81426df68644350d7373486035848200e3fbbfd0be33020"
+      "sha256": "92dbe260de9a6bf28a3d52a692ef47fa27e5000d6d885e0a37d9fe9876c46b0b"
     },
     {
       "path": "dev/scripts/run_devflow_prepromotion_tests.py",
-      "sha256": "dbcf2aa885704bef9780cd5779dc8a2f11d77210326654e236e2283a272b5c86"
+      "sha256": "c97359a7f1c3b082c8878addf2520f36cdbf0bf5cdaa573c02911827a947d459"
     }
   ],
-  "sourceSha256": "2623df3eeb84173ccbd13c4d66e02bf55e70f3d00d492c8b6e39b6207f60304d",
+  "sourceSha256": "c38807437f82141744a267dccfd0cf6a60e0216474d092fd68c6cabcec170b93",
   "target": "dev-flow"
 }

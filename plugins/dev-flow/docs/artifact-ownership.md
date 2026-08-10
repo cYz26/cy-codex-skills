@@ -37,7 +37,9 @@ A pre-existing or unregistered path never becomes task-owned because of its
 name, extension, ignore status, apparent cache/build purpose, or a
 post-creation contract. Automatic cleanup is limited to exact manifest entries
 under a fresh `AUTO_CLEAN` plan. Tracked, protected, shared, escaped, occupied,
-symlinked, hardlinked, or drifted targets require a Human Gate.
+symlinked, hardlinked, or drifted targets are preserved and stop fail-closed;
+they become a Human Gate only when resolving them needs a concrete new
+authority or material risk acceptance.
 
 ## Historical and Legacy Evidence
 

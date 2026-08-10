@@ -75,10 +75,11 @@ task/run-specific isolated root. A contract written after output exists,
 self-authored worker evidence, filenames, extensions, ignore rules, or apparent
 cache/build semantics never grant cleanup authority.
 
-After the owner exits, run read-only observation and planning. Only a fresh
-`AUTO_CLEAN` plan may proceed to explicit `cleanup --apply`; `WAIT_OWNER`
-retries later, `RETAIN` preserves the output, and `HUMAN_GATE` stops automatic
-reclamation. Keep the immutable contract, manifest, plan, and cleanup receipt
+After owner exit, the trusted orchestrator may apply and verify only a fresh
+`AUTO_CLEAN`; direct CLI use still requires `cleanup --apply`. `WAIT_OWNER`
+retries, `RETAIN` preserves output, and unsafe evidence is
+`FAIL_CLOSED_REPAIR` unless authority is missing. Keep contract, manifest, plan,
+and cleanup receipt
 under `.planning/devflow/` and pass their references to
 `record_task_evidence.py`.
 
@@ -98,11 +99,19 @@ ready. Return to `project-orchestrator` after every receipt. Completing one item
 does not end the user request: the orchestrator derives the continuation outcome
 and normally selects the next approved item immediately.
 
-Do not ask for routine confirmation after an item, slice, review, or
-verification boundary. If a genuine Human Gate is reached, record the exact
-decision or authority needed and stop as `AWAIT_HUMAN`; otherwise the receipt is
+Do not ask after an item, slice, review, or verification boundary. Only the
+single recorder may persist concrete `missingAuthority` as `AWAIT_HUMAN`;
+technical failures are `FAIL_CLOSED_REPAIR`. Otherwise the receipt is
 eligible for `CONTINUE_NEXT_ITEM`, `CHECKPOINT_AND_CONTINUE`, or
 `VERIFY_ACTIVE_CHANGE`.
+
+For covered `model.*` work, compare stable task/provider/model/existing-auth
+credential policy/cost policy/serial identity against the Standing Goal
+Execution Authority. A one-use attempt receipt does not consume that grant.
+Record actual monetary cost, then repair/refreeze/retry automatically when only
+technical evidence or the attempt id changes. Use `DEFER_AND_CONTINUE` for a
+safe non-blocking related improvement and include it in the final summary; do
+not branch into that follow-up or ask for a routine confirmation.
 
 ## Incidental Finding Gate
 
@@ -113,8 +122,8 @@ Before expanding the selected item, classify the finding:
 - `DEFER_AND_CONTINUE`: record evidence, affected contract, mitigation, reason,
   and recommended follow-up in the tracked `TASK_LEDGER.md`, then continue only
   when required behavior and acceptance remain safe.
-- `BLOCKED_AWAITING_HUMAN`: stop mutation for severe harm, material scope or
-  authority expansion, ambiguous ownership, or unresolved product decisions.
+- `BLOCKED_AWAITING_HUMAN`: stop mutation only for severe harm or a concrete
+  material scope, authority, ownership/risk, or unresolved product decision.
 
 Required behavior and failing acceptance criteria cannot be deferred. For
 `BLOCKED_AWAITING_HUMAN`, finish only safe read-only diagnosis, preserve the

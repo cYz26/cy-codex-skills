@@ -10,18 +10,19 @@ capabilities:
 | pull request, GitHub release, repository settings | GitHub control plane | `github.control_plane_write` | usable GitHub platform credentials |
 
 A gh authentication failure is not Git transport failure. Do not run `gh auth
-login` for a Git-only operation. Once push is explicitly authorized, inspect
-the configured remote and run the read-only native probe:
+login` for a Git-only operation. Once push is covered by current authority,
+inspect the configured remote and run the read-only native probe:
 
 ```bash
 python3 scripts/git_transport_preflight.py --repo <repo> \
-  --remote origin --branch <branch> --json
+  --remote origin --branch <branch> \
+  --expected-remote-commit <sha> --require-fast-forward --json
 ```
 
-`GIT_TRANSPORT_READY` means the selected remote accepted `git ls-remote`; it
-does not authorize or perform a push and does not guarantee branch-protection
-or fast-forward acceptance. `GIT_TRANSPORT_BLOCKED` means the native Git path
-needs repair. Never substitute `gh auth status` for this probe.
+`GIT_TRANSPORT_READY` means the selected remote accepted `git ls-remote`, equals
+the expected base, and the local candidate is a proven fast-forward when that
+proof is required. It does not perform a push. `GIT_TRANSPORT_BLOCKED` means the
+native Git path needs repair. Never substitute `gh auth status` for this probe.
 
 For `github.control_plane_write`, allow one diagnosis and at most one
 applicable remediation attempt. If credentials remain unavailable, stop that
@@ -45,9 +46,10 @@ release inputs, workflow identity, and the absence of a conflicting tag or
 Release. A workflow that exists only on another branch does not satisfy this
 gate.
 
-Tag transport and Release publication remain separate effects. Pushing the tag
-requires `git.push`; publishing the Release requires
-`github.control_plane_write`. The Actions path does not require local `gh`
+Tag transport and Release publication remain separately receipted effects, but
+one current Standing Milestone External Effects Contract may authorize the
+entire exact chain without another prompt. Pushing the tag uses `git.push`;
+publishing the Release uses `github.control_plane_write`. The Actions path does not require local `gh`
 authentication. If Actions is ineligible before the tag push, use an already
 authenticated `github_cli` path or stop at a named-human `human_web` gate after
 the bounded GitHub CLI recovery budget is exhausted. Do not apply this

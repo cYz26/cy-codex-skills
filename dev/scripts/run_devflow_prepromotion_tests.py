@@ -16,6 +16,7 @@ sys.path.insert(0, str(DEVFLOW_SCRIPTS))
 from workflow_release_verification import analyze_project_refresh_impact
 from workflow_state import resolve_state
 RELEASE_DEPENDENT_TESTS = {
+    "test_devflow_release_bundle.py",
     "test_packaged_runtime.py",
     "test_release_smoke.py",
 }
@@ -62,6 +63,7 @@ def main() -> int:
         REPO_ROOT / "dev" / "plugins" / "dev-flow",
         REPO_ROOT / "plugins" / "dev-flow",
         expected_change=change_id or None,
+        allow_same_change_repromotion=True,
     )
     if not refresh_impact["ok"]:
         print(

@@ -24,9 +24,17 @@ Classify the request and produce a routing decision before planning or code.
    asks one question at a time, recommends an answer, and records it in the
    canonical artifact.
 6. Record the execution policy. Default approved work to
-   `auto-until-terminal`; list only genuine Human Gates or explicit user-
-   requested per-stage confirmations. Ordinary item, review, verification, and
-   checkpoint boundaries are not confirmation gates.
+   `auto-until-terminal`; list only authority deltas or requested confirmation.
+   Items, reviews, implementation choices, verification, and checkpoints are
+   not gates. Declare standing effects once.
+
+When the Goal predeclares model execution, record its exact task, provider,
+model, existing-auth credential policy, cost policy, and serial policy as
+Standing Goal Execution Authority. A one-use attempt receipt is replay/evidence
+identity, not one-use human permission. Record actual monetary cost without a
+per-call currency gate. Route safe optional related optimization to
+`DEFER_AND_CONTINUE`, keep the active task focused, and summarize it at
+completion.
 
 ## Project-Directed Implementation Readiness
 
@@ -60,8 +68,9 @@ affected Completion Contract:
   completion inside the approved contract and write set.
 - `DEFER_AND_CONTINUE` only when evidence shows the active required behavior
   remains safe and the finding can enter the tracked Finding Register.
-- `BLOCKED_AWAITING_HUMAN` for severe harm, material scope or authority
-  expansion, ambiguous ownership, or an unresolved product decision.
+- `BLOCKED_AWAITING_HUMAN` only for severe harm or concrete scope, authority,
+  ownership/risk, or product decisions. Repairable drift is
+  `FAIL_CLOSED_REPAIR` without awaiting markers.
 
 Required behavior and failing acceptance criteria cannot be deferred. Record
 deferred and blocked findings in `TASK_LEDGER.md`; the register does not

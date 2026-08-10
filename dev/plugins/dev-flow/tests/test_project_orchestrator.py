@@ -186,7 +186,7 @@ class ProjectOrchestratorTests(unittest.TestCase):
         self.assertTrue((RELEASE_PLUGIN_ROOT / "hooks.json").exists())
         release_manifest = json.loads((RELEASE_PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text())
         self.assertLessEqual(len(release_manifest["interface"]["defaultPrompt"]), 3)
-        self.assertTrue((RELEASE_PLUGIN_ROOT / "tests" / "test_packaged_runtime.py").exists())
+        self.assertFalse((RELEASE_PLUGIN_ROOT / "tests" / "test_packaged_runtime.py").exists())
         release_fixtures = {
             path.relative_to(RELEASE_PLUGIN_ROOT).as_posix()
             for path in (RELEASE_PLUGIN_ROOT / "fixtures").rglob("*")
@@ -251,6 +251,14 @@ class ProjectOrchestratorTests(unittest.TestCase):
                     "fixtures/project-refresh/current-v8.json",
                     "fixtures/project-refresh/file-source-fingerprint-cases-v9.json",
                 }
+            )
+        if release_refresh["refreshContract"]["revision"] >= 10:
+            expected_release_fixtures.add(
+                "fixtures/project-refresh/authority-milestone-cases-v10.json"
+            )
+        if release_refresh["refreshContract"]["revision"] >= 11:
+            expected_release_fixtures.add(
+                "fixtures/project-refresh/standing-execution-cases-v11.json"
             )
         self.assertEqual(release_fixtures, expected_release_fixtures)
         self.assertFalse((RELEASE_PLUGIN_ROOT / "log").exists())

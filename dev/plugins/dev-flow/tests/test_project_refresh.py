@@ -2245,11 +2245,88 @@ class ProjectRefreshTests(unittest.TestCase):
             {"rollback_blocked_zero_writes"},
         )
 
-    def test_revision_ten_retains_schema_eight_migration_behavior(self):
+    def test_revision_ten_authority_milestone_fixture_preserves_default_deny(self):
+        matrix = json.loads(
+            (
+                PLUGIN_ROOT
+                / "fixtures"
+                / "project-refresh"
+                / "authority-milestone-cases-v10.json"
+            ).read_text()
+        )
+        self.assertEqual(matrix["refreshContractRevision"], 10)
+        self.assertEqual(matrix["projectSchemaHead"], 8)
+        self.assertEqual(matrix["schemaDecision"], "managed-refresh")
+        cases = {case["id"]: case for case in matrix["cases"]}
+        self.assertEqual(
+            set(cases),
+            {
+                "existing-project-has-no-standing-milestone-authority",
+                "authority-contract-drift-fails-closed",
+                "exact-task-owned-cleanup-does-not-touch-history",
+                "named-devflow-refresh-only",
+            },
+        )
+        self.assertFalse(cases["existing-project-has-no-standing-milestone-authority"]["silentAuthorityExpansion"])
+        self.assertFalse(cases["authority-contract-drift-fails-closed"]["awaitingHumanWritten"])
+        self.assertFalse(cases["exact-task-owned-cleanup-does-not-touch-history"]["historicalUserFilesRemoved"])
+        self.assertFalse(cases["named-devflow-refresh-only"]["unnamedConsumersAllowed"])
+
+    def test_revision_eleven_standing_execution_fixture_prevents_repeat_model_gates(self):
+        matrix = json.loads(
+            (
+                PLUGIN_ROOT
+                / "fixtures"
+                / "project-refresh"
+                / "standing-execution-cases-v11.json"
+            ).read_text()
+        )
+        self.assertEqual(matrix["refreshContractRevision"], 11)
+        self.assertEqual(matrix["projectSchemaHead"], 8)
+        self.assertEqual(matrix["schemaDecision"], "managed-refresh")
+        cases = {case["id"]: case for case in matrix["cases"]}
+        self.assertEqual(
+            set(cases),
+            {
+                "standing-model-authority-survives-attempt-receipt",
+                "consumed-attempt-requires-technical-refreeze",
+                "same-authority-new-attempt-continues",
+                "stable-model-boundary-delta-awaits-human",
+                "actual-cost-is-recorded-without-currency-gate",
+                "nonblocking-improvement-defers-and-continues",
+            },
+        )
+        self.assertFalse(
+            cases["standing-model-authority-survives-attempt-receipt"][
+                "humanAuthorityConsumed"
+            ]
+        )
+        self.assertFalse(
+            cases["consumed-attempt-requires-technical-refreeze"][
+                "awaitingHumanWritten"
+            ]
+        )
+        self.assertEqual(
+            cases["same-authority-new-attempt-continues"]["expectedDecision"],
+            "CONTINUE",
+        )
+        self.assertEqual(
+            cases["stable-model-boundary-delta-awaits-human"]["expectedDecision"],
+            "AWAIT_HUMAN",
+        )
+        self.assertFalse(
+            cases["actual-cost-is-recorded-without-currency-gate"]["currencyGate"]
+        )
+        self.assertEqual(
+            cases["nonblocking-improvement-defers-and-continues"]["expectedDecision"],
+            "DEFER_AND_CONTINUE",
+        )
+
+    def test_revision_eleven_keeps_schema_eight_migration_and_preserves_unrelated_configuration(self):
         manifest = json.loads(
             (PLUGIN_ROOT / ".codex-plugin" / "project-migration.json").read_text()
         )
-        self.assertEqual(manifest["refreshContract"]["revision"], 10)
+        self.assertEqual(manifest["refreshContract"]["revision"], 11)
         self.assertEqual(manifest["projectSchema"]["head"], 8)
         self.assertIn("full-openspec-v2-to-v3", refresh_module.MIGRATION_STEP_REGISTRY)
         self.assertIn("full-openspec-v3-to-v4", refresh_module.MIGRATION_STEP_REGISTRY)

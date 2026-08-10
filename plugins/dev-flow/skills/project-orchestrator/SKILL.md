@@ -5,169 +5,112 @@ description: Use when routing Codex setup, planning, execution, verification, or
 
 # Project Orchestrator
 
-Route project work through one canonical control plane. Read `AGENTS.md`,
-`.dev-flow.json`, `.planning/devflow/STATE.md`, `openspec/config.yaml`, and the
-active ledger before choosing a workflow action.
+Use `AGENTS.md`, DevFlow state, OpenSpec, and the active ledger as canonical.
 
 ## Route
 
-1. If workflow files are missing, route to `project-setup`.
-2. Classify the request with `feature-intake` and
-   `docs/routing.matrix.json`. Full OpenSpec is mandatory for behavior, API,
-   data, persistence, integration, migration, permission, error-handling, or
-   compatibility work.
-3. Run dependency diagnosis. Pass each capability needed by the current route
-   explicitly, for example:
-   `python3 scripts/check_dependencies.py --repo <repo> --capability implementation-planning --json`.
-   If a required capability is missing, preview activation with the same
-   repeatable `--capability` flags before any `--apply`.
-4. Route current or external capability uncertainty through
-   `capability-research` and its Capability Evidence Gate.
-5. Route an incomplete OpenSpec change to `change-plan`, an approved item to
-   `execute-task`, completion to `verify-and-archive`, and drift to
-   `workflow-doctor`.
-6. Route a non-trivial technical plan to `ai-native-tech-plan`.
+1. Missing workflow files route to `project-setup`.
+2. Classify with `feature-intake`; behavioral and compatibility changes require
+   Full OpenSpec.
+3. Diagnose exact capabilities and preview activation before apply.
+4. External uncertainty uses `capability-research` and its Capability Evidence Gate.
+5. Route plans to `change-plan`, work to `execute-task`, completion to
+   `verify-and-archive`, drift to `workflow-doctor` with
+   `root-cause-diagnosis`, and technical plans to `ai-native-tech-plan`.
 
-Before routing an approved item into product mutation, run:
+Before product mutation run:
 
 ```bash
 python3 scripts/implementation_readiness.py check-mutation --repo <repo> \
   --change-id <change> --ordinary-authority --json
 ```
 
-The readiness contract is applicable when approved state records
-`implementation_readiness.required: true`; a missing Requirement then returns
-Required instead of being treated as not applicable. Required/NotReady, a
-missing current Ready receipt, or missing ordinary authority must first be
-persisted with both Human Gate state fields before the next continuation result
-may be `AWAIT_HUMAN`. Ready never grants the ordinary authority supplied by
-the caller and never authorizes dependencies, credentials, cost, release,
-cache, migration, archive, Git, or publication.
+When `implementation_readiness.required: true`, Required, NotReady, or stale
+Ready evidence is technical repair. Ready is evidence, not authority. Only
+concrete missing authority reaches the Human Gate recorder.
 
 ## Continuous Execution
 
-Use `auto-until-terminal` after implementation is approved. The orchestrator
-owns the enclosing `execute -> evidence -> decide -> continue` loop:
+After approval use `auto-until-terminal` and keep the enclosing
+`execute -> evidence -> decide -> continue` loop:
 
-1. Resolve one canonical execution source: the active Full OpenSpec task list,
-   or `TASK_LEDGER.md` only when no active OpenSpec task list exists.
-2. Route exactly one dependency-ready item to `execute-task`.
-3. Read its completion receipt, review the evidence, and update the canonical
-   task plus DevFlow state.
-4. Derive one outcome: `CONTINUE_NEXT_ITEM`, `CHECKPOINT_AND_CONTINUE`,
+1. Select the active Full OpenSpec tasks, or `TASK_LEDGER.md` only when no
+   OpenSpec task list is active.
+2. Send one dependency-ready item to `execute-task`, verify its completion
+   receipt, and update canonical task and state evidence.
+3. Derive `CONTINUE_NEXT_ITEM`, `CHECKPOINT_AND_CONTINUE`,
    `VERIFY_ACTIVE_CHANGE`, `AWAIT_HUMAN`, `READY_FOR_EXTERNAL_EFFECT`, or
-   `COMPLETE`.
-5. Immediately perform the next approved in-scope action for the first three
-   outcomes. Do not end the user request after an item, slice, review, or
-   active-change boundary.
+   `COMPLETE`; continue immediately for the first three.
 
-Re-evaluate a current implementation-readiness receipt before every automatic
-transition into product writes and after resume/compact. Do not discover,
-select, install, activate, invoke, or silently replace a provider when the
-reported state is unresolved.
+A phase label is not a Human Gate. Technical failure is
+`FAIL_CLOSED_REPAIR`. Only a concrete authority delta may persist
+`AWAIT_HUMAN` with aligned evidence and state. Recheck readiness before writes
+and after resume.
 
-A phase label is not a Human Gate. Stop only for an unresolved product choice,
-material scope/write-set/public-contract expansion, dependency or migration,
-destructive or external effect, severe/unknown risk, explicit per-stage
-confirmation, or another missing authority. For a genuine interactive gate,
-record the concrete question in the canonical artifact and STATE Next Action,
-and set both `current_stage` and `current_change.status` to `awaiting_human`.
-After the answer is promoted, restore executable state and resume the loop.
+For `model.*`, the exact stable identity is Standing Goal Execution Authority.
+A one-use attempt receipt protects replay; it is not one-use permission.
+Record actual monetary cost. Same-authority repair, refreeze, review, and retry
+continue without another question; provider, model, account, credential
+privilege, or acceptance-contract changes are material deltas. Optional work
+uses `DEFER_AND_CONTINUE` and stays off the critical path.
 
-Checkpoint/compact is recoverable advice inside the loop. Current-change
-verification proves that change; it does not prove the overall request is done
-when another approved task or change remains. Release, archive, commit, push,
-and PR actions remain separately authorized external effects.
+A standing milestone covers only its exact reviewed external chain; archive,
+PR, merge, force, and undeclared targets remain excluded.
 
 ## Generated Artifact Lifecycle
 
-Treat artifact planning as read-only orchestration. Recompute the plan after
-the owning process exits and route a fresh `AUTO_CLEAN` decision to the
-explicit `cleanup --apply` command. Keep the resulting cleanup receipt as task
-evidence before continuing. `WAIT_OWNER` retries without deletion,
-`RETAIN` preserves the artifact, and `HUMAN_GATE` records the failed invariant
-and follows the ordinary Human Gate route.
-
-Never invoke cleanup from hooks, doctors, validators, or stop policies. A
-missing, post-creation, self-authored, or drifted contract cannot be repaired
-into automatic authority by the orchestrator.
+After the owning process exits, automatically apply and verify only a fresh
+`AUTO_CLEAN` plan; direct CLI use still requires `cleanup --apply`. Preserve
+the cleanup receipt. `WAIT_OWNER` retries, `RETAIN` preserves, and drift is
+technical repair. Legacy `HUMAN_GATE` is resolver input, not permission to
+write awaiting state. Hooks, doctors, and validators never clean artifacts.
 
 ## Git Transport vs GitHub Control Plane
 
-A gh authentication failure is not Git transport failure. For an explicitly
-authorized push, use `git.push` and run `git_transport_preflight.py`; it probes
-the configured remote with `git ls-remote`, never calls `gh`, and never pushes.
-GitHub PR/release/settings use `github.control_plane_write`.
+A gh authentication failure is not Git transport failure. Authorized push
+uses expected-base and fast-forward proof plus `git ls-remote`; PR, release,
+and settings use `github.control_plane_write`.
 
-For a deterministic immutable-tag release, prefer `github_actions`, then
-`github_cli`, then `human_web`. The Actions path is eligible only when the
-reviewed workflow exists in the immutable tag target, repository policy permits
-it, and `GITHUB_TOKEN` has explicit least privilege permissions. Verify release
-identity and conflicts before the separately authorized tag push. Require
-publication readback of the expected tag, target, published state, draft state,
-and prerelease state before local promotion. If the pushed workflow fails or
-readback is unavailable, preserve the tag and recover against the same reviewed
-identity rather than deleting or retargeting it.
-
-Actions-first applies only to deterministic tag-bound releases. Pull requests
-and repository settings retain the direct GitHub control-plane route. For
-`github_cli`, permit one diagnosis and at most one applicable remediation
-attempt, then stop that platform path without blocking native Git. `git.push_pr`
-is compatibility-only; details and the exact command live in
-`docs/git_transport_routing.md`.
+For immutable-tag release prefer `github_actions`, then `github_cli`, then
+`human_web`. The workflow exists in the immutable tag target, repository policy
+allows it, and `GITHUB_TOKEN` has least privilege. Require publication readback
+before local promotion. On failure, preserve the tag and reviewed identity.
+For `github_cli`, allow one diagnosis and at most one applicable remediation
+attempt. Details live in `docs/git_transport_routing.md`.
 
 ## Capability Routing
 
-Route stable capability IDs from `scripts/workflow_methodology.py`:
-`decision-resolution`, `implementation-planning`,
-`test-first-execution`, `root-cause-diagnosis`, `change-review`,
-`completion-proof`, `execution-orchestration`, `architecture-guidance`, and
-when domain language is in scope `domain-language-modeling`.
-Only triggered Matt primitives are project-local requirements; OpenSpec and
-DevFlow own canonical artifacts and evidence.
+Use stable IDs from `workflow_methodology.py`: `decision-resolution`,
+`implementation-planning`, `test-first-execution`, `root-cause-diagnosis`,
+`change-review`, `completion-proof`, `execution-orchestration`,
+`architecture-guidance`, and triggered `domain-language-modeling`. Matt skills
+are bounded primitives; DevFlow and OpenSpec own canonical plans and evidence.
 
 ## Goal Gate
 
-Route to `define-goal` when the user requests goal-backed work or the work is
-long-running, multi-slice, migration/release oriented, cross-context, or likely
-to lose its definition of done. A goal contract names outcome, verification,
-scope, non-goals, success threshold, and stop conditions. Scripts may recommend
-goal mode but do not call goal tools.
+Route goal-backed, long-running, multi-slice, migration/release, or
+cross-context work to `define-goal`. Record outcome, verification, scope,
+non-goals, success threshold, and stop conditions. Scripts only recommend Goal
+mode.
 
 ## SubAgent Decision Gate
 
-Delegate when independent domains or disjoint write sets make parallel work
-materially useful. First create a validated Agent Task Contract containing
-Goal, Scope, Constraints, Verification, Evidence, and Human Gate. The main agent owns
-OpenSpec, `.planning/devflow/`, shared docs, generated release paths, and final
-integration without delegation exceptions. Each result reports status (`DONE`,
-`DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`), files changed or
-inspected, commands, risks, and review needs.
-
-## Canonical Artifact Mapping
-
-Methodology notes are inputs only. Promote approved content into the active
-OpenSpec change or DevFlow ledger before it satisfies a gate.
+Delegate when independent domains and disjoint write sets materially help.
+First require a validated Agent Task Contract containing Goal, Scope,
+Constraints, Verification, Evidence, and Human Gate. The main agent owns
+OpenSpec, `.planning/devflow/`, shared control-plane and release files, and
+final integration. Delegation uses `execution-orchestration` and reports
+status, files, commands, risks, and review needs.
 
 ## Incidental Finding Lifecycle
 
-Route every out-of-path finding without creating a second backlog:
-
-- `CONTINUE_WITH_MINIMAL_GUARD` for a bounded in-scope guard needed for safe
-  completion;
-- `DEFER_AND_CONTINUE` for optional non-blocking work recorded in the tracked
-  `TASK_LEDGER.md` Incidental Finding Register;
-- `BLOCKED_AWAITING_HUMAN` for severe, ambiguous, scope-expanding, authority-
-  expanding, or product-decision work.
-
-Unknown severity fails closed. A blocked finding stops mutation until the
-human answers one concrete question and the decision is durable in OpenSpec or
-the active ledger. The register does not authorize follow-up, and required
-Completion Contract behavior cannot be deferred.
+Route through the central resolver: `CONTINUE_WITH_MINIMAL_GUARD` for a bounded
+required guard, `DEFER_AND_CONTINUE` for recorded optional work, and
+`BLOCKED_AWAITING_HUMAN` only for concrete material scope, authority, risk,
+ownership, or product-decision deltas. Unknowns fail closed. The register does
+not authorize follow-up, and Completion Contract work cannot be deferred.
 
 ## Completion
 
-Routing is complete when it names workflow mode, required capabilities,
-canonical artifacts, readiness blockers, side-effect approvals, next skill,
-and validation command. The user request is complete only at `COMPLETE`; keep
-setup, planning, and repair read-only until the selected action is approved.
+Routing names mode, capabilities, canonical artifacts, blockers, authority,
+next skill, and validation. The request ends only at `COMPLETE`.

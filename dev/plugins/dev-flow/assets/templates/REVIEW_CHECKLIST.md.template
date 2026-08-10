@@ -26,8 +26,10 @@
   as a Human Gate without a concrete decision or authority
 - [ ] Every non-terminal completion receipt returned to the orchestrator with
   the next continuation outcome
-- [ ] External effects remain separately authorized and unexecuted unless the
-  exact gate was approved
+- [ ] Every continuation/stop carries one authority-delta resolution; only a
+  non-empty concrete `missingAuthority` produced awaiting state
+- [ ] A declared milestone reused one standing authority across its exact
+  downstream effects; ordinary steps did not infer or widen that grant
 
 ## Incidental Findings
 
@@ -46,7 +48,7 @@
   pre-creation; no artifact was claimed retroactively
 - [ ] The latest read-only decision is resolved: `AUTO_CLEAN` has a bound
   terminal receipt, `WAIT_OWNER` is not treated as completion, `RETAIN` remains
-  protected, and `HUMAN_GATE` has an explicit decision
+  protected, and drifted evidence stops as `FAIL_CLOSED_REPAIR`
 - [ ] Apply revalidated repository, owner, tracked/protected state, identity,
   hashes, and directory membership immediately before mutation
 - [ ] Cleanup used exact paths with no wildcard or recursive deletion and no
@@ -74,3 +76,8 @@
 - [ ] TASK_LEDGER entries closed
 - [ ] Evidence linked in `.planning/devflow/STATE.md`
 - [ ] Knowledge update decision recorded
+- [ ] Candidate/review/index manifests match exactly with no secret, blocker,
+  unreviewed file, or identity drift
+- [ ] Remote/ref/tag/channel/assets and named refresh targets match the standing
+  milestone; force, PR, merge, archive, and unnamed consumers remain excluded
+- [ ] Publication and source/release/published/cache/project readbacks agree

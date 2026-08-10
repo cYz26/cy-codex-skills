@@ -4,7 +4,6 @@
     "fixtures/project-refresh/**",
     "fixtures/test_generated_artifact_lifecycle.py",
     "tests/test_generated_artifact_lifecycle.py",
-    "tests/test_packaged_runtime.py",
     "vendor/**"
   ],
   "defaultExcludeOverrides": [
@@ -25,6 +24,7 @@
     "scripts/apply_context_tool_actions.py",
     "scripts/archive_status.py",
     "scripts/audit_context_tools.py",
+    "scripts/authority_gate.py",
     "scripts/check_dependencies.py",
     "scripts/claude_code_delegate.py",
     "scripts/codex_auto_update_plugins_skills.py",
@@ -49,6 +49,7 @@
     "scripts/inspect_legacy_workflow_config.py",
     "scripts/inspect_repo.py",
     "scripts/lint_ai_plan.py",
+    "scripts/milestone_external_effects.py",
     "scripts/plugin_project_migration.py",
     "scripts/plugin_project_migration_check.py",
     "scripts/pre_archive_policy.py",
