@@ -29,18 +29,18 @@ RUNTIME_VERIFIER = (
 BUNDLE_BUILDER = REPO_ROOT / "dev" / "scripts" / "package_devflow_release_bundle.py"
 PUBLICATION_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "publish-dev-flow.yml"
 
-VERSION = "0.4.0"
-TAG = "dev-flow-v0.4.0"
+VERSION = "0.4.1"
+TAG = "dev-flow-v0.4.1"
 EXPECTED_ASSETS = (
-    "dev-flow-0.4.0.zip",
-    "dev-flow-0.4.0.release-manifest.json",
-    "dev-flow-0.4.0.sha256",
+    "dev-flow-0.4.1.zip",
+    "dev-flow-0.4.1.release-manifest.json",
+    "dev-flow-0.4.1.sha256",
     "devflow_runtime.pyz",
     "devflow_runtime.MANIFEST.json",
     "devflow_runtime.sha256",
-    "dev-flow-v0.4.0.md",
+    "dev-flow-v0.4.1.md",
 )
-HASHED_ASSETS = tuple(name for name in EXPECTED_ASSETS if name != "dev-flow-0.4.0.sha256")
+HASHED_ASSETS = tuple(name for name in EXPECTED_ASSETS if name != "dev-flow-0.4.1.sha256")
 FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
 COMPACT_RELEASE_JSON = (
     ".codex-plugin/project-migration.json",
@@ -776,12 +776,12 @@ class ReleaseBundleContractTests(unittest.TestCase):
                 self.assertEqual(record["bytes"], len(payload), name)
                 self.assertEqual(record["sha256"], sha256_bytes(payload), name)
 
-            checksums = parse_sha256_file(output / "dev-flow-0.4.0.sha256")
+            checksums = parse_sha256_file(output / "dev-flow-0.4.1.sha256")
             self.assertEqual(set(checksums), set(HASHED_ASSETS))
             for name, digest in checksums.items():
                 self.assertEqual(digest, sha256_bytes((output / name).read_bytes()), name)
 
-            manifest = json.loads((output / "dev-flow-0.4.0.release-manifest.json").read_text())
+            manifest = json.loads((output / "dev-flow-0.4.1.release-manifest.json").read_text())
             self.assertNotIn("commit", manifest)
             self.assertRegex(str(manifest.get("treeSha256", "")), r"^[0-9a-f]{64}$")
             expected_manifest = Path(str(report.get("expectedManifest", "")))
@@ -829,7 +829,7 @@ class ReleaseBundleContractTests(unittest.TestCase):
             output = Path(temporary)
             self.build(output)
 
-            with zipfile.ZipFile(output / "dev-flow-0.4.0.zip") as archive:
+            with zipfile.ZipFile(output / "dev-flow-0.4.1.zip") as archive:
                 infos = archive.infolist()
 
             names = [item.filename for item in infos]
@@ -850,13 +850,13 @@ class ReleaseBundleContractTests(unittest.TestCase):
             self.assertEqual({item.comment for item in infos}, {b""})
             modes = {(item.external_attr >> 16) & 0xFFFF for item in infos}
             self.assertTrue(modes.issubset({stat.S_IFREG | 0o644, stat.S_IFREG | 0o755}), modes)
-            self.assertNotIn("dev-flow/dev-flow-0.4.0.release-manifest.json", names)
-            self.assertNotIn("dev-flow/dev-flow-0.4.0.sha256", names)
+            self.assertNotIn("dev-flow/dev-flow-0.4.1.release-manifest.json", names)
+            self.assertNotIn("dev-flow/dev-flow-0.4.1.sha256", names)
 
     def test_builder_rejects_manual_version_tag_asset_or_repository_widening(self):
         forbidden_overrides = (
-            ("--version", "0.4.1"),
-            ("--tag", "dev-flow-v0.4.1"),
+            ("--version", "0.4.2"),
+            ("--tag", "dev-flow-v0.4.2"),
             ("--asset", "*.zip"),
             ("--repository", "another-owner/another-repository"),
         )

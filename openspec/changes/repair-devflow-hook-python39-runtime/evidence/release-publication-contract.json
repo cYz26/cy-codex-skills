@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "devflow-release-publication-contract",
+  "contractId": "dev-flow-hook-python39-v0.4.1",
+  "change": "repair-devflow-hook-python39-runtime",
+  "authorizedAt": "2026-08-11",
+  "authorizedEffects": [
+    "git.commit",
+    "git.push",
+    "git.tag.push",
+    "github.release",
+    "codex.cache.refresh"
+  ],
+  "plugin": {
+    "id": "dev-flow",
+    "marketplace": "cy-codex-skills",
+    "version": "0.4.1"
+  },
+  "repository": {
+    "remote": "origin",
+    "remoteUrl": "git@github.com:cYz26/cy-codex-skills.git",
+    "ref": "refs/heads/main",
+    "expectedBase": "931f39bb7c0090eda00c4b0e9e12340b021826ff"
+  },
+  "publication": {
+    "tag": "dev-flow-v0.4.1",
+    "channel": "stable",
+    "mechanism": "github_actions",
+    "workflow": ".github/workflows/publish-dev-flow.yml",
+    "assetExpectation": "openspec/changes/repair-devflow-hook-python39-runtime/evidence/dev-flow-0.4.1.release-assets.json",
+    "assets": [
+      "dev-flow-0.4.1.zip",
+      "dev-flow-0.4.1.release-manifest.json",
+      "dev-flow-0.4.1.sha256",
+      "devflow_runtime.pyz",
+      "devflow_runtime.MANIFEST.json",
+      "devflow_runtime.sha256",
+      "dev-flow-v0.4.1.md"
+    ]
+  },
+  "refreshTargets": {
+    "cache": "dev-flow@cy-codex-skills",
+    "codexHome": "/Users/cY/.codex-switch/homes/internal"
+  },
+  "writeSet": [
+    "openspec/changes/repair-devflow-hook-python39-runtime/evidence/dev-flow-0.4.1.release-assets.json"
+  ],
+  "exclusions": [
+    "archive",
+    "consumer-project-migration",
+    "force-push",
+    "merge-commit",
+    "other-plugin-refresh",
+    "pr",
+    "release-overwrite"
+  ]
+}

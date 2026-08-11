@@ -1,0 +1,22 @@
+{
+  "assetNames": [
+    "dev-flow-0.4.1.zip",
+    "dev-flow-0.4.1.release-manifest.json",
+    "dev-flow-0.4.1.sha256",
+    "devflow_runtime.pyz",
+    "devflow_runtime.MANIFEST.json",
+    "devflow_runtime.sha256",
+    "dev-flow-v0.4.1.md"
+  ],
+  "channel": "stable",
+  "plugin": "dev-flow",
+  "repository": "cYz26/cy-codex-skills",
+  "schemaVersion": "1.0",
+  "tag": "dev-flow-v0.4.1",
+  "treeDigestExclusions": [
+    "dev-flow-0.4.1.release-manifest.json"
+  ],
+  "treeEntryCount": 189,
+  "treeSha256": "b035e4df01652c023c4a70a8968547af09f1e7328d226efa12ead704f89a47c3",
+  "version": "0.4.1"
+}

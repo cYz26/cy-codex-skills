@@ -11,6 +11,181 @@ residual risk, and exact validation command. Missing or stale impact evidence
 blocks release verification; the record never authorizes release sync, cache
 refresh, or consumer-project migration.
 
+## Goal Contract: DF-HOOK-PY39-0.4.1
+
+- Outcome: publish immutable DevFlow `0.4.1` containing the verified Python 3.9
+  Hook repair, fast-forward local/remote `main` to the reviewed commit, and
+  activate only the internal `dev-flow@cy-codex-skills` cache.
+- Verification Evidence: focused Hook and release RED/GREEN tests; complete
+  source and generated-release suites; strict OpenSpec; workflow validation;
+  runtime parity; Plugin Eval; Git branch/tag readback; published Release asset
+  names, sizes, and hashes; cache identity; installed Python 3.9 Hook runs.
+- Scope: the active OpenSpec change, DevFlow source and generated release,
+  version/release metadata, publication workflow/evidence, tracked state and
+  ledger, one reviewed commit, fast-forward `main`, immutable
+  `dev-flow-v0.4.1`, GitHub Release, and the internal named cache.
+- Non-Goals: archive, PR, merge commit, rebase, force push, overwrite of
+  `0.4.0`, other plugins, global Python/PATH changes, consumer-project
+  migration, legacy cleanup, or unrelated worktree changes.
+- Success Threshold: source/release/cache identify version `0.4.1`, refresh
+  revision 12, and the same repaired module; remote `main` and tag equal the
+  reviewed commit; Release is published and exact; both installed Hooks exit 0
+  under `/usr/bin/python3` 3.9.6.
+- Stop Conditions: non-fast-forward/diverged main, tag or Release collision,
+  failed immutable asset readback, public Hook contract change, dependency,
+  weakened cleanup ownership, unnamed target, or material scope expansion.
+
+## Active Repair: Python 3.9 Hook Runtime Compatibility
+
+- Change: `repair-devflow-hook-python39-runtime`
+- Worktree: `codex/fix-devflow-hook-python39`
+- Target State: packaged migration and Stop Hook entrypoints start under a host
+  Python without `tomllib`, while legacy TOML cleanup ownership remains
+  fail-closed.
+- Scope In: `workflow_legacy_uninstall.py`, source project-refresh evidence,
+  focused public-process/classification/impact/release tests, version and
+  release metadata, generated `plugins/dev-flow/**`, publication
+  workflow/evidence, OpenSpec/state/ledger/verification evidence, reviewed Git
+  commit/main/tag/Release, and the internal named cache.
+- Scope Out: consumer-project migration, dependency changes, global
+  PATH/config changes, archive, PR, merge commit, rebase, force push, release
+  overwrite, other plugins, and unrelated worktree changes.
+- Acceptance: RED import failure; GREEN Hook entrypoints on Python 3.9 and
+  3.12; parser-unavailable manual classification; focused/full tests; strict
+  OpenSpec; workflow validation; isolated runtime parity; release-target Plugin
+  Eval; clean final diff.
+- Stop Conditions: public Hook schema change, production dependency, weakened
+  cleanup ownership, non-fast-forward main, publication identity mismatch,
+  unnamed cache/project write, or material write-set expansion.
+- Execution Source:
+  `openspec/changes/repair-devflow-hook-python39-runtime/tasks.md`
+- Approval: the user's explicit 2026-08-11 instruction authorizes the exact
+  `0.4.1` source/release commit, fast-forward main push, immutable tag and
+  GitHub Release with readback, and internal named-cache refresh. Excluded
+  effects remain unauthorized.
+- Current Status: source repair is verified; patch-release identity execution
+  is active.
+
+### Execution Log
+
+- 2026-08-11 RED:
+  `PYTHONDONTWRITEBYTECODE=1 /opt/homebrew/bin/python3.12 -m unittest
+  dev/plugins/dev-flow/tests/test_hook_python_compatibility.py
+  dev/plugins/dev-flow/tests/test_legacy_workflow_uninstall.py -v`
+  ran 7 tests and failed as intended. Both public Hook subprocesses exited 1
+  with `ModuleNotFoundError: No module named 'tomllib'`; both
+  parser-unavailable classification cases reached the existing
+  `tomllib.loads` / `tomllib.TOMLDecodeError` coupling and raised
+  `AttributeError`.
+- 2026-08-11 GREEN: the same Python 3.12 command passed all 7 focused tests.
+  Direct runs of `devflow_stop_hook.py --repo .` and
+  `plugin_project_migration_check.py --event user_prompt_submit` passed under
+  `/usr/bin/python3` 3.9.6 and `/opt/homebrew/bin/python3.12` 3.12.13, returning
+  the existing Stop and UserPromptSubmit response schemas without traceback.
+  The general legacy-uninstall suite remains a Python 3.12 maintenance suite;
+  its parser-backed cleanup expectations intentionally do not apply when run
+  wholesale under Python 3.9.
+- 2026-08-11 isolated candidate: the formal runtime packager produced a
+  188-file temporary release tree with tree SHA-256
+  `dca4f197fea1a679fcd28b9e568d1bcaf9809d1828bd48bc5aa02587e1d6602f`
+  and archive SHA-256
+  `76d7bbf85f7dfaeb1d7e05b82792483d41f580dda5ccfccb0ed0104990d5421f`.
+  Runtime verification passed 321 checks, project-refresh parity was current,
+  and packaged/source `workflow_legacy_uninstall.py` both hashed to
+  `a17c83e81f8b09e7b37ee7f7a49b163e10b20f23dd2a089f580eece4597e495d`.
+  Packaged Stop and migration Hooks passed on Python 3.9.6 and 3.12.13.
+  Plugin Eval scored 86/B with 0 failures, 3 existing static token-budget
+  warnings, and 2 informational findings; those findings do
+  not concern this runtime repair. The invocation-owned temporary root was
+  removed successfully.
+- 2026-08-11 broad RED: `run_devflow_prepromotion_tests.py` ran 743 tests with
+  one failure. The failing revision-11 regression reported only
+  `refresh_impact_evidence_stale` for changed tracked input
+  `scripts/workflow_legacy_uninstall.py`; this is a required completion
+  contract guard. The repair therefore advances source refresh evidence to
+  revision 12 while preserving project schema 8 and adding no migration step.
+- 2026-08-11 revision-12 GREEN: 26 implementation-readiness tests passed.
+  Project-refresh analysis reports `changed_covered`, source revision 12
+  against baseline revision 11, project schema 8 on both sides, only
+  `scripts/workflow_legacy_uninstall.py` changed, no configuration-sensitive
+  changes, and tracked-input SHA-256
+  `38526646f5db4bef81b65c32785560e1735c1c75e5038e9a7d9d9e7a223a86b0`.
+- 2026-08-11 broad regression follow-up: the first revision-12 full suite
+  exposed one additional assertion that still required manifest revision 11.
+  The assertion was updated to revision 12 while preserving its schema-8,
+  migration-chain, and unrelated-configuration checks. The focused
+  project-refresh module then passed 64/64.
+- 2026-08-11 final broad GREEN:
+  `PYTHONDONTWRITEBYTECODE=1 /opt/homebrew/bin/python3.12
+  dev/scripts/run_devflow_prepromotion_tests.py` passed 743/743 tests across 34
+  modules in 189.884 seconds. Final diff review found no public Hook schema
+  change, cleanup-authority weakening, dependency addition, or write outside
+  the approved source/control-plane set.
+- 2026-08-11 effect boundary readback: checked-in `plugins/dev-flow/` and the
+  internal installed cache both remain at refresh revision 11, archive SHA-256
+  `34a9e36a2760b9edfec35f789caa0f6829c942fab2074a350216d70475a8ce81`,
+  and packaged legacy-uninstall module SHA-256
+  `def5a1fc65d9d1ab57a7ba23528d3bc4bb78508a1c4e9a27e8fa52b8be1c738d`.
+  No release promotion, cache refresh, consumer-project migration, commit,
+  push, archive, or publication ran.
+- 2026-08-11 release-contract RED:
+  `PYTHONDONTWRITEBYTECODE=1 /opt/homebrew/bin/python3.12 -m unittest
+  dev/plugins/dev-flow/tests/test_devflow_release_bundle.py
+  dev/plugins/dev-flow/tests/test_release_asset_expectation.py -v` ran 32
+  tests and failed as intended with 8 failures and 2 errors. Every failure
+  identified the still-current `0.4.0` policy/workflow/assets or the absent
+  `0.4.1` bundle names; verifier behavior unrelated to version identity stayed
+  GREEN.
+- 2026-08-11 release-identity GREEN: source plugin metadata, the OpenSpec
+  template, release policy and notes, expected manifest, publication contract,
+  exact tag workflow, and release tests now require `0.4.1`. Final Project
+  Refresh Impact is `changed_covered`: revision 12 against release revision 11,
+  schema 8 on both sides, no config-sensitive changes, and tracked-input
+  SHA-256
+  `0efefd8b804d81f4240e5667c5a92fd12a8df498e4844138d0c3ee553f52e8d6`.
+- 2026-08-11 release-note guard: the first final pre-promotion run found one
+  active-doc legacy-name violation in the new release notes. The notes were
+  made domain-neutral without widening the allowlist; the methodology module
+  then passed 33/33.
+- 2026-08-11 final pre-promotion GREEN:
+  `PYTHONDONTWRITEBYTECODE=1 python3.12
+  dev/scripts/run_devflow_prepromotion_tests.py` passed 743/743 across 34
+  modules. Strict OpenSpec passed 35/35, workflow validation and
+  `git diff --check` passed, and the Python 3.9 public Hook entrypoints returned
+  without traceback.
+- 2026-08-11 isolated 0.4.1 bundle GREEN: formal release sync in a temporary
+  repository built the runtime and exactly seven assets. The checked-in
+  expected manifest covers 189 entries with tree SHA-256
+  `b035e4df01652c023c4a70a8968547af09f1e7328d226efa12ead704f89a47c3`;
+  canonical `plugins/dev-flow/**` remained unchanged pending the promotion
+  gate.
+- 2026-08-11 canonical promotion: the source-bound release receipt was
+  regenerated after the final test adjustment with source SHA-256
+  `a3694173df0981f49b5bfa976415df0387bdb1f64b3378c2076304ab6903f1d6`.
+  `release_promotion_gate.py --target dev-flow --apply` returned `current`
+  with no changed or deleted release files, proving the promoted
+  `plugins/dev-flow/**` tree still matches the reviewed source candidate.
+- 2026-08-11 post-promotion guard: the first complete 805-test source run had
+  one failure because a revision-12 regression hard-coded the pre-promotion
+  `changed_covered` status after the generated release had become the current
+  baseline. The bounded test repair now derives `changed_covered` before
+  promotion and `current` after promotion; the focused module passed 26/26 and
+  the complete source suite passed 805/805.
+- 2026-08-11 generated-release verification: focused release/runtime tests
+  passed 68/68, the generated release suite passed 60/60, strict OpenSpec
+  passed 35/35, workflow validation and `git diff --check` passed, and runtime
+  verification proved archive SHA-256
+  `76d7bbf85f7dfaeb1d7e05b82792483d41f580dda5ccfccb0ed0104990d5421f`
+  plus source/packaged module SHA-256
+  `a17c83e81f8b09e7b37ee7f7a49b163e10b20f23dd2a089f580eece4597e495d`.
+  Release-target Plugin Eval scored 86/B with zero failures and the three
+  static budget warnings already dispositioned by `DF-IFL-001`.
+- 2026-08-11 asset freeze: a fresh invocation-owned build passed the exact
+  verifier for all seven `0.4.1` assets. The asset-set digest is
+  `74439cf989b85983c39277cbc71fcc49f07b56d4210503de39509a310b1d2d2a`;
+  Git commit, main push, tag, GitHub Release, cache refresh, archive, and
+  consumer-project migration have not run.
+
 ## Incidental Finding Register
 
 This cross-change register preserves deferred and blocked findings across task,

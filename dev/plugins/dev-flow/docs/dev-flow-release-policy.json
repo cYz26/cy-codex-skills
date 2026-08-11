@@ -2,30 +2,30 @@
   "schemaVersion": "1.0",
   "plugin": "dev-flow",
   "marketplace": "cy-codex-skills",
-  "versionRule": "first-non-breaking-capability-release-after-0.3.x",
-  "version": "0.4.0",
-  "tag": "dev-flow-v0.4.0",
+  "versionRule": "patch-release-for-python39-hook-runtime",
+  "version": "0.4.1",
+  "tag": "dev-flow-v0.4.1",
   "channel": "stable",
   "repository": "cYz26/cy-codex-skills",
   "remote": "origin",
   "ref": "refs/heads/main",
-  "commitMessage": "feat(dev-flow): centralize authority-delta execution",
+  "commitMessage": "fix(dev-flow): support Python 3.9 hook runtime",
   "mechanism": "github_actions",
   "workflow": ".github/workflows/publish-dev-flow.yml",
   "assets": [
-    "dev-flow-0.4.0.zip",
-    "dev-flow-0.4.0.release-manifest.json",
-    "dev-flow-0.4.0.sha256",
+    "dev-flow-0.4.1.zip",
+    "dev-flow-0.4.1.release-manifest.json",
+    "dev-flow-0.4.1.sha256",
     "devflow_runtime.pyz",
     "devflow_runtime.MANIFEST.json",
     "devflow_runtime.sha256",
-    "dev-flow-v0.4.0.md"
+    "dev-flow-v0.4.1.md"
   ],
-  "expectedManifest": "dev/plugins/dev-flow/docs/dev-flow-0.4.0.release-manifest.json",
-  "releaseNotes": "dev/plugins/dev-flow/docs/dev-flow-v0.4.0.md",
+  "expectedManifest": "dev/plugins/dev-flow/docs/dev-flow-0.4.1.release-manifest.json",
+  "releaseNotes": "dev/plugins/dev-flow/docs/dev-flow-v0.4.1.md",
   "refreshTargets": {
     "cache": "dev-flow@cy-codex-skills",
-    "project": "/Users/cy/Dev/agents-dev/cy-codex-skills"
+    "project": "/Users/cY/dev/skills/cy-codex-skills"
   },
   "failurePolicy": {
     "preserveCommit": true,
@@ -45,6 +45,7 @@
     "merge",
     "pr",
     "rebase",
+    "consumer-project-migration",
     "unnamed-consumer",
     "unnamed-plugin",
     "unrelated-release"

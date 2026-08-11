@@ -20,6 +20,14 @@ CONTRACT_RELATIVE = Path(
     "openspec/changes/centralize-devflow-authority-delta/evidence/"
     "standing-milestone-contract.json"
 )
+WORKFLOW_EXPECTATION_RELATIVE = Path(
+    "openspec/changes/repair-devflow-hook-python39-runtime/evidence/"
+    "dev-flow-0.4.1.release-assets.json"
+)
+WORKFLOW_CONTRACT_RELATIVE = Path(
+    "openspec/changes/repair-devflow-hook-python39-runtime/evidence/"
+    "release-publication-contract.json"
+)
 
 
 def canonical_digest(value: object) -> str:
@@ -214,8 +222,8 @@ class ReleaseAssetExpectationWorkflowTests(unittest.TestCase):
         text = WORKFLOW.read_text()
         command = (
             "dev/scripts/verify_devflow_release_assets.py --repo . "
-            f"--contract {CONTRACT_RELATIVE.as_posix()} "
-            f"--expectation {EXPECTATION_RELATIVE.as_posix()} "
+            f"--contract {WORKFLOW_CONTRACT_RELATIVE.as_posix()} "
+            f"--expectation {WORKFLOW_EXPECTATION_RELATIVE.as_posix()} "
             "--asset-dir release-assets --json"
         )
         self.assertIn(command, text)

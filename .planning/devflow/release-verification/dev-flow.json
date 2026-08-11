@@ -1,8 +1,8 @@
 {
-  "change": "centralize-devflow-authority-delta",
+  "change": "repair-devflow-hook-python39-runtime",
   "checks": {
     "development": {
-      "command": "pythondontwritebytecode=1 python3.12 dev/scripts/run_devflow_prepromotion_tests.py",
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3.12 dev/scripts/run_devflow_prepromotion_tests.py",
       "result": "pass"
     },
     "diff": {
@@ -10,21 +10,21 @@
       "result": "pass"
     },
     "openspec": {
-      "command": "openspec validate centralize-devflow-authority-delta --strict --json && openspec validate --all --strict --json",
+      "command": "openspec validate --all --strict",
       "result": "pass"
     }
   },
   "projectRefreshImpact": {
     "baselineManifestIdentitySha256": "41d438d17372d43ee220bb046273d1d7b9a1d01242145a9db245d17f5c307fd0",
     "baselineProjectSchemaHead": 8,
-    "baselineRefreshContractDigest": "sha256:f4a68a8e345f058955633af474ff1ced0e3c1bbd1ce90e1edb38d828473cf9aa",
-    "baselineRevision": 11,
-    "baselineRoot": "/Users/cy/.codex/worktrees/4a63/cy-codex-skills/plugins/dev-flow",
+    "baselineRefreshContractDigest": "sha256:acf14ec662c3ed78f40ef0d62e57bfa4ee575bba992fc90c93d1f166f2ddcb98",
+    "baselineRevision": 12,
+    "baselineRoot": "/Users/cY/dev/skills/cy-codex-skills-worktrees/fix-devflow-hook-python39/plugins/dev-flow",
     "changedInputs": [],
     "configSensitiveChanges": [],
     "errors": [],
-    "evidenceChange": "centralize-devflow-authority-delta",
-    "expectedChange": "centralize-devflow-authority-delta",
+    "evidenceChange": "repair-devflow-hook-python39-runtime",
+    "expectedChange": "repair-devflow-hook-python39-runtime",
     "impact": "changed",
     "manifestChanged": false,
     "manifestIdentitySha256": "41d438d17372d43ee220bb046273d1d7b9a1d01242145a9db245d17f5c307fd0",
@@ -35,22 +35,22 @@
     "sameChangeRepromotion": false,
     "schemaDecision": "managed-refresh",
     "sourceProjectSchemaHead": 8,
-    "sourceRefreshContractDigest": "sha256:f4a68a8e345f058955633af474ff1ced0e3c1bbd1ce90e1edb38d828473cf9aa",
-    "sourceRevision": 11,
-    "sourceRoot": "/Users/cy/.codex/worktrees/4a63/cy-codex-skills/dev/plugins/dev-flow",
+    "sourceRefreshContractDigest": "sha256:acf14ec662c3ed78f40ef0d62e57bfa4ee575bba992fc90c93d1f166f2ddcb98",
+    "sourceRevision": 12,
+    "sourceRoot": "/Users/cY/dev/skills/cy-codex-skills-worktrees/fix-devflow-hook-python39/dev/plugins/dev-flow",
     "status": "current",
-    "trackedInputsSha256": "d150af3690a925d75373b97f4c21d595afbf83357ce6c7bc15b6fd543b663c5a"
+    "trackedInputsSha256": "0efefd8b804d81f4240e5667c5a92fd12a8df498e4844138d0c3ee553f52e8d6"
   },
-  "recordedAt": "2026-08-09T19:09:27.672821+00:00",
+  "recordedAt": "2026-08-11T11:55:42.468083+00:00",
   "schemaVersion": 1,
   "sourceFiles": [
     {
       "path": "dev/plugins/dev-flow/.codex-plugin/plugin.json",
-      "sha256": "9bb75498658016b6368a145730c9d669e057a1b1594ad16f2d379fb897b55d51"
+      "sha256": "3ca893ae2c086de95d108c5f7eb2ba691bd34562fb53f640aaef5e0524e97607"
     },
     {
       "path": "dev/plugins/dev-flow/.codex-plugin/project-migration.json",
-      "sha256": "fdee54a5523e7b834c8eac2deb5feb778fe29936e0879325fc83fbbd65a46ed5"
+      "sha256": "e3217077215d804d475bb1210f99b4412fb02d0daa65368654a3c512175e1f6f"
     },
     {
       "path": "dev/plugins/dev-flow/.codex-plugin/release-sync.json",
@@ -182,7 +182,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/assets/templates/OPENSPEC_CONFIG.yaml.template",
-      "sha256": "d57f73dc73b652758a7b38725ae66ca519da38529daee1c03a54b91bfcbc44cc"
+      "sha256": "9c560ad80c0e8da9a60b454fabca69a54135a5e304ee3754ee8b6523c521489b"
     },
     {
       "path": "dev/plugins/dev-flow/assets/templates/OPENSPEC_DESIGN.md.template",
@@ -241,12 +241,20 @@
       "sha256": "cfd72b15ecc3b764f1c2e746b23ee27f18318005baae55c9ae2a692d9d71acc4"
     },
     {
+      "path": "dev/plugins/dev-flow/docs/dev-flow-0.4.1.release-manifest.json",
+      "sha256": "4ba62e2abe40a2cdeba8f51d19301dde6db9a402d3936f05fc751fd2b8f56167"
+    },
+    {
       "path": "dev/plugins/dev-flow/docs/dev-flow-release-policy.json",
-      "sha256": "69e9f4da7bc8b0055257a2589346abdb7771401467ede8523768a16bea4744a1"
+      "sha256": "a5d754a766ed702d0734d13c72f44f399a649de76c46aa3158dc51ce27099790"
     },
     {
       "path": "dev/plugins/dev-flow/docs/dev-flow-v0.4.0.md",
       "sha256": "992d82b2d2bae9d796d6dea3a7922c6f7bfe090e30957e34381d588cf1f9ad22"
+    },
+    {
+      "path": "dev/plugins/dev-flow/docs/dev-flow-v0.4.1.md",
+      "sha256": "a5bff8088a444b9278a3df73f87ea5334ba428e2bd1d410075453fbe8ab0e4ae"
     },
     {
       "path": "dev/plugins/dev-flow/docs/generated-artifact-lifecycle.md",
@@ -1050,7 +1058,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/scripts/workflow_legacy_uninstall.py",
-      "sha256": "def5a1fc65d9d1ab57a7ba23528d3bc4bb78508a1c4e9a27e8fa52b8be1c738d"
+      "sha256": "a17c83e81f8b09e7b37ee7f7a49b163e10b20f23dd2a089f580eece4597e495d"
     },
     {
       "path": "dev/plugins/dev-flow/scripts/workflow_lib.py",
@@ -1290,7 +1298,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_devflow_release_bundle.py",
-      "sha256": "33d245272c7d06e8e36f237509f0ba7e642924f229bf1ab207e3fb1194ee6269"
+      "sha256": "d699e856be219c25ce5318feefa76937028189f945c3dbc87a16204696b03ecc"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_generated_artifact_lifecycle.py",
@@ -1305,8 +1313,12 @@
       "sha256": "cc4eabce0a833d7cfc7aa72f558222b81fc723a47694c9affb3e116317fcee51"
     },
     {
+      "path": "dev/plugins/dev-flow/tests/test_hook_python_compatibility.py",
+      "sha256": "eb43b84f3a0eda5e2cb4637671deb4f8234efc4c1263ff494d0ff00484b69b44"
+    },
+    {
       "path": "dev/plugins/dev-flow/tests/test_implementation_readiness.py",
-      "sha256": "0b18d9f723f8cdc738ee168a7e2a7ce309fd7edf9ac47132d8caf2b47364088d"
+      "sha256": "6d56c96f9cb4277038418f079f45f8eeb2de9da2e20191acf86a99b30c75faa2"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_incidental_finding_lifecycle.py",
@@ -1318,7 +1330,7 @@
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_legacy_workflow_uninstall.py",
-      "sha256": "cb45c269a5fea661f56584cf266d86ff47d9e6bb8967e94cf02b1fbc7f475ab8"
+      "sha256": "d374bc5e10c824b23d85787ee34a389283e7d2485446286bb17a4a68e7c9ed33"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_methodology.py",
@@ -1358,11 +1370,11 @@
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_project_refresh.py",
-      "sha256": "08f8fc96515a4207da1eec9afe653422de8000b21d5e478b189aefca85c1e6ea"
+      "sha256": "3d1b8668b8664fe7cc7545ce84747442af091342ca07031fedc26d2b2ba05e16"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_release_asset_expectation.py",
-      "sha256": "6a9049eb4a0869419fb90e8e3545986af24ceebb5c76e7494964cc2cd010e8bd"
+      "sha256": "f2b9ea590f57a48382f47d5e6032fb920255cebc4ac64e216c28766a20e84cfb"
     },
     {
       "path": "dev/plugins/dev-flow/tests/test_release_promotion_targets.py",
@@ -1449,6 +1461,6 @@
       "sha256": "c97359a7f1c3b082c8878addf2520f36cdbf0bf5cdaa573c02911827a947d459"
     }
   ],
-  "sourceSha256": "c38807437f82141744a267dccfd0cf6a60e0216474d092fd68c6cabcec170b93",
+  "sourceSha256": "a3694173df0981f49b5bfa976415df0387bdb1f64b3378c2076304ab6903f1d6",
   "target": "dev-flow"
 }

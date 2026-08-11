@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
@@ -12,6 +13,7 @@ SCRIPTS = PLUGIN_ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 from workflow_dependency_catalog import OPENSPEC_WORKFLOW_SKILLS
+import workflow_legacy_uninstall
 from workflow_legacy_uninstall import inspect_legacy_workflow_uninstall
 
 
@@ -224,6 +226,46 @@ class LegacyWorkflowUninstallTests(unittest.TestCase):
             manual[".codex/skills/openspec-propose"]["reason"],
             "official_openspec_skill_set_unverified",
         )
+
+    def test_gsd_config_requires_manual_review_without_toml_parser(self):
+        repo = self.make_repo()
+        self.write(
+            repo,
+            ".codex/config.toml",
+            "# GSD Agent Configuration\n"
+            "[agents.gsd-planner]\n"
+            'config_file = ".codex/agents/gsd-planner.toml"\n',
+        )
+
+        with mock.patch.object(workflow_legacy_uninstall, "tomllib", None):
+            result = inspect_legacy_workflow_uninstall(repo)
+
+        candidates = {item["path"]: item for item in result["candidates"]}
+        manual = {item["path"]: item for item in result["manualActions"]}
+        self.assertNotIn(".codex/config.toml", candidates)
+        self.assertEqual(
+            manual[".codex/config.toml"]["reason"],
+            "gsd_config_parser_unavailable",
+        )
+        self.assertEqual(result["status"], "manual_review_required")
+
+    def test_unrelated_config_stays_silent_without_toml_parser(self):
+        repo = self.make_repo()
+        self.write(
+            repo,
+            ".codex/config.toml",
+            "[features]\n"
+            "hooks = true\n",
+        )
+
+        with mock.patch.object(workflow_legacy_uninstall, "tomllib", None):
+            result = inspect_legacy_workflow_uninstall(repo)
+
+        candidates = {item["path"]: item for item in result["candidates"]}
+        manual = {item["path"]: item for item in result["manualActions"]}
+        self.assertNotIn(".codex/config.toml", candidates)
+        self.assertNotIn(".codex/config.toml", manual)
+        self.assertEqual(result["status"], "current")
 
 
 if __name__ == "__main__":

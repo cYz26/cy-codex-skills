@@ -1047,7 +1047,7 @@ context_health:
 
 
 class ImplementationReadinessRegressionTests(unittest.TestCase):
-    def test_revision_eleven_managed_refresh_retains_authority_and_readiness_inputs(self):
+    def test_revision_twelve_hook_runtime_refresh_retains_existing_inputs(self):
         manifest = json.loads(
             (PLUGIN_ROOT / ".codex-plugin" / "project-migration.json").read_text()
         )
@@ -1056,7 +1056,7 @@ class ImplementationReadinessRegressionTests(unittest.TestCase):
         release_root = PLUGIN_ROOT.parents[2] / "plugins" / "dev-flow"
 
         self.assertEqual(manifest["projectSchema"]["head"], 8)
-        self.assertEqual(refresh["revision"], 11)
+        self.assertEqual(refresh["revision"], 12)
         self.assertEqual(refresh["evidence"]["schemaDecision"], "managed-refresh")
         self.assertLessEqual(PROJECT_REFRESH_REVISION3_REQUIRED_INPUTS, tracked)
         self.assertLessEqual(PROJECT_REFRESH_REVISION4_REQUIRED_INPUTS, tracked)
@@ -1085,18 +1085,16 @@ class ImplementationReadinessRegressionTests(unittest.TestCase):
         impact = analyze_project_refresh_impact(
             PLUGIN_ROOT,
             release_root,
-            expected_change="centralize-devflow-authority-delta",
-            allow_same_change_repromotion=True,
+            expected_change="repair-devflow-hook-python39-runtime",
         )
         self.assertTrue(impact["ok"], impact)
         expected_status = (
             "changed_covered"
-            if impact["sameChangeRepromotion"]
-            or impact["sourceRevision"] > impact["baselineRevision"]
+            if impact["sourceRevision"] > impact["baselineRevision"]
             else "current"
         )
         self.assertEqual(impact["status"], expected_status)
-        # Revision 11 is a managed guidance/runtime refresh, not a project
+        # Revision 12 is a managed Hook runtime refresh, not a project
         # configuration migration. Advancing the refresh evidence revision
         # therefore must not manufacture a configuration-sensitive change or
         # require a project-schema advance.

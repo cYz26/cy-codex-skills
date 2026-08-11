@@ -4,9 +4,13 @@ import hashlib
 import json
 import os
 import re
-import tomllib
 from pathlib import Path
 from typing import Any
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    tomllib = None
 
 from legacy_workflow_config import HISTORY_PATHS, SUPERPOWERS_SKILLS
 from workflow_dependency_catalog import OPENSPEC_WORKFLOW_SKILLS
@@ -256,11 +260,18 @@ def _inspect_gsd_config(repo: Path, candidate: Any, manual: Any, read_set: set[s
         return
     try:
         text = path.read_text()
-        payload = tomllib.loads(text)
-    except (OSError, UnicodeError, tomllib.TOMLDecodeError):
+    except (OSError, UnicodeError):
         manual(relative, "gsd_config_unreadable")
         return
     if not _contains_gsd(text):
+        return
+    if tomllib is None:
+        manual(relative, "gsd_config_parser_unavailable")
+        return
+    try:
+        payload = tomllib.loads(text)
+    except ValueError:
+        manual(relative, "gsd_config_unreadable")
         return
     if not _strict_gsd_config(payload):
         manual(relative, "mixed_gsd_config_ownership")

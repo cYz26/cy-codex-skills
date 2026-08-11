@@ -1,27 +1,27 @@
 ---
-workflow_version: 0.4.0
+workflow_version: 0.4.1
 project_mode: brownfield
 current_stage: external_effects
 
 current_change:
-  id: centralize-devflow-authority-delta
-  status: external_effects
+  id: repair-devflow-hook-python39-runtime
+  status: verified
 
 standing_milestone:
-  status: current
-  contract_path: openspec/changes/centralize-devflow-authority-delta/evidence/standing-milestone-contract.json
-  contract_sha256: 783f5065fd1e2318ae356e63341b27eace9e6d40522407bec71f6997bf5c2e5c
-  goal_id: 019fdf0e-4539-7f93-88db-8574f952c115
-  change_id: centralize-devflow-authority-delta
-  candidate_digest: bde6a5983ff3381720190fcf6993d83c91e2cb289388bd6ebb0aa31f9c1acbbb
-  validation_digest: 47745f85c461a747ba3bacd4b73e9dd1d28e66b1850e44697043e42e7f40f2ab
-  review_digest: d4874ceb8aa8816358afee7a5b094b9e25a0c6304d172faa77a13751de323385
+  status: inactive
+  contract_path: none
+  contract_sha256: none
+  goal_id: none
+  change_id: none
+  candidate_digest: none
+  validation_digest: none
+  review_digest: none
 
 authority_gate:
-  key: sha256:ffae4a986d53a71919fef19cfcc9ec35bc651220ca78b109b30c949b4c7bbb18
-  status: resolved
-  resolution_digest: sha256:549278905befefbeb0d2e66575403c46e26b92c23ce207b65b11aac7f670fee0
-  evidence_digest: sha256:7d16a9528b7f79d003c3ca77c8979b0563c9d2e68d8be29cd6c206fc3ad03e77
+  key: none
+  status: inactive
+  resolution_digest: none
+  evidence_digest: none
   next_question: none
   missing_authority: []
 
@@ -41,14 +41,14 @@ implementation_readiness:
 
 context_management:
   compact_policy: checkpoint_boundary
-  last_checkpoint_id: 2026-08-08-planned-centralize-devflow-authority-delta
-  last_checkpoint_file: .planning/devflow/checkpoints/2026-08-08-planned-centralize-devflow-authority-delta.md
+  last_checkpoint_id: 2026-08-11-generated-devflow-0.4.1-verified
+  last_checkpoint_file: openspec/changes/repair-devflow-hook-python39-runtime/evidence/verification.md
   compact_recommended: false
   compact_status: not_needed
   last_compact_result_file: none
-  compact_source: checkpoint
-  compact_updated_at: 2026-08-08T00:50:00+08:00
-  compact_skip_reason: active_execution_context_is_healthy
+  compact_source: openspec
+  compact_updated_at: 2026-08-11
+  compact_skip_reason: release_contract_is_durable_and_execution_is_bounded
   compact_error: none
   compact_after:
     - project_setup_completed
@@ -69,27 +69,34 @@ context_management:
     - validation_recorded_if_applicable
 
 goal_gate:
-  id: 019fdf0e-4539-7f93-88db-8574f952c115
+  id: DF-HOOK-PY39-0.4.1
   required: true
   status: active
-  reason: the user authorized the Full OpenSpec authority-delta implementation and one sealed final milestone covering exact commit, fast-forward main push, immutable tag-bound publication, publication readback, and named DevFlow cache/current-source-project refresh
-  suggested_goal: deliver DevFlow 0.4.0 with zero false Human Gates, fail-closed authority resolution, a recoverable publication chain, and five-layer identity proof without PR, merge, force-push, archive, or unnamed refresh
+  reason: the user authorized a bounded patch release, main push, immutable publication, and internal named-cache refresh
+  suggested_goal: none
 
 context_health:
-  last_report: .planning/devflow/checkpoints/2026-08-08-planned-centralize-devflow-authority-delta.md
-  last_risk: high
+  last_report: none
+  last_risk: medium
   last_confidence: high
   last_decision: continue
-  last_goal_status: task_7_9_exact_refreeze
-  goal_summary: implement the validated central authority-delta and milestone-effects change, verify independently, then execute the one preauthorized DevFlow 0.4.0 commit-push-publish-refresh chain
+  last_goal_status: active
+  goal_summary: publish DevFlow 0.4.1 and activate the Python 3.9 Hook repair only in the internal named cache
 ---
 
 # Workflow State
 
 ## Current Status
 
-Task 7.9 exact-base reconstruction, Task 7.7 validation, and both Task 7.8 review axes are complete at P0=0/P1=0; the exact milestone identity is frozen.
+The Python 3.9 Hook runtime repair and canonical DevFlow 0.4.1 generated
+release are verified. Fresh evidence includes pre-promotion 743/743,
+post-promotion source 805/805, generated release 60/60, focused release 68/68,
+strict OpenSpec 35/35, runtime/source parity, workflow validation, Plugin Eval
+86/B with zero failures, and the exact seven-asset expectation. Project schema
+remains 8 with no migration step. Git commit/main/tag/Release and the internal
+named cache remain pending.
 
 ## Next Action
 
-Read back the frozen standing identity through the central resolver; Task 8 external effects remain pending and have not started.
+Review and stage only the approved DevFlow, OpenSpec, and control-plane paths,
+then create the patch-release commit before fast-forwarding `main`.
