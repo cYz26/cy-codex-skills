@@ -63,8 +63,9 @@ refresh, or consumer-project migration.
   `0.4.1` source/release commit, fast-forward main push, immutable tag and
   GitHub Release with readback, and internal named-cache refresh. Excluded
   effects remain unauthorized.
-- Current Status: source repair is verified; patch-release identity execution
-  is active.
+- Current Status: complete. Release commit `47ca042` is published as immutable
+  `dev-flow-v0.4.1`; the internal named cache is active at `0.4.1`, and the
+  installed Python 3.9 Hook checks pass.
 
 ### Execution Log
 
@@ -185,6 +186,32 @@ refresh, or consumer-project migration.
   `74439cf989b85983c39277cbc71fcc49f07b56d4210503de39509a310b1d2d2a`;
   Git commit, main push, tag, GitHub Release, cache refresh, archive, and
   consumer-project migration have not run.
+- 2026-08-11 Git publication: reviewed commit
+  `47ca042c4b015a939e98e5e5def4c2680321e627` has tree
+  `f3ed45449474418a9eb074675b2d112faee7e23e`. Local `main` was fast-forwarded
+  from `931f39b`, pushed through native SSH Git, and remote readback matched the
+  release commit before tag creation.
+- 2026-08-11 immutable publication: local and remote `dev-flow-v0.4.1`
+  resolve to `47ca042`. The public stable GitHub Release was published at
+  `2026-08-11T12:06:32Z`, is marked Latest, and all seven downloaded assets
+  passed the frozen verifier with asset-set SHA-256
+  `74439cf989b85983c39277cbc71fcc49f07b56d4210503de39509a310b1d2d2a`.
+- 2026-08-11 internal activation: the verified absolute ChatGPT Codex CLI
+  installed and enabled only `dev-flow@cy-codex-skills` `0.4.1` under
+  `CODEX_HOME=/Users/cY/.codex-switch/homes/internal`. Source, generated
+  release, and active cache are byte-identical at refresh revision 12 and
+  project schema 8. Runtime archive SHA-256 is
+  `76d7bbf85f7dfaeb1d7e05b82792483d41f580dda5ccfccb0ed0104990d5421f`;
+  source/packaged/cache repaired-module SHA-256 is
+  `a17c83e81f8b09e7b37ee7f7a49b163e10b20f23dd2a089f580eece4597e495d`.
+  Installed migration and Stop Hooks both exited 0 with empty stderr under
+  `/usr/bin/python3` 3.9.6.
+- 2026-08-11 live-session compatibility: targeted refresh installed `0.4.1`
+  but the running task still held an absolute `0.4.0` PreToolUse Hook path.
+  Exact `0.4.0` plugin bytes were restored from immutable tag
+  `dev-flow-v0.4.0`, unblocking the session without altering the active
+  `0.4.1` cache. The old cache remains intentionally retained; no archive,
+  consumer-project migration, other-plugin refresh, or cache cleanup ran.
 
 ## Incidental Finding Register
 
@@ -523,6 +550,31 @@ OpenSpec change or ledger item. Human Disposition is one of `pending`,
 - Recommended Follow-up: add an explicit no-side-effect `--help` path and reject
   all other unexpected arguments with focused CLI tests
 - Follow-up Trigger: the next DevFlow runner-interface maintenance change
+- Human Disposition: `pending`
+
+### DF-IFL-012: Cache refresh can invalidate live absolute Hook paths
+
+- Finding ID: `DF-IFL-012`
+- Disposition: `DEFER_AND_CONTINUE`
+- Severity: medium operational continuity risk; published and active-cache
+  identities remain valid
+- Evidence: the targeted internal refresh installed `0.4.1`, while the running
+  Codex task still invoked
+  `/Users/cY/.codex-switch/homes/internal/plugins/cache/cy-codex-skills/dev-flow/0.4.0/scripts/context_health_hook.py`.
+  Removal of that old path blocked PreToolUse before normal shell execution.
+- Affected Contract: live Hook execution during a named cache refresh; the
+  immutable `0.4.1` release and Python 3.9 runtime repair are unaffected
+- Impact: already-running Codex sessions can lose all Hook-mediated tool access
+  even though the new plugin version installed successfully
+- Current Mitigation: restore exact `0.4.0` bytes from immutable
+  `dev-flow-v0.4.0`, keep active `0.4.1` byte-identical with source/release, and
+  retain both cache roots until old sessions restart
+- Disposition Reason: a systemic fix spans Codex plugin cache retention or a
+  stable Hook-path indirection and is outside the already-published patch
+  release contract
+- Recommended Follow-up: make refresh preserve cache versions referenced by
+  live sessions, or launch Hooks through a stable version-aware indirection
+- Follow-up Trigger: the next DevFlow/Codex plugin-refresh lifecycle repair
 - Human Disposition: `pending`
 
 ## Active Change: OpenSpec 1.7 Upgrade

@@ -2,9 +2,9 @@
 
 - Timestamp: `2026-08-11`
 - Change: `repair-devflow-hook-python39-runtime`
-- Boundary: development source, invocation-owned isolated candidates, and the
-  canonical generated release. Installed cache, consumer projects, Git
-  transport, archive, and publication have not yet changed.
+- Boundary: development source, invocation-owned isolated candidates, canonical
+  generated release, immutable publication, and the internal named cache.
+  Consumer projects and archive remain unchanged.
 
 ## Claim
 
@@ -123,5 +123,37 @@ revision is ahead and `current` when source and release revisions match. No
 runtime or release byte changed.
 
 The seven frozen asset records are stored in
-`evidence/dev-flow-0.4.1.release-assets.json`. Git commit, main push, tag,
-GitHub Release, and internal cache refresh remain the next authorized effects.
+`evidence/dev-flow-0.4.1.release-assets.json`.
+
+## Published Release And Internal Cache Closeout
+
+- Release commit:
+  `47ca042c4b015a939e98e5e5def4c2680321e627`, tree
+  `f3ed45449474418a9eb074675b2d112faee7e23e`.
+- Local and remote `main` plus local and remote `dev-flow-v0.4.1` all resolved
+  to the release commit at publication readback.
+- The public GitHub Release is stable, non-draft, non-prerelease, and marked
+  Latest. It was published at `2026-08-11T12:06:32Z` and binds commit
+  `47ca042`.
+- All seven downloaded assets passed
+  `verify_devflow_release_assets.py` with asset-set SHA-256
+  `74439cf989b85983c39277cbc71fcc49f07b56d4210503de39509a310b1d2d2a`.
+- The internal absolute Codex CLI installed and enabled
+  `dev-flow@cy-codex-skills` `0.4.1` at
+  `/Users/cY/.codex-switch/homes/internal/plugins/cache/cy-codex-skills/dev-flow/0.4.1`.
+  Source, generated release, and active cache are byte-identical at refresh
+  revision 12 and project schema 8.
+- Generated release and active cache runtime archive SHA-256 is
+  `76d7bbf85f7dfaeb1d7e05b82792483d41f580dda5ccfccb0ed0104990d5421f`.
+  Source, packaged release, and active cache
+  `workflow_legacy_uninstall.py` SHA-256 is
+  `a17c83e81f8b09e7b37ee7f7a49b163e10b20f23dd2a089f580eece4597e495d`.
+- Installed migration and Stop Hooks both exited 0 with empty stderr under
+  `/usr/bin/python3` 3.9.6 and returned their existing JSON schemas.
+- The refresh initially invalidated the live task's already-loaded absolute
+  `0.4.0` Hook path. Exact `0.4.0` bytes were restored from immutable tag
+  `dev-flow-v0.4.0`, while `0.4.1` remains the active installed version. The
+  compatibility snapshot is retained until old sessions restart; no cleanup
+  was authorized.
+- Consumer-project migration, archive, PR, merge commit, rebase, force push,
+  release overwrite, and other-plugin refresh did not run.

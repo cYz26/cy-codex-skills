@@ -1,11 +1,11 @@
 ---
 workflow_version: 0.4.1
 project_mode: brownfield
-current_stage: external_effects
+current_stage: complete
 
 current_change:
   id: repair-devflow-hook-python39-runtime
-  status: verified
+  status: complete
 
 standing_milestone:
   status: inactive
@@ -34,14 +34,14 @@ gates:
   verification_passed: true
   state_updated: true
   archive_allowed: false
-  release_allowed: true
+  release_allowed: false
 
 implementation_readiness:
   required: false
 
 context_management:
   compact_policy: checkpoint_boundary
-  last_checkpoint_id: 2026-08-11-generated-devflow-0.4.1-verified
+  last_checkpoint_id: 2026-08-11-dev-flow-0.4.1-published-refreshed
   last_checkpoint_file: openspec/changes/repair-devflow-hook-python39-runtime/evidence/verification.md
   compact_recommended: false
   compact_status: not_needed
@@ -71,16 +71,16 @@ context_management:
 goal_gate:
   id: DF-HOOK-PY39-0.4.1
   required: true
-  status: active
-  reason: the user authorized a bounded patch release, main push, immutable publication, and internal named-cache refresh
+  status: complete
+  reason: the authorized patch release, main push, immutable publication, and internal named-cache refresh are verified
   suggested_goal: none
 
 context_health:
   last_report: none
-  last_risk: medium
+  last_risk: low
   last_confidence: high
-  last_decision: continue
-  last_goal_status: active
+  last_decision: complete
+  last_goal_status: complete
   goal_summary: publish DevFlow 0.4.1 and activate the Python 3.9 Hook repair only in the internal named cache
 ---
 
@@ -88,15 +88,21 @@ context_health:
 
 ## Current Status
 
-The Python 3.9 Hook runtime repair and canonical DevFlow 0.4.1 generated
-release are verified. Fresh evidence includes pre-promotion 743/743,
-post-promotion source 805/805, generated release 60/60, focused release 68/68,
-strict OpenSpec 35/35, runtime/source parity, workflow validation, Plugin Eval
-86/B with zero failures, and the exact seven-asset expectation. Project schema
-remains 8 with no migration step. Git commit/main/tag/Release and the internal
-named cache remain pending.
+DevFlow `0.4.1` is published from release commit `47ca042`, and the immutable
+`dev-flow-v0.4.1` tag plus all seven GitHub Release assets were read back
+against the frozen hashes. The internal `dev-flow@cy-codex-skills` installation
+is enabled at `0.4.1`, refresh revision 12, project schema 8, with source,
+generated release, runtime archive, repaired module, and active cache identities
+matching. Installed migration and Stop Hooks both exit 0 without stderr under
+system Python 3.9.6.
+
+The exact `0.4.0` cache was restored from its immutable tag after the refresh
+exposed a live-session absolute Hook path. It is retained only as a compatibility
+snapshot while old Codex sessions may still reference it. Consumer-project
+migration, archive, other-plugin refresh, and old-cache cleanup did not run.
 
 ## Next Action
 
-Review and stage only the approved DevFlow, OpenSpec, and control-plane paths,
-then create the patch-release commit before fast-forwarding `main`.
+No approved execution item remains. Restart Codex CLI/Desktop sessions that
+loaded the old `0.4.0` Hook path before considering any separately authorized
+compatibility-cache cleanup. OpenSpec archive remains a separate Human Gate.

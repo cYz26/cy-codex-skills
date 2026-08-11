@@ -61,22 +61,22 @@
 
 ## 7. Main And Immutable Publication
 
-- [ ] 7.1 Review and stage only the approved DevFlow/OpenSpec/control-plane
+- [x] 7.1 Review and stage only the approved DevFlow/OpenSpec/control-plane
   paths, create one patch-release commit, and prove its tree matches the
   reviewed candidate.
-- [ ] 7.2 Fetch and verify fast-forward ancestry, fast-forward local `main`,
+- [x] 7.2 Fetch and verify fast-forward ancestry, fast-forward local `main`,
   push `refs/heads/main`, and read back local/remote equality.
-- [ ] 7.3 Create and push immutable `dev-flow-v0.4.1`, observe the tag-bound
+- [x] 7.3 Create and push immutable `dev-flow-v0.4.1`, observe the tag-bound
   GitHub Actions publication, and verify published Release state plus every
   frozen asset hash before local activation.
 
 ## 8. Internal Cache Activation And Closeout
 
-- [ ] 8.1 Refresh only
+- [x] 8.1 Refresh only
   `CODEX_HOME=/Users/cY/.codex-switch/homes/internal`
   `dev-flow@cy-codex-skills` using the verified absolute Codex CLI.
-- [ ] 8.2 Prove source/release/cache version, revision, runtime archive, and
+- [x] 8.2 Prove source/release/cache version, revision, runtime archive, and
   repaired module identities match, then rerun migration and Stop Hooks under
   `/usr/bin/python3` 3.9.6.
-- [ ] 8.3 Record final Git/tag/Release/cache evidence and state without
+- [x] 8.3 Record final Git/tag/Release/cache evidence and state without
   archiving, migrating a consumer project, or modifying another plugin.
