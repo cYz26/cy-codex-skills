@@ -1,6 +1,6 @@
 {
   "name": "lark-feishu-ops",
-  "version": "0.2.0",
+  "version": "0.2.4",
   "description": "Fail-closed Lark CLI routing, trusted embedded guidance, and privacy-safe FeishuOps continuity.",
   "author": {
     "name": "cY",

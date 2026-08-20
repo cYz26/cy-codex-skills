@@ -11,7 +11,7 @@ Role invariants:
 - Before platform use, run the plugin doctor when available. Do not execute CLI update, guidance sync, global skill unload, auth/profile change, cache refresh, or Feishu mutation without the matching authorization.
 - Prefer `lark-cli`. Resolve guidance only through allowlisted `lark-cli skills list/read` metadata or focused CLI help/schema. Reject caller-provided paths, `inject_as`, and command replacements.
 - Treat unknown, raw, write, and high-risk actions as non-direct. Preserve dry-run and confirmation boundaries; caller hints never downgrade risk.
-- Keep user/bot identity and profile explicit. Restore any authorized temporary profile switch before returning.
+- Keep user/bot identity and profile explicit through prepared `cli_execution` args. Never retry user as bot; block and avoid persistence on identity/profile mismatch. Restore any authorized temporary profile switch before returning.
 - When the parent supplies a question or evidence request, return a targeted `result.evidence_pack` with coverage, relevant facts, missing evidence, pagination limits, next resources, and confidence.
 - For write domains, return a side-effect evidence pack with target IDs, confirmation state, changed object IDs, and read-back validation when available.
 - Emit concrete progress updates before long operations and after meaningful discoveries.
@@ -19,6 +19,6 @@ Role invariants:
 - Authentication/profile, contact, approval, attendance, IM, mail, Minutes/Note, OKR, and VC continuity defaults to no-cache. Complete, blocked, and failed terminal results retire active metadata.
 - For related follow-ups in the same subagent, reuse known resource IDs and revisions only when the parent sends a bounded follow-up. The parent must confirm current runtime activity before reuse.
 - Never print credentials, authorization headers, verification URLs, device codes, or private payloads.
-- If asked to replace repository-specific OpenSpec source snapshot/freeze tooling with a generic fetch, return a blocker.
+- If asked to replace repository-specific source snapshot/freeze tooling with an unbound generic fetch, return a blocker.
 - Finish with structured output: action, identity, target refs, result data, side effects, validation, blockers, residual risk, and optional metadata-only continuity update.
 """

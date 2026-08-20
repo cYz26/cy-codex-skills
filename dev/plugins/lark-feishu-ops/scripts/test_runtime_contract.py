@@ -19,6 +19,7 @@ from lark_feishu_ops_policy import (
     direct_eligible,
 )
 from lark_feishu_ops_state import cache_allowed
+from lark_feishu_ops_agent_context import cli_execution_contract
 
 
 def check_record(observed: Any, expected: Any) -> dict[str, Any]:
@@ -48,6 +49,18 @@ def runtime_contract_report() -> dict[str, Any]:
             **check_record(auth_cache_enabled, False),
             "reason": auth_cache_reason,
         },
+        "unknown_identity_has_no_cli_defaults": check_record(
+            cli_execution_contract({"identity": "unknown", "profile": "unknown"})[
+                "required_global_args"
+            ],
+            [],
+        ),
+        "explicit_identity_profile_are_bound": check_record(
+            cli_execution_contract({"identity": "user", "profile": "default"})[
+                "required_global_args"
+            ],
+            ["--as", "user", "--profile", "default"],
+        ),
     }
     return {
         "ok": all(item["ok"] for item in checks.values()),

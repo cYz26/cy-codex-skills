@@ -124,11 +124,13 @@ reuse an active FeishuOps subagent, reconstruct from cache, or spawn a clean sub
 python3 ../../scripts/lark_feishu_ops_agent_context.py prepare --repo <repo> --request-json <request.json> --json
 ```
 
-Runtime state is local to the repository and ignored by Git:
-`.dev-flow/lark-feishu-ops/agent-context/`. It contains `active_agents.json` and `snapshots/`
-schema-v2 metadata capsules, not full conversations, requests, evidence bodies, or command output.
+Runtime state is local to the repository at the legacy compatibility path
+`.dev-flow/lark-feishu-ops/agent-context/`. It is plugin continuity data, not repository workflow
+authority; a consuming repository should ignore the path when the helper is used. The path contains
+`active_agents.json` and `snapshots/` schema-v2 metadata capsules, not full conversations, requests,
+evidence bodies, or command output.
 
-The helper uses the decision family `direct`, `reuse_active`, `reconstruct_from_cache`, or `fresh_subagent`; 0.2.0 emits the active case as
+The helper uses the decision family `direct`, `reuse_active`, `reconstruct_from_cache`, or `fresh_subagent`; 0.2.4 emits the active case as
 `reuse_active_candidate` so callers cannot mistake registry metadata for live
 Codex runtime state.
 `reconstruct_from_cache` reconstructs bounded metadata only; it never reconstructs evidence.
@@ -182,7 +184,7 @@ Include:
 - `freshness`: whether known revisions/cursors/windows are acceptable or the subagent must re-fetch.
 - `non_goals`: what FeishuOps should not decide or fetch.
 
-The legacy advice "Use full parent-context forking only" is not the 0.2.0 FeishuOps contract.
+The legacy advice "Use full parent-context forking only" is not the 0.2.4 FeishuOps contract.
 Fresh FeishuOps work always uses `fork_turns: none`; put the minimum required facts in the compact
 capsule instead of inheriting unrelated business discussion.
 
@@ -221,7 +223,7 @@ single-domain, profile-stable request with no side effect. Unknown actions repor
 unknown`; raw, write, and high-risk actions route through FeishuOps with their confirmation or
 dry-run boundary. Caller `read_only` or `direct_allowed` hints cannot lower derived risk.
 
-Embedded CLI guidance is authoritative. The current Lark CLI 1.0.69 compatibility baseline has 27
+Embedded CLI guidance is authoritative. The validated Lark CLI 1.0.88 compatibility baseline has 27
 skills: `lark-approval`, `lark-apps`, `lark-attendance`, `lark-base`, `lark-calendar`,
 `lark-contact`, `lark-doc`, `lark-drive`, `lark-event`, `lark-im`, `lark-mail`, `lark-markdown`,
 `lark-minutes`, `lark-note`, `lark-okr`, `lark-openapi-explorer`, `lark-shared`, `lark-sheets`,
@@ -231,11 +233,20 @@ skills: `lark-approval`, `lark-apps`, `lark-attendance`, `lark-base`, `lark-cale
 Always derive availability from `lark-cli skills list --json`; this baseline is documentation, not
 a substitute for dynamic inventory. Use `lark-cli skills read <name>` for selected guidance.
 
-Lark CLI 1.0.69 also exposes CLI-only top-level domains without a dedicated embedded skill:
+Lark CLI 1.0.88 also exposes CLI-only top-level domains without a dedicated embedded skill:
 `application`, `mindnotes`, `config`, `profile`, `doctor`, `update`, `whoami`, `skills`, and
 `schema`. Use focused CLI help plus the mapped `lark-doc`, `lark-shared`, or
 `lark-openapi-explorer` guidance where applicable. Any domain without a known mapping returns a
 blocker; do not invent a command or silently switch to raw OpenAPI.
+
+Prepared requests carry `cli_execution.required_global_args`. Apply explicit `--as` and
+`--profile` arguments to every applicable command, then compare returned identity/profile with the
+request. Never retry a requested user operation as bot; identity/profile mismatch is `BLOCKED` and
+cannot produce reusable continuity. Explicit `--profile` overrides `LARKSUITE_CLI_PROFILE`, which
+overrides persisted profile selection. Preserve structured JSON errors from stderr for remediation,
+while nonzero exit status remains failure. For CLI 1.0.70+ dry-run output, use `data.api` rather than
+the retired top-level `api`. Embedded Skill versions are optional; follow any split `references/`
+paths named by the selected Skill instead of assuming all guidance remains in its root file.
 
 ## Intent-Carrying Operations
 

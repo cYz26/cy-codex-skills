@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import re
@@ -15,6 +16,7 @@ SCRIPTS = PLUGIN_ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 import lark_feishu_ops_doctor
+import lark_feishu_ops_runtime
 
 
 OFFICIAL_LARK_SKILLS = {
@@ -101,6 +103,15 @@ def read_protocol_reference():
     ).read_text()
 
 
+def suite_content_digests(suite_dir):
+    return {
+        name: hashlib.sha256(
+            (suite_dir / "references" / name / "SKILL.md").read_bytes()
+        ).hexdigest()
+        for name in sorted(OFFICIAL_LARK_SKILLS)
+    }
+
+
 class LarkFeishuOpsDoctorTests(unittest.TestCase):
     def make_repo(self):
         return Path(tempfile.mkdtemp(prefix="lark-feishu-ops-test-repo-"))
@@ -122,34 +133,51 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
         lock_path.write_text(json.dumps(payload), encoding="utf-8")
         return lock_path
 
-    def write_fake_lark_cli(self, bin_dir, version="1.0.69", skills=None):
+    def write_fake_lark_cli(
+        self,
+        bin_dir,
+        version="1.0.69",
+        skills=None,
+        skill_versions=None,
+        skills_list_ok=True,
+    ):
         bin_dir.mkdir(parents=True, exist_ok=True)
         skill_names = sorted(skills or OFFICIAL_LARK_SKILLS)
+        versions = skill_versions or {}
         skills_payload = json.dumps(
             {
                 "ok": True,
                 "skills": [
-                    {"name": name, "description": f"synthetic {name}", "version": "1.0.0"}
+                    {
+                        "name": name,
+                        "description": f"synthetic {name}",
+                        **(
+                            {"version": versions[name]}
+                            if name in versions and versions[name] is not None
+                            else ({"version": "1.0.0"} if name not in versions else {})
+                        ),
+                    }
                     for name in skill_names
                 ],
                 "count": len(skill_names),
             }
         )
-        read_payload = json.dumps(
-            {
-                "skill": "lark-doc",
-                "path": "SKILL.md",
-                "content": "---\nname: lark-doc\n---\n# Synthetic embedded guidance\n",
-                "guidance": "synthetic version-matched guidance",
-            }
-        )
         executable = bin_dir / "lark-cli"
+        skills_list_handler = (
+            f"printf '%s\\n' '{skills_payload}'"
+            if skills_list_ok
+            else "printf '%s\\n' '{\"ok\":false,\"type\":\"inventory_failed\","
+            "\"message\":\"synthetic inventory failure\"}' >&2; exit 2"
+        )
         executable.write_text(
             "#!/bin/sh\n"
             "case \"$*\" in\n"
             f"  \"--version\") printf '%s\\n' 'lark-cli version {version}' ;;\n"
-            f"  \"skills list\"|\"skills list --json\") printf '%s\\n' '{skills_payload}' ;;\n"
-            f"  skills\\ read*) printf '%s\\n' '{read_payload}' ;;\n"
+            f"  \"skills list\"|\"skills list --json\") {skills_list_handler} ;;\n"
+            '  skills\\ read*) skill="$3"; printf \'%s\\n\' "'
+            '{\\"skill\\":\\"$skill\\",\\"path\\":\\"SKILL.md\\",'
+            '\\"content\\":\\"---\\\\nname: $skill\\\\n---\\\\n# Synthetic embedded guidance\\\\n\\",'
+            '\\"guidance\\":\\"synthetic version-matched guidance\\"}" ;;\n'
             "  \"update --check --json\") printf '%s\\n' "
             "'{\"ok\":true,\"action\":\"already_up_to_date\","
             "\"current_version\":\"1.0.69\",\"latest_version\":\"1.0.69\"}' ;;\n"
@@ -174,13 +202,14 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
                     "count": len(skill_names),
                 }
             )
-        elif tail[:3] == ["skills", "read", "lark-doc"]:
-            payload = skill_read_payload
+        elif tail[:2] == ["skills", "read"] and len(tail) >= 3:
+            requested_skill = tail[2]
+            payload = skill_read_payload if requested_skill == "lark-doc" else None
             if payload is None:
                 payload = {
-                    "skill": "lark-doc",
+                    "skill": requested_skill,
                     "path": "SKILL.md",
-                    "content": "---\nname: lark-doc\n---\n# Synthetic embedded guidance\n",
+                    "content": f"---\nname: {requested_skill}\n---\n# Synthetic embedded guidance\n",
                     "guidance": "synthetic version-matched guidance",
                 }
             stdout = payload if isinstance(payload, str) else json.dumps(payload)
@@ -265,6 +294,66 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
             self.assertIn("owner", serialized.lower())
         with self.subTest("version divergence is not a pass"):
             self.assertEqual("WARN", result["status"])
+
+    def test_doctor_reports_per_executable_guidance_and_separate_divergence(self):
+        root = self.make_repo()
+        first = self.write_fake_lark_cli(
+            root / "first-bin",
+            version="1.0.88",
+            skill_versions={"lark-wiki": "1.0.3", "lark-doc": None},
+        )
+        second = self.write_fake_lark_cli(
+            root / "second-bin",
+            version="1.0.88",
+            skill_versions={"lark-wiki": "1.0.2", "lark-doc": None},
+        )
+
+        with mock.patch.dict(
+            os.environ,
+            {"PATH": os.pathsep.join([str(first.parent), str(second.parent)])},
+        ):
+            result = lark_feishu_ops_doctor.check_lark_cli(
+                skip_update_check=True,
+                offline=True,
+            )
+
+        self.assertEqual("PASS", result["binary_version_divergence"]["status"])
+        self.assertEqual("WARN", result["embedded_guidance_divergence"]["status"])
+        self.assertNotEqual(
+            result["executables"][0]["embedded_skills"]["digest"],
+            result["executables"][1]["embedded_skills"]["digest"],
+        )
+        self.assertNotIn(
+            "version",
+            next(
+                skill
+                for skill in result["executables"][0]["embedded_skills"]["skills"]
+                if skill["name"] == "lark-doc"
+            ),
+        )
+
+    def test_doctor_warns_when_secondary_embedded_guidance_cannot_be_verified(self):
+        root = self.make_repo()
+        first = self.write_fake_lark_cli(root / "first-bin", version="1.0.88")
+        second = self.write_fake_lark_cli(
+            root / "second-bin",
+            version="1.0.88",
+            skills_list_ok=False,
+        )
+
+        with mock.patch.dict(
+            os.environ,
+            {"PATH": os.pathsep.join([str(first.parent), str(second.parent)])},
+        ):
+            result = lark_feishu_ops_doctor.check_lark_cli(
+                skip_update_check=True,
+                offline=True,
+            )
+
+        self.assertEqual("WARN", result["status"])
+        self.assertEqual("WARN", result["embedded_guidance_divergence"]["status"])
+        self.assertEqual("PASS", result["executables"][0]["embedded_skills"]["status"])
+        self.assertEqual("WARN", result["executables"][1]["embedded_skills"]["status"])
 
     def test_doctor_reports_canonical_executable_when_reachable_versions_align(self):
         root = self.make_repo()
@@ -614,6 +703,85 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
         self.assertIn(["lark-cli", "update", "--check", "--json"], commands)
         self.assertFalse(result["update_check"].get("cached", False))
 
+    def test_fresh_update_check_is_no_write_by_default(self):
+        cache_path = self.make_repo() / "update-check.json"
+
+        with (
+            mock.patch.object(
+                lark_feishu_ops_doctor.shutil,
+                "which",
+                return_value="/usr/local/bin/lark-cli",
+            ),
+            mock.patch.object(
+                lark_feishu_ops_doctor,
+                "run_command",
+                side_effect=lambda command, timeout=30: self.synthetic_cli_result(command),
+            ),
+        ):
+            result = lark_feishu_ops_doctor.check_lark_cli(
+                skip_update_check=False,
+                offline=False,
+                force_update_check=True,
+                cache_path=cache_path,
+                write_update_cache=False,
+            )
+
+        self.assertFalse(cache_path.exists())
+        self.assertEqual(
+            {"requested": False, "written": False},
+            result["update_check"]["cache_persistence"],
+        )
+
+    def test_validate_json_result_keeps_structured_stderr_error(self):
+        error = {
+            "ok": False,
+            "type": "authentication_required",
+            "message": "synthetic user identity unavailable",
+            "hint": "run synthetic login",
+        }
+        result = lark_feishu_ops_runtime.command_result(
+            ["lark-cli", "skills", "read", "synthetic-missing", "--json"],
+            False,
+            2,
+            "",
+            json.dumps(error),
+        )
+
+        contract = lark_feishu_ops_runtime.validate_json_result(result)
+
+        self.assertFalse(contract["ok"])
+        self.assertEqual("stderr", contract["payload_source"])
+        self.assertEqual(error, contract["payload"])
+        self.assertIn("process_exit", contract["errors"])
+        self.assertNotIn("json_object_required", contract["errors"])
+
+    def test_validate_json_result_keeps_structured_stderr_error_when_stdout_is_json(self):
+        stdout_payload = {"ok": False, "message": "synthetic command summary"}
+        stderr_error = {
+            "ok": False,
+            "type": "authentication_required",
+            "message": "synthetic user identity unavailable",
+            "hint": "run synthetic login",
+        }
+        result = lark_feishu_ops_runtime.command_result(
+            ["lark-cli", "docs", "fetch", "synthetic", "--json"],
+            False,
+            2,
+            json.dumps(stdout_payload),
+            json.dumps(stderr_error),
+        )
+
+        contract = lark_feishu_ops_runtime.validate_json_result(result)
+
+        self.assertFalse(contract["ok"])
+        self.assertEqual("stdout", contract["payload_source"])
+        self.assertEqual(stdout_payload, contract["payload"])
+        self.assertEqual(
+            lark_feishu_ops_runtime.compact_structured_error(stderr_error),
+            contract["structured_error"],
+        )
+        self.assertIn("process_exit", contract["errors"])
+
     def test_update_available_returns_confirmation_action(self):
         cache_path = self.make_repo() / "update-check.json"
 
@@ -670,6 +838,7 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
                         "current_version": "1.0.60",
                         "latest_version": "1.0.60",
                         "skills_status": {
+                            "layout": "separate",
                             "current": "1.0.56",
                             "target": "1.0.60",
                             "in_sync": False,
@@ -703,6 +872,15 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
         self.assertEqual(["lark-cli", "update", "--json"], result["skills_sync_action"]["command"])
         self.assertEqual("1.0.56", result["skills_sync_action"]["current_version"])
         self.assertEqual("1.0.60", result["skills_sync_action"]["target_version"])
+        self.assertEqual("separate", result["skills_sync_action"]["layout"])
+        self.assertEqual("separate", result["skills_layout"])
+        self.assertEqual(
+            {"layout": "separate", "in_sync": False},
+            {
+                "layout": result["skills_status"]["layout"],
+                "in_sync": result["skills_status"]["in_sync"],
+            },
+        )
         self.assertEqual(["lark-doc", "lark-sheets"], result["skills_sync_action"]["skipped_deleted"])
         self.assertTrue(
             any("official Lark skill guidance" in item for item in result["recommendations"])
@@ -756,6 +934,45 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
         self.assertIn("open.feishu.cn", json.dumps(result))
         self.assertIn("larksuite/cli", json.dumps(result))
 
+    def test_global_audit_recognizes_1_0_88_well_known_tarball_source(self):
+        lock_path = self.write_skill_lock(
+            {
+                "skills": {
+                    "lark-doc": {
+                        "source": "open.feishu.cn",
+                        "sourceType": "well-known",
+                        "sourceBaseUrl": "https://open.feishu.cn/lark-cli/skills/regular",
+                        "sourceUrl": (
+                            "https://open.feishu.cn/lark-cli/skills/regular/"
+                            ".well-known/agent-skills/lark-doc.tar.gz"
+                        ),
+                        "wellKnownDigest": "sha256:" + ("a" * 64),
+                    }
+                }
+            }
+        )
+        listing = {
+            "status": "PASS",
+            "npx_path": "/synthetic/bin/npx",
+            "skills": [{"name": "lark-doc", "agents": ["Codex"]}],
+            "error": None,
+        }
+
+        with (
+            mock.patch.object(lark_feishu_ops_doctor, "list_global_skills", return_value=listing),
+            mock.patch.object(lark_feishu_ops_doctor, "SKILL_LOCK", lock_path),
+        ):
+            result = lark_feishu_ops_doctor.audit_global_lark_skills()
+
+        self.assertEqual(
+            ["lark-doc"],
+            [item["name"] for item in result["official_global_lark_skills"]],
+        )
+        self.assertEqual(
+            ["lark-doc"],
+            [item["name"] for item in result["codex_effective_official_lark_skills"]],
+        )
+
     def test_global_audit_reports_unverified_exposure_separately(self):
         lock_path = self.write_skill_lock(
             {
@@ -796,6 +1013,233 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
             "lark-unknown",
             {item["name"] for item in result["official_global_lark_skills"]},
         )
+
+    def test_global_audit_recognizes_structurally_verified_cli_managed_suite(self):
+        root = self.make_repo()
+        global_skills = root / ".agents" / "skills"
+        suite_dir = self.write_project_skill(
+            root,
+            "lark-suite",
+            root=".agents/skills",
+        )
+        for name in sorted(OFFICIAL_LARK_SKILLS):
+            self.write_project_skill(
+                suite_dir,
+                name,
+                root="references",
+            )
+        lock_path = self.write_skill_lock({"version": 3, "skills": {}})
+        listing = {
+            "status": "PASS",
+            "npx_path": "/synthetic/bin/npx",
+            "skills": [
+                {
+                    "name": "lark-suite",
+                    "path": str(suite_dir),
+                    "agents": ["Codex"],
+                }
+            ],
+            "error": None,
+        }
+        cli_check = {
+            "skills_layout": "suite",
+            "skills_status": {"layout": "suite", "in_sync": True},
+            "embedded_skills": {
+                "status": "PASS",
+                "skills": sorted(OFFICIAL_LARK_SKILLS),
+                "content_digests": suite_content_digests(suite_dir),
+            },
+        }
+
+        with (
+            mock.patch.object(lark_feishu_ops_doctor, "list_global_skills", return_value=listing),
+            mock.patch.object(lark_feishu_ops_doctor, "SKILL_LOCK", lock_path),
+            mock.patch.object(lark_feishu_ops_doctor, "GLOBAL_SKILLS_DIR", global_skills),
+        ):
+            result = lark_feishu_ops_doctor.audit_global_lark_skills(cli_check)
+
+        self.assertEqual(
+            ["lark-suite"],
+            [item["name"] for item in result["official_global_lark_skills"]],
+        )
+        self.assertEqual(
+            ["lark-suite"],
+            [item["name"] for item in result["shared_root_codex_lark_skills"]],
+        )
+        self.assertEqual([], result["unverified_global_lark_skills"])
+        self.assertEqual("suite", result["layout"])
+        self.assertTrue(result["compact_layout"])
+        self.assertFalse(result["codex_manager_compact"])
+        self.assertEqual(28, result["codex_recursive_exposure_count"])
+
+        stale_cli_check = {
+            **cli_check,
+            "skills_sync_action": {"type": "lark_cli_skills_sync"},
+        }
+        with (
+            mock.patch.object(lark_feishu_ops_doctor, "list_global_skills", return_value=listing),
+            mock.patch.object(lark_feishu_ops_doctor, "SKILL_LOCK", lock_path),
+            mock.patch.object(lark_feishu_ops_doctor, "GLOBAL_SKILLS_DIR", global_skills),
+        ):
+            stale_result = lark_feishu_ops_doctor.audit_global_lark_skills(
+                stale_cli_check
+            )
+        self.assertEqual([], stale_result["official_global_lark_skills"])
+        self.assertEqual(
+            ["lark-suite"],
+            [item["name"] for item in stale_result["unverified_global_lark_skills"]],
+        )
+
+        unknown_sync_check = {
+            key: value for key, value in cli_check.items() if key != "skills_status"
+        }
+        with (
+            mock.patch.object(lark_feishu_ops_doctor, "list_global_skills", return_value=listing),
+            mock.patch.object(lark_feishu_ops_doctor, "SKILL_LOCK", lock_path),
+            mock.patch.object(lark_feishu_ops_doctor, "GLOBAL_SKILLS_DIR", global_skills),
+        ):
+            unknown_sync_result = lark_feishu_ops_doctor.audit_global_lark_skills(
+                unknown_sync_check
+            )
+        self.assertEqual([], unknown_sync_result["official_global_lark_skills"])
+
+    def test_global_audit_rejects_suite_when_cli_reports_separate_layout(self):
+        root = self.make_repo()
+        global_skills = root / ".agents" / "skills"
+        suite_dir = self.write_project_skill(
+            root,
+            "lark-suite",
+            root=".agents/skills",
+        )
+        for name in sorted(OFFICIAL_LARK_SKILLS):
+            self.write_project_skill(suite_dir, name, root="references")
+        lock_path = self.write_skill_lock({"version": 3, "skills": {}})
+        listing = {
+            "status": "PASS",
+            "npx_path": "/synthetic/bin/npx",
+            "skills": [
+                {
+                    "name": "lark-suite",
+                    "path": str(suite_dir),
+                    "agents": ["Codex"],
+                }
+            ],
+            "error": None,
+        }
+        cli_check = {
+            "skills_layout": "separate",
+            "embedded_skills": {
+                "status": "PASS",
+                "skills": sorted(OFFICIAL_LARK_SKILLS),
+            },
+        }
+
+        with (
+            mock.patch.object(lark_feishu_ops_doctor, "list_global_skills", return_value=listing),
+            mock.patch.object(lark_feishu_ops_doctor, "SKILL_LOCK", lock_path),
+            mock.patch.object(lark_feishu_ops_doctor, "GLOBAL_SKILLS_DIR", global_skills),
+        ):
+            result = lark_feishu_ops_doctor.audit_global_lark_skills(cli_check)
+
+        self.assertEqual([], result["official_global_lark_skills"])
+        self.assertEqual(
+            ["lark-suite"],
+            [item["name"] for item in result["unverified_global_lark_skills"]],
+        )
+
+    def test_global_audit_rejects_suite_when_content_differs_from_embedded_guidance(self):
+        root = self.make_repo()
+        global_skills = root / ".agents" / "skills"
+        suite_dir = self.write_project_skill(
+            root,
+            "lark-suite",
+            root=".agents/skills",
+        )
+        for name in sorted(OFFICIAL_LARK_SKILLS):
+            self.write_project_skill(suite_dir, name, root="references")
+        digests = suite_content_digests(suite_dir)
+        digests["lark-doc"] = "0" * 64
+        lock_path = self.write_skill_lock({"version": 3, "skills": {}})
+        listing = {
+            "status": "PASS",
+            "npx_path": "/synthetic/bin/npx",
+            "skills": [
+                {
+                    "name": "lark-suite",
+                    "path": str(suite_dir),
+                    "agents": ["Codex"],
+                }
+            ],
+            "error": None,
+        }
+        cli_check = {
+            "skills_layout": "suite",
+            "skills_status": {"layout": "suite", "in_sync": True},
+            "embedded_skills": {
+                "status": "PASS",
+                "skills": sorted(OFFICIAL_LARK_SKILLS),
+                "content_digests": digests,
+            },
+        }
+
+        with (
+            mock.patch.object(lark_feishu_ops_doctor, "list_global_skills", return_value=listing),
+            mock.patch.object(lark_feishu_ops_doctor, "SKILL_LOCK", lock_path),
+            mock.patch.object(lark_feishu_ops_doctor, "GLOBAL_SKILLS_DIR", global_skills),
+        ):
+            result = lark_feishu_ops_doctor.audit_global_lark_skills(cli_check)
+
+        self.assertEqual([], result["official_global_lark_skills"])
+        self.assertEqual(
+            ["lark-suite"],
+            [item["name"] for item in result["unverified_global_lark_skills"]],
+        )
+
+    def test_global_audit_rejects_spoofed_or_incomplete_suite(self):
+        root = self.make_repo()
+        global_skills = root / ".agents" / "skills"
+        suite_dir = self.write_project_skill(
+            root,
+            "lark-suite",
+            root=".agents/skills",
+        )
+        self.write_project_skill(suite_dir, "lark-doc", root="references")
+        lock_path = self.write_skill_lock({"version": 3, "skills": {}})
+        listing = {
+            "status": "PASS",
+            "npx_path": "/synthetic/bin/npx",
+            "skills": [
+                {
+                    "name": "lark-suite",
+                    "path": str(suite_dir),
+                    "agents": ["Codex"],
+                }
+            ],
+            "error": None,
+        }
+        cli_check = {
+            "skills_layout": "suite",
+            "embedded_skills": {
+                "status": "PASS",
+                "skills": sorted(OFFICIAL_LARK_SKILLS),
+            },
+        }
+
+        with (
+            mock.patch.object(lark_feishu_ops_doctor, "list_global_skills", return_value=listing),
+            mock.patch.object(lark_feishu_ops_doctor, "SKILL_LOCK", lock_path),
+            mock.patch.object(lark_feishu_ops_doctor, "GLOBAL_SKILLS_DIR", global_skills),
+        ):
+            result = lark_feishu_ops_doctor.audit_global_lark_skills(cli_check)
+
+        self.assertEqual([], result["official_global_lark_skills"])
+        self.assertEqual(
+            ["lark-suite"],
+            [item["name"] for item in result["unverified_global_lark_skills"]],
+        )
+        self.assertFalse(result["compact_layout"])
+        self.assertFalse(result["codex_manager_compact"])
+        self.assertEqual(2, result["codex_recursive_exposure_count"])
 
     def test_doctor_accounts_for_all_current_embedded_skills(self):
         root = self.make_repo()
@@ -871,6 +1315,22 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
         self.assertIsNotNone(event_route)
         self.assertIn("lark-event", collect_lark_skill_names(event_route))
         self.assertNotIn("lark-event", collect_lark_skill_names(calendar_route))
+
+    def test_codex_global_unload_blocks_shared_agents_root_without_mutation(self):
+        target = {
+            "name": "lark-doc",
+            "path": str(lark_feishu_ops_doctor.GLOBAL_SKILLS_DIR / "lark-doc"),
+            "agents": ["Codex", "Claude Code"],
+        }
+
+        with mock.patch.object(lark_feishu_ops_doctor, "run_command") as run_command:
+            result = lark_feishu_ops_doctor.apply_codex_global_unload([target])
+
+        self.assertEqual("BLOCKED", result["status"])
+        self.assertEqual([], result["operations"])
+        self.assertEqual(["lark-doc"], result["blocked_skills"])
+        self.assertIn("shared canonical root", result["error"])
+        run_command.assert_not_called()
 
     def test_missing_npx_is_optional_for_normal_runtime_readiness(self):
         args = SimpleNamespace(
@@ -1000,6 +1460,29 @@ class LarkFeishuOpsDoctorTests(unittest.TestCase):
 
         for text in required:
             self.assertIn(text, prompt)
+
+    def test_runtime_prompt_enforces_identity_profile_and_no_fallback(self):
+        prompt = (PLUGIN_ROOT / "agents" / "runtime-prompts" / "feishu-ops.md").read_text()
+
+        required = [
+            "cli_execution.required_global_args",
+            "Never retry a requested user operation as bot",
+            "identity/profile mismatch",
+            '--as "<identity>"',
+            '--profile "<profile>"',
+        ]
+        for text in required:
+            self.assertIn(text, prompt)
+
+    def test_docs_describe_1_0_88_and_opt_in_update_cache(self):
+        readme = (PLUGIN_ROOT / "README.md").read_text()
+        skill = read_skill()
+        protocol = read_protocol_reference()
+
+        self.assertIn("Lark CLI 1.0.88", readme)
+        self.assertIn("--write-update-cache", readme)
+        self.assertIn("no-write by default", skill)
+        self.assertIn("structured JSON errors from stderr", protocol)
 
     def test_skill_defers_deep_feishuops_protocol(self):
         skill = read_skill()

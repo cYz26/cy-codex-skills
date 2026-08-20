@@ -125,6 +125,7 @@ class LarkFeishuAgentContextTests(unittest.TestCase):
             "status": status,
             "action": "docs.fetch",
             "identity": "user",
+            "profile": "default",
             "commands_or_tools_used": [
                 "lark-cli docs fetch --client-secret synthetic-cli-secret"
             ],
@@ -271,6 +272,33 @@ class LarkFeishuAgentContextTests(unittest.TestCase):
 
         self.assertEqual("read", report["request"]["risk_class"])
         self.assertEqual("direct", report["dispatch"]["decision"])
+
+    def test_ac_01b_omitted_identity_profile_are_unknown_and_emit_no_cli_defaults(self):
+        repo = self.make_repo()
+        fake_cli = self.make_fake_lark_cli(["lark-doc"])
+        request = self.make_request()
+        request["dispatch_hints"].pop("identity")
+        request["dispatch_hints"].pop("profile")
+
+        report = self.run_prepare(repo, request, fake_cli=fake_cli)
+        hints = report["request"]["dispatch_hints"]
+        execution = report["request"]["cli_execution"]
+
+        self.assertEqual("unknown", hints["identity"])
+        self.assertEqual("unknown", hints["profile"])
+        self.assertEqual([], execution["required_global_args"])
+        self.assertTrue(execution["forbid_identity_fallback"])
+
+    def test_ac_01c_explicit_identity_profile_become_required_cli_args(self):
+        repo = self.make_repo()
+        fake_cli = self.make_fake_lark_cli(["lark-doc"])
+
+        report = self.run_prepare(repo, self.make_request(), fake_cli=fake_cli)
+
+        self.assertEqual(
+            ["--as", "user", "--profile", "default"],
+            report["request"]["cli_execution"]["required_global_args"],
+        )
 
     def test_ac_02_unknown_action_fails_closed_despite_read_hints(self):
         repo = self.make_repo()
@@ -518,6 +546,40 @@ class LarkFeishuAgentContextTests(unittest.TestCase):
             ),
             sources,
         )
+
+    def test_gd_08b_expanded_unmapped_domain_blocks_otherwise_direct_read(self):
+        repo = self.make_repo()
+        fake_cli = self.make_fake_lark_cli(["lark-doc"])
+        request = self.make_request(
+            hints={"domains": ["future-domain"]},
+        )
+
+        report = self.run_prepare(repo, request, fake_cli=fake_cli)
+        normalized = report["request"]
+
+        self.assertEqual(["future-domain"], normalized["dispatch_hints"]["domains"])
+        self.assertTrue(
+            any(source.get("source_type") == "blocker" for source in normalized["guidance_sources"])
+        )
+        self.assertNotEqual("direct", report["dispatch"]["decision"])
+
+    def test_ct_identity_mismatch_blocks_and_does_not_persist(self):
+        repo = self.make_repo()
+        fake_cli = self.make_fake_lark_cli(["lark-doc"])
+        result = self.make_result()
+        result["identity"] = "bot"
+
+        report = self.run_record_result(
+            repo,
+            self.make_request(identity="user"),
+            result,
+            fake_cli=fake_cli,
+        )
+
+        self.assertEqual("BLOCKED", report["status"])
+        self.assertFalse(report["persisted"])
+        self.assertEqual("identity_mismatch:user!=bot", report["identity_contract"]["reason"])
+        self.assertEqual([], self.snapshot_files(repo))
 
     def test_gd_04_active_reuse_is_only_a_runtime_confirmation_candidate(self):
         repo = self.make_repo()

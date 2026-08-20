@@ -8,9 +8,12 @@ import hashlib
 import json
 import os
 import shutil
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+sys.dont_write_bytecode = True
 
 import lark_feishu_ops_policy as policy
 import lark_feishu_ops_runtime as runtime
@@ -289,9 +292,12 @@ def stable_request_id(action: str, target: Any, handoff: dict[str, Any]) -> str:
 
 
 def normalized_dispatch_hints(action: str, hints: dict[str, Any], risk: str) -> dict[str, Any]:
+    identity = str(hints.get("identity") or "unknown")
+    if identity not in state.IDENTITY_VALUES:
+        identity = "unknown"
     normalized = {
-        "identity": state.bounded_string(hints.get("identity") or "user"),
-        "profile": state.bounded_string(hints.get("profile") or "default"),
+        "identity": identity,
+        "profile": state.bounded_identifier(hints.get("profile"), "unknown"),
         "direct_allowed": bool(hints.get("direct_allowed", True)),
         "read_only": bool(hints.get("read_only", False)),
         "bounded": bool(hints.get("bounded", False)),
@@ -303,6 +309,7 @@ def normalized_dispatch_hints(action: str, hints: dict[str, Any], risk: str) -> 
         "side_effects": bool(hints.get("side_effects", hints.get("side_effect", False))),
         "explicit_subagent": bool(hints.get("explicit_subagent", False)),
         "expand_resources": string_tokens(hints.get("expand_resources")),
+        "domains": string_tokens(hints.get("domains")),
     }
     rejected: list[str] = []
     if risk != policy.RISK_READ:
@@ -320,6 +327,22 @@ def normalized_dispatch_hints(action: str, hints: dict[str, Any], risk: str) -> 
     if rejected:
         normalized["rejected_hints"] = rejected
     return normalized
+
+
+def cli_execution_contract(hints: dict[str, Any]) -> dict[str, Any]:
+    identity = str(hints.get("identity") or "unknown")
+    profile = str(hints.get("profile") or "unknown")
+    required_global_args: list[str] = []
+    if identity in {"user", "bot"}:
+        required_global_args.extend(["--as", identity])
+    if profile != "unknown":
+        required_global_args.extend(["--profile", profile])
+    return {
+        "identity": identity,
+        "profile": profile,
+        "required_global_args": required_global_args,
+        "forbid_identity_fallback": True,
+    }
 
 
 def normalize_delegation_request(payload: dict[str, Any]) -> dict[str, Any]:
@@ -365,6 +388,7 @@ def normalize_delegation_request(payload: dict[str, Any]) -> dict[str, Any]:
             "non_goals": sanitize_runtime_value(handoff_input.get("non_goals")) or [],
         },
         "dispatch_hints": hints,
+        "cli_execution": cli_execution_contract(hints),
         "risk_class": risk,
         "resource_refs": resource_refs,
         "affinity_key": affinity_key(action, resource_refs),
@@ -400,6 +424,7 @@ def normalize_agent_result(payload: dict[str, Any]) -> dict[str, Any]:
             if str(payload.get("identity")) in state.IDENTITY_VALUES
             else "none"
         ),
+        "profile": state.bounded_identifier(payload.get("profile"), "unknown"),
         "progress": {"state": progress_state},
         "resource_refs": state.sanitize_resources(as_list(update.get("resource_refs"))),
         "freshness": state.sanitize_freshness(update.get("freshness")),
@@ -484,6 +509,13 @@ def write_context_snapshot(
         "policy_reason": reason,
         "excluded_content_classes": list(state.EXCLUDED_CONTENT_CLASSES),
     }
+    identity_contract = validate_execution_identity(normalized, result)
+    if not identity_contract["ok"]:
+        return {
+            **base,
+            "policy_reason": identity_contract["reason"],
+            "identity_contract": identity_contract,
+        }
     if not allowed:
         return base
     created_at = isoformat(current)
@@ -536,6 +568,14 @@ def list_context_snapshots(repo: Path | str) -> list[dict[str, Any]]:
 
 def direct_eligible(request: dict[str, Any]) -> bool:
     hints = as_dict(request.get("dispatch_hints"))
+    guidance_blocked = any(
+        isinstance(source, dict)
+        and (
+            source.get("source_type") == "blocker"
+            or source.get("status") == "blocked"
+        )
+        for source in request.get("guidance_sources") or []
+    )
     return bool(
         request.get("risk_class") == policy.RISK_READ
         and hints.get("direct_allowed")
@@ -548,7 +588,32 @@ def direct_eligible(request: dict[str, Any]) -> bool:
         and not hints.get("requires_auth_profile_change")
         and not hints.get("side_effects")
         and not hints.get("explicit_subagent")
+        and not guidance_blocked
     )
+
+
+def validate_execution_identity(
+    request: dict[str, Any], result: dict[str, Any]
+) -> dict[str, Any]:
+    hints = as_dict(request.get("dispatch_hints"))
+    expected_identity = str(hints.get("identity") or "unknown")
+    expected_profile = str(hints.get("profile") or "unknown")
+    observed_identity = str(result.get("identity") or "none")
+    observed_profile = str(result.get("profile") or "unknown")
+    reason: str | None = None
+    if expected_identity in {"user", "bot"} and observed_identity != expected_identity:
+        reason = f"identity_mismatch:{expected_identity}!={observed_identity}"
+    elif expected_profile != "unknown" and observed_profile != expected_profile:
+        reason = f"profile_mismatch:{expected_profile}!={observed_profile}"
+    return {
+        "ok": reason is None,
+        "reason": reason,
+        "expected_identity": expected_identity,
+        "observed_identity": observed_identity,
+        "expected_profile": expected_profile,
+        "observed_profile": observed_profile,
+        "fallback_forbidden": True,
+    }
 
 
 def shares_resources(request: dict[str, Any], candidate: dict[str, Any]) -> bool:
@@ -788,16 +853,27 @@ def run_cli(argv: list[str] | None = None) -> tuple[int, dict[str, Any]]:
     elif args.command == "record-result":
         request = normalize_delegation_request(read_request_json(args.request_json))
         raw_result = read_request_json(args.result_json)
-        snapshot = write_context_snapshot(
-            args.repo,
-            request,
-            raw_result,
-            agent_id=args.agent_id,
+        identity_contract = validate_execution_identity(request, raw_result)
+        snapshot = (
+            write_context_snapshot(
+                args.repo,
+                request,
+                raw_result,
+                agent_id=args.agent_id,
+            )
+            if identity_contract["ok"]
+            else {
+                "persisted": False,
+                "policy_reason": identity_contract["reason"],
+                "identity_contract": identity_contract,
+                "excluded_content_classes": list(state.EXCLUDED_CONTENT_CLASSES),
+            }
         )
         retired = state.retire_active_agent(args.repo, args.agent_id) if terminal_result(raw_result) else False
         report = {
-            "status": "PASS",
+            "status": "PASS" if identity_contract["ok"] else "BLOCKED",
             "result": normalize_agent_result(raw_result),
+            "identity_contract": identity_contract,
             "snapshot": snapshot,
             "persisted": snapshot.get("persisted", False),
             "retired": retired,

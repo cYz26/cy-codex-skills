@@ -26,8 +26,12 @@ python3 ../../scripts/lark_feishu_ops_doctor.py --repo <repo> --json
 
 Surface update, official-guidance sync, global-skill unload, and installed-cache
 refresh actions to the user; do not execute them without explicit authorization.
+Treat `~/.agents/skills` as shared: Codex-only unload must block without mutation
+there, and relocation or all-Agent removal requires separate approval.
 Missing `npx` alone is not a runtime blocker when `lark-cli` and embedded skills
 are healthy.
+Doctor is no-write by default: it may read an existing daily update cache but
+persists a fresh check only with explicit `--write-update-cache` authorization.
 
 ## Dispatch Policy
 
@@ -41,7 +45,8 @@ Main-agent direct `lark-cli` is allowed only when all of these are true:
 - The user did not explicitly ask for `FeishuOps`, subagents, or delegated execution.
 
 Caller hints never downgrade derived risk. Unknown, raw, write, and
-`high-risk-write` actions are not direct eligible.
+`high-risk-write` actions are not direct eligible. A blocked/unmapped guidance
+source also denies direct routing.
 
 Escalate to `FeishuOps` when the request explicitly asks for delegation or
 writes, sends, creates, updates, deletes, is cross-domain, multi-step,
@@ -85,6 +90,8 @@ cached freshness.
 ## Operator Boundaries
 
 - Preserve identity/profile and confirmation requirements from `lark-cli`.
+  Omitted values remain `unknown`; apply prepared `cli_execution` arguments,
+  validate returned identity/profile, and never retry user work as bot.
 - Do not guess Feishu IDs, expose secrets, or silently expand resource scope.
 - Do not globally load all `lark-*` skills into the parent context.
 - Do not treat project-local agent metadata as automatic Codex registration.

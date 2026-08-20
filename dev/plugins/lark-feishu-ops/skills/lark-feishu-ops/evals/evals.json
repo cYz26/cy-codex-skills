@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "plugin_version": "0.2.0",
+  "plugin_version": "0.2.4",
   "skill": "lark-feishu-ops",
   "fixture_policy": "reserved-synthetic-only",
   "cases": [

@@ -293,6 +293,54 @@ class LarkFeishuOpsSyncTests(unittest.TestCase):
         self.assertEqual("FAIL", report["status"])
         self.assertFalse(report["cli_update"]["payload"]["ok"])
 
+    def test_doctor_warning_remains_warning_when_cache_is_current(self):
+        with (
+            mock.patch.object(
+                lark_feishu_ops_sync,
+                "run_doctor",
+                return_value={
+                    "status": "WARN",
+                    "checks": {"lark_cli": {"status": "PASS"}},
+                },
+            ),
+            mock.patch.object(
+                lark_feishu_ops_sync,
+                "inspect_installed_plugin_cache",
+                return_value={"status": "matches-source", "recommendation": None},
+            ),
+        ):
+            report = lark_feishu_ops_sync.build_report(
+                apply_cli_update=False,
+                after_cli_update=True,
+                refresh_installed_plugin=False,
+                repo="/repo",
+            )
+
+        self.assertEqual("WARN", report["status"])
+        self.assertFalse(report["plugin_update_required"])
+
+    def test_main_treats_warning_as_successful_diagnostic_exit(self):
+        args = mock.Mock(
+            apply_cli_update=False,
+            after_cli_update=True,
+            refresh_installed_plugin=False,
+            repo="/repo",
+            codex_home=None,
+            json=True,
+        )
+        with (
+            mock.patch.object(lark_feishu_ops_sync, "parse_args", return_value=args),
+            mock.patch.object(
+                lark_feishu_ops_sync,
+                "build_report",
+                return_value={"status": "WARN", "recommendations": []},
+            ),
+            mock.patch("builtins.print"),
+        ):
+            result = lark_feishu_ops_sync.main()
+
+        self.assertEqual(0, result)
+
 
 if __name__ == "__main__":
     unittest.main()

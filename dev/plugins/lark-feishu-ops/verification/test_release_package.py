@@ -1,4 +1,4 @@
-"""Post-promotion checks for the generated Lark Feishu Ops release."""
+"""Self-contained checks for the installable Lark Feishu Ops release."""
 
 import json
 import os
@@ -13,12 +13,7 @@ from pathlib import Path
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = PLUGIN_ROOT.parents[2]
 RELEASE_ROOT = REPO_ROOT / "plugins" / "lark-feishu-ops"
-DEVFLOW_SCRIPTS = REPO_ROOT / "dev" / "plugins" / "dev-flow" / "scripts"
-PROMOTION_GATE = DEVFLOW_SCRIPTS / "release_promotion_gate.py"
-sys.path.insert(0, str(DEVFLOW_SCRIPTS))
-
-from release_promotion_gate import quality_gates
-from workflow_release_sync import sync_release_assets
+DEVELOPMENT_ONLY_PARTS = {"tests", "verification", "evals", "__pycache__"}
 
 
 class LarkFeishuOpsReleasePackageTests(unittest.TestCase):
@@ -32,60 +27,20 @@ class LarkFeishuOpsReleasePackageTests(unittest.TestCase):
             if path.is_file()
         }
 
-    def run_promotion_check(self, repo, *extra):
-        env = os.environ.copy()
-        env["PYTHONDONTWRITEBYTECODE"] = "1"
-        return subprocess.run(
-            [
-                sys.executable,
-                str(PROMOTION_GATE),
-                "--repo",
-                str(repo),
-                "--check",
-                "--json",
-                *extra,
-            ],
-            check=False,
-            text=True,
-            input="{}",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            env=env,
+    def runtime_projection(self, root):
+        return {
+            path.relative_to(root).as_posix(): path.read_bytes()
+            for path in root.rglob("*")
+            if path.is_file()
+            and path.name != ".DS_Store"
+            and not DEVELOPMENT_ONLY_PARTS.intersection(path.relative_to(root).parts)
+        }
+
+    def test_release_matches_canonical_runtime_projection(self):
+        self.assertEqual(
+            self.runtime_projection(PLUGIN_ROOT),
+            self.runtime_projection(RELEASE_ROOT),
         )
-
-    def test_release_sync_dry_run_reports_development_only_files_as_stale(self):
-        with tempfile.TemporaryDirectory(prefix="lark-release-sync-test-") as temp:
-            repo = Path(temp)
-            source = repo / "dev" / "plugins" / "lark-feishu-ops"
-            release = repo / "plugins" / "lark-feishu-ops"
-            shutil.copytree(PLUGIN_ROOT, source)
-            shutil.copytree(RELEASE_ROOT, release)
-            stale_test = release / "tests" / "stale_release_test.py"
-            stale_test.parent.mkdir(parents=True, exist_ok=True)
-            stale_test.write_text("stale\n", encoding="utf-8")
-            stale_eval = release / "skills" / "lark-feishu-ops" / "evals" / "evals.json"
-            stale_eval.parent.mkdir(parents=True, exist_ok=True)
-            stale_eval.write_text('{"stale":true}\n', encoding="utf-8")
-            before = self.tree_bytes(release)
-
-            report = sync_release_assets(repo, apply=False, targets=["lark-feishu-ops"])
-
-            self.assertEqual("pending", report["status"], report)
-            self.assertFalse(report["authorization"]["authorized"])
-            self.assertEqual(before, self.tree_bytes(release), "dry-run mutated the release fixture")
-            stale_files = set(report["assets"][0]["staleFiles"])
-            self.assertIn("tests/stale_release_test.py", stale_files)
-            self.assertIn("skills/lark-feishu-ops/evals/evals.json", stale_files)
-
-    def test_generated_release_is_current_with_canonical_development_source(self):
-        report = sync_release_assets(REPO_ROOT, apply=False, targets=["lark-feishu-ops"])
-
-        self.assertEqual("current", report["status"], report)
-        asset = report["assets"][0]
-        self.assertEqual([], asset["changedFiles"])
-        self.assertEqual([], asset["missingOutputs"])
-        self.assertEqual([], asset["staleFiles"])
-        self.assertEqual([], asset["staleOutputs"])
 
     def test_generated_release_contains_runtime_assets_only(self):
         release_files = self.relative_files(RELEASE_ROOT)
@@ -162,75 +117,48 @@ class LarkFeishuOpsReleasePackageTests(unittest.TestCase):
                 "explicit_read_allowed",
                 "unknown_action_blocked",
                 "write_action_not_direct",
+                "unknown_identity_has_no_cli_defaults",
+                "explicit_identity_profile_are_bound",
             },
             set(report["checks"]),
         )
 
-    def test_canonical_and_release_manifests_publish_stable_0_2_0_identity(self):
+    def test_packaged_cli_help_does_not_create_bytecode(self):
+        with tempfile.TemporaryDirectory(prefix="lark-runtime-help-") as temp:
+            package = Path(temp) / "lark-feishu-ops"
+            shutil.copytree(RELEASE_ROOT, package)
+            shutil.rmtree(package / "scripts" / "__pycache__", ignore_errors=True)
+            before = self.tree_bytes(package)
+            environment = dict(os.environ)
+            environment.pop("PYTHONDONTWRITEBYTECODE", None)
+            results = [
+                subprocess.run(
+                    [sys.executable, str(package / "scripts" / script), "--help"],
+                    check=False,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    env=environment,
+                )
+                for script in (
+                    "lark_feishu_ops_agent_context.py",
+                    "lark_feishu_ops_doctor.py",
+                    "lark_feishu_ops_sync.py",
+                )
+            ]
+            after = self.tree_bytes(package)
+
+        self.assertTrue(all(result.returncode == 0 for result in results), results)
+        self.assertEqual(before, after, "packaged CLI help mutated its runtime tree")
+
+    def test_canonical_and_release_manifests_publish_stable_0_2_3_identity(self):
         source_manifest = json.loads((PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text())
         release_manifest = json.loads((RELEASE_ROOT / ".codex-plugin" / "plugin.json").read_text())
 
         self.assertEqual("lark-feishu-ops", source_manifest["name"])
         self.assertEqual("lark-feishu-ops", release_manifest["name"])
-        self.assertEqual("0.2.0", source_manifest["version"])
+        self.assertEqual("0.2.4", source_manifest["version"])
         self.assertEqual(source_manifest, release_manifest)
-
-    def test_promotion_cli_omitting_target_preserves_dev_flow_default(self):
-        with tempfile.TemporaryDirectory(prefix="lark-promotion-default-test-") as temp:
-            result = self.run_promotion_check(Path(temp))
-
-        self.assertEqual(0, result.returncode, result.stderr)
-        report = json.loads(result.stdout)
-        self.assertEqual("dev-flow", report["releaseReadiness"]["target"])
-
-    def test_promotion_cli_accepts_explicit_lark_target_in_check_mode(self):
-        with tempfile.TemporaryDirectory(prefix="lark-promotion-target-test-") as temp:
-            result = self.run_promotion_check(Path(temp), "--target", "lark-feishu-ops")
-
-        self.assertEqual(0, result.returncode, result.stderr)
-        report = json.loads(result.stdout)
-        self.assertEqual("lark-feishu-ops", report["releaseReadiness"]["target"])
-
-    def test_lark_post_promotion_quality_gate_is_target_specific(self):
-        report = {
-            "evalTargets": [
-                {
-                    "kind": "plugin",
-                    "name": "lark-feishu-ops",
-                    "target": "plugins/lark-feishu-ops",
-                }
-            ]
-        }
-
-        gates = quality_gates(report)
-        plugin_eval = next(gate for gate in gates if gate["name"] == "Plugin Eval release")
-        packaged = [gate for gate in gates if gate["name"] != "Plugin Eval release"]
-        packaged_commands = [" ".join(gate["command"]) for gate in packaged]
-
-        self.assertEqual(
-            ["plugin-eval", "analyze", "plugins/lark-feishu-ops", "--format", "markdown"],
-            plugin_eval["command"],
-        )
-        self.assertTrue(packaged, gates)
-        self.assertTrue(
-            all("lark-feishu-ops" in command for command in packaged_commands),
-            packaged_commands,
-        )
-        self.assertNotIn("plugins/dev-flow", "\n".join(packaged_commands))
-
-    def test_dev_flow_post_promotion_quality_gate_remains_backward_compatible(self):
-        report = {
-            "evalTargets": [
-                {"kind": "plugin", "name": "dev-flow", "target": "plugins/dev-flow"}
-            ]
-        }
-
-        gates = quality_gates(report)
-        commands = {gate["name"]: " ".join(gate["command"]) for gate in gates}
-
-        self.assertIn("verify_release_runtime.py", commands["release runtime verification"])
-        self.assertIn("plugins/dev-flow", commands["release runtime verification"])
-        self.assertIn("plugins/dev-flow", commands["Plugin Eval release"])
 
 
 if __name__ == "__main__":

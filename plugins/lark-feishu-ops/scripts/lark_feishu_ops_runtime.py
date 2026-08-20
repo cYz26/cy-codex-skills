@@ -80,13 +80,44 @@ def parse_json_output(result: dict[str, Any]) -> Any | None:
         return None
 
 
+def _parse_json_text(value: Any) -> Any | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        return None
+
+
+def compact_structured_error(payload: Any) -> dict[str, Any] | None:
+    if not isinstance(payload, dict):
+        return None
+    allowed = {"ok", "type", "subtype", "code", "error", "message", "hint", "_notice"}
+    compact: dict[str, Any] = {}
+    for key in allowed:
+        value = payload.get(key)
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            compact[key] = value[:1200] if isinstance(value, str) else value
+    return compact or None
+
+
 def validate_json_result(
     result: dict[str, Any],
     *,
     required_fields: Iterable[str] = (),
     require_ok_envelope: bool = False,
 ) -> dict[str, Any]:
-    payload = parse_json_output(result)
+    stdout_payload = parse_json_output(result)
+    stderr_payload = _parse_json_text(result.get("stderr") or "")
+    if isinstance(stdout_payload, dict):
+        payload = stdout_payload
+        payload_source = "stdout"
+    elif isinstance(stderr_payload, dict):
+        payload = stderr_payload
+        payload_source = "stderr"
+    else:
+        payload = stdout_payload
+        payload_source = None
     errors: list[str] = []
     if result.get("exit_code") != 0 or not result.get("ok"):
         errors.append("process_exit")
@@ -103,6 +134,12 @@ def validate_json_result(
     return {
         "ok": not errors,
         "payload": payload,
+        "payload_source": payload_source,
+        "structured_error": (
+            compact_structured_error(stderr_payload)
+            if isinstance(stderr_payload, dict) and result.get("exit_code") != 0
+            else None
+        ),
         "errors": errors,
         "command": result.get("command"),
         "exit_code": result.get("exit_code"),

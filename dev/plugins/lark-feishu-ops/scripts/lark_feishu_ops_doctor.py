@@ -4,13 +4,18 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import re
 import shutil
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
+
+sys.dont_write_bytecode = True
 
 import lark_feishu_ops_policy as policy
 import lark_feishu_ops_runtime as runtime
@@ -21,6 +26,10 @@ SKILL_LOCK = HOME / ".agents" / ".skill-lock.json"
 GLOBAL_SKILLS_DIR = HOME / ".agents" / "skills"
 PREFERRED_PROJECT_SKILL = "lark-feishu-ops"
 UPDATE_CHECK_POLICIES = {"daily", "always", "never"}
+
+
+def as_dict(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
 
 
 def run_command(command: list[str], timeout: int = 30) -> dict[str, Any]:
@@ -50,6 +59,8 @@ def _contract_summary(contract: dict[str, Any]) -> dict[str, Any]:
         "exit_code": contract.get("exit_code"),
         "errors": list(contract.get("errors") or []),
         "stderr_present": bool(contract.get("stderr")),
+        "payload_source": contract.get("payload_source"),
+        "structured_error": contract.get("structured_error"),
     }
 
 
@@ -181,6 +192,11 @@ def build_skills_sync_action(
         "target_version": skills_status.get("target"),
         "official_count": skills_status.get("official"),
         "updated_count": skills_status.get("updated"),
+        "layout": (
+            skills_status.get("layout")
+            if skills_status.get("layout") in {"separate", "suite"}
+            else "unknown"
+        ),
         "skipped_deleted": skipped_deleted,
         "followup_command": [
             "python3",
@@ -216,8 +232,16 @@ def _source_metadata(value: Any) -> dict[str, Any]:
             "source": value.get("source"),
             "sourceType": value.get("sourceType"),
             "sourceUrl": value.get("sourceUrl"),
+            "sourceBaseUrl": value.get("sourceBaseUrl"),
+            "wellKnownDigest": value.get("wellKnownDigest"),
         }
-    return {"source": None, "sourceType": None, "sourceUrl": None}
+    return {
+        "source": None,
+        "sourceType": None,
+        "sourceUrl": None,
+        "sourceBaseUrl": None,
+        "wellKnownDigest": None,
+    }
 
 
 def _well_known_source_matches(name: str, metadata: dict[str, Any]) -> bool:
@@ -228,17 +252,115 @@ def _well_known_source_matches(name: str, metadata: dict[str, Any]) -> bool:
         return False
     parsed = urlparse(source_url)
     expected_prefix = f"/.well-known/skills/{name}/"
-    return (
+    legacy_matches = (
         parsed.scheme == "https"
         and parsed.hostname == "open.feishu.cn"
         and parsed.path.startswith(expected_prefix)
     )
+    current_path = f"/lark-cli/skills/regular/.well-known/agent-skills/{name}.tar.gz"
+    digest = metadata.get("wellKnownDigest")
+    current_matches = (
+        parsed.scheme == "https"
+        and parsed.hostname == "open.feishu.cn"
+        and parsed.path == current_path
+        and metadata.get("sourceBaseUrl")
+        == "https://open.feishu.cn/lark-cli/skills/regular"
+        and isinstance(digest, str)
+        and re.fullmatch(r"sha256:[0-9a-f]{64}", digest) is not None
+    )
+    return legacy_matches or current_matches
 
 
-def is_official_lark_skill(item: dict[str, Any], sources: dict[str, Any]) -> bool:
+def _suite_reference_names(suite_dir: Path) -> set[str] | None:
+    references_dir = suite_dir / "references"
+    try:
+        children = list(references_dir.iterdir())
+    except OSError:
+        return None
+    reference_names: set[str] = set()
+    for child in children:
+        if not child.name.startswith("lark-"):
+            continue
+        if child.is_symlink() or not child.is_dir():
+            return None
+        if read_skill_frontmatter_name(child / "SKILL.md") != child.name:
+            return None
+        reference_names.add(child.name)
+    return reference_names
+
+
+def _verified_cli_managed_suite(
+    item: dict[str, Any],
+    lark_cli_check: dict[str, Any] | None,
+) -> bool:
+    if item.get("name") != "lark-suite" or not isinstance(lark_cli_check, dict):
+        return False
+    if lark_cli_check.get("skills_layout") != "suite":
+        return False
+    skills_status = as_dict(lark_cli_check.get("skills_status"))
+    if skills_status.get("layout") != "suite" or skills_status.get("in_sync") is not True:
+        return False
+    if isinstance(lark_cli_check.get("skills_sync_action"), dict):
+        return False
+    path_value = item.get("path")
+    if not isinstance(path_value, str) or not path_value:
+        return False
+    suite_dir = Path(path_value).expanduser()
+    expected_dir = GLOBAL_SKILLS_DIR / "lark-suite"
+    try:
+        if suite_dir.is_symlink() or suite_dir.resolve(strict=True) != expected_dir.resolve(
+            strict=True
+        ):
+            return False
+    except (OSError, RuntimeError):
+        return False
+    if read_skill_frontmatter_name(suite_dir / "SKILL.md") != "lark-suite":
+        return False
+
+    embedded = as_dict(lark_cli_check.get("embedded_skills"))
+    if embedded.get("status") != "PASS":
+        return False
+    embedded_names = {
+        name
+        for name in embedded.get("skills", [])
+        if isinstance(name, str) and name.startswith("lark-") and name != "lark-suite"
+    }
+    if not embedded_names:
+        return False
+
+    content_digests = embedded.get("content_digests")
+    if not isinstance(content_digests, dict) or set(content_digests) != embedded_names:
+        return False
+    for name in embedded_names:
+        expected_digest = content_digests.get(name)
+        if not isinstance(expected_digest, str) or not re.fullmatch(
+            r"[0-9a-f]{64}", expected_digest
+        ):
+            return False
+        skill_path = suite_dir / "references" / name / "SKILL.md"
+        try:
+            actual_digest = hashlib.sha256(skill_path.read_bytes()).hexdigest()
+        except OSError:
+            return False
+        if actual_digest != expected_digest:
+            return False
+
+    reference_names = _suite_reference_names(suite_dir)
+    if reference_names is None:
+        return False
+    return reference_names == embedded_names
+
+
+def is_official_lark_skill(
+    item: dict[str, Any],
+    sources: dict[str, Any],
+    lark_cli_check: dict[str, Any] | None = None,
+) -> bool:
     name = item.get("name")
     if not isinstance(name, str) or not name.startswith("lark-"):
         return False
+    if _verified_cli_managed_suite(item, lark_cli_check):
+        return True
     metadata = _source_metadata(sources.get(name))
     return metadata.get("source") == "larksuite/cli" or _well_known_source_matches(
         name, metadata
@@ -505,6 +627,7 @@ def check_lark_cli(
     update_check_policy: str = "daily",
     force_update_check: bool = False,
     cache_path: Path | str | None = None,
+    write_update_cache: bool = False,
 ) -> dict[str, Any]:
     if update_check_policy not in UPDATE_CHECK_POLICIES:
         raise ValueError(f"unsupported update_check_policy: {update_check_policy}")
@@ -529,6 +652,10 @@ def check_lark_cli(
         "update_check": None,
         "update_action": None,
         "skills_sync_action": None,
+        "skills_status": None,
+        "skills_layout": "unknown",
+        "binary_version_divergence": None,
+        "embedded_guidance_divergence": None,
         "recommendations": [],
     }
 
@@ -550,6 +677,7 @@ def check_lark_cli(
         update_check_policy=update_check_policy,
         force_update_check=force_update_check,
         cache_path=cache_path,
+        write_update_cache=write_update_cache,
     )
     return check
 
@@ -581,6 +709,13 @@ def run_lark_cli_version_check(check: dict[str, Any]) -> None:
     if records:
         check["version"] = records[0].get("version")
         check["version_check"] = records[0].get("version_check")
+    check["binary_version_divergence"] = {
+        "status": "WARN" if len(versions) > 1 else "PASS",
+        "versions": [
+            {"path": record.get("path"), "version": record.get("version")}
+            for record in records
+        ],
+    }
     if len(versions) > 1:
         warn_lark_cli_check(
             check,
@@ -625,80 +760,157 @@ def run_lark_cli_auth_status_check(check: dict[str, Any]) -> None:
         )
 
 
-def _skill_names(payload: Any) -> list[str]:
+def _embedded_skill_records(payload: Any) -> list[dict[str, str]]:
     if not isinstance(payload, dict) or not isinstance(payload.get("skills"), list):
         return []
-    names = {
-        item.get("name")
-        for item in payload["skills"]
-        if isinstance(item, dict)
-        and isinstance(item.get("name"), str)
-        and item["name"].startswith("lark-")
-    }
-    return sorted(names)
+    records: list[dict[str, str]] = []
+    for item in payload["skills"]:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("name")
+        if not isinstance(name, str) or not name.startswith("lark-"):
+            continue
+        record = {"name": name}
+        if isinstance(item.get("version"), str) and item["version"]:
+            record["version"] = item["version"]
+        records.append(record)
+    return sorted(records, key=lambda item: item["name"])
+
+
+def _embedded_skill_digest(skills: list[dict[str, str]]) -> str:
+    canonical = json.dumps(skills, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def run_lark_cli_embedded_skills_check(check: dict[str, Any]) -> None:
-    invocation = str(check.get("canonical_invocation") or "lark-cli")
-    list_contract = runtime.run_json_command(
-        [invocation, "skills", "list", "--json"],
-        required_fields=("skills", "count"),
-        require_ok_envelope=True,
-        timeout=30,
-        runner=_json_runner,
-    )
-    list_errors = list(list_contract.get("errors") or [])
-    payload = list_contract.get("payload")
-    if isinstance(payload, dict):
-        if not isinstance(payload.get("skills"), list):
-            list_errors.append("schema:skills_list_required")
-        if not isinstance(payload.get("count"), int):
-            list_errors.append("schema:count_integer_required")
-    names = _skill_names(payload) if not list_errors else []
+    executable_records = check.get("executables") or []
+    digests: set[str] = set()
+    canonical_contract: dict[str, Any] = {}
+    canonical_errors: list[str] = []
+    names: list[str] = []
+    for index, executable in enumerate(executable_records):
+        invocation = runtime.invocation_for(executable)
+        list_contract = runtime.run_json_command(
+            [invocation, "skills", "list", "--json"],
+            required_fields=("skills", "count"),
+            require_ok_envelope=True,
+            timeout=30,
+            runner=_json_runner,
+        )
+        list_errors = list(list_contract.get("errors") or [])
+        payload = list_contract.get("payload")
+        if isinstance(payload, dict):
+            if not isinstance(payload.get("skills"), list):
+                list_errors.append("schema:skills_list_required")
+            if not isinstance(payload.get("count"), int):
+                list_errors.append("schema:count_integer_required")
+        skills = _embedded_skill_records(payload) if not list_errors else []
+        digest = _embedded_skill_digest(skills) if not list_errors else None
+        executable["embedded_skills"] = {
+            "status": "PASS" if not list_errors else "WARN",
+            "count": len(skills),
+            "skills": skills,
+            "digest": digest,
+            "list_check": {**_contract_summary(list_contract), "errors": list_errors},
+        }
+        if digest:
+            digests.add(digest)
+        if index == 0:
+            canonical_contract = list_contract
+            canonical_errors = list_errors
+            names = [item["name"] for item in skills]
 
-    read_contract = runtime.run_json_command(
-        [invocation, "skills", "read", "lark-doc", "--json"],
-        required_fields=("skill", "path", "content", "guidance"),
-        require_ok_envelope=False,
-        timeout=30,
-        runner=_json_runner,
-    )
-    read_errors = list(read_contract.get("errors") or [])
-    read_payload = read_contract.get("payload")
-    if isinstance(read_payload, dict):
-        if read_payload.get("skill") != "lark-doc":
-            read_errors.append("schema:skill_must_equal_lark-doc")
-        for field in ("path", "content", "guidance"):
-            if not isinstance(read_payload.get(field), str):
-                read_errors.append(f"schema:{field}_string_required")
+    inventory_failures = [
+        record
+        for record in executable_records
+        if as_dict(record.get("embedded_skills")).get("status") != "PASS"
+    ]
+    guidance_unverified = bool(inventory_failures) or len(digests) > 1
+    check["embedded_guidance_divergence"] = {
+        "status": "WARN" if guidance_unverified else "PASS",
+        "inventories": [
+            {
+                "path": record.get("path"),
+                "digest": as_dict(record.get("embedded_skills")).get("digest"),
+                "status": as_dict(record.get("embedded_skills")).get("status"),
+            }
+            for record in executable_records
+        ],
+    }
+    if inventory_failures:
+        warn_lark_cli_check(
+            check,
+            "Embedded guidance could not be verified for every reachable lark-cli executable; repair or remove the failing installation.",
+        )
+    elif len(digests) > 1:
+        warn_lark_cli_check(
+            check,
+            "Reachable lark-cli executables embed divergent guidance; align every installation.",
+        )
+
+    invocation = str(check.get("canonical_invocation") or "lark-cli")
+    content_digests: dict[str, str] = {}
+    all_read_errors: list[str] = []
+    representative_contract: dict[str, Any] = {}
+    representative_errors: list[str] = []
+    representative_payload: dict[str, Any] | None = None
+    for name in names:
+        read_contract = runtime.run_json_command(
+            [invocation, "skills", "read", name, "--json"],
+            required_fields=("skill", "path", "content", "guidance"),
+            require_ok_envelope=False,
+            timeout=30,
+            runner=_json_runner,
+        )
+        read_errors = list(read_contract.get("errors") or [])
+        read_payload = read_contract.get("payload")
+        if isinstance(read_payload, dict):
+            if read_payload.get("skill") != name:
+                read_errors.append(f"schema:skill_must_equal_{name}")
+            for field in ("path", "content", "guidance"):
+                if not isinstance(read_payload.get(field), str):
+                    read_errors.append(f"schema:{field}_string_required")
+        if read_errors:
+            all_read_errors.extend(f"{name}:{error}" for error in read_errors)
+        elif isinstance(read_payload, dict):
+            content = str(read_payload["content"])
+            content_digests[name] = hashlib.sha256(content.encode("utf-8")).hexdigest()
+        if name == "lark-doc":
+            representative_contract = read_contract
+            representative_errors = read_errors
+            representative_payload = read_payload if isinstance(read_payload, dict) else None
+    if "lark-doc" not in names:
+        all_read_errors.append("lark-doc:missing_from_embedded_inventory")
 
     coverage = policy.guidance_coverage(set(names))
     unmapped = coverage["unmapped_embedded_skills"]
     missing = coverage["missing_embedded_skills"]
-    status = "PASS" if not list_errors and not read_errors and not unmapped and not missing else "WARN"
+    status = "PASS" if not canonical_errors and not all_read_errors and not unmapped and not missing else "WARN"
     check["embedded_skills"] = {
         "status": status,
         "count": len(names),
         "skills": names,
+        "content_digests": content_digests,
+        "content_digest_status": "PASS" if not all_read_errors else "WARN",
         "list_check": {
-            **_contract_summary(list_contract),
-            "errors": list_errors,
+            **_contract_summary(canonical_contract),
+            "errors": canonical_errors,
         },
         "representative_read": {
-            **_contract_summary(read_contract),
-            "errors": read_errors,
-            "skill": read_payload.get("skill") if isinstance(read_payload, dict) else None,
-            "path": read_payload.get("path") if isinstance(read_payload, dict) else None,
+            **_contract_summary(representative_contract),
+            "errors": representative_errors,
+            "skill": representative_payload.get("skill") if representative_payload else None,
+            "path": representative_payload.get("path") if representative_payload else None,
             "content_redacted": True,
             "guidance_present": bool(
-                isinstance(read_payload, dict) and read_payload.get("guidance")
+                representative_payload and representative_payload.get("guidance")
             ),
         },
     }
     check["domain_readiness"] = coverage
     if status != "PASS":
         reasons: list[str] = []
-        if list_errors or read_errors:
+        if canonical_errors or all_read_errors:
             reasons.append("required JSON command schema validation failed")
         if missing:
             reasons.append("mapped embedded skills are missing")
@@ -729,6 +941,7 @@ def run_lark_cli_update_check(
     update_check_policy: str,
     force_update_check: bool,
     cache_path: Path | str | None,
+    write_update_cache: bool,
 ) -> None:
     if skip_update_check or offline or update_check_policy == "never":
         record_skipped_update_check(check, update_check_policy)
@@ -749,11 +962,33 @@ def run_lark_cli_update_check(
             )
             return
     else:
-        update_payload = run_fresh_update_check(check, update_check_policy, cache_path)
+        update_payload = run_fresh_update_check(
+            check,
+            update_check_policy,
+            cache_path,
+            write_update_cache=write_update_cache,
+        )
         if update_payload is None:
             return
 
     invocation = str(check.get("canonical_invocation") or "lark-cli")
+    skills_status = update_payload.get("skills_status")
+    if isinstance(skills_status, dict):
+        layout = skills_status.get("layout")
+        check["skills_status"] = {
+            "layout": layout if layout in {"separate", "suite"} else "unknown",
+            "in_sync": (
+                skills_status.get("in_sync")
+                if isinstance(skills_status.get("in_sync"), bool)
+                else None
+            ),
+            "current": skills_status.get("current"),
+            "target": skills_status.get("target"),
+            "official": skills_status.get("official"),
+            "updated": skills_status.get("updated"),
+        }
+        if layout in {"separate", "suite"}:
+            check["skills_layout"] = layout
     if update_payload_requires_confirmation(update_payload):
         warn_lark_cli_check(
             check,
@@ -810,6 +1045,8 @@ def run_fresh_update_check(
     check: dict[str, Any],
     update_check_policy: str,
     cache_path: Path | str | None,
+    *,
+    write_update_cache: bool = False,
 ) -> Any | None:
     invocation = str(check.get("canonical_invocation") or "lark-cli")
     result = run_command([invocation, "update", "--check", "--json"], timeout=45)
@@ -828,9 +1065,17 @@ def run_fresh_update_check(
         "payload": payload,
         "errors": list(contract.get("errors") or []),
         "stderr": str(result.get("stderr") or "")[:1200],
+        "structured_error": contract.get("structured_error"),
+        "payload_source": contract.get("payload_source"),
+        "cache_persistence": {"requested": write_update_cache, "written": False},
     }
     if contract.get("ok") and isinstance(payload, dict):
-        check["update_check"]["cache"] = write_update_check_cache(payload, cache_path)
+        if write_update_cache:
+            cache_result = write_update_check_cache(payload, cache_path)
+            check["update_check"]["cache"] = cache_result
+            check["update_check"]["cache_persistence"]["written"] = bool(
+                cache_result.get("write_ok")
+            )
         return payload
 
     warn_lark_cli_check(
@@ -869,7 +1114,9 @@ def list_global_skills() -> dict[str, Any]:
     }
 
 
-def audit_global_lark_skills() -> dict[str, Any]:
+def audit_global_lark_skills(
+    lark_cli_check: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     listing = list_global_skills()
     sources = load_skill_lock_sources()
     exposed: list[dict[str, Any]] = []
@@ -884,14 +1131,16 @@ def audit_global_lark_skills() -> dict[str, Any]:
         if not isinstance(name, str) or not name.startswith("lark-"):
             continue
         metadata = _source_metadata(sources.get(name))
+        suite_verified = _verified_cli_managed_suite(item, lark_cli_check)
         record = {
             "name": name,
             "path": item.get("path"),
             "agents": item.get("agents", []),
+            "provenance": "cli_managed_suite" if suite_verified else None,
             **metadata,
         }
         exposed.append(record)
-        if is_official_lark_skill(item, sources):
+        if is_official_lark_skill(item, sources, lark_cli_check):
             official.append(record)
             if "codex" in normalize_agents(item.get("agents")):
                 codex_effective.append(record)
@@ -906,7 +1155,51 @@ def audit_global_lark_skills() -> dict[str, Any]:
     else:
         status = "PASS"
 
-    if codex_effective:
+    shared_root_codex_skills = [
+        item
+        for item in codex_effective
+        if _path_is_within(item.get("path"), GLOBAL_SKILLS_DIR)
+    ]
+
+    exposed_names = {item["name"] for item in exposed}
+    layout = (
+        "suite"
+        if exposed_names == {"lark-suite"}
+        else "mixed"
+        if "lark-suite" in exposed_names
+        else "separate"
+        if exposed_names
+        else "none"
+    )
+    compact_layout = layout == "suite" and bool(official) and not unverified
+    suite_item = next(
+        (item for item in exposed if item.get("name") == "lark-suite"),
+        None,
+    )
+    suite_reference_names: set[str] | None = None
+    if isinstance(suite_item, dict) and isinstance(suite_item.get("path"), str):
+        suite_reference_names = _suite_reference_names(
+            Path(str(suite_item["path"])).expanduser()
+        )
+    codex_recursive_exposure_count = len(exposed) + len(suite_reference_names or set())
+    codex_manager_compact = bool(
+        compact_layout and codex_recursive_exposure_count <= 1
+    )
+
+    if compact_layout and not codex_manager_compact:
+        recommendation = (
+            "The verified CLI-managed lark-suite is one filesystem directory, but Codex "
+            f"recursively discovers {len(suite_reference_names or set())} nested Skill files; "
+            "it is not manager-compact. Use the plugin-only path or separately authorize "
+            "all-Agent relocation/removal."
+        )
+    elif shared_root_codex_skills:
+        recommendation = (
+            "Codex discovers the shared ~/.agents/skills canonical root directly. "
+            "Agent-only unlinking cannot remove this exposure; keep it or perform a separately "
+            "approved relocation/removal that preserves other agents."
+        )
+    elif codex_effective:
         recommendation = (
             "Unload verified official lark-* skills from Codex and route Feishu/Lark work "
             "through the plugin subagent."
@@ -927,7 +1220,13 @@ def audit_global_lark_skills() -> dict[str, Any]:
         "exposed_global_lark_skills": exposed,
         "official_global_lark_skills": official,
         "codex_effective_official_lark_skills": codex_effective,
+        "shared_root_codex_lark_skills": shared_root_codex_skills,
+        "codex_only_unload_supported": bool(codex_effective) and not shared_root_codex_skills,
         "unverified_global_lark_skills": unverified,
+        "layout": layout,
+        "compact_layout": compact_layout,
+        "codex_manager_compact": codex_manager_compact,
+        "codex_recursive_exposure_count": codex_recursive_exposure_count,
         "recommendation": recommendation,
         "listing": {
             "status": listing.get("status"),
@@ -938,7 +1237,37 @@ def audit_global_lark_skills() -> dict[str, Any]:
     }
 
 
+def _path_is_within(value: Any, root: Path) -> bool:
+    if not isinstance(value, str) or not value:
+        return False
+    try:
+        Path(value).expanduser().resolve(strict=False).relative_to(root.resolve(strict=False))
+    except (OSError, RuntimeError, ValueError):
+        return False
+    return True
+
+
 def apply_codex_global_unload(targets: list[dict[str, Any]]) -> dict[str, Any]:
+    shared_root_targets = [
+        target
+        for target in targets
+        if _path_is_within(target.get("path"), GLOBAL_SKILLS_DIR)
+    ]
+    if shared_root_targets:
+        return {
+            "status": "BLOCKED",
+            "operations": [],
+            "blocked_skills": sorted(
+                target["name"]
+                for target in shared_root_targets
+                if isinstance(target.get("name"), str)
+            ),
+            "error": (
+                "Codex discovers the shared canonical root ~/.agents/skills directly; "
+                "agent-only unlinking would report success without removing Codex exposure. "
+                "A separately approved relocation or all-agent removal is required."
+            ),
+        }
     if shutil.which("npx") is None:
         return {
             "status": "FAIL",
@@ -966,8 +1295,9 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
         update_check_policy=args.update_check_policy,
         force_update_check=args.force_update_check,
         cache_path=args.update_cache_path,
+        write_update_cache=bool(getattr(args, "write_update_cache", False)),
     )
-    global_audit = audit_global_lark_skills()
+    global_audit = audit_global_lark_skills(lark_cli)
     project_audit = audit_project_lark_skills(args.repo) if getattr(args, "repo", None) else None
 
     remediation = None
@@ -975,7 +1305,7 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
         remediation = apply_codex_global_unload(
             global_audit["codex_effective_official_lark_skills"]
         )
-        global_audit = audit_global_lark_skills()
+        global_audit = audit_global_lark_skills(lark_cli)
 
     statuses = [lark_cli["status"], global_audit["status"]]
     if project_audit is not None:
@@ -983,7 +1313,7 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
     if remediation is not None:
         statuses.append(remediation["status"])
 
-    if "FAIL" in statuses:
+    if any(status in {"FAIL", "BLOCKED"} for status in statuses):
         overall = "FAIL"
     elif args.strict and any(status != "PASS" for status in statuses):
         overall = "FAIL"
@@ -994,9 +1324,14 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
 
     recommendations: list[str] = []
     recommendations.extend(lark_cli.get("recommendations", []))
-    if global_audit["codex_effective_official_lark_skills"]:
+    if global_audit.get("codex_only_unload_supported"):
         recommendations.append(
             "Run this doctor with `--apply-codex-global-unload`, then start a new Codex thread."
+        )
+    elif global_audit.get("shared_root_codex_lark_skills"):
+        recommendations.append(
+            "Do not retry agent-only unload: ~/.agents/skills is directly visible to Codex. "
+            "Relocation or all-agent removal requires separate approval."
         )
     elif args.apply_codex_global_unload:
         recommendations.append("Global official lark-* skills are no longer active for Codex.")
@@ -1031,9 +1366,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--force-update-check", action="store_true", help="Bypass the daily update-check cache.")
     parser.add_argument("--update-cache-path", help=argparse.SUPPRESS)
     parser.add_argument(
+        "--write-update-cache",
+        action="store_true",
+        help="Persist a successful fresh update check in the daily cache.",
+    )
+    parser.add_argument(
         "--apply-codex-global-unload",
         action="store_true",
-        help="Remove verified official global lark-* skills from Codex only, then verify.",
+        help=(
+            "Remove verified official global lark-* skills from Codex only, then verify; "
+            "block without mutation when they live in the shared ~/.agents/skills root."
+        ),
     )
     return parser.parse_args()
 

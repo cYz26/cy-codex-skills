@@ -1,6 +1,6 @@
 # Lark Feishu Ops
 
-Version 0.2.0 keeps the public plugin and skill name `lark-feishu-ops` while
+Version 0.2.4 keeps the public plugin and skill name `lark-feishu-ops` while
 making its routing, guidance, continuity, and readiness contracts fail closed.
 It exposes one Codex skill for Feishu/Lark platform work and uses a hybrid route:
 direct main-agent `lark-cli` for bounded low-risk reads, and a compact
@@ -72,7 +72,7 @@ Missing embedded guidance falls back to focused `lark-cli <domain> --help` or
 `lark-cli schema` metadata. Unknown mappings are reported instead of silently
 using a stale path, and raw OpenAPI remains explicit and confirmation-gated.
 
-The current Lark CLI 1.0.69 inventory contains 27 embedded skills:
+The validated Lark CLI 1.0.88 inventory contains 27 embedded skills:
 
 - `lark-approval`, `lark-apps`, `lark-attendance`, `lark-base`,
   `lark-calendar`, `lark-contact`, `lark-doc`, `lark-drive`, `lark-event`;
@@ -82,10 +82,10 @@ The current Lark CLI 1.0.69 inventory contains 27 embedded skills:
   `lark-vc-agent`, `lark-whiteboard`, `lark-wiki`;
 - `lark-workflow-meeting-summary` and `lark-workflow-standup-report`.
 
-Availability is still derived dynamically; this list documents the 0.2.0
+Availability is still derived dynamically; this list documents the 0.2.4
 compatibility baseline rather than replacing runtime inventory.
 
-Lark CLI 1.0.69 also exposes top-level command domains that are not separate
+Lark CLI 1.0.88 also exposes top-level command domains that are not separate
 embedded skills: `application`, `mindnotes`, `config`, `profile`, `doctor`,
 `update`, `whoami`, `skills`, and `schema` (with `api` routed through the
 OpenAPI guidance path). The router uses focused CLI help plus the closest
@@ -101,13 +101,14 @@ python3 scripts/lark_feishu_ops_agent_context.py prepare \
   --repo /path/to/repo --request-json request.json --json
 ```
 
-The helper stores repo-local state only under
-`.dev-flow/lark-feishu-ops/agent-context/`:
+For compatibility with released versions, the helper stores repo-local state
+under `.dev-flow/lark-feishu-ops/agent-context/`. This is plugin continuity
+metadata, not repository workflow authority:
 
 - `active_agents.json` stores bounded lifecycle metadata.
 - `snapshots/` stores schema-v2 metadata capsules, never request/evidence bodies.
 
-The prepare command uses the decision family `direct`, `reuse_active`, `reconstruct_from_cache`, or `fresh_subagent`; 0.2.0 emits the active case as
+The prepare command uses the decision family `direct`, `reuse_active`, `reconstruct_from_cache`, or `fresh_subagent`; 0.2.4 emits the active case as
 `reuse_active_candidate` to make its required runtime confirmation explicit.
 Cache reconstruction restores
 only identifiers, resource type/revision, affinity, identity/profile, risk,
@@ -154,18 +155,38 @@ python3 scripts/lark_feishu_ops_doctor.py --repo /path/to/repo --json
 
 The doctor inventories every reachable `lark-cli`, identifies the canonical
 absolute executable, verifies command-specific JSON contracts, checks the
-dynamic 27-skill inventory and routing coverage, separates official provenance
+dynamic 27-skill inventory and routing coverage for every executable, separates
+binary-version drift from embedded-guidance drift, separates official provenance
 from global exposure, and audits current `.agents/skills` plus legacy
 `.codex/skills`. Missing `npx` limits installer/global-audit operations but does
 not fail normal runtime readiness.
-Its daily update-check cache is reused only while the cached current version
+Doctor is no-write by default. Its daily update-check cache is reused only while the cached current version
 matches the executable version detected in the same run, so an authorized CLI
-upgrade cannot be masked by a same-day stale result.
+upgrade cannot be masked by a same-day stale result. Use
+`--write-update-cache` only when persisting a successful fresh check is an
+explicitly desired maintenance effect.
+
+Explicit request identity/profile becomes `cli_execution.required_global_args`
+(`--as` and `--profile`). Omitted values stay `unknown`; returned mismatch is
+blocked and never cached. Lark CLI profile precedence is explicit `--profile`,
+then `LARKSUITE_CLI_PROFILE`, then persisted selection. Structured JSON errors
+from stderr remain available in diagnostics. Doctor recognizes both official
+`separate` and `suite` Skill layouts but never switches layout implicitly.
+For `suite`, provenance is trusted only when the canonical shared-root path,
+top-level frontmatter, CLI-reported layout and in-sync state, nested Skill names,
+and every `references/lark-*/SKILL.md` SHA-256 digest match the healthy canonical
+CLI embedded inventory; otherwise exposure remains unverified. One suite
+directory is not compact in the Codex manager: Codex
+recursively discovers those nested Skill files. Doctor therefore reports both
+filesystem compaction and `codex_recursive_exposure_count`; use the plugin-only
+path when zero global Lark exposure is required.
 
 CLI update, official-guidance synchronization, global skill unload, and
 installed plugin cache refresh remain explicit confirmation-gated effects. Do
-not treat a doctor recommendation as authorization. After an authorized CLI
-update, run:
+not treat a doctor recommendation as authorization. Doctor blocks Codex-only
+unload without mutation when Skills live under the shared `~/.agents/skills`
+canonical root; relocation or all-Agent removal needs separate approval. After
+an authorized CLI update, run:
 
 ```bash
 python3 scripts/lark_feishu_ops_sync.py --after-cli-update --json
@@ -173,8 +194,8 @@ python3 scripts/lark_feishu_ops_sync.py --after-cli-update --json
 
 Use `--refresh-installed-plugin` only when installed-cache refresh was
 separately authorized. Development source is canonical under
-`dev/plugins/lark-feishu-ops`; the release tree is generated through the
-repository promotion gate, not edited manually.
+`dev/plugins/lark-feishu-ops`; update the release tree only through an explicit,
+reviewed development-to-release change.
 
 The generated package also ships one bounded offline self-test for its core
 fail-closed invariants. It imports only packaged modules and performs no CLI,
@@ -186,8 +207,6 @@ python3 scripts/test_runtime_contract.py --json
 
 ## Compatibility
 
-Version 0.2.0 intentionally tightens behavior: unknown actions no longer run
-directly, arbitrary guidance paths are rejected, continuity no longer persists
-private bodies or command arguments, and doctor/sync results fail closed on
-invalid or stale runtime evidence. See `CHANGELOG.md` for the complete operator
-impact.
+Version 0.2.4 binds suite provenance to explicit CLI sync evidence and embedded
+content digests on top of the 0.2.3 Codex visibility correction. See
+`CHANGELOG.md` for the complete operator impact.

@@ -109,7 +109,7 @@ PROVENANCE_SOURCE_TYPES = frozenset(
         "unknown",
     }
 )
-IDENTITY_VALUES = frozenset({"bot", "mixed", "none", "user"})
+IDENTITY_VALUES = frozenset({"bot", "mixed", "none", "unknown", "user"})
 RISK_VALUES = frozenset({"high-risk-write", "read", "unknown", "write"})
 METADATA_IDENTIFIER = re.compile(r"^[A-Za-z0-9._:/=@+-]{1,256}$")
 SENSITIVE_METADATA_MARKERS = (
@@ -362,7 +362,7 @@ def sanitize_active_entry(entry: Any) -> dict[str, Any] | None:
             resource_refs.append(candidate)
         if len(resource_refs) >= MAX_RESOURCE_REFS:
             break
-    identity = str(entry.get("identity") or "user")
+    identity = str(entry.get("identity") or "unknown")
     risk = str(entry.get("risk_class") or "unknown")
     return {
         "schema_version": SCHEMA_VERSION,
@@ -372,8 +372,8 @@ def sanitize_active_entry(entry: Any) -> dict[str, Any] | None:
         "domain": domain,
         "affinity_key": affinity,
         "resource_refs": resource_refs,
-        "identity": identity if identity in IDENTITY_VALUES else "user",
-        "profile": bounded_identifier(entry.get("profile"), "default"),
+        "identity": identity if identity in IDENTITY_VALUES else "unknown",
+        "profile": bounded_identifier(entry.get("profile"), "unknown"),
         "risk_class": risk if risk in RISK_VALUES else "unknown",
         "state": "active",
         "last_progress_at": progress,
@@ -490,9 +490,9 @@ def snapshot_payload(
         "identity": (
             str(hints.get("identity"))
             if str(hints.get("identity")) in IDENTITY_VALUES
-            else "user"
+            else "unknown"
         ),
-        "profile": bounded_identifier(hints.get("profile"), "default"),
+        "profile": bounded_identifier(hints.get("profile"), "unknown"),
         "risk_class": (
             str(request.get("risk_class"))
             if str(request.get("risk_class")) in RISK_VALUES

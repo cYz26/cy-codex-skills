@@ -7,8 +7,11 @@ import argparse
 import hashlib
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any
+
+sys.dont_write_bytecode = True
 
 import lark_feishu_ops_doctor
 import lark_feishu_ops_runtime as runtime
@@ -222,7 +225,7 @@ def build_report(
             recommendations.append(recommendation)
     if plugin_update_required:
         recommendations.append(
-            "Review Lark CLI compatibility and update lark-feishu-ops source through OpenSpec."
+            "Review Lark CLI compatibility and update lark-feishu-ops through an explicit repository change."
         )
     else:
         recommendations.append(
@@ -230,15 +233,17 @@ def build_report(
         )
 
     doctor_status = doctor.get("status") if isinstance(doctor, dict) else None
-    failed = doctor_status != "PASS"
+    failed = doctor_status not in {"PASS", "WARN"}
     failed = failed or installed_cache["status"] != "matches-source"
     failed = failed or bool(cli_update is not None and not cli_update.get("ok"))
     failed = failed or bool(
         installed_plugin_refresh is not None and not installed_plugin_refresh.get("ok")
     )
 
+    warned = not failed and doctor_status == "WARN"
+
     return {
-        "status": "FAIL" if failed else "PASS",
+        "status": "FAIL" if failed else ("WARN" if warned else "PASS"),
         "cli_update": cli_update,
         "after_cli_update": after_cli_update,
         "doctor": doctor,
@@ -292,7 +297,7 @@ def main() -> int:
         print(f"status: {report['status']}")
         for recommendation in report["recommendations"]:
             print(f"- {recommendation}")
-    return 0 if report["status"] == "PASS" else 1
+    return 0 if report["status"] in {"PASS", "WARN"} else 1
 
 
 if __name__ == "__main__":
